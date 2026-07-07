@@ -1,0 +1,9 @@
+# Inferred from the imports across src/. Versions are left unpinned; pin to
+# your cluster's CUDA/torch build as needed.
+torch
+transformers
+datasets
+huggingface_hub
+numpy
+scipy
+tqdm
