@@ -7,7 +7,7 @@ Asks whether two REAL treated cells of the SAME drug agree more (in a metric) th
 treated cells of DIFFERENT drugs, WITHIN the same cell line. Separates "the model can't capture
 drug-specificity" from "there is no detectable drug-specific signal".
 
-This version adds the controls a careful reviewer would demand:
+This version adds the following controls:
   * 3 metrics: DE-Δr, panel-τ (C2S-paper-style whole panel), topN-τ (expressed-only).
   * 2 aggregation levels: single-cell and pseudobulk (denoised; disjoint-half replicates).
   * DOSE control: a same-dose-matched comparison (same-drug-same-dose vs diff-drug-same-dose),

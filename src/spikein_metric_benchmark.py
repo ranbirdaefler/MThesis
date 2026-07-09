@@ -2,7 +2,7 @@
 r"""
 spikein_metric_benchmark.py
 ===========================
-Advisor's spike-in protocol: benchmark which METRIC best distinguishes two drug populations,
+Spike-in protocol: benchmark which METRIC best distinguishes two drug populations,
 and how gracefully each degrades as the populations are mixed (titrated contamination).
 
 PROTOCOL (per cell line, per pair of drugs A,B):
@@ -22,14 +22,14 @@ METRICS COMPARED (all higher = more similar):
   * panel_tau       : Kendall τ over all 946 genes (rank space)
   * topn_tau        : Kendall τ over top-N expressed genes (rank space)
   * spearman_expr   : Spearman over expression (rank of expression, whole panel)
-  * cosine_expr     : COSINE similarity in expression space (advisor found this strong).
+  * cosine_expr     : COSINE similarity in expression space (a strong discriminator here).
                       Expression is reconstructed from the cell sentence via the C2S-style
                       rank->expression map in linear_model.json (rank r -> slope*log-ish); if absent,
                       falls back to a rank-decreasing proxy (rank i -> (P - i)).
   * cosine_shift    : cosine of the (candidate_expr - control_expr) shift vectors  [needs control]
 
 Also supports an optional TAIL-FIX (--tail_rank_max): assign every inactive/absent gene the SAME
-max rank (P) instead of position-based distinct ranks — the advisor's suggested tie fix — and
+max rank (P) instead of position-based distinct ranks — a rank-tie fix — and
 re-run all rank metrics under it, so you can see if it improves discrimination.
 
 USAGE

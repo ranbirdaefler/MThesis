@@ -73,6 +73,7 @@ The roadmap of planned analyses is tracked outside this repo for now (see §7 St
 | File | Purpose |
 |---|---|
 | [`src/tahoe_c2s_preprocess.py`](src/tahoe_c2s_preprocess.py) | Build the dataset: stream Tahoe shards, match plate-level DMSO controls to treated cells, construct fixed-panel cell sentences, write train + 4 eval tiers. The core data pipeline. |
+| [`src/tahoe_c2s_preprocess_endcell.py`](src/tahoe_c2s_preprocess_endcell.py) | Variant of the preprocessing pipeline (end-cell construction). |
 | [`src/build_l1000_panel.py`](src/build_l1000_panel.py) | Build the fixed 946-gene L1000∩Tahoe panel (`l1000_panel.json`) from the LINCS landmark gene list. |
 | [`src/train_c2s_tahoe.py`](src/train_c2s_tahoe.py) | Supervised fine-tuning (hand-rolled PyTorch loop): loss masked to the response, bf16 autocast, gradient checkpointing, cosine schedule, disk-safe checkpoint pruning. |
 | [`src/grpo_c2s_tahoe.py`](src/grpo_c2s_tahoe.py) | GRPO (RL) training variant. |
@@ -95,6 +96,9 @@ The roadmap of planned analyses is tracked outside this repo for now (see §7 St
 | [`src/scramble_eval.py`](src/scramble_eval.py) | Drug-specificity ablation: rewrite the drug/MOA token in eval prompts (different-MOA or random-drug), keeping control/cell-line/dose/truth fixed. |
 | [`src/paired_by_position.py`](src/paired_by_position.py) | Paired real-vs-scrambled Δ, matched by position (scrambling changes the content-hash example ID, so pairing is done by row position + sanity checks). |
 | [`src/inspect_generation.py`](src/inspect_generation.py) | Print raw generations from one or two models on a few examples (used to diagnose the base model's cell-type-annotation behaviour). |
+| [`src/drug_specificity_in_data.py`](src/drug_specificity_in_data.py) | Model-free test: do two real cells of the *same* drug agree more (in a metric) than two of *different* drugs, within a cell line? Confound-controlled (dose, batch, MOA positive control) — separates "the model can't capture drug-specificity" from "no detectable drug-specific signal in the data." |
+| [`src/pseudobulk_eval.py`](src/pseudobulk_eval.py) | Re-score the single-cell-trained model at pseudobulk (denoised) resolution, sweeping aggregation size — including a scrambled-drug sensitivity test and a pseudobulk noise ceiling. |
+| [`src/spikein_metric_benchmark.py`](src/spikein_metric_benchmark.py) | Benchmark which metric best discriminates two drug populations (forced-choice accuracy) and how gracefully it degrades under spike-in contamination titration. |
 
 > **Note:** `check_base_compat.py` (confirming `C2S-Scale-Pythia-1b` and `EleutherAI/pythia-1b`
 > share architecture + tokenizer for the no-C2S ablation) is referenced in project notes but is not
@@ -113,6 +117,7 @@ The roadmap of planned analyses is tracked outside this repo for now (see §7 St
 |---|---|
 | [`docs/dataset_construction.md`](docs/dataset_construction.md) | Thesis methods: dataset construction, fixed-panel leak-free design, control matching, tiers, QC, reproducibility. |
 | [`docs/results.md`](docs/results.md) | Full results writeup (performance, K-sweep, baseline ladder, noise ceiling, base-model finding). |
+| [`docs/drug_specificity_analysis_writeup.md`](docs/drug_specificity_analysis_writeup.md) | Writeup of the drug-specificity analyses (data-level signal, pseudobulk, spike-in metric benchmark). |
 
 > Additional docs referenced in earlier drafts (a no-C2S ablation audit, a living analysis
 > roadmap, and fixed-panel implementation notes) are not yet checked into `docs/` — see §7 Status.
@@ -127,17 +132,20 @@ MThesis/
 ├── requirements.txt          # inferred from imports (torch, transformers, datasets, numpy, scipy, tqdm, huggingface_hub)
 ├── .gitignore                # excludes data/, checkpoints/, eval_results/, caches, private drafts
 ├── src/                      # ALL Python lives here (flat — see note below)
-│   ├── tahoe_c2s_preprocess.py, build_l1000_panel.py, train_c2s_tahoe.py, grpo_c2s_tahoe.py,
-│   │   evaluate_c2s_tahoe.py, regen_tier2_eval.py, sft_pythia_l1000.sbatch      (pipeline)
+│   ├── tahoe_c2s_preprocess.py, tahoe_c2s_preprocess_endcell.py, build_l1000_panel.py,
+│   │   train_c2s_tahoe.py, grpo_c2s_tahoe.py, evaluate_c2s_tahoe.py,
+│   │   regen_tier2_eval.py, sft_pythia_l1000.sbatch                             (pipeline)
 │   ├── control_knn_baseline.py, control_state_baseline.py,
 │   │   simple_baselines_and_consensus.py                                        (baselines)
 │   ├── scramble_eval.py, paired_by_position.py, noise_ceiling.py,
-│   │   noise_ceiling_matched.py, inspect_generation.py                          (ablations/analysis)
+│   │   noise_ceiling_matched.py, inspect_generation.py,
+│   │   drug_specificity_in_data.py, pseudobulk_eval.py, spikein_metric_benchmark.py  (ablations/analysis)
 │   ├── _test_eval_baselines.py, _test_fixed_panel.py                            (offline tests)
 │   └── l1000_panel.json, l1000_landmark_genes.txt                              (reference inputs)
 ├── docs/
 │   ├── dataset_construction.md
-│   └── results.md
+│   ├── results.md
+│   └── drug_specificity_analysis_writeup.md
 └── (data/, checkpoints/, eval_results/, hf_cache/ are generated and gitignored)
 ```
 
