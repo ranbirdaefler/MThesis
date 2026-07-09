@@ -6,7 +6,7 @@ Two real treated cells from the same (drug, cell_line, plate, dose) condition do
 not agree perfectly (transcriptional bursting, cell-cycle, capture noise). The gap
 between a perfect score and this replicate agreement is IRREDUCIBLE — no model can
 close it. This script measures it for DE-Δr (K-sweep), topN-τ, and panel-τ, so the
-model's 0.72 can be reported as a fraction of ceiling rather than in a vacuum.
+model's 0.72 can be reported as a fraction of ceiling rather than as an absolute number.
 
 Two ceilings are computed (their difference matters):
   * cell_vs_cell      — score one real cell against ANOTHER single real cell.

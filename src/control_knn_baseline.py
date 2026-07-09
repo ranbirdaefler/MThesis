@@ -8,13 +8,14 @@ MOTIVATION
 ----------
 The drug-scramble ablation showed the fine-tuned model largely ignores the drug token:
 swapping the drug (even to a different MOA) leaves DE-Δr essentially unchanged. Yet the
-model beats the mean-shift baselines by +0.39..+0.59. Where does that margin come from?
+model beats the mean-shift baselines by +0.39..+0.59; this baseline tests where that
+margin comes from.
 
 Hypothesis: the model reads the CONTROL cell (the untreated baseline in the prompt) and
 predicts, in effect, "cells whose baseline looks like this one respond THIS way." If so, a
 non-parametric baseline that ONLY does control-similarity retrieval — with no drug modeling
-whatsoever — should match the model. This script is that baseline: the honest measuring
-stick for "does the model add anything beyond control-based retrieval?"
+whatsoever — should match the model. This script is that baseline, isolating whether the
+model adds anything beyond control-based retrieval.
 
 WHAT IT DOES (per test cell)
 ----------------------------
@@ -37,7 +38,7 @@ FAIRNESS / RIGOUR
   itself, a replicate of its own (drug, cell_line, plate, dose) condition, or — critically —
   any training cell whose DRUG equals the test cell's drug (so seen-condition tiers can't
   cheat by copying same-drug responses; the baseline is drug-agnostic BY CONSTRUCTION).
-- Same-cell-line retrieval is the PRIMARY, fairest, hardest-to-beat setting. Global optional.
+- Same-cell-line retrieval is the PRIMARY, hardest-to-beat setting. Global optional.
 - k is SWEPT (1,5,20,100). Sanity check: as k grows the baseline should converge toward the
   per-cell-line mean-shift baseline (retrieval → cell-line average).
 - Drug-clustered bootstrap CIs (cluster by test-cell drug), identical to the harness.

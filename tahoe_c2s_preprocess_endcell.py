@@ -180,14 +180,27 @@ def raw_to_cell_sentence(gene_indices, expressions, gene_id_to_symbol, max_genes
     return " ".join(gene_names)
 
 
+# Sentinel appended to every cell sentence to mark the end of the EXPRESSED gene
+# block. Under the [END_CELL] representation, only expressed panel genes are emitted
+# (ranked by expression); unexpressed genes are ABSENT (implied zero) rather than
+# appended as a canonical tail. This makes on/off transitions analyzable and lets the
+# three inactive-gene representations (position / tail_max / zero_bucket) actually
+# differ downstream. Must be a token the tokenizer treats atomically when retraining
+# (register as a special token in train_c2s_tahoe.py); as a plain string it is safe
+# because it cannot collide with any gene symbol.
+END_CELL_TOKEN = "[END_CELL]"
+
+
 def build_panel_sentence(genes, exprs, gene_id_to_symbol, panel_symbols, panel_index,
                          min_expressed=200, min_panel_expressed=0):
     """Build ONE fixed-panel cell sentence from raw (genes, exprs).
 
-    Returns the space-joined canonical panel ordering (expressed genes by descending
-    normalized expression, then the unexpressed tail in canonical panel order), or
-    None if the cell fails QC. Shared by make_paired_cell_sentences_fixed_panel and
-    the eval-tier regenerator so train/eval sentence construction can never diverge.
+    [END_CELL] representation: returns the space-joined EXPRESSED panel genes ordered
+    by descending normalized expression, followed by the END_CELL_TOKEN sentinel.
+    Unexpressed panel genes are ABSENT (implied zero) — there is no canonical tail.
+    Sentences are therefore variable length (= number of expressed panel genes + 1).
+    Returns None if the cell fails QC. Shared by make_paired_cell_sentences_fixed_panel
+    and the eval-tier regenerator so train/eval sentence construction can never diverge.
     """
     gid = np.array(genes)
     ex = np.array(exprs, dtype=np.float64)
@@ -204,10 +217,15 @@ def build_panel_sentence(genes, exprs, gene_id_to_symbol, panel_symbols, panel_i
         sym = gene_id_to_symbol.get(g, None)
         if sym is not None:
             d[sym] = float(v)
-    if min_panel_expressed and \
-       sum(1 for g in panel_symbols if d.get(g, 0.0) > 0.0) < min_panel_expressed:
+    # Expressed PANEL genes only (present in this cell with expression > 0).
+    expressed_panel = [g for g in panel_symbols if d.get(g, 0.0) > 0.0]
+    if min_panel_expressed and len(expressed_panel) < min_panel_expressed:
         return None
-    return " ".join(sorted(panel_symbols, key=lambda g: (-d.get(g, 0.0), panel_index[g])))
+    # Order expressed panel genes by descending expression; canonical panel_index
+    # breaks ties deterministically (same tie convention as before, but only among
+    # EXPRESSED genes now — the unexpressed genes are dropped, not tail-appended).
+    expressed_panel.sort(key=lambda g: (-d[g], panel_index[g]))
+    return " ".join(expressed_panel) + " " + END_CELL_TOKEN
 
 
 def make_paired_cell_sentences_fixed_panel(
@@ -594,7 +612,7 @@ def construct_training_data(
     #                 TREATED shards FIRST (co-located controls are found immediately
     #                 and the early-stop fires fast), then a BOUNDED buffer of other
     #                 shards for any (cell_line, plate) whose control lives elsewhere.
-    #                 Scanning raw corpus order instead reads through the whole
+    #                 Scanning raw corpus order instead ploughs through the whole
     #                 dataset just to reach high-index treated shards (the timeout bug).
     if test_mode:
         treated_shards = None
@@ -1240,10 +1258,26 @@ def main():
         logger.info(f"PROMPT:\n{ex['prompt'][:300]}...")
         logger.info(f"RESPONSE (first 200 chars):\n{ex['response'][:200]}...")
         logger.info(f"GENE COUNTS: control={n_ctrl}, response={n_resp}, "
-                    f"panel={len(panel_symbols)} (control & response must equal panel size)")
-        if n_ctrl != len(panel_symbols) or n_resp != len(panel_symbols):
-            logger.warning("  Control/response length != panel size — fixed-panel "
-                           "construction is not producing full-panel sentences!")
+                    f"panel={len(panel_symbols)} ([END_CELL] repr: sentences are "
+                    f"variable length = #expressed panel genes + 1 sentinel, <= panel+1)")
+        # [END_CELL] representation sanity: sentences must END with the sentinel, be
+        # shorter than panel+1 (some genes unexpressed), and contain no unexpressed tail.
+        ctrl_tokens = ctrl_sentence.split()
+        resp_tokens = ex["response"].split()
+        problems = []
+        if not ctrl_tokens or ctrl_tokens[-1] != "[END_CELL]":
+            problems.append("control does not end with [END_CELL]")
+        if not resp_tokens or resp_tokens[-1] != "[END_CELL]":
+            problems.append("response does not end with [END_CELL]")
+        if n_ctrl > len(panel_symbols) + 1 or n_resp > len(panel_symbols) + 1:
+            problems.append("sentence longer than panel+1 (unexpected)")
+        if n_ctrl == len(panel_symbols) + 1 and n_resp == len(panel_symbols) + 1:
+            problems.append("every gene expressed in both (suspicious — tail not dropped?)")
+        if problems:
+            logger.warning("  [END_CELL] sanity issues: " + "; ".join(problems))
+        else:
+            logger.info("  [END_CELL] sanity OK: variable-length, sentinel-terminated, "
+                        "unexpressed genes absent.")
         logger.info(f"METADATA:\n{json.dumps(ex['metadata'], indent=2)}")
 
     # Save the full held-out drug list (all Tier-2 drugs, whether or not each one

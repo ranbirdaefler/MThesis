@@ -20,7 +20,7 @@ below kNN, the control->treated map is locally smooth (kNN-friendly) but not glo
 Leakage-safe: fit on train only; cell-line/MOA encoders fit on train; unseen keys -> zero vec.
 
 --------------------------------------------------------------------------------------------
-MODE 2 (--mode consensus):  the FAIR model-vs-kNN comparison  [GPU, ~k x eval cost]
+MODE 2 (--mode consensus):  model-vs-kNN comparison at matched aggregation  [GPU, ~k x eval cost]
 --------------------------------------------------------------------------------------------
 The kNN baseline predicts the rank-CONSENSUS of k real cells (an estimate of the conditional
 MEAN). The model as evaluated emits ONE sample. A correlation metric vs one noisy true cell
@@ -33,13 +33,13 @@ and score that consensus once. Now it's mean-vs-mean.
 
   * IMPORTANT: this is NOT the harness's --gen_samples path. That averages the k draws'
     per-draw METRICS (expected score of a single sample) and stays ~0.72. Here we average the
-    k draws' RANKS into one prediction and score once. Different object; that's the point.
+    k draws' RANKS into one prediction and score once. Different object.
 
 Read-out:
   - consensus jumps 0.72 -> ~0.85+  => most of the kNN gap was sample-vs-mean; the model is a
     competitive conditional-mean estimator (and, unlike kNN, can later take drug knowledge).
   - consensus stays ~0.72          => averaging doesn't help => the model's samples share a
-    systematic bias (correlated errors don't cancel); kNN genuinely wins. Honest headline.
+    systematic bias (correlated errors don't cancel); kNN genuinely wins.
   - Also reports per-k (1,5,20) so you see the SAME variance-reduction curve kNN showed, or its
     absence — a direct like-for-like against the kNN diagnostic.
 

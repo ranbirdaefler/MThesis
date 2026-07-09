@@ -3,9 +3,9 @@
 control_state_baseline.py
 =========================
 Two things, both aimed at making the "does the model beat control-based prediction?"
-comparison SCIENTIFICALLY CLEAN:
+comparison rigorous:
 
-(A) control-state-conditioned MEAN-SHIFT baseline  [the FAIR primary baseline]
+(A) control-state-conditioned MEAN-SHIFT baseline  [the primary baseline]
     Predict  test_control + mean_rank_shift[cell_line, control_state_cluster].
     - Uses the real control + cell-line identity + a training-estimated average
       perturbation direction conditioned on the control's baseline STATE.
@@ -13,10 +13,10 @@ comparison SCIENTIFICALLY CLEAN:
     - Output form is "control + a shift" — exactly like a generative model would
       produce — so the comparison to the model is apples-to-apples and, crucially,
       FREE of the denoising/averaging artifact that inflates the kNN baseline.
-    This is the honest test of "does the model add anything beyond applying the average
-    shift for cells in this baseline state?"
+    This tests whether the model adds anything beyond applying the average shift for
+    cells in this baseline state.
 
-(B) kNN metric-validity DIAGNOSTIC  [is the kNN 0.91 kosher?]
+(B) kNN metric-validity DIAGNOSTIC  [is the kNN 0.91 score valid?]
     The kNN baseline predicts a rank-CONSENSUS of k real treated cells. That is an
     AVERAGE of real answers, which (i) denoises (variance reduction rewarded by a
     correlation metric) and (ii) is "made of real treated cells." Neither is available
@@ -27,7 +27,7 @@ comparison SCIENTIFICALLY CLEAN:
         - real retrieval signal (similar controls -> similar responses), vs
         - the denoising-by-averaging artifact (score rises with k regardless).
     If the score climbs steeply with k and a single-random-neighbour scores like k=1,
-    the high number is largely averaging, not retrieval intelligence.
+    the high number is largely averaging, not retrieval signal.
 
 Both reuse evaluate_c2s_tahoe's EXACT metric functions. CPU only.
 
