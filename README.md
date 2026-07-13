@@ -38,32 +38,53 @@ mechanism, and the control cell's sentence, and generates the treated cell's sen
 
 ## 2. Key results so far
 
-*(Model = `C2S-Scale-Pythia-1b` SFT, `checkpoint-10000`, ~43% of one epoch. Full detail in
-[`docs/results.md`](docs/results.md).)*
+(Model = C2S-Scale-Pythia-1b SFT, checkpoint-10000, ~43% of one epoch. Full detail in docs/results.md.)
 
-- **DE-Δr ≈ 0.72** (rank-shift correlation on top-50 differentially-expressed genes), **flat
-  across all four generalisation tiers** (seen conditions / unseen drugs / unseen combos / dose
-  interpolation), with a smooth, robust K-sweep.
-- **At ~91–95 % of the single-cell replicate noise ceiling** (per-tier, condition-matched) — the
-  residual to a perfect score is mostly irreducible biological/technical noise, not model error.
-- **Drug-specific above mechanism and cell line:** the model beats a per-MOA × cell-line
-  mean-shift baseline by **+0.39 (seen) to +0.59 (dose)**, all CIs excluding zero, with the margin
-  *growing* on harder tiers.
-- **topN-expressed τ (≈0.25) sits at the replicate floor** — the modest value reflects the
-  intrinsic noise of ranking saturated housekeeping genes, confirmed by the ceiling.
-- **Base model (no fine-tuning) does not perform the task in this format** — the pretrained
-  checkpoint emits cell-type annotations, not perturbation responses; DE-Δr undefined by design.
 
-### Ablation in progress
-- **Value of C2S pretraining** — a vanilla `pythia-1b` fine-tuned identically reaches DE-Δr ≈ 0.75,
-  i.e. C2S pretraining confers *no measurable benefit at 10k steps* (paired Δ −0.03). This
-  surprising result is under a validation audit (see the ablation write-up — not yet checked into
-  `docs/`, see §7 Status).
-- **Prompt-scramble ablation** (does the model use the drug token, or predict a context mean?) —
-  running via [`src/scramble_eval.py`](src/scramble_eval.py) and
-  [`src/paired_by_position.py`](src/paired_by_position.py); the decisive test of drug-specificity.
+DE-Δr ≈ 0.72 (rank-shift correlation on top-50 differentially-expressed genes), flat
+across all four generalisation tiers (seen conditions / unseen drugs / unseen combos / dose
+interpolation), with a smooth, robust K-sweep.
+At ~91–95 % of the single-cell replicate noise ceiling (per-tier, condition-matched) — the
+residual to a perfect score is mostly irreducible biological/technical noise, not model error.
+Beats mechanism and cell-line averages via control-conditioning: the model beats a per-MOA
+× cell-line mean-shift baseline by +0.39 (seen) to +0.59 (dose), all CIs excluding zero.
+However, scramble and discrimination tests
+(docs/drug_specificity_analysis_writeup.md) show
+this margin reflects control-conditioning (per-cell-tailored predictions vs a group
+average), not drug-discrimination — the model's prediction does not change when the drug in
+the prompt is scrambled, and a forced-choice test asking "is this prediction closer to drug A
+or drug B" is at chance (~0.48).
+topN-expressed τ (≈0.25) sits at the replicate floor — the modest value reflects the
+intrinsic noise of ranking saturated housekeeping genes, confirmed by the ceiling.
+Base model (no fine-tuning) does not perform the task in this format — the pretrained
+checkpoint emits cell-type annotations, not perturbation responses; DE-Δr undefined by design.
 
-The roadmap of planned analyses is tracked outside this repo for now (see §7 Status).
+
+Core design principles
+
+
+Leakage-free fixed panel. All cells are represented over one fixed 946-gene panel
+(L1000 ∩ Tahoe), so the model never gets to choose the gene set from the answer.
+Rank-based headline metric (DE-Δr). We score prediction quality on the genes the drug
+actually moves, in rank space, avoiding the inflation that whole-transcriptome correlations
+suffer from (Simpson's-paradox-style artifacts; see §5).
+A baseline ladder, not a single baseline. Mean-shift baselines of increasing strength
+(global → per-cell-line → per-MOA → per-MOA×cell-line) let us show the model beats "predict
+the class/context average" — though subsequent drug-discrimination tests show this reflects
+control-conditioning rather than drug-specificity (see results §3 and the drug-specificity
+analysis).
+A measured noise ceiling. Two real replicate cells of the same condition don't agree
+perfectly; we measure that irreducible ceiling so absolute scores are interpretable.
+
+
+Metrics glossary note (§6)
+
+
+Mean-shift baselines — predict control + average rank-shift, grouped by nothing (global),
+cell line, MOA, or MOA×cell-line. Beating the strongest (MOA×cell-line) shows the model
+produces sharper, control-conditioned predictions than a group average — but does not by itself
+establish drug-specificity (the scramble and discrimination tests are needed for that claim,
+and they show the model is drug-blind).
 
 ---
 
