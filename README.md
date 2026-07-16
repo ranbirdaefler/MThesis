@@ -51,9 +51,7 @@ which folder a script belongs to — it is not a claim about results.
 |---|---|---|---|---|
 | **[END_CELL] (current)** | expressed genes only, ranked, + an `[END_CELL]` sentinel | active | `endcell/` | `docs/endcell/` |
 | **Legacy full-panel** | all 946 panel genes (expressed ranked, then unexpressed tail) | superseded | `legacy_whole_panel/` | `docs/legacy_l1000/` |
-
-The `[END_CELL]` format matches C2S's own `generate_sentences()` (which emits only expressed genes),
-so it is the representation the base model was pretrained on. The full-panel format is retained for
+ The full-panel format is retained for
 provenance and method-evolution context. See each folder's README for the per-file breakdown.
 
 ---
