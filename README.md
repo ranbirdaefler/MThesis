@@ -1,20 +1,3 @@
-# C2S-Scale Perturbation Prediction on Tahoe-100M
-
-Fine-tuning a Cell2Sentence-Scale language model to predict single-cell drug-perturbation
-responses, and a set of leakage-controlled evaluation instruments for probing what the model
-actually learns. MS thesis project (Bocconi, Buffa Lab; defense Sept 2026).
-
-**What the model does:** given a control (untreated) cell's expression profile and a drug, it
-predicts the treated cell's transcriptional response as a *cell sentence* — a list of gene symbols
-ordered by expression. The prompt carries the drug, cell line, dose, mechanism, and the control
-cell's sentence; the model generates the treated cell's sentence.
-
-> **Results and current verdicts live in [`FINDINGS.md`](FINDINGS.md)** — the single source of
-> truth, in Question→Answer form. Longer writeups are in [`docs/`](docs/README.md). This README is
-> only about the code: how the repo is laid out and what each piece does. Do not treat anything here
-> as a results claim.
-
----
 
 ## 1. Repository layout
 
