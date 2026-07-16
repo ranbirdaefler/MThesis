@@ -27,6 +27,16 @@ Usage:
       --shard_seed 7 --cells_per_condition 6 --max_conditions 500 \
       --max_pairs_per_condition 6 --out DATA/../eval_results/noise_ceiling.json
 """
+# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+import os, sys, glob
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PIPE = os.path.dirname(_HERE)
+_ROOT = os.path.dirname(_PIPE)
+for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+# --- end bootstrap ---
+
 import argparse, json, os, logging
 from collections import defaultdict
 

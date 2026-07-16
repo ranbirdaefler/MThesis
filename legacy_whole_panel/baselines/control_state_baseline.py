@@ -38,6 +38,16 @@ USAGE
       --n_state_clusters 8 --de_k_list 20,50,100,200 --topn 100 \
       --max_eval 300 --subsample_seed 42 --n_boot 1000 --save_per_example
 """
+# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+import os, sys, glob
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PIPE = os.path.dirname(_HERE)
+_ROOT = os.path.dirname(_PIPE)
+for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+# --- end bootstrap ---
+
 import argparse, json, os, logging
 from collections import defaultdict
 

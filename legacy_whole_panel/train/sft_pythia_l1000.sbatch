@@ -25,7 +25,7 @@ DATA=/path/to/data                             # <-- CONFIRM path
 # =============================================================================
 # 1) Supervised fine-tuning (single H200, bf16, flash-attention-2)
 # =============================================================================
-srun python train_c2s_tahoe.py --mode full \
+srun python legacy_whole_panel/train/train_c2s_tahoe.py --mode full \
     --model_name vandijklab/C2S-Scale-Pythia-1b-pt \
     --train_file $DATA/train.jsonl \
     --eval_file  $DATA/eval_tier1_seen_conditions.jsonl \
@@ -42,18 +42,18 @@ srun python train_c2s_tahoe.py --mode full \
 # 2) Evaluation: model + control baseline. Report Δτ = model − control per tier.
 #    (The headline metric is the delta, not the absolute panel τ.)
 # =============================================================================
-python evaluate_c2s_tahoe.py \
+python shared/evaluate_c2s_tahoe.py \
     --model_path ./checkpoints/pythia_l1000/best \
     --eval_dir $DATA --output_dir ./eval_results/pythia_l1000 \
     --bf16 --max_eval 500 --max_new_tokens 3800 --gen_batch_size 16
 
-python evaluate_c2s_tahoe.py \
+python shared/evaluate_c2s_tahoe.py \
     --model_path ./checkpoints/pythia_l1000/best \
     --eval_dir $DATA --output_dir ./eval_results/pythia_l1000_baseline \
     --bf16 --max_eval 500 --baseline control
 
 # Optional should-have baselines (mean-shift); uncomment to run:
-# python evaluate_c2s_tahoe.py \
+# python shared/evaluate_c2s_tahoe.py \
 #     --model_path ./checkpoints/pythia_l1000/best \
 #     --eval_dir $DATA --output_dir ./eval_results/pythia_l1000_meanshift \
 #     --baseline global_mean_shift --train_file $DATA/train.jsonl --max_eval 500

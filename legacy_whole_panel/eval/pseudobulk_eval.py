@@ -36,6 +36,16 @@ USAGE
      --pb_sizes 5,15,30 --de_k_list 20,50,100,200 --topn 100 \
      --gen_batch_size 48 --max_new_tokens 3800 --bf16 --n_boot 1000 --seed 42
 """
+# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+import os, sys, glob
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PIPE = os.path.dirname(_HERE)
+_ROOT = os.path.dirname(_PIPE)
+for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+# --- end bootstrap ---
+
 import argparse, json, os, logging
 from collections import defaultdict
 import numpy as np

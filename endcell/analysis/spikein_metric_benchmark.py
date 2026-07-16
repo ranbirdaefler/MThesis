@@ -2,7 +2,7 @@
 r"""
 spikein_metric_benchmark.py
 ===========================
-Spike-in protocol: benchmark which METRIC best distinguishes two drug populations,
+Advisor's spike-in protocol: benchmark which METRIC best distinguishes two drug populations,
 and how gracefully each degrades as the populations are mixed (titrated contamination).
 
 PROTOCOL (per cell line, per pair of drugs A,B):
@@ -22,14 +22,14 @@ METRICS COMPARED (all higher = more similar):
   * panel_tau       : Kendall τ over all 946 genes (rank space)
   * topn_tau        : Kendall τ over top-N expressed genes (rank space)
   * spearman_expr   : Spearman over expression (rank of expression, whole panel)
-  * cosine_expr     : COSINE similarity in expression space (a strong discriminator here).
+  * cosine_expr     : COSINE similarity in expression space (advisor found this strong).
                       Expression is reconstructed from the cell sentence via the C2S-style
                       rank->expression map in linear_model.json (rank r -> slope*log-ish); if absent,
                       falls back to a rank-decreasing proxy (rank i -> (P - i)).
   * cosine_shift    : cosine of the (candidate_expr - control_expr) shift vectors  [needs control]
 
 Also supports an optional TAIL-FIX (--tail_rank_max): assign every inactive/absent gene the SAME
-max rank (P) instead of position-based distinct ranks — a rank-tie fix — and
+max rank (P) instead of position-based distinct ranks — the advisor's suggested tie fix — and
 re-run all rank metrics under it, so you can see if it improves discrimination.
 
 USAGE
@@ -40,6 +40,16 @@ USAGE
      --n_celllines 40 --drug_pairs_per_cellline 40 --de_k 50 --topn 100 \
      --tail_rank_max --seed 42
 """
+# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+import os, sys, glob
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PIPE = os.path.dirname(_HERE)
+_ROOT = os.path.dirname(_PIPE)
+for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+# --- end bootstrap ---
+
 import argparse, json, os, logging
 from collections import defaultdict
 import numpy as np
@@ -57,26 +67,27 @@ def sentence_to_rankarr(sentence, panel_index, P, mode="position", midrank=None)
                        inactive share P+1, but active-gene positions are as emitted.)
       * "tail_max"  : inactive genes all tied at rank P (Federico's fix — equal jump zero->rank 1,
                       no arbitrary tail ordering).
-      * "zero_bucket": inactive genes all tied at a shared MID rank (professor's fix) — placed at
-                      `midrank` (default = number of active genes + a margin, i.e. just past the
-                      active block but well above P). This makes on/off transitions (a gene active
-                      in one cell, inactive in another) a consistent, comparable jump, enabling DE
-                      analysis on activity-state changes rather than burying them at the bottom.
+      * "zero_bucket": inactive genes all tied at a per-cell mid rank = n_active+1 (our initial
+                      interpretation — varies per cell depending on how many genes are expressed).
+      * "zero_bucket_fixed": inactive genes all tied at a FIXED mid rank = P//2 (Francesca's exact
+                      specification — "fixed mid-rank of the high ones", same for ALL cells,
+                      so inactive-in-both-cells genes contribute zero shift). This is the canonical
+                      version of the professor's proposal.
     """
-    active = P + 1
     if mode == "tail_max":
-        active = P
+        fill = P
     elif mode == "zero_bucket":
-        active = midrank  # set per-sentence below
-    arr = np.full(P, active, dtype=np.float64)
-    seen = set(); k = 0
-    # Strip the [END_CELL] sentinel (present in the END_CELL data format); it is not a gene.
+        fill = None  # set per-sentence below
+    elif mode == "zero_bucket_fixed":
+        fill = P // 2
+    else:  # position
+        fill = P + 1
     genes = [g for g in sentence.split() if g != "[END_CELL]"]
-    if mode == "zero_bucket" and midrank is None:
-        # place the inactive bucket just past the active block (active count + small margin),
-        # so inactive genes sit at a fixed mid-rank relative to the expressed ones.
+    if mode == "zero_bucket" and fill is None:
         n_active = len(set(g for g in genes if g in panel_index))
-        arr[:] = n_active + 1
+        fill = n_active + 1
+    arr = np.full(P, fill, dtype=np.float64)
+    seen = set(); k = 0
     for pos, g in enumerate(genes, 1):
         gi = panel_index.get(g)
         if gi is None or gi in seen:
@@ -275,6 +286,35 @@ def draw_sample(cells, size, rng):
     return [cells[i] for i in idx]
 
 
+def classify_de_genes(ref_arr, diff_arr, ctrl_arr, de_k, mode, P):
+    """For the top-K DE genes (by |ref - ctrl|), classify each as on/off or within-expressed.
+    A gene is 'on/off' if its rank in one of ref/diff is at the fill value for this mode
+    (meaning it was inactive in all cells of that pseudobulk). Otherwise 'within-expressed'.
+    This tests Francesca's claim that the zero-bucket lets more within-expressed genes into
+    the top-K by shrinking the on/off rank jumps."""
+    de_idx = np.argsort(-np.abs(ref_arr - ctrl_arr))[:de_k]
+    if mode == "tail_max":
+        fill = P
+    elif mode == "zero_bucket_fixed":
+        fill = P // 2
+    elif mode == "zero_bucket":
+        fill = None
+    else:  # position
+        fill = P + 1
+    n_onoff = 0
+    for gi in de_idx:
+        ref_at_fill = False; diff_at_fill = False
+        if fill is not None:
+            ref_at_fill = abs(ref_arr[gi] - fill) < 1.5
+            diff_at_fill = abs(diff_arr[gi] - fill) < 1.5
+        else:
+            ref_at_fill = ref_arr[gi] > P * 0.15
+            diff_at_fill = diff_arr[gi] > P * 0.15
+        if (ref_at_fill and not diff_at_fill) or (diff_at_fill and not ref_at_fill):
+            n_onoff += 1
+    return n_onoff, de_k - n_onoff
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data_dir", required=True)
@@ -288,8 +328,8 @@ def main():
     ap.add_argument("--min_cells_per_drug", type=int, default=30)
     ap.add_argument("--de_k", type=int, default=50)
     ap.add_argument("--topn", type=int, default=100)
-    ap.add_argument("--modes", default="position,tail_max,zero_bucket",
-                    help="comma-sep representation modes to benchmark: position, tail_max, zero_bucket")
+    ap.add_argument("--modes", default="position,tail_max,zero_bucket_fixed",
+                    help="comma-sep representation modes: position, tail_max, zero_bucket, zero_bucket_fixed")
     ap.add_argument("--n_boot", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--diagnostic_only", action="store_true",
@@ -355,6 +395,13 @@ def main():
     # acc[mode][metric][spike] = {cellline: [correct, total]}
     acc = {md: {m: {s: defaultdict(lambda: [0, 0]) for s in spikes} for m in METRICS} for md in modes}
 
+    # DE top-K composition diagnostic (Francesca's claim):
+    # For each mode, what fraction of the top-K DE genes are on/off transitions vs within-expressed?
+    # on/off = gene whose pseudobulk rank in one sample is at/near the fill value (inactive in all
+    # cells of that sample) but well below in the other (active in most cells).
+    # Tracked at s=0 only (pure drug A vs pure drug B — the clean discrimination case).
+    de_composition = {md: {"n_onoff": [], "n_within": [], "n_total": []} for md in modes}
+
     def sample_repr(cells, md):
         return pseudobulk_rankarr([c["resp"] for c in cells], panel_index, P, md)
 
@@ -390,6 +437,15 @@ def main():
                         if n_from_B > 0 else draw_sample(cellsA, args.sample_size, rng)
                     for md in modes:
                         diff_r = sample_repr(diff, md)
+                        # DE top-K composition diagnostic at s=0 (pure A vs pure B)
+                        if s == 0:
+                            n_on, n_wi = classify_de_genes(ref_r[md], diff_r, ctrl_r[md],
+                                                           args.de_k, md, P)
+                            de_composition[md]["n_onoff"].append(n_on)
+                            de_composition[md]["n_within"].append(n_wi)
+                            de_composition[md]["n_total"].append(args.de_k)
+                    for md in modes:
+                        diff_r = sample_repr(diff, md)
                         for m in METRICS:
                             ss = sim_same[md][m]
                             if ss is None: continue
@@ -420,8 +476,26 @@ def main():
             for s in spikes:
                 results[md][m][str(s)] = cl_bootstrap(acc[md][m][s], args.n_boot, args.seed)
 
+    # ---- DE top-K composition summary (Francesca's claim) ----
+    de_comp_summary = {}
+    for md in modes:
+        d = de_composition[md]
+        if d["n_total"]:
+            onoff = np.array(d["n_onoff"])
+            within = np.array(d["n_within"])
+            frac_onoff = onoff / np.array(d["n_total"])
+            de_comp_summary[md] = {
+                "mean_onoff_in_topK": float(np.mean(onoff)),
+                "mean_within_in_topK": float(np.mean(within)),
+                "mean_frac_onoff": float(np.mean(frac_onoff)),
+                "median_frac_onoff": float(np.median(frac_onoff)),
+                "de_k": args.de_k,
+                "n_trials_sampled": len(onoff),
+            }
+
     out = {"sample_size": args.sample_size, "n_trials": args.n_trials, "spikes": spikes,
-           "de_k": args.de_k, "topn": args.topn, "modes": modes, "results": results}
+           "de_k": args.de_k, "topn": args.topn, "modes": modes, "results": results,
+           "de_topk_composition": de_comp_summary}
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     json.dump(out, open(args.out, "w"), indent=2)
 
@@ -442,6 +516,24 @@ def main():
     logger.info("=" * 100)
     logger.info("  Read: at s=0 (pure B) accuracy should be highest; at s=1.0 it should -> 0.50.")
     logger.info("  The metric+representation that stays HIGH to larger s is the better discriminator.")
+
+    # ---- DE top-K composition diagnostic (Francesca's claim) ----
+    logger.info("")
+    logger.info("=" * 100)
+    logger.info("  DE TOP-K COMPOSITION (at s=0): what fraction of the top-K DE genes are on/off")
+    logger.info("  transitions vs within-expressed shifts? (Francesca's zero-bucket should let more")
+    logger.info("  within-expressed genes enter the top-K by shrinking the on/off rank jumps.)")
+    logger.info(f"  {'mode':22s} {'on/off':>8s} {'within':>8s} {'frac_onoff':>12s} {'(of top-K =':>12s} {args.de_k})")
+    for md in modes:
+        d = de_comp_summary.get(md)
+        if d:
+            logger.info(f"  {md:22s} {d['mean_onoff_in_topK']:>8.1f} {d['mean_within_in_topK']:>8.1f}"
+                        f" {d['mean_frac_onoff']:>12.3f}   (n_trials={d['n_trials_sampled']})")
+    logger.info("  INTERPRET: if zero_bucket_fixed has a LOWER frac_onoff than tail_max/position,")
+    logger.info("  Francesca's proposal works as intended — the mid-rank lets within-expressed genes")
+    logger.info("  enter the DE top-K instead of being crowded out by on/off events.")
+    logger.info("=" * 100)
+
     logger.info(f"-> {args.out}")
 
 

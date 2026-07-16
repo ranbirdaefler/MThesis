@@ -7,7 +7,7 @@ Asks whether two REAL treated cells of the SAME drug agree more (in a metric) th
 treated cells of DIFFERENT drugs, WITHIN the same cell line. Separates "the model can't capture
 drug-specificity" from "there is no detectable drug-specific signal".
 
-This version adds the following controls:
+This version adds the controls a careful reviewer would demand:
   * 3 metrics: DE-Δr, panel-τ (C2S-paper-style whole panel), topN-τ (expressed-only).
   * 2 aggregation levels: single-cell and pseudobulk (denoised; disjoint-half replicates).
   * DOSE control: a same-dose-matched comparison (same-drug-same-dose vs diff-drug-same-dose),
@@ -33,6 +33,16 @@ USAGE
      --same_pairs_per_drug 20 --diff_pairs_per_cellline 400 \
      --n_boot 2000 --n_perm 2000 --seed 42
 """
+# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+import os, sys, glob
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PIPE = os.path.dirname(_HERE)
+_ROOT = os.path.dirname(_PIPE)
+for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+# --- end bootstrap ---
+
 import argparse, json, os, logging
 from collections import defaultdict
 import numpy as np
@@ -170,6 +180,10 @@ def main():
     ap.add_argument("--min_drugs_per_cellline", type=int, default=4)
     ap.add_argument("--n_boot", type=int, default=2000)
     ap.add_argument("--n_perm", type=int, default=2000)
+    ap.add_argument("--worst_mode", default="position",
+                    choices=["position", "tail_max", "zero_bucket_fixed"],
+                    help="How to rank absent genes: position=P+1, tail_max=P (Federico), "
+                         "zero_bucket_fixed=P//2 (Francesca)")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
@@ -177,7 +191,14 @@ def main():
         raise SystemExit("Refusing to write inside data_dir.")
     rng = np.random.RandomState(args.seed)
     panel = json.load(open(os.path.join(args.data_dir, "l1000_panel.json")))
-    worst = len(panel) + 1
+    P = len(panel)
+    if args.worst_mode == "tail_max":
+        worst = P
+    elif args.worst_mode == "zero_bucket_fixed":
+        worst = P // 2
+    else:  # position
+        worst = P + 1
+    logger.info(f"  worst_mode={args.worst_mode}, worst={worst} (P={P})")
     pb_sizes = [int(x) for x in args.pb_sizes.split(",")]
 
     by_cl_drug = load_cells(args.data_dir, [s.strip() for s in args.sources.split(",")])

@@ -1,13 +1,17 @@
 """Offline unit test for the new fixed-panel functions. No network. Safe to delete."""
-import json
+import json, os, sys
 import numpy as np
+_HERE = os.path.dirname(os.path.abspath(__file__)); _ROOT = os.path.dirname(_HERE)
+for _p in (os.path.join(_ROOT, "shared"), os.path.join(_ROOT, "legacy_whole_panel", "preprocess")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 from tahoe_c2s_preprocess import (
     make_paired_cell_sentences_fixed_panel,
     fit_expression_linear_model_panel,
 )
 
 # Build a small panel from the real panel file, plus non-panel genes.
-full_panel = json.load(open("l1000_panel.json"))
+full_panel = json.load(open(os.path.join(_ROOT, "shared", "l1000_panel.json")))
 panel = full_panel[:100]
 panel_index = {g: i for i, g in enumerate(panel)}
 nonpanel = [f"NONPANEL{i}" for i in range(250)]

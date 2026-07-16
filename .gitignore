@@ -10,15 +10,17 @@ hf_cache/
 *.bin
 *.safetensors
 
-# The committed reference panel in src/ is intentionally tracked; large
+# The committed reference panel in shared/ is intentionally tracked; large
 # generated panels/metadata written into a data dir are not.
 data/l1000_panel.json
 
-# ---- Private correspondence — never commit ----
+# ---- Private correspondence & personal working docs — never commit ----
 advisor_message_draft.md
 advisor_reply.md
+advisor_email_draft.md
 postdoc_message_draft.md
 postdoc_message_final.md
+SUMMARY_FOR_REVIEW.md
 
 # ---- Python ----
 __pycache__/

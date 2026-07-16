@@ -1,5 +1,11 @@
 # Results: Fine-Tuning C2S-Scale-Pythia-1b on Tahoe-100M
 
+> ⚠️ **DATA REGIME: LEGACY (full-panel L1000).** These results are from the original `data_diverse2`
+> full-panel format and the `checkpoint-10000` model — **superseded** by the [END_CELL] work in
+> `docs/endcell/`. Kept for the thesis as the *method-evolution* record (why we moved to [END_CELL]).
+> The corrected framing (model beats baselines via **control-conditioning, not drug-specificity**) and
+> the current numbers live in the root `FINDINGS.md`. Do not cite these numbers as current.
+
 *Working results document. Numbers from the `checkpoint-10000` evaluation on the
 `data_diverse2` dataset (K-sweep run), with the per-MOA baseline ladder and the
 replicate noise ceiling. Living document — further ablations appended as run.*
@@ -70,7 +76,7 @@ generalisation gap does not widen with K. (§4 shows this decay tracks the noise
 
 ---
 
-## 3. Drug-specificity: the baseline ladder
+## 3. Baseline ladder: the model beats mechanism and cell-line averages — but via control-conditioning, not drug-discrimination
 
 Paired Δ in DE-Δr space (model − comparator) at K = 50; all Wilcoxon p ≪ 1e-40, all CIs
 exclude 0:
@@ -85,15 +91,31 @@ exclude 0:
 The ladder is monotonic and complete: each baseline that captures more structure leaves a
 smaller — but still large and significant — residual for the model to beat.
 
-**The model is drug-specific, not mechanism-specific.** Beating per-MOA mean-shift by
-+0.63 to +0.69 shows the model carries signal *above* the mechanism-class average — it is
-not merely learning "MEK inhibitors upregulate these genes." The decisive test is **per-MOA
-× cell-line** (knows both mechanism and cell line): the model still beats it by **+0.39
-(seen) rising to +0.59 (dose)**, all CIs excluding zero. This is the strongest
-drug-specificity statement available — even against a baseline conditioned on both
-mechanism and cell line, the model adds substantial drug-specific signal, and the margin
-*grows on the harder tiers* (unseen drugs/combos/dose), indicating transferable drug-level
-response learning rather than reliance on mechanism or cell-line priors.
+**The model beats the toughest generic baseline — but this reflects control-conditioning, not
+drug-discrimination.** The per-MOA×cell-line baseline predicts every cell in a (mechanism,
+cell-line) group with the *same average shift*. The model, by contrast, conditions on each
+cell's *specific control profile* and produces a per-cell-tailored prediction. DE-Δr
+(which selects top-DE genes from each cell's own truth) naturally rewards this per-cell
+tailoring: a sharp, control-conditioned prediction correlates better with that cell's truth
+than a group-average does, even if the model uses no drug-specific information.
+
+This distinction is confirmed by the drug-specificity analyses in
+[`docs/drug_specificity_analysis_writeup.md`](docs/drug_specificity_analysis_writeup.md):
+(1) a spike-in discrimination benchmark shows the model's predictions are at *chance*
+(~0.48) when asked "is this prediction closer to drug A's real response than drug B's?",
+and (2) scrambling the drug in the prompt (substituting a different-mechanism drug) does
+not change the model's prediction quality. So the model predicts the perturbation response
+well — near the single-cell noise ceiling — by leveraging the control cell's state, but it
+does not distinguish *which drug* produced that response. The per-MOA×cell-line margin
+reflects **prediction sharpness from control-conditioning**, not drug-level specificity.
+
+The ladder is monotonic and complete: each baseline that captures more structure leaves a
+smaller — but still large and significant — residual for the model to beat. The margin
+*grows on the harder tiers* (unseen drugs/combos/dose), which initially appears to suggest
+transferable drug-level learning; however, the scramble and discrimination tests show
+this growth instead reflects that the coarser baselines (which cannot condition on the
+control cell) become progressively *weaker* comparators on harder tiers, while the model
+maintains its control-conditioned advantage uniformly.
 
 (Note: per-MOA (+0.66 on Tier 1) is a *weaker* baseline than per-cell-line (+0.36), i.e.
 cell-line identity is more informative at the rank level than mechanism is — which is why
@@ -201,9 +223,11 @@ progress (§7).
 - **DE-Δr ≈ 0.72 at K=50, flat across all four tiers**, decaying smoothly over the K-sweep —
   and **at ~91–95% of the single-cell replicate ceiling on every tier** (matched conditions,
   below ceiling at all K). The residual is overwhelmingly irreducible single-cell noise.
-- **Drug-specific above mechanism and cell line**: the model beats a per-MOA × cell-line
-  baseline by +0.39 (seen) to +0.59 (dose), all CIs excluding zero, with the margin growing
-  on harder tiers — drug-level resolution, not mechanism- or cell-line-level.
+- **Beats mechanism and cell-line averages via control-conditioning**: the model beats a
+  per-MOA × cell-line baseline by +0.39 (seen) to +0.59 (dose), all CIs excluding zero —
+  but this reflects per-cell control-conditioning, not drug-discrimination. Scramble and
+  spike-in discrimination tests confirm the model does not distinguish drugs (see
+  `docs/drug_specificity_analysis_writeup.md`).
 - **topN-τ (0.25) matches the replicate ceiling (0.23–0.27 per tier)**: the modest absolute
   value is the intrinsic noise floor of saturated genes, now confirmed by measurement.
 - **Headroom is against the *denoised* (consensus) truth, not the single-cell truth**: at
@@ -217,11 +241,11 @@ progress (§7).
 
 ## 7. Open items / to iterate
 
-- **Prompt-scramble ablation (queued, GPU):** swap the drug/MOA token in each prompt
-  (different-MOA and random-drug modes), keeping control/cell-line/dose/truth fixed. A drop
-  in DE-Δr confirms the model reads and uses the drug token; no drop would mean it ignores
-  drug identity. The decisive direct test of drug-specificity, complementing the per-MOA
-  ladder.
+- **Prompt-scramble ablation (completed):** swapping the drug/MOA token in the prompt to a
+  different-mechanism drug, keeping control/cell-line/dose/truth fixed, does **not** change
+  the model's prediction quality (~0.48 ≈ 0.50, chance). The model does not read or use
+  the drug token for its predictions — confirmed by both the scramble and the spike-in
+  forced-choice grading instrument (see `docs/drug_specificity_analysis_writeup.md`).
 - **Pythia-base (no-C2S) SFT ablation (in progress):** identical recipe on raw
   `EleutherAI/pythia-1b` — isolates the value of C2S pretraining. Compare DE-Δr at
   checkpoint-10000.

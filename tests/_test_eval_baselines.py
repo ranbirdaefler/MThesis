@@ -1,11 +1,15 @@
 """Offline test for eval baseline helpers (no model/network). Safe to delete."""
-import json, os, random
+import json, os, random, sys
+_HERE = os.path.dirname(os.path.abspath(__file__)); _ROOT = os.path.dirname(_HERE)
+for _p in (os.path.join(_ROOT, "shared"), os.path.join(_ROOT, "legacy_whole_panel", "preprocess")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 from evaluate_c2s_tahoe import (
     control_from_prompt, compute_mean_shift, predict_mean_shift,
     cell_sentence_to_gene_ranks, compute_rank_correlation,
 )
 
-panel = json.load(open("l1000_panel.json"))
+panel = json.load(open(os.path.join(_ROOT, "shared", "l1000_panel.json")))
 panel_index = {g: i for i, g in enumerate(panel)}
 rng = random.Random(0)
 
