@@ -11,6 +11,7 @@ Folders follow the pipeline order **preprocess → train → eval → analysis**
 |---|---|
 | `tahoe_c2s_preprocess_endcell_v2.py` | **Current** dataset constructor: streams Tahoe-100M, builds `[END_CELL]` (drug+dose+cell-line → treated-cell) pairs, train/eval tiers, panel + linear rank↔expression model. |
 | `tahoe_c2s_preprocess_endcell.py` | v1 of the above (kept for provenance). |
+| `build_consensus_targets.py` | **Arm 1a (objective fix):** transforms an existing `train.jsonl` into denoised *consensus targets* by grouping cells per biological condition (drug×cell-line×dose) — no re-streaming. Reports cells/condition so you can see how much denoising is possible. `--selftest` included. |
 
 ### `train/`
 | File | Role |
@@ -41,7 +42,8 @@ Each is standalone with a synthetic `--selftest` (verify-before-GPU discipline).
 
 ### `jobs/` — SLURM submit scripts
 `endcell_gpu.sbatch` (model + scramble + causal probe), `endcell_cpu.sbatch` (baselines/ceiling +
-expression-space), `expr_space.sbatch`, `output_invariance.sbatch`. All `cd ~/tahoe` and invoke
+expression-space), `expr_space.sbatch`, `output_invariance.sbatch`, and `arm1_consensus.sbatch`
+(**Arm 1a:** build consensus targets then cold-start SFT on them). All `cd ~/tahoe` and invoke
 scripts by their new subpaths (e.g. `endcell/eval/evaluate_endcell.py`).
 
 **Imports.** Each script's path bootstrap adds `shared/` plus all sibling `endcell/*` subfolders to

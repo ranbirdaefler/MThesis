@@ -53,14 +53,15 @@ import argparse, json, os, sys, logging
 from collections import defaultdict
 import numpy as np
 
-# --- make both the flat cluster layout (~/tahoe/*.py) and the split repo layout
-#     (src/evaluate_c2s_tahoe.py, ./tahoe_c2s_preprocess_endcell_v2.py) importable ---
-# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+# --- repo path bootstrap: works in BOTH the reorganized repo AND the flat cluster layout ---
 import os, sys, glob
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PIPE = os.path.dirname(_HERE)
 _ROOT = os.path.dirname(_PIPE)
-for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+_cands = [_HERE, os.path.join(_HERE, "src")]                    # flat layout: ~/tahoe and ~/tahoe/src
+if os.path.isdir(os.path.join(_ROOT, "shared")):                # reorganized layout
+    _cands += [os.path.join(_ROOT, "shared")] + sorted(glob.glob(os.path.join(_PIPE, "*")))
+for _p in _cands:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 # --- end bootstrap ---
@@ -210,8 +211,13 @@ def stream_panel_vectors(args, panel_index, P):
         logger.info(f"  restricting treated cells to {len(held_out)} held-out drugs (tier2 mode)")
 
     from datasets import load_dataset
+    # same_plate: group by (cell_line, plate) instead of cell_line, so every within-group comparison
+    # (DEG pool, leave-one-out mean, NIR's other-drug set) holds the plate signature constant. Drug
+    # and plate are confounded by the experimental design, so cross-plate groups let batch identity
+    # substitute for drug identity. Off by default (unchanged behaviour for existing callers).
+    same_plate = getattr(args, "same_plate", False)
     by_cl_drug = defaultdict(lambda: defaultdict(lambda: {"vecs": [], "moa": None, "dose": None}))
-    ctrl_pool = defaultdict(list)   # cell_line -> [ctrl vecs]  (pooled DMSO fallback)
+    ctrl_pool = defaultdict(list)   # group -> [ctrl vecs]  (pooled DMSO fallback)
     n_treated = n_ctrl = n_seen = 0
     MAX_CTRL_PER_CL = 32
 
@@ -225,7 +231,7 @@ def stream_panel_vectors(args, panel_index, P):
             if sc > args.rows_per_shard:
                 break
             drug = row["drug"]
-            cl = row["cell_line_id"]
+            cl = (row["cell_line_id"], row["plate"]) if same_plate else row["cell_line_id"]
             is_dmso = (drug == "DMSO_TF" or drug == "DMSO")
             if is_dmso:
                 if args.collect_controls and len(ctrl_pool[cl]) < MAX_CTRL_PER_CL:

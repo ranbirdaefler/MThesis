@@ -36,6 +36,22 @@ honest metric nor captures the drug — the single-cell, transformer extension o
 
 ---
 
+## Methods note — plate/batch confound control (read before quoting any discrimination number)
+
+Drug and **plate** are partially confounded by Tahoe's design (each drug is assayed on its own
+plate(s); ~4–12 drugs/plate, ~8 plates/cell line; controls are plate-matched). Our earlier
+discrimination runs grouped by **cell line only**, so a "same drug" reference shared a plate with its
+truth while "different drug" candidates sat on other plates — letting the **batch signature** stand
+in for drug identity. We found this (a zero-drug-info control-copy scored NIR 0.766 cross-plate; a
+pure-batch synthetic reproduced spike-in ≈0.93), added a **`--same_plate_only`** mode to every
+discrimination instrument, and **re-ran everything within-plate**. Full audit, scripts, and A/B
+tables: [`endcell/plate_control/README.md`](endcell/plate_control/README.md).
+
+**All discrimination numbers below are within-plate unless marked 🔁.** The conclusions are unchanged
+under plate control; some magnitudes shrink (leakage inflated magnitudes, never flipped a conclusion).
+
+---
+
 ## Findings
 
 ### Q1. Is there drug-specific signal in the *data* at single-cell resolution?
@@ -95,7 +111,7 @@ honest metric nor captures the drug — the single-cell, transformer extension o
 ### Q10. Which metrics are even calibrated for this task? (Miller et al. DRF port)
 - **Why:** the strongest steelman (Miller et al. 2025) argues single-cell nulls are metric miscalibration, not model failure. We must show our metric critique survives their calibration test — and use the metrics *their* framework endorses.
 - **How:** Dynamic Range Fraction per metric at pseudobulk, stratified by cell line, on true expression: `DRF = [m(pos)−m(neg)]/[m(perfect)−m(neg)]`, pos = interpolated-duplicate noise ceiling, neg = mean baseline (and a stringent zero-info control) (`calibration_eval.py`, 25 cell lines).
-- **Answer (corrected run, leave-one-out baseline, 25 cell lines):**
+- 🔁 **Answer (CROSS-PLATE — historical; superseded by the within-plate table below. Kept to show the method's evolution and the cell-count sensitivity):**
 
   | metric | DRF | m(neg, LOO mean) | m(pos, interp-dup ceiling) |
   |---|---|---|---|
@@ -116,10 +132,41 @@ honest metric nor captures the drug — the single-cell, transformer extension o
   | spearman_expr | −0.53 | −0.47 | still inverted |
   | de_delta | −0.92 | −0.52 | still inverted (real, some noise) |
 
-- **ROBUST claims:** **NIR is the calibrated metric (+0.80)** — mean baseline at chance (0.41) *by construction* (same profile for every drug → cannot discriminate, robust to denoising), ceiling 0.88. **Rank-based prediction metrics (DE-Δr, spearman, panel-τ) are genuinely uncalibrated** (inverted even with a clean ceiling → they reward the generic gene ordering). Model drug-blind on NIR (grading ≈ 0.48).
-- **RETRACTED:** "even WMSE fails" — weighted_r2 flipped to +0.03 with the clean ceiling, so its inversion was the denoising artifact. WMSE is ~neutral/marginally calibrated here (far weaker than Miller's genetic data, but not inverted).
-- **Minor caveat:** DEG test still flags ~116/946 genes even capped (plausibly real, mildly over-powered); rank-metric inversions retain a possible residual denoising component but are robust to a 2.4× cleaner ceiling. Pseudobulk de_delta is the systematic-variation critique, DISTINCT from the single-cell `revert_center`=1.0 exploit (Q8).
-- **Status:** ✅ NIR calibrated (+0.80); rank prediction metrics uncalibrated; WMSE neutral. Half-2 NIR model benchmark next.
+- **WITHIN-PLATE re-run (`calibration_eval.py --same_plate_only`, groups by (cell_line, plate), 61 groups, 655 drugs, ~53 cells/drug):**
+
+  | metric | DRF (within-plate) | m(neg) | m(pos) | verdict |
+  |---|---|---|---|---|
+  | **nir** | **+0.446** | 0.274 | 0.597 | only calibrated metric |
+  | weighted_r2 | −0.081 | 0.793 | 0.776 | inverted |
+  | panel_tau | −0.231 | 0.694 | 0.623 | inverted |
+  | spearman_expr | −0.415 | 0.851 | 0.790 | inverted |
+  | de_delta | −0.448 | 0.886 | 0.834 | inverted |
+
+- **ROBUST claim (holds within-plate):** **NIR is the *only* calibrated metric** (sole positive DRF); all rank/correlation prediction metrics are inverted (they reward the generic gene ordering, not the drug) — even with the plate held constant. Model drug-blind on NIR (grading ≈ 0.48; within-plate model−scramble +0.014, CI spans 0).
+- 🔁 **Superseded magnitude:** the cross-plate **+0.80 (@121 cells)** is replaced by the within-plate **+0.446 (@53 cells)**. Two effects: (a) fewer cells — NIR-DRF rises with cell count (cross-plate was +0.64 @~50 → +0.80 @~121), and (b) removed batch (~0.15–0.20 at matched ~50 cells). Still clearly positive/calibrated.
+- **RETRACTED:** "even WMSE fails" — weighted_r2 is ~neutral (−0.08 within-plate, +0.03 cross-plate at high cells); not strongly inverted. Far weaker than Miller's genetic data, but not the clear failure the rank metrics are.
+- **Status:** ✅ **SETTLED.** NIR is the only calibrated metric within-plate (+0.446, sole positive DRF); all rank prediction metrics uncalibrated. The +0.446 is a *conservative* value (53 cells; NIR-DRF rises with cell count, and the ceiling sweep in `drug_biology_atlas.py` confirms the noise ceiling climbs) — but the sign and the NIR-vs-prediction-metric contrast are unambiguous and do not depend on cell count, so no higher-n re-run is needed. `--same_plate_only` reproduction in `endcell/plate_control/`.
+
+### Q11. Which drugs are even identifiable, and does correcting for drug difficulty rescue the model? (advisor's question)
+- **Why:** every discrimination result assumes each drug induces a substantial, distinct change. The advisor flagged that this may not hold — some drugs may be inert, others near-duplicates — so the aggregate "model is at chance" could be an artifact of averaging over unwinnable drugs. This must be characterized before proposing new models.
+- **How (methodology):** `drug_biology_atlas.py` — streams TRUE expression from Tahoe (24 shards × 250k rows → **median 44 cells/drug**, p10 32 / p90 85), grouped by **(cell_line, plate)** so every comparison is **within-plate** (batch/plate identity held constant; see the plate-control methods note). For each of **6,628 (drug × cell_line × plate)** conditions:
+  - **Potency vs plate-matched DMSO** — a label-**permutation test**: is the real ‖pseudobulk(drug) − pseudobulk(DMSO)‖ larger than the null from shuffling drug/DMSO labels (p<0.05 = statistically active)? Plus **#DEG** = per-gene Welch t-test vs DMSO at **Benjamini-Hochberg FDR q<0.05**. **SNR** = effect ÷ replicate-noise (half-A vs half-B).
+  - **Identifiability** — **same-plate ceiling NIR**: a real held-out replicate (half-B) ranked by Euclidean distance against every same-plate drug's truth (half-A); ≥0.8 = identifiable-in-principle.
+  - **Redundancy** — **isolation** = nearest-other-drug distance ÷ replicate-noise; <1 = a plate-mate is closer than the drug's own replicate.
+  - **MoA structure** — within- vs between-MoA pseudobulk distance. **Drug×cell-line interaction** — identifiability swing (max−min ceiling) for drugs seen in ≥3 lines. **Dose** — doses-per-drug distribution. **Cell-count sweep** — ceiling NIR vs sub-sampled cells/drug. Selftest validates recovery of planted inert / redundant-twin / distinct drugs.
+- **Answer — the advisor's confound is REAL and now fully characterized:**
+
+  | question | finding |
+  |---|---|
+  | do all drugs do something? | **No — 27.3% statistically inert** (indistinguishable from DMSO by permutation). Of the 72.7% "active", effects are **subtle**: median **0** DEGs (p90 5), SNR **0.75** (effect < replicate noise) → a faint *diffuse* shift, not strong gene changes. |
+  | are drugs redundant? | **Yes — 78.7%** have a plate-mate closer than their own replicate; only **46.2% identifiable** (ceiling≥0.8), 34.1% at chance. |
+  | does mechanism explain response? | **Barely** — within-MoA 2.322 vs between-MoA 2.377 (ratio **0.977 ≈ 1**). Same-MoA drugs are only marginally more similar than random pairs. |
+  | is identifiability context-dependent? | **Strongly** — median cell-line **swing 0.83** (same drug: ceiling 0.0 in one line → 1.0 in another; e.g. Rapamycin vs Everolimus, both mTOR). Real target-dependency. |
+  | dose design | **Real series** — 351 drugs, **62% have 2–3 doses** (hist {1:133, 2:122, 3:96}). Dose is a genuine variable we pool over; some "subtle" drugs may be low-dose. |
+  | is the task winnable? | **Yes** — ceiling NIR rises with cells: 0.61 (n10) → 0.76 (n40) → **0.85 (n120)**. Signal is real, noise-limited. |
+
+  Biological ranking is coherent (instrument validity): most identifiable = Paclitaxel, Encorafenib/Dabrafenib (RAF), Lapatinib (EGFR), Everolimus (mTOR) — potent targeted/cytotoxic agents; least = inert/nutrient-like conditions.
+- **Does this rescue the model? No.** Stratifying by ceiling and grading only the identifiable subset (Q-stratify, within-plate): on identifiable drugs the model *appears* to beat the linear (0.768 vs 0.531, +0.237) **but this is not drug knowledge** — a zero-drug-info control-copy matches it (0.766) and the leak-immune scramble is null (model−scramble +0.014, CI [−0.016,+0.042]). The model is drug-blind **even where the task is provably winnable**. Correcting for drug difficulty sharpens the drug-blindness claim rather than overturning it.
 
 ---
 
@@ -137,9 +184,10 @@ The whole project collapses to one distinction:
   (DE-Δr 0.86; a zero-info mid-rank predictor scores 1.0). These are **dominated by the generic
   response** — exploitable/uncalibrated.
 
-**These three instruments are one family** (discrimination) in three dialects — and they agree: **real
-drugs are discriminable at pseudobulk** (spike-in 0.95–0.99; NIR ceiling 0.80), **and the model is
-at chance** (grading 0.48). The apparent tension "spike-in says DE-Δr works (0.95) but DRF says it
+**These three instruments are one family** (discrimination) in three dialects — and they agree
+(within-plate): **real drugs are discriminable at pseudobulk** (spike-in panel-τ ≈1.0/de_delta 0.99;
+NIR DRF +0.446), **and the model is at chance** (grading 0.48; model−scramble +0.014). The apparent
+tension "spike-in says DE-Δr works (0.99) but DRF says it
 fails (−0.92)" is not a contradiction: DE-Δr has a *small but consistent* drug signal (a forced choice
 reliably picks it → high accuracy) that is *tiny relative to the generic response* (so its absolute
 score is saturated by the mean → fails calibration). The missing-gene representation debate
@@ -196,18 +244,45 @@ these baselines → the LLM adds no measurable skill over a trivial drug-agnosti
 decomposes: control-reversion (artifact) + generic program (~0.26, drug-agnostic, trivially matched) +
 drug-specific (~0, nobody). Reproduces tier1/2/3, both conventions. partial-DE is the fix for DE-Δr's exploit.
 
-**NIR benchmark — model vs baselines on the calibrated metric (`nir_benchmark.py`, held-out tiers, expr-NIR / Euclidean):**
+**NIR benchmark — model vs baselines on the calibrated metric (within-plate comparison sets, `nir_benchmark.py --same_plate_only`, tier2 unseen drugs, expr-NIR / Euclidean). Every comparison set is restricted to drugs on the same (cell_line, plate), so batch identity carries no drug information.**
 
-| predictor | tier2 unseen | tier3 combos | tier4 dose |
+Aggregate (n=606 drug×cell-line, ≥8 cells/drug):
+
+| predictor | NIR |
+|---|---|
+| **ceiling** (real replicate) | 0.576 |
+| model | 0.498 |
+| linear (drug-agnostic) | 0.500 |
+| control-copy (zero drug info) | 0.504 |
+| mean | 0.180 |
+
+Chance = 0.50. The model sits **at chance — equal to a drug-agnostic linear map and to a zero-information control-copy** → drug-blind on the calibrated metric. Real drugs are discriminable (ceiling > chance) and identifiability **rises steeply with aggregation** (per-drug ceiling headroom +0.046 → +0.170 as cells/drug go 4 → 20) → the task is real and noise-limited; the model captures none of it.
+
+**Per-drug difficulty stratification (Q: which drugs are even identifiable?):**
+
+| stratum | n | ceiling | model | linear |
+|---|---|---|---|---|
+| unwinnable (ceiling < 0.6) | 296 | 0.287 | 0.286 | 0.475 |
+| marginal (0.6–0.8) | 106 | 0.689 | 0.569 | 0.508 |
+| identifiable (ceiling ≥ 0.8) | 204 | 0.938 | 0.768 | 0.531 |
+
+~⅓ of drug×cell-line pairs are identifiable-in-principle; the rest are inert/redundant and unwinnable by *any* predictor. Drug ranking is biologically coherent: potent = pemetrexed, crizotinib, irinotecan (ceiling 1.0); inert = adenine, folic acid, allantoin, vitamin K4 (ceiling 0.0). Batch/nutrient compounds correctly land at the bottom.
+
+**Causal test — does the model USE the drug? (identifiable subset, n=204 drugs, 40 cell lines, clustered CIs):**
+
+| comparison | value | 95% CI (cluster by cell line) | reading |
 |---|---|---|---|
-| **ceiling** (real replicate) | 0.69 | 0.80 | 0.63 |
-| model | 0.52 | 0.51 | 0.51 |
-| linear (drug-agnostic) | 0.50 | 0.50 | 0.50 |
-| mean | 0.32 | 0.09 | 0.29 |
+| model − linear | +0.237 | [+0.190, +0.286] | confounded — control-conditioning, NOT isolated drug use |
+| control-copy (zero drug info) | 0.766 | ≈ model (0.768) | a predictor with no drug information matches the model |
+| **model − scramble** (same control, wrong drug token) | **+0.014** | **[−0.016, +0.042]** | **NULL** |
 
-Chance = 0.50. Real drugs are identifiable at pseudobulk (ceiling 0.63–0.80); the model is at chance, **equal to a drug-agnostic linear map** → drug-blind on the calibrated metric, on a WINNABLE task. rank-NIR agrees on the ordering (ceiling > model ≈ linear), noisier on 7-cell halves. Ceiling understated by thin-tier halves (calibration ceiling was 0.88). (Fixed a scoring bug: truths must be at consistent denoising — all half-A, ceiling = disjoint half-B — else the ceiling inverts.)
+The scramble arm is the decisive control-matched manipulation: identical control cell, only the drug token in the prompt changes. It is **null** → **swapping the drug changes the model's output by nothing → the model does not use the drug**, even on drugs that are provably identifiable. `model − linear` looks positive only because the model retains control/batch structure that the drug-agnostic ridge smooths away — a zero-drug-info control-copy (0.766) matches the model. Consistent with grading 0.48 and output-invariance 0.000. **Anchor the drug-use claim to `model − scramble`, never to `model − linear`.**
 
-**Other established numbers:** spike-in real-drug discrimination ~0.95–0.99 (pb15); grading model ≈0.48 ≈ scramble, ceiling 0.67–0.83; output-invariance gap 0.000 [−0.019,+0.016]; true-expression per-cell discrimination ~0.53, cosine_shift 0.79/d0.87 (pb15); probe decodability 82%/76% (layers 9/16).
+**Other established numbers (leak-immune tests):** grading model ≈0.48 ≈ scramble, ceiling 0.67–0.83; output-invariance gap 0.000 [−0.019,+0.016]; true-expression per-cell discrimination ~0.53, cosine_shift 0.79/d0.87 (pb15); probe decodability 82%/76% (layers 9/16); drug-drug geometry Mantel ≈ 0.05, model CV/real CV ≈ 0.50 (predictions collapse toward one profile).
+
+**Spike-in — the metric separates real drug populations (within-plate comparison sets, `spikein_metric_benchmark.py`, pb15, tail_max, 60 (cell_line×plate) groups, spike=0):** panel-τ **1.000**, de_delta **0.995**, topn-τ **0.987** (CI on panel-τ [0.99994, 0.99998]). Titrates cleanly to 0.50 at spike=1.0. Discrimination is essentially perfect with the plate held constant across candidates → **real drugs are separable and the metric works; this capability is genuine drug signal, not batch.** (Saturated near ceiling, so it certifies the metric *can* discriminate real drug populations, not the finer model-vs-baseline question — that is NIR/DRF's job.)
+
+**DRF within-plate — ✅ settled:** NIR is the only calibrated metric (**+0.446** @53 cells; all prediction metrics inverted); the sign/contrast is cell-count-independent, so no higher-n re-run needed. See Q10.
 
 ---
 

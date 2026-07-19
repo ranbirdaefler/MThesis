@@ -38,12 +38,15 @@ import argparse, json, os, sys, logging
 from collections import defaultdict
 import numpy as np
 
-# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+# --- repo path bootstrap: works in BOTH the reorganized repo AND the flat cluster layout ---
 import os, sys, glob
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PIPE = os.path.dirname(_HERE)
 _ROOT = os.path.dirname(_PIPE)
-for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+_cands = [_HERE, os.path.join(_HERE, "src")]                    # flat layout: ~/tahoe and ~/tahoe/src
+if os.path.isdir(os.path.join(_ROOT, "shared")):                # reorganized layout
+    _cands += [os.path.join(_ROOT, "shared")] + sorted(glob.glob(os.path.join(_PIPE, "*")))
+for _p in _cands:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 # --- end bootstrap ---
@@ -269,8 +272,14 @@ def main():
     ap.add_argument("--cells_per_drug", type=int, default=60)
     ap.add_argument("--max_cells_total", type=int, default=500000)
     ap.add_argument("--min_cells_per_drug", type=int, default=40, help="floor for a stable half-split")
-    ap.add_argument("--n_celllines", type=int, default=25)
-    ap.add_argument("--min_drugs_per_cl", type=int, default=6)
+    ap.add_argument("--n_celllines", type=int, default=25,
+                    help="max comparison GROUPS to score (cell_line, or (cell_line,plate) if same-plate)")
+    ap.add_argument("--min_drugs_per_cl", type=int, default=6,
+                    help="min drugs per group. With --same_plate_only a plate holds ~4-12 drugs, so use 3.")
+    ap.add_argument("--same_plate_only", action="store_true",
+                    help="group by (cell_line, plate) so every within-group comparison holds the plate "
+                         "signature constant. Drug and plate are confounded by the experimental design; "
+                         "cross-plate groups let batch identity substitute for drug identity in NIR/DRF.")
     ap.add_argument("--held_out_drugs_file", default=None)
     ap.add_argument("--de_k", type=int, default=50)
     ap.add_argument("--deg_pool_cap", type=int, default=400,
@@ -298,7 +307,9 @@ def main():
     logger.info(f"Panel {P} genes from {panel_file}")
 
     args.collect_controls = True     # needed for the DE-Δr control anchor
+    args.same_plate = args.same_plate_only   # threaded into stream_panel_vectors' grouping key
     by_cl_drug, ctrl_by_cl = esd.stream_panel_vectors(args, panel_index, P)
+    logger.info(f"  grouping: {'(cell_line, plate) — within-plate' if args.same_plate_only else 'cell_line'}")
 
     rng = np.random.RandomState(args.seed)
     all_rows = []

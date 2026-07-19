@@ -37,12 +37,15 @@ import argparse, json, os, sys, logging
 from collections import defaultdict
 import numpy as np
 
-# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+# --- repo path bootstrap: works in BOTH the reorganized repo AND the flat cluster layout ---
 import os, sys, glob
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PIPE = os.path.dirname(_HERE)
 _ROOT = os.path.dirname(_PIPE)
-for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+_cands = [_HERE, os.path.join(_HERE, "src")]                    # flat layout: ~/tahoe and ~/tahoe/src
+if os.path.isdir(os.path.join(_ROOT, "shared")):                # reorganized layout
+    _cands += [os.path.join(_ROOT, "shared")] + sorted(glob.glob(os.path.join(_PIPE, "*")))
+for _p in _cands:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 # --- end bootstrap ---
@@ -152,7 +155,7 @@ def fit_ridge(train, panel_index, P, ev, max_fit, ridge_lambda, rng):
 
 
 # ----------------------------------------------------------------- benchmark one cell line
-def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng):
+def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_pb_fn=None):
     """by_drug: {drug: {"resp":[sentences], "ctrl":[sentences]}}. Returns per-drug NIR per predictor.
 
     CONSISTENT DENOISING is essential: split each drug into two disjoint halves; use half A as EVERY
@@ -171,14 +174,14 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng):
         B[d] = [resp[i] for i in idx[h:]]
     drugs = list(A.keys())
     if len(drugs) < 3:
-        return []
+        return [], {"model": {}, "truth": {}}
     truth_rank = {d: pb_rank(A[d], panel_index, P) for d in drugs}          # held-out truth = half A
     truth_expr = {d: pb_expr(A[d], panel_index, P, lm) for d in drugs}
     expressed = {d: np.where(truth_rank[d] < P)[0] for d in drugs}          # all expressed genes of the truth
     ceil_rank = {d: pb_rank(B[d], panel_index, P) for d in drugs}           # disjoint real replicate = half B
     ceil_expr = {d: pb_expr(B[d], panel_index, P, lm) for d in drugs}
 
-    rows = []
+    rows, profiles = [], {"model": {}, "truth": {}}
     for d in drugs:
         others = [dd for dd in drugs if dd != d]
         if len(others) < 2:
@@ -187,11 +190,28 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng):
                  "linear": lin_fn(by_drug[d]["ctrl"]),
                  "mean": (np.mean(np.stack([truth_rank[o] for o in others]), axis=0),
                           np.mean(np.stack([truth_expr[o] for o in others]), axis=0))}
+        # CONTROL-COPY leakage baseline: the drug's own plate-matched control pseudobulk, unmodified.
+        # It contains ZERO drug information, so it must score ~0.50. If it scores above chance, the
+        # control itself carries drug/plate identity, and then ANY control-conditioned predictor
+        # (including the model) gets NIR for free — i.e. an apparent "drug effect" that is batch leakage.
+        ctrl_sents = by_drug[d].get("ctrl") or []
+        if ctrl_sents:
+            preds["control"] = (pb_rank(ctrl_sents, panel_index, P),
+                                pb_expr(ctrl_sents, panel_index, P, lm))
         mr, me = model_pb_fn(d)
         if mr is not None:
             preds["model"] = (mr, me)
+        # SCRAMBLE arm: same control cell, same truth, only the drug token in the prompt is swapped
+        # to a different-mechanism drug. Drug knowledge => scramble scores LOWER than model.
+        # Plate leakage => scramble ~= model (the control never moved).
+        if scram_pb_fn is not None:
+            sr, se = scram_pb_fn(d)
+            if sr is not None:
+                preds["scramble"] = (sr, se)
 
-        row = {}
+        # per-drug identity is kept on the row so the aggregate can be decomposed later
+        # (drug_stratify_geometry.py): which drugs the model wins/loses on, vs their difficulty.
+        row = {"drug": d, "n_cells": len(by_drug[d]["resp"])}
         exp_idx = expressed[d]
         for name, (pr, pe) in preds.items():
             s_own = rank_corr(pr, truth_rank[d], exp_idx)
@@ -201,7 +221,10 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng):
             row[name] = {"nir_rank": nir_from_sims(s_own, s_oth),
                          "nir_expr": nir_from_dists(d_own, d_oth)}
         rows.append(row)
-    return rows
+        if "model" in preds:
+            profiles["model"][d] = preds["model"][1]      # predicted pseudobulk (expression)
+        profiles["truth"][d] = truth_expr[d]              # real held-out pseudobulk (half A)
+    return rows, profiles
 
 
 # ----------------------------------------------------------------- selftest
@@ -242,20 +265,37 @@ def selftest(args):
     def lin_agnostic(ctrl_sents):
         return pb_rank(fixed, pidx, P), pb_expr(fixed, pidx, P, lm)
 
-    rows = score_cellline(by_drug, pidx, P, lm, model_aware, lin_agnostic, rng)
+    # scramble arm: a drug-AWARE model fed the WRONG drug -> generates the wrong drug's cell
+    def scram_aware(d):
+        wrong = f"d{(int(d[1:]) + 1) % 15}"
+        s = [make_cell(wrong) for _ in range(8)]
+        return pb_rank(s, pidx, P), pb_expr(s, pidx, P, lm)
+
+    rows, _ = score_cellline(by_drug, pidx, P, lm, model_aware, lin_agnostic, rng,
+                             scram_pb_fn=scram_aware)
     def agg(name, key):
         v = [r[name][key] for r in rows if name in r and r[name][key] is not None]
         return float(np.mean(v)) if v else None
     m_rank, m_expr = agg("model", "nir_rank"), agg("model", "nir_expr")
     l_rank, l_expr = agg("linear", "nir_rank"), agg("linear", "nir_expr")
+    s_rank, s_expr = agg("scramble", "nir_rank"), agg("scramble", "nir_expr")
+    c_expr = agg("control", "nir_expr")
     logger.info(f"  drug-AWARE model  NIR: rank={m_rank:.3f} expr={m_expr:.3f} (expect ~1, identifies drug)")
     logger.info(f"  drug-AGNOSTIC lin NIR: rank={l_rank:.3f} expr={l_expr:.3f} (expect ~chance, cannot discriminate)")
-    # the machinery is right if the drug-aware predictor identifies its drug and the agnostic one can't
+    logger.info(f"  SCRAMBLE (wrong drug) NIR: rank={s_rank:.3f} expr={s_expr:.3f} "
+                f"(expect << model: lying about the drug must destroy discrimination)")
+    logger.info(f"  CONTROL-copy NIR: expr={c_expr if c_expr is None else f'{c_expr:.3f}'} "
+                f"(expect ~chance: the control carries no drug identity in this synthetic data)")
+    # machinery is right if: the drug-aware predictor identifies its drug, the agnostic one cannot,
+    # and the scramble arm collapses (proving the arm can detect genuine drug USE, not just fit)
     ok = (m_rank > 0.85 and m_expr > 0.85 and l_rank < m_rank - 0.25 and l_expr < m_expr - 0.25
-          and l_rank < 0.7 and l_expr < 0.7)
+          and l_rank < 0.7 and l_expr < 0.7
+          and s_expr is not None and s_expr < m_expr - 0.3)
     out = {"selftest": True, "passed": bool(ok),
            "model": {"nir_rank": m_rank, "nir_expr": m_expr},
-           "linear": {"nir_rank": l_rank, "nir_expr": l_expr}}
+           "linear": {"nir_rank": l_rank, "nir_expr": l_expr},
+           "scramble": {"nir_rank": s_rank, "nir_expr": s_expr},
+           "control": {"nir_expr": c_expr}}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(out, open(args.out, "w"), indent=2)
     logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'} -> {args.out}")
@@ -263,21 +303,38 @@ def selftest(args):
         sys.exit(1)
 
 
-def load_tier_by_drug(eval_dir, tier, ev):
+def load_tier_by_drug(eval_dir, tier, ev, same_plate=False):
+    """-> {group_key: {drug: {...}}}, where group_key = (cell_line, plate) if same_plate else
+    (cell_line, None).
+
+    WHY same_plate MATTERS (plate/batch leakage): controls are plate-matched and, in this design,
+    each drug sits on its own plate(s) — so WITHIN a cell line, 'which plate' is close to a proxy for
+    'which drug'. A predictor conditioned on the plate-matched control therefore inherits the plate
+    signature and scores above chance on NIR with ZERO drug knowledge (measured: control-copy 0.659).
+    Restricting every comparison set to drugs on the SAME plate holds the plate signature constant
+    across all candidates, so batch identity carries no information and the leak is structurally
+    impossible."""
     path = os.path.join(eval_dir, f"eval_{tier}.jsonl")
     if not os.path.exists(path):
         logger.warning(f"  missing {path}")
         return None
     by_cl = defaultdict(lambda: defaultdict(lambda: {"resp": [], "ctrl": [], "prompts": []}))
+    n_no_plate = 0
     for line in open(path):
         ex = json.loads(line)
         m = ex.get("metadata", {})
-        cl, drug = m.get("cell_line_id"), m.get("drug")
+        cl, drug, plate = m.get("cell_line_id"), m.get("drug"), m.get("plate")
         ctrl = ev.control_from_prompt(ex["prompt"])
         if cl is None or drug is None or not ctrl:
             continue
-        slot = by_cl[cl][drug]
+        if same_plate and plate is None:
+            n_no_plate += 1
+            continue
+        key = (cl, plate) if same_plate else (cl, None)
+        slot = by_cl[key][drug]
         slot["resp"].append(ex["response"]); slot["ctrl"].append(ctrl); slot["prompts"].append(ex["prompt"])
+    if n_no_plate:
+        logger.warning(f"  {n_no_plate} rows dropped (no plate in metadata)")
     return by_cl
 
 
@@ -287,6 +344,14 @@ def main():
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--temp_sweep", action="store_true")
     ap.add_argument("--eval_dir", default=None)
+    ap.add_argument("--no_model", action="store_true",
+                    help="skip generation entirely; score only ceiling/linear/mean/control (all from "
+                         "real cells). Runs on CPU in minutes — use it with --same_plate_only to test "
+                         "whether the control-copy leak disappears and whether the ceiling survives.")
+    ap.add_argument("--scram_dir", default=None,
+                    help="scrambled-drug eval dir (make_scramble_endcell.py output). Adds the "
+                         "'scramble' arm: same control + same truth, only the drug token swapped. "
+                         "model >> scramble => real drug use; model ~= scramble => plate leakage.")
     ap.add_argument("--model_path", default=None)
     ap.add_argument("--train_file", default=None)
     ap.add_argument("--tiers", default="tier2_unseen_drugs,tier3_unseen_combos")
@@ -298,21 +363,37 @@ def main():
     ap.add_argument("--max_new_tokens", type=int, default=1200)
     ap.add_argument("--gen_batch_size", type=int, default=48)
     ap.add_argument("--min_cells", type=int, default=20)
-    ap.add_argument("--min_drugs_per_cl", type=int, default=6)
-    ap.add_argument("--n_celllines", type=int, default=20)
+    ap.add_argument("--min_drugs_per_cl", type=int, default=6,
+                    help="min drugs per comparison group. With --same_plate_only, groups are "
+                         "(cell_line, plate) and hold ~4 drugs in tier2, so use 3.")
+    ap.add_argument("--n_celllines", type=int, default=20,
+                    help="deprecated alias for --max_groups")
+    ap.add_argument("--max_groups", type=int, default=None,
+                    help="max comparison groups to score. With --same_plate_only there are many more "
+                         "groups (one per cell_line x plate), so raise this (e.g. 200).")
+    ap.add_argument("--same_plate_only", action="store_true",
+                    help="LEAKAGE FIX: restrict every NIR comparison set to drugs on the SAME "
+                         "(cell_line, plate). Drug and plate are confounded by the experimental "
+                         "design (each drug sits on its own plate), so cross-plate comparisons let a "
+                         "control-conditioned predictor identify the drug from batch alone "
+                         "(control-copy scores 0.659 vs 0.50 chance). Same-plate comparisons hold the "
+                         "plate signature constant, making the leak structurally impossible.")
     ap.add_argument("--max_fit", type=int, default=40000)
     ap.add_argument("--ridge_lambda", type=float, default=0.1)
     ap.add_argument("--bf16", action="store_true")
+    ap.add_argument("--profiles", default=None,
+                    help="optional .npz of per-drug model + truth pseudobulk profiles, consumed by "
+                         "drug_stratify_geometry.py (Test 3)")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
+    if args.max_groups is None:                       # back-compat with --n_celllines
+        args.max_groups = args.n_celllines
 
     if args.selftest:
         selftest(args)
         return
 
-    import torch
     import evaluate_c2s_tahoe as ev
-    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     panel = json.load(open(os.path.join(args.eval_dir, "l1000_panel.json")))
     panel_index = {g: i for i, g in enumerate(panel)}
@@ -321,38 +402,52 @@ def main():
     lm = json.load(open(lm_path))
     logger.info(f"Panel {P}; linear_model slope={lm['slope']:.3f} intercept={lm['intercept']:.3f}")
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    tok = AutoTokenizer.from_pretrained(args.model_path)
-    if tok.pad_token is None:
-        tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16 if args.bf16 else torch.float32).to(device)
-    model.eval()
-    ec = tok.encode(SENTINEL, add_special_tokens=False)
-    end_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(SENTINEL)
-    eos = [end_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
+    # --no_model: skip all generation. ceiling / linear / mean / control are computed from REAL cells
+    # only, so the plate-leakage diagnostic (does control-copy fall to ~0.50 under --same_plate_only?)
+    # and the clean ceiling need no GPU at all — minutes on CPU instead of hours.
+    generate = None
+    if args.no_model:
+        logger.info("--no_model: skipping generation; scoring ceiling/linear/mean/control only")
+        if args.scram_dir:
+            logger.warning("  --scram_dir ignored under --no_model (the scramble arm needs generation)")
+            args.scram_dir = None
+    else:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        if not args.model_path:
+            raise SystemExit("--model_path is required unless --no_model")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        tok = AutoTokenizer.from_pretrained(args.model_path)
+        if tok.pad_token is None:
+            tok.pad_token = tok.eos_token
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_path, torch_dtype=torch.bfloat16 if args.bf16 else torch.float32).to(device)
+        model.eval()
+        ec = tok.encode(SENTINEL, add_special_tokens=False)
+        end_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(SENTINEL)
+        eos = [end_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
 
-    def generate(prompts, temperature):
-        prev = tok.padding_side; tok.padding_side = "left"
-        outs = []
-        try:
-            for i in range(0, len(prompts), args.gen_batch_size):
-                batch = prompts[i:i + args.gen_batch_size]
-                enc = tok(batch, return_tensors="pt", padding=True).to(device)
-                with torch.no_grad():
-                    g = model.generate(**enc, max_new_tokens=args.max_new_tokens,
-                                       pad_token_id=tok.pad_token_id, eos_token_id=eos,
-                                       do_sample=(temperature > 0), temperature=max(temperature, 1e-2),
-                                       top_p=args.top_p)
-                plen = enc["input_ids"].shape[1]
-                for j in range(len(batch)):
-                    ids = g[j][plen:].tolist()
-                    if end_id in ids:
-                        ids = ids[:ids.index(end_id)]
-                    outs.append(tok.decode(ids, skip_special_tokens=True).strip() + " " + SENTINEL)
-        finally:
-            tok.padding_side = prev
-        return outs
+        def generate(prompts, temperature):
+            prev = tok.padding_side; tok.padding_side = "left"
+            outs = []
+            try:
+                for i in range(0, len(prompts), args.gen_batch_size):
+                    batch = prompts[i:i + args.gen_batch_size]
+                    enc = tok(batch, return_tensors="pt", padding=True).to(device)
+                    with torch.no_grad():
+                        g = model.generate(**enc, max_new_tokens=args.max_new_tokens,
+                                           pad_token_id=tok.pad_token_id, eos_token_id=eos,
+                                           do_sample=(temperature > 0), temperature=max(temperature, 1e-2),
+                                           top_p=args.top_p)
+                    plen = enc["input_ids"].shape[1]
+                    for j in range(len(batch)):
+                        ids = g[j][plen:].tolist()
+                        if end_id in ids:
+                            ids = ids[:ids.index(end_id)]
+                        outs.append(tok.decode(ids, skip_special_tokens=True).strip() + " " + SENTINEL)
+            finally:
+                tok.padding_side = prev
+            return outs
 
     if args.temp_sweep:
         run_temp_sweep(args, ev, panel_index, P, generate)
@@ -377,53 +472,97 @@ def main():
 
     rng = np.random.RandomState(args.seed)
     result = {"tiers": {}, "config": {k: v for k, v in vars(args).items()}}
+    model_profiles, truth_profiles = {}, {}     # for the drug-geometry test (Test 3)
     for tier in [t.strip() for t in args.tiers.split(",") if t.strip()]:
-        by_cl = load_tier_by_drug(args.eval_dir, tier, ev)
+        by_cl = load_tier_by_drug(args.eval_dir, tier, ev, same_plate=args.same_plate_only)
         if not by_cl:
             continue
+        scram_by_cl = (load_tier_by_drug(args.scram_dir, tier, ev, same_plate=args.same_plate_only)
+                       if args.scram_dir else None)
+        if args.scram_dir and not scram_by_cl:
+            logger.warning(f"  [{tier}] no scramble data in {args.scram_dir} — skipping scramble arm")
         all_rows = []
         used = 0
-        for cl, dd in by_cl.items():
+        for gkey, dd in by_cl.items():
+            cl, plate = gkey
             drugs = {d: s for d, s in dd.items() if len(s["resp"]) >= args.min_cells}
             if len(drugs) < args.min_drugs_per_cl:
                 continue
 
             def model_pb_fn(d, _drugs=drugs):
+                if generate is None:                      # --no_model
+                    return None, None
                 prompts = _drugs[d]["prompts"][:args.k_samples]
                 if not prompts:
                     return None, None
                 gens = generate(prompts, args.temperature)
                 return pb_rank(gens, panel_index, P), pb_expr(gens, panel_index, P, lm)
 
-            rows = score_cellline(drugs, panel_index, P, lm, model_pb_fn, lin_fn, rng)
+            scram_fn = None
+            if scram_by_cl and gkey in scram_by_cl:
+                _sdd = scram_by_cl[gkey]
+
+                def scram_fn(d, _s=_sdd):
+                    slot = _s.get(d)
+                    if not slot or not slot["prompts"]:
+                        return None, None
+                    gens = generate(slot["prompts"][:args.k_samples], args.temperature)
+                    return pb_rank(gens, panel_index, P), pb_expr(gens, panel_index, P, lm)
+
+            rows, profs = score_cellline(drugs, panel_index, P, lm, model_pb_fn, lin_fn, rng,
+                                         scram_pb_fn=scram_fn)
+            # cell_line and plate are kept SEPARATE: the clustered bootstrap must resample CELL LINES
+            # (plates within a cell line are still correlated), not (cell_line, plate) groups.
+            for r in rows:
+                r["cell_line"] = cl
+                r["plate"] = plate
+                r["tier"] = tier
             all_rows.extend(rows)
+            gtag = f"{cl}~{plate}" if plate is not None else str(cl)
+            for d, v in profs["model"].items():
+                model_profiles[f"{tier}||{gtag}||{d}"] = v
+            for d, v in profs["truth"].items():
+                truth_profiles[f"{tier}||{gtag}||{d}"] = v
             used += 1
-            logger.info(f"  [{tier}] {str(cl)[:22]:22s} {len(drugs)} drugs -> {len(rows)} scored")
-            if used >= args.n_celllines:
+            logger.info(f"  [{tier}] {gtag[:30]:30s} {len(drugs)} drugs -> {len(rows)} scored")
+            if used >= args.max_groups:
                 break
 
         agg = {}
-        for name in ("model", "linear", "mean", "ceiling"):
+        for name in ("model", "scramble", "linear", "control", "mean", "ceiling"):
             for key in ("nir_rank", "nir_expr"):
                 vals = [r[name][key] for r in all_rows if name in r and r[name][key] is not None]
                 agg[f"{name}_{key}"] = (float(np.mean(vals)), len(vals)) if vals else (None, 0)
-        result["tiers"][tier] = {"n_drugs": len(all_rows), "agg": agg}
+        # per-drug rows are kept alongside the aggregate so the headline number can be decomposed
+        # (aggregates are computed exactly as before — unchanged).
+        result["tiers"][tier] = {"n_drugs": len(all_rows), "agg": agg, "rows": all_rows}
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(result, open(args.out, "w"), indent=2, default=float)
+    if args.profiles:
+        np.savez_compressed(args.profiles,
+                            **{f"model||{k}": v for k, v in model_profiles.items()},
+                            **{f"truth||{k}": v for k, v in truth_profiles.items()})
+        logger.info(f"-> {args.profiles}  ({len(model_profiles)} model + {len(truth_profiles)} truth "
+                    f"profiles for the geometry test)")
 
     logger.info("")
     logger.info("=" * 100)
     logger.info("  NIR BENCHMARK (chance ~0.50; ceiling = achievable) — rank-NIR | expr-NIR")
     for tier, td in result["tiers"].items():
         logger.info(f"  [{tier}] (n={td['n_drugs']})")
-        for name in ("model", "linear", "mean", "ceiling"):
+        for name in ("model", "scramble", "linear", "control", "mean", "ceiling"):
             r = td["agg"][f"{name}_nir_rank"][0]
             e = td["agg"][f"{name}_nir_expr"][0]
             g = lambda x: f"{x:.3f}" if x is not None else "NA"
             logger.info(f"      {name:8s}  rank-NIR={g(r)}   expr-NIR={g(e)}")
     logger.info("=" * 100)
     logger.info("  Read: ceiling >> chance (drug signal exists); model ~ linear ~ mean ~ chance => drug-blind.")
+    logger.info("  CONTROL arm: the drug's own control, zero drug info -> MUST be ~0.50. Above chance")
+    logger.info("               => the control leaks drug/plate identity and inflates every")
+    logger.info("               control-conditioned predictor (including the model).")
+    logger.info("  SCRAMBLE arm: same control, wrong drug token. model >> scramble => genuine drug use;")
+    logger.info("               model ~= scramble => the apparent drug effect is NOT from the drug.")
     logger.info(f"-> {args.out}")
 
 

@@ -40,12 +40,15 @@ USAGE
      --n_celllines 40 --drug_pairs_per_cellline 40 --de_k 50 --topn 100 \
      --tail_rank_max --seed 42
 """
-# --- repo path bootstrap (reorg): make shared/ + sibling pipeline dirs importable ---
+# --- repo path bootstrap: works in BOTH the reorganized repo AND the flat cluster layout ---
 import os, sys, glob
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PIPE = os.path.dirname(_HERE)
 _ROOT = os.path.dirname(_PIPE)
-for _p in [os.path.join(_ROOT, "shared"), *sorted(glob.glob(os.path.join(_PIPE, "*")))]:
+_cands = [_HERE, os.path.join(_HERE, "src")]                    # flat layout: ~/tahoe and ~/tahoe/src
+if os.path.isdir(os.path.join(_ROOT, "shared")):                # reorganized layout
+    _cands += [os.path.join(_ROOT, "shared")] + sorted(glob.glob(os.path.join(_PIPE, "*")))
+for _p in _cands:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 # --- end bootstrap ---
@@ -144,8 +147,9 @@ def activity_diagnostic(by_cl_drug, panel_index, P, n_pairs=4000, seed=42):
     for s, drug, cl, _ in all_cells:
         by_cl[cl].append((s, drug))
     same_jac, diff_jac, same_symdiff, diff_symdiff, union_lt_P = [], [], [], [], []
-    for _ in range(n_pairs):
-        cl = rng.choice(list(by_cl.keys()))
+    _keys = list(by_cl.keys())     # group keys may be (cell_line, plate) TUPLES in same-plate mode;
+    for _ in range(n_pairs):       # np.random.choice can't take a list of tuples -> pick by index
+        cl = _keys[rng.randint(len(_keys))]
         items = by_cl[cl]
         if len(items) < 2:
             continue
@@ -261,9 +265,14 @@ METRICS = ["de_delta", "panel_tau", "topn_tau", "spearman_expr", "cosine_expr", 
 
 
 # ----------------------------------------------------------------- data
-def load_cells(data_dir, sources):
+def load_cells(data_dir, sources, same_plate=False):
+    """same_plate: key the comparison group by (cell_line, plate) instead of cell_line, so the
+    forced choice draws the 'different' drug from the SAME plate. Drug and plate are confounded by
+    the experimental design (each drug sits on its own plate), so a cross-plate 'different' drug lets
+    the metric win on batch identity; same-plate holds the plate signature constant across the
+    candidates."""
     by_cl_drug = defaultdict(lambda: defaultdict(list))
-    n = 0
+    n = n_no_plate = 0
     for src in sources:
         path = os.path.join(data_dir, src if src.endswith(".jsonl") else f"{src}.jsonl")
         if not os.path.exists(path):
@@ -271,13 +280,19 @@ def load_cells(data_dir, sources):
         with open(path) as f:
             for line in f:
                 ex = json.loads(line); m = ex.get("metadata", {})
-                cl, drug = m.get("cell_line_id"), m.get("drug")
+                cl, drug, plate = m.get("cell_line_id"), m.get("drug"), m.get("plate")
                 if cl is None or drug is None: continue
+                if same_plate and plate is None:
+                    n_no_plate += 1; continue
                 ctrl = ev.control_from_prompt(ex["prompt"])
                 if not ctrl: continue
-                by_cl_drug[cl][drug].append({"resp": ex["response"], "ctrl": ctrl})
+                key = (cl, plate) if same_plate else cl
+                by_cl_drug[key][drug].append({"resp": ex["response"], "ctrl": ctrl})
                 n += 1
-    logger.info(f"  Loaded {n:,} cells, {len(by_cl_drug)} cell lines")
+    if n_no_plate:
+        logger.warning(f"  {n_no_plate} rows dropped (no plate)")
+    logger.info(f"  Loaded {n:,} cells, {len(by_cl_drug)} groups "
+                f"({'(cell_line, plate) — within-plate' if same_plate else 'cell_line'})")
     return by_cl_drug
 
 
@@ -336,6 +351,9 @@ def main():
                     help="run only the active-gene-set diagnostic (fast), skip the benchmark")
     ap.add_argument("--diag_pairs", type=int, default=4000,
                     help="number of within-cell-line pairs sampled for the activity diagnostic")
+    ap.add_argument("--same_plate_only", action="store_true",
+                    help="draw the 'different' drug from the SAME (cell_line, plate) so batch identity "
+                         "cannot stand in for drug identity (drug and plate are confounded by design).")
     args = ap.parse_args()
 
     if os.path.abspath(args.out).startswith(os.path.abspath(args.data_dir) + os.sep):
@@ -349,7 +367,8 @@ def main():
     spikes = [float(x) for x in args.spike_fracs.split(",")]
     modes = [m.strip() for m in args.modes.split(",")]
 
-    by_cl_drug = load_cells(args.data_dir, [s.strip() for s in args.sources.split(",")])
+    by_cl_drug = load_cells(args.data_dir, [s.strip() for s in args.sources.split(",")],
+                            same_plate=args.same_plate_only)
 
     # ---- ACTIVITY DIAGNOSTIC (runs FIRST): does END_CELL actually give differing active sets? ----
     logger.info("")
