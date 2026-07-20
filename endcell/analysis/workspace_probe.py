@@ -78,7 +78,26 @@ def build_subspace(X, labels, max_dims):
     return Vt[:k].T.astype(np.float64)          # (H, k) orthonormal columns
 
 
+def build_union_subspace(X, label_sets, max_dims):
+    """Subspace spanned by the class means of SEVERAL label sets at once (e.g. cell_line ∪ plate ∪
+    dose) — the 'context / batch' subspace the drug axis must be decorrelated against. Stacks all
+    centered class-mean vectors from every label set, then SVD."""
+    X = np.asarray(X, dtype=np.float64)
+    gmean = X.mean(0)
+    rows = []
+    for labels in label_sets:
+        for u in sorted(set(labels)):
+            idx = [i for i, l in enumerate(labels) if l == u]
+            if idx:
+                rows.append(X[idx].mean(0) - gmean)
+    M = np.stack(rows)
+    U, S, Vt = np.linalg.svd(M, full_matrices=False)
+    k = min(max_dims, int(np.sum(S > 1e-8)))
+    return Vt[:max(k, 1)].T.astype(np.float64)
+
+
 def random_subspace(H, k, rng):
+    k = max(int(k), 1)
     A = rng.randn(H, k)
     Q, _ = np.linalg.qr(A)
     return Q[:, :k]
@@ -273,38 +292,39 @@ def selftest(args):
 
     V_drug = build_subspace(X, drug_lab, args.n_dims)
     V_cl = build_subspace(X, cl_lab, args.n_dims)
-    V_rand = random_subspace(H, V_drug.shape[1], rng)
-    V_drug_perp = orthogonalize(V_drug, V_cl)          # drug ⟂ cell line (confound-robust)
+    V_conf = build_union_subspace(X, [cl_lab], args.n_dims)          # context = cell line here
+    V_drug_pure = orthogonalize(V_drug, V_conf)
+    d_pure = V_drug_pure.shape[1]
+    V_rand_pure = random_subspace(H, max(d_pure, 1), rng)
 
     def readout_kl(Vsub):
+        if Vsub is None or Vsub.shape[1] == 0:
+            return 0.0
         lp_clean = _logsm(X @ W_read.T)
         lp_abl = _logsm(project_out(X, Vsub) @ W_read.T)
         return float(np.mean(kl_rows(lp_clean, lp_abl)))
 
     a_drug, _ = probe_acc(X, drug_lab, np.random.RandomState(1))
     a_drug_abl, _ = probe_acc(project_out(X, V_drug), drug_lab, np.random.RandomState(1))
-    kl_drug, kl_perp, kl_cl, kl_rand = (readout_kl(V_drug), readout_kl(V_drug_perp),
-                                        readout_kl(V_cl), readout_kl(V_rand))
-    logger.info(f"  drug decodable: {a_drug:.2f}  -> after ablating drug subspace: {a_drug_abl:.2f} "
-                f"(gate expects collapse to chance {1/C:.2f})")
-    logger.info(f"  causal KL:  drug(raw)={kl_drug:.4f}  drug⟂cellline={kl_perp:.4f}  "
-                f"cell_line(+ctrl)={kl_cl:.4f}  random={kl_rand:.4f}")
-    logger.info(f"  overlap(drug,cellline)={subspace_overlap(V_drug,V_cl):.3f}  "
-                f"(finite-sample confound; orthogonalization removes it)")
+    frac_removed = (a_drug - a_drug_abl) / (a_drug - 1.0 / C)
+    kl_pure, kl_randp, kl_cl = readout_kl(V_drug_pure), readout_kl(V_rand_pure), readout_kl(V_cl)
+    logger.info(f"  drug decodable {a_drug:.2f} -> ablated {a_drug_abl:.2f}  (removed "
+                f"{100*frac_removed:.0f}% of above-chance signal; robust gate expects >80%)")
+    logger.info(f"  pure-drug subspace = {d_pure} dims after removing context")
+    logger.info(f"  causal KL:  PURE-drug={kl_pure:.4f}  random@matched={kl_randp:.4f}  "
+                f"cell_line(+ctrl)={kl_cl:.4f}")
 
     ok = True
     if not (a_drug > 0.8):
         logger.error("  FAIL: drug not decodable in synthetic data"); ok = False
-    if not (a_drug_abl < 0.25):
-        logger.error("  FAIL: ablation gate did not collapse drug decodability"); ok = False
-    if not (kl_cl > 5 * max(kl_perp, 1e-6)):
-        logger.error("  FAIL: positive-control (cell line) KL not >> confound-robust drug KL"); ok = False
-    if not (kl_perp < 5 * kl_rand + 5e-3):
-        logger.error("  FAIL: drug⟂cellline KL not ~ random (should be causally inert)"); ok = False
-    if not (kl_drug > kl_perp):
-        logger.error("  FAIL: orthogonalization did not reduce the leaked cell-line KL"); ok = False
+    if not (frac_removed > 0.8):
+        logger.error("  FAIL: robust gate did not register signal removal"); ok = False
+    if not (kl_cl > 5 * max(kl_pure, 1e-6)):
+        logger.error("  FAIL: positive-control (cell line) KL not >> pure-drug KL"); ok = False
+    if not (kl_pure < 3 * kl_randp + 5e-3):
+        logger.error("  FAIL: pure-drug KL not ~ matched-dim random (should be causally inert)"); ok = False
     logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'}  (drug decodable but causally inert once "
-                f"confound removed; cell line decodable AND causal; orthogonalization works)")
+                f"context removed; cell line decodable AND causal; robust gate + decorrelation work)")
     if not ok:
         sys.exit(1)
 
@@ -363,104 +383,132 @@ def main():
     result = {"layers": {}, "config": {k: v for k, v in vars(args).items()},
               "n_drug_classes": n_drug_classes, "chance": 1.0 / n_drug_classes}
 
+    plate_lab = [str(r["plate"]) for r in rows]
+    dose_lab = [str(r["dose"]) for r in rows]
+    chance = 1.0 / n_drug_classes
+
     for L in layers:
         X = acts[L]
         H = X.shape[1]
         logger.info("")
         logger.info(f"===== hidden_states[{L}] =====")
-        # (1) subspaces
+        # (1) subspaces. V_drug = raw drug axis; V_conf = the CONTEXT/BATCH subspace (cell_line ∪
+        # plate ∪ dose); V_drug_pure = drug orthogonalized against ALL of it — the only subspace whose
+        # ablation cleanly tests DRUG identity rather than the context the model is known to use.
         V_drug = build_subspace(X, drug_lab, args.n_dims)
         V_cl = build_subspace(X, cl_lab, args.n_dims)
+        V_conf = build_union_subspace(X, [cl_lab, plate_lab, dose_lab], args.n_dims * 3)
+        V_drug_pure = orthogonalize(V_drug, V_conf)
+        d_pure = V_drug_pure.shape[1]
         V_rand = random_subspace(H, V_drug.shape[1], rng)
-        V_drug_perp = orthogonalize(V_drug, V_cl)                     # drug ⊥ cell line (confound-robust)
+        V_rand_pure = random_subspace(H, max(d_pure, 1), rng)          # matched-dim null for the pure test
 
-        # (1b) confound: does the drug subspace also predict cell line / plate / dose?
+        # (1b) confound cross-decodability of the RAW drug subspace
         Xd = X @ V_drug
-        cross = {}
-        for name, lab in (("cell_line", cl_lab),
-                          ("plate", [r["plate"] for r in rows]),
-                          ("dose", [str(r["dose"]) for r in rows])):
-            a, _ = probe_acc(Xd, lab, np.random.RandomState(1))
-            cross[name] = a
-        overlap_cl = subspace_overlap(V_drug, V_cl)
+        cross = {n: probe_acc(Xd, lab, np.random.RandomState(1))[0]
+                 for n, lab in (("cell_line", cl_lab), ("plate", plate_lab), ("dose", dose_lab))}
+        overlaps = {"cell_line": subspace_overlap(V_drug, V_cl),
+                    "context": subspace_overlap(V_drug, V_conf)}
 
-        # (2) ablation-verification gate
+        # (2) ROBUST gate: fraction of ABOVE-CHANCE drug decodability removed by ablation (>0.8 = pass).
+        # (The old shuffle-vs-ablated comparison mismatched two different no-signal floors.)
         a_drug, a_shuf = probe_acc(X, drug_lab, np.random.RandomState(1))
         a_drug_abl, _ = probe_acc(project_out(X, V_drug), drug_lab, np.random.RandomState(1))
-        gate_ok = (a_drug is not None and a_drug > 2 * (a_shuf or 0) and a_drug_abl is not None
-                   and a_drug_abl < 1.5 * (a_shuf or 1.0 / n_drug_classes))
-        logger.info(f"  GATE: drug decodable {a_drug:.3f} (shuf {a_shuf:.3f}) -> ablated "
-                    f"{a_drug_abl:.3f}  [{'PASS' if gate_ok else 'FAIL — ablation did not remove drug info'}]")
-        logger.info(f"  confound: drug subspace also decodes cell_line={_f(cross['cell_line'])} "
-                    f"plate={_f(cross['plate'])} dose={_f(cross['dose'])} | overlap(drug,cellline)="
-                    f"{overlap_cl:.3f}")
+        # residual PURE-drug decodability: is drug decodable AFTER removing all context?
+        a_drug_pureonly, _ = probe_acc(project_out(X, V_conf), drug_lab, np.random.RandomState(1))
+        frac_removed = ((a_drug - a_drug_abl) / (a_drug - chance)) if (a_drug and a_drug > chance) else None
+        gate_ok = (frac_removed is not None and frac_removed > 0.8)
+        logger.info(f"  GATE: drug decodable {a_drug:.3f} (chance {chance:.3f}) -> ablated {a_drug_abl:.3f} "
+                    f"| removed {100*(frac_removed or 0):.0f}% of signal  [{'PASS' if gate_ok else 'FAIL'}]")
+        logger.info(f"  CONFOUND: raw drug subspace also decodes cell_line={_f(cross['cell_line'])} "
+                    f"plate={_f(cross['plate'])} dose={_f(cross['dose'])}")
+        logger.info(f"    overlap(drug, context)={overlaps['context']:.3f} | pure-drug subspace = "
+                    f"{d_pure}/{V_drug.shape[1]} dims after removing context | "
+                    f"drug decodable with context removed = {_f(a_drug_pureonly)} (chance {chance:.3f})")
 
-        # (3) logit-space KL causal test: drug vs cell-line vs random vs drug⊥cellline
         def mean_kl(Vsub):
+            if Vsub is None or (hasattr(Vsub, "shape") and Vsub.shape[1] == 0):
+                return (None, None, 0)
             vals = [kl_under_hook(model, tok, layers_mod, L, Vsub, r["prompt"], r["response"], device)
                     for r in kl_rows_prompts]
             vals = [v for v in vals if v is not None]
-            return (float(np.mean(vals)), float(np.std(vals) / max(1, len(vals)) ** 0.5), len(vals)) if vals else (None, None, 0)
+            return ((float(np.mean(vals)), float(np.std(vals) / max(1, len(vals)) ** 0.5), len(vals))
+                    if vals else (None, None, 0))
 
+        # (3) CAUSAL KL. Headline = pure-drug vs its MATCHED-DIM random null.
         kl_drug = mean_kl(V_drug)
+        kl_pure = mean_kl(V_drug_pure) if d_pure else (None, None, 0)
+        kl_rand_pure = mean_kl(V_rand_pure) if d_pure else (None, None, 0)
         kl_cl = mean_kl(V_cl)
+        kl_conf = mean_kl(V_conf)
         kl_rand = mean_kl(V_rand)
-        kl_drug_perp = mean_kl(V_drug_perp) if V_drug_perp.shape[1] else (None, None, 0)
-        logger.info(f"  CAUSAL KL (mean+-sem over {kl_drug[2]} prompts):")
-        logger.info(f"     drug            {_kf(kl_drug)}")
-        logger.info(f"     drug ⊥ cellline {_kf(kl_drug_perp)}   <- drug effect with batch removed")
-        logger.info(f"     cell_line (+ctrl){_kf(kl_cl)}   <- POSITIVE CONTROL, must be >> drug")
-        logger.info(f"     random           {_kf(kl_rand)}   <- NULL")
-        # (4) variance vs causal effect
-        vs = {"drug": variance_share(X, V_drug), "cell_line": variance_share(X, V_cl),
+        logger.info(f"  CAUSAL KL (mean+-sem over {args.n_kl_prompts} prompts):")
+        logger.info(f"     PURE drug (⊥ context)  {_kf(kl_pure)}   <<< HEADLINE")
+        logger.info(f"     random @ matched dim   {_kf(kl_rand_pure)}   <- null for the pure test")
+        logger.info(f"     cell_line (+ctrl)      {_kf(kl_cl)}   <- POSITIVE CONTROL")
+        logger.info(f"     context (all confounds){_kf(kl_conf)}")
+        logger.info(f"     raw drug               {_kf(kl_drug)}   (confounded — do not quote)")
+        vs = {"drug": variance_share(X, V_drug), "drug_pure": variance_share(X, V_drug_pure) if d_pure else 0.0,
+              "cell_line": variance_share(X, V_cl), "context": variance_share(X, V_conf),
               "random": variance_share(X, V_rand)}
-        logger.info(f"  VARIANCE SHARE: drug={vs['drug']:.3f}  cell_line={vs['cell_line']:.3f}  "
-                    f"random={vs['random']:.3f}")
-        if kl_drug[0] is not None and kl_cl[0] is not None and vs["drug"] > 1e-6:
-            eff_per_var_drug = kl_drug[0] / vs["drug"]
-            eff_per_var_cl = kl_cl[0] / max(vs["cell_line"], 1e-6)
-            logger.info(f"  CAUSAL EFFECT PER UNIT VARIANCE: drug={eff_per_var_drug:.4f}  "
-                        f"cell_line={eff_per_var_cl:.4f}  (ratio {eff_per_var_drug/max(eff_per_var_cl,1e-9):.3f})")
+        logger.info(f"  VARIANCE SHARE: pure-drug={vs['drug_pure']:.3f}  cell_line={vs['cell_line']:.3f}  "
+                    f"context={vs['context']:.3f}")
 
-        entry = {"gate_pass": bool(gate_ok), "drug_decode": a_drug, "drug_decode_shuf": a_shuf,
-                 "drug_decode_ablated": a_drug_abl, "confound_crossdecode": cross,
-                 "overlap_drug_cellline": overlap_cl, "subspace_dims": int(V_drug.shape[1]),
-                 "kl": {"drug": kl_drug, "drug_perp_cellline": kl_drug_perp,
-                        "cell_line": kl_cl, "random": kl_rand},
-                 "variance_share": vs}
+        # PURE-drug verdict
+        pv = "no pure-drug subspace (drug fully within context span)"
+        if kl_pure[0] is not None and kl_rand_pure[0] is not None:
+            ratio = kl_pure[0] / max(kl_rand_pure[0], 1e-9)
+            if ratio < 2.0:
+                pv = f"INERT: pure-drug KL ~ matched random (ratio {ratio:.2f}) -> encoded, not read"
+            elif kl_cl[0] and kl_pure[0] < 0.25 * kl_cl[0]:
+                pv = f"weak: pure-drug KL {ratio:.1f}x random but << cell-line -> minor causal role"
+            else:
+                pv = f"CAUSAL: pure-drug KL {ratio:.1f}x random and comparable to controls -> the model DOES read pure drug identity"
+        logger.info(f"  >>> PURE-DRUG VERDICT: {pv}")
 
-        # (5) optional activation-space drug swap
-        if args.do_swap and gate_ok:
-            drug_mean = {}
-            for d in set(drug_lab):
-                drug_mean[d] = X[[i for i, r in enumerate(rows) if r["drug"] == d]].mean(0)
+        entry = {"gate_pass": bool(gate_ok), "frac_signal_removed": frac_removed,
+                 "drug_decode": a_drug, "drug_decode_ablated": a_drug_abl,
+                 "drug_decode_context_removed": a_drug_pureonly, "chance": chance,
+                 "confound_crossdecode": cross, "overlaps": overlaps,
+                 "pure_drug_dims": int(d_pure), "raw_drug_dims": int(V_drug.shape[1]),
+                 "kl": {"pure_drug": kl_pure, "random_matched": kl_rand_pure, "cell_line": kl_cl,
+                        "context": kl_conf, "raw_drug": kl_drug, "random": kl_rand},
+                 "variance_share": vs, "pure_drug_verdict": pv}
+
+        # (4) activation-space drug swap ON THE PURE-DRUG subspace (clean drug-specificity test)
+        if args.do_swap and d_pure and gate_ok:
+            drug_mean = {d: X[[i for i, r in enumerate(rows) if r["drug"] == d]].mean(0)
+                         for d in set(drug_lab)}
             swap_kl, randinj_kl = [], []
             for r in kl_rows_prompts:
                 others = [d for d in drug_mean if d != r["drug"]]
                 if not others:
                     continue
                 b = others[rng.randint(len(others))]
-                comp_b = V_drug @ (V_drug.T @ drug_mean[b])           # drug B's component
-                sk = kl_under_hook(model, tok, layers_mod, L, V_drug, r["prompt"], r["response"],
+                comp_b = V_drug_pure @ (V_drug_pure.T @ drug_mean[b])   # drug B's PURE component
+                sk = kl_under_hook(model, tok, layers_mod, L, V_drug_pure, r["prompt"], r["response"],
                                    device, add_vec=comp_b)
-                rand_vec = rng.randn(H); rand_vec *= np.linalg.norm(comp_b) / (np.linalg.norm(rand_vec) + 1e-9)
-                rk = kl_under_hook(model, tok, layers_mod, L, V_drug, r["prompt"], r["response"],
-                                   device, add_vec=rand_vec.astype(np.float32))
+                rv = rng.randn(H); rv *= np.linalg.norm(comp_b) / (np.linalg.norm(rv) + 1e-9)
+                rk = kl_under_hook(model, tok, layers_mod, L, V_drug_pure, r["prompt"], r["response"],
+                                   device, add_vec=rv.astype(np.float32))
                 if sk is not None and rk is not None:
                     swap_kl.append(sk); randinj_kl.append(rk)
             if swap_kl:
-                logger.info(f"  SWAP: inject drug-B component KL={np.mean(swap_kl):.4f}  vs "
-                            f"matched-norm random KL={np.mean(randinj_kl):.4f}  "
-                            f"(swap >> random => readout IS drug-direction sensitive = routing failure)")
-                entry["swap"] = {"drug_b_kl": float(np.mean(swap_kl)),
-                                 "random_inject_kl": float(np.mean(randinj_kl)), "n": len(swap_kl)}
+                mb, mr = float(np.mean(swap_kl)), float(np.mean(randinj_kl))
+                sv = ("drug-B >> random -> readout IS drug-direction sensitive (routing failure)"
+                      if mb > 1.5 * mr else
+                      "drug-B ~ random -> readout is NOT drug-specific (responds to magnitude only)")
+                logger.info(f"  SWAP (pure): inject drug-B {mb:.4f}  vs matched-norm random {mr:.4f}  -> {sv}")
+                entry["swap"] = {"drug_b_kl": mb, "random_inject_kl": mr, "n": len(swap_kl), "verdict": sv}
         result["layers"][str(L)] = entry
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(result, open(args.out, "w"), indent=2, default=float)
     logger.info("")
-    logger.info("READ: for a layer whose GATE passed — if cell_line KL >> drug KL ~ random KL, drug")
-    logger.info("      identity lives in a CAUSALLY INERT subspace (encoded, not read by generation).")
+    logger.info("READ: on a GATE-passing layer, compare PURE-drug KL (⊥ context) to its MATCHED-DIM")
+    logger.info("      random null. ~random => drug identity is encoded but causally inert. Also check")
+    logger.info("      'drug decodable with context removed': if ~chance, drug is not even separable")
+    logger.info("      from dose/plate/cell-line internally (a finding in itself).")
     logger.info(f"-> {args.out}")
 
 
