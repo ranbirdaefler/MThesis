@@ -303,7 +303,7 @@ def selftest(args):
         sys.exit(1)
 
 
-def load_tier_by_drug(eval_dir, tier, ev, same_plate=False):
+def load_tier_by_drug(eval_dir, tier, ev, same_plate=False, exclude_lines=None):
     """-> {group_key: {drug: {...}}}, where group_key = (cell_line, plate) if same_plate else
     (cell_line, None).
 
@@ -319,8 +319,14 @@ def load_tier_by_drug(eval_dir, tier, ev, same_plate=False):
         logger.warning(f"  missing {path}")
         return None
     by_cl = defaultdict(lambda: defaultdict(lambda: {"resp": [], "ctrl": [], "prompts": []}))
-    n_no_plate = 0
-    for line in open(path):
+    n_no_plate = n_excluded = 0
+    for _li, line in enumerate(open(path)):
+        # SPLIT-SAMPLE: skip the line indices reserved for SELECTION (perturbation_strength.py), so
+        # the cells used to DEFINE strength/distinctiveness are disjoint from the cells the model is
+        # SCORED against. Without this, subsetting on a selection statistic is circular (double dipping).
+        if exclude_lines is not None and _li in exclude_lines:
+            n_excluded += 1
+            continue
         ex = json.loads(line)
         m = ex.get("metadata", {})
         cl, drug, plate = m.get("cell_line_id"), m.get("drug"), m.get("plate")
@@ -335,6 +341,9 @@ def load_tier_by_drug(eval_dir, tier, ev, same_plate=False):
         slot["resp"].append(ex["response"]); slot["ctrl"].append(ctrl); slot["prompts"].append(ex["prompt"])
     if n_no_plate:
         logger.warning(f"  {n_no_plate} rows dropped (no plate in metadata)")
+    if n_excluded:
+        logger.info(f"  [{tier}] excluded {n_excluded} SELECTION cells (split-sample; scoring only "
+                    f"on disjoint evaluation cells)")
     return by_cl
 
 
@@ -371,6 +380,11 @@ def main():
     ap.add_argument("--max_groups", type=int, default=None,
                     help="max comparison groups to score. With --same_plate_only there are many more "
                          "groups (one per cell_line x plate), so raise this (e.g. 200).")
+    ap.add_argument("--exclude_manifest", default=None,
+                    help="split_manifest.json from perturbation_strength.py: line indices reserved "
+                         "for SELECTION. Excluding them makes selection (strength/distinctiveness) "
+                         "and evaluation (model scoring) disjoint — required to avoid circular "
+                         "analysis when stratifying on a selection statistic.")
     ap.add_argument("--same_plate_only", action="store_true",
                     help="LEAKAGE FIX: restrict every NIR comparison set to drugs on the SAME "
                          "(cell_line, plate). Drug and plate are confounded by the experimental "
@@ -470,14 +484,24 @@ def main():
                 expr[gi] = max(0.0, lm["slope"] * np.log10(r) + lm["intercept"])
         return pred, expr
 
+    # split-sample manifest: line indices reserved for SELECTION, to be excluded from scoring
+    _manifest = None
+    if args.exclude_manifest:
+        _manifest = json.load(open(args.exclude_manifest))
+        logger.info(f"Split-sample: excluding selection cells listed in {args.exclude_manifest} "
+                    f"({ {k: len(v) for k, v in _manifest.items()} })")
+
     rng = np.random.RandomState(args.seed)
     result = {"tiers": {}, "config": {k: v for k, v in vars(args).items()}}
     model_profiles, truth_profiles = {}, {}     # for the drug-geometry test (Test 3)
     for tier in [t.strip() for t in args.tiers.split(",") if t.strip()]:
-        by_cl = load_tier_by_drug(args.eval_dir, tier, ev, same_plate=args.same_plate_only)
+        _excl = set(_manifest.get(tier, [])) if _manifest else None
+        by_cl = load_tier_by_drug(args.eval_dir, tier, ev, same_plate=args.same_plate_only,
+                                  exclude_lines=_excl)
         if not by_cl:
             continue
-        scram_by_cl = (load_tier_by_drug(args.scram_dir, tier, ev, same_plate=args.same_plate_only)
+        scram_by_cl = (load_tier_by_drug(args.scram_dir, tier, ev, same_plate=args.same_plate_only,
+                                         exclude_lines=_excl)
                        if args.scram_dir else None)
         if args.scram_dir and not scram_by_cl:
             logger.warning(f"  [{tier}] no scramble data in {args.scram_dir} — skipping scramble arm")
