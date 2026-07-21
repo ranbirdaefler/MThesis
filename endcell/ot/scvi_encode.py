@@ -70,6 +70,42 @@ def get_ref_var_names(model_dir):
     return None
 
 
+def get_setup_args(model_dir):
+    """Read the scvi setup_args from the saved registry so we know EVERY obs field the model needs."""
+    import torch
+    d = torch.load(os.path.join(model_dir, "model.pt"), map_location="cpu", weights_only=False)
+    reg = None
+    if isinstance(d, dict):
+        reg = (d.get("attr_dict", {}) or {}).get("registry_") or d.get("registry_")
+    sa = (reg or {}).get("setup_args", {}) if reg else {}
+    logger.info(f"model setup_args: {sa}")
+    return sa
+
+
+def populate_required_obs(adata, model_dir):
+    """Fill every obs field the model was set up with. tscp_count / size factor <- real total counts;
+    batch / covariates <- our streamed columns when present (real plate etc.), else a query placeholder
+    (scArches load_query_data tolerates unseen categories)."""
+    tscp = np.asarray(adata.layers["counts"].sum(1)).ravel().astype(np.float32)
+    adata.obs["tscp_count"] = tscp
+    sa = get_setup_args(model_dir)
+    cont = list(sa.get("continuous_covariate_keys") or [])
+    cats = list(sa.get("categorical_covariate_keys") or [])
+    sf, bk, lk = sa.get("size_factor_key"), sa.get("batch_key"), sa.get("labels_key")
+    if sf and sf not in adata.obs:
+        adata.obs[sf] = tscp
+    for k in cont:
+        if k not in adata.obs:
+            adata.obs[k] = 0.0
+            logger.warning(f"continuous obs['{k}'] missing -> 0.0")
+    for k in [x for x in ([bk, lk] + cats) if x]:
+        if k not in adata.obs:
+            adata.obs[k] = "unknown"
+            logger.warning(f"categorical obs['{k}'] missing -> 'unknown'")
+    logger.info(f"obs now has: {list(adata.obs.columns)}")
+    return adata
+
+
 def choose_var_names(gdf, ref_vars):
     """Pick the gene_metadata column (raw, or version-stripped ensembl) that best matches the model's
     reference var_names, so prepare_query_anndata aligns instead of dropping 2/3 of genes."""
@@ -171,6 +207,7 @@ def main():
     n_target = args.smoke if args.smoke else args.max_cells
     adata = stream_cells(args.repo, var_names, n_target, args.num_shards,
                          args.cells_per_condition, args.seed)
+    adata = populate_required_obs(adata, args.model_dir)
     latent = encode(adata, args.model_dir)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
