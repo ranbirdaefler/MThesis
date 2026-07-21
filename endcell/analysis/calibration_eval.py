@@ -223,11 +223,75 @@ def aggregate_drf(all_rows):
 
 
 # ----------------------------------------------------------------- selftest
+def _approx(a, b, tol=1e-6):
+    return a is not None and abs(a - b) < tol
+
+
+def _unit_checks(de_k):
+    """Deterministic metric-function checks with KNOWN answers (no reliance on the random DRF run):
+      (1) PERFECT prediction -> every metric at its maximum (1.0).
+      (2) TIE / DEGENERATE inputs -> None (handled, never NaN or a crash).
+      (3) The DE-Δr EXPLOIT, shown directly: when drugs share a generic program, an uninformed
+          leave-one-out MEAN baseline scores HIGH on de_delta, while the calibrated NIR gives that
+          same baseline ~chance. This is the advertised failure case, asserted on the metric itself
+          rather than left to the docstring."""
+    P = 200
+    rng = np.random.RandomState(0)
+    zc = np.zeros(P)
+    # (1) perfect prediction => max for each metric
+    x = np.zeros(P); x[rng.choice(P, 80, replace=False)] = rng.rand(80) * 2 + 0.5
+    ctrl = np.zeros(P); ctrl[rng.choice(P, 80, replace=False)] = rng.rand(80) * 2 + 0.5
+    w = np.ones(P)
+    checks = {
+        "perfect_weighted_r2_is_1": _approx(m_weighted_r2(x, x, w), 1.0),
+        "perfect_de_delta_is_1":    _approx(m_de_delta(x, x, ctrl, de_k), 1.0),
+        "perfect_spearman_is_1":    _approx(m_spearman(x, x), 1.0),
+        "perfect_panel_tau_is_1":   _approx(m_panel_tau(x, x), 1.0),
+        "perfect_nir_is_1":         _approx(m_nir(x, x, [ctrl, zc + 0.1]), 1.0),
+    }
+    # (2) degenerate => None, not NaN / crash. (Note: a constant-VALUE vector still yields varying
+    # ranks here because _expr_to_rank/_rankdata break ties by index; the genuine degenerate cases are
+    # a zero predicted SHIFT, a flat truth with no variance, and NIR with nothing to rank against.)
+    const = np.full(P, 0.7)
+    checks["zero_shift_de_delta_none"]    = (m_de_delta(ctrl, x, ctrl, de_k) is None)   # pred==ctrl -> no shift
+    checks["flat_true_weighted_r2_none"]  = (m_weighted_r2(x, const, w) is None)         # no truth variance
+    checks["nir_no_others_none"]          = (m_nir(x, x, []) is None)                    # nothing to rank against
+    # (3) de_delta exploit: shared generic program => uninformed mean baseline saturates de_delta
+    generic = np.zeros(P); generic[:60] = np.linspace(3.0, 1.0, 60)          # program shared by all drugs
+    drugs_expr = []
+    for d in range(6):
+        spec = np.zeros(P); spec[60 + d * 6: 66 + d * 6] = 1.2               # small drug-specific part
+        drugs_expr.append(generic + spec)
+    own, others = drugs_expr[0], drugs_expr[1:]
+    mean_base = np.mean(np.stack(others), axis=0)                            # knows NOTHING about drug 0
+    de_neg  = m_de_delta(mean_base, own, zc, de_k)
+    nir_neg = m_nir(mean_base, own, others)
+    checks["de_delta_exploit_neg_high"] = (de_neg is not None and de_neg > 0.7)   # uninformed scores HIGH
+    checks["nir_robust_neg_not_high"]   = (nir_neg is not None and nir_neg <= 0.6) # calibrated: ~chance
+    return checks, {"de_delta_mean_baseline": de_neg, "nir_mean_baseline": nir_neg}
+
+
 def selftest(args):
-    """Synthetic check: build perturbations with real signal + on/off sparsity, and confirm DRF
-    SEPARATES a calibrated metric (weighted_r2, nir) from the exploitable one (de_delta):
-      * calibrated metric -> DRF clearly > 0 (noise ceiling beats the mean baseline)
-      * de_delta          -> DRF <= 0 (mean baseline already saturates it, so pos < neg)"""
+    """Validate the DRF machinery two ways:
+      A) UNIT CHECKS (deterministic, known answers): perfect prediction -> metric max; tie/degenerate
+         -> None; and the DE-Δr exploit shown on the metric itself (uninformed mean baseline scores
+         high on de_delta, ~chance on NIR). See _unit_checks.
+      B) DRF SEPARATION on a synthetic panel with real signal + on/off sparsity: the calibrated
+         metrics (weighted_r2, nir) give the noise ceiling a positive DRF, while de_delta hands the
+         uninformed mean baseline a *saturating* score (its m_neg exceeds weighted_r2's).
+    NOTE: this synthetic does not force de_delta's DRF strictly <= 0 (that emerges on the REAL data,
+    where the generic program dominates far more); the exploit is instead asserted directly in (A)."""
+    # ---- (A) deterministic unit checks ----
+    unit, diag = _unit_checks(args.de_k)
+    unit_ok = all(unit.values())
+    for name, passed in unit.items():
+        if not passed:
+            logger.error(f"  UNIT FAIL: {name}")
+    logger.info(f"  unit checks: {sum(unit.values())}/{len(unit)} passed  "
+                f"(de_delta(mean_base)={diag['de_delta_mean_baseline']:.3f} HIGH, "
+                f"nir(mean_base)={diag['nir_mean_baseline']:.3f} ~chance)")
+
+    # ---- (B) DRF separation on the random synthetic panel ----
     rng = np.random.RandomState(0)
     P = 400
     ctrl = np.zeros(P)
@@ -251,13 +315,14 @@ def selftest(args):
     logger.info(f"  weighted_r2 DRF = {r2['drf']:+.3f}  (m_neg={r2['m_neg']:.3f} m_pos={r2['m_pos']:.3f})")
     logger.info(f"  nir         DRF = {nir['drf']:+.3f}  (m_neg={nir['m_neg']:.3f} m_pos={nir['m_pos']:.3f})")
     logger.info(f"  de_delta    DRF = {de['drf']:+.3f}  (m_neg={de['m_neg']:.3f} m_pos={de['m_pos']:.3f})")
-    # machinery check: with a leave-one-out baseline and real signal, the calibrated metrics reward the
-    # ceiling (DRF>0); de_delta gives the uninformed baseline a higher score (m_neg) than weighted_r2 does.
-    ok = (r2['drf'] > 0.1) and (nir['drf'] > 0.1) and (de['m_neg'] > r2['m_neg'])
-    out = {"selftest": True, "passed": bool(ok), "drf": drf}
+    sep_ok = (r2['drf'] > 0.1) and (nir['drf'] > 0.1) and (de['m_neg'] > r2['m_neg'])
+
+    ok = unit_ok and sep_ok
+    out = {"selftest": True, "passed": bool(ok), "unit_checks": unit, "unit_diag": diag, "drf": drf}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(out, open(args.out, "w"), indent=2, default=float)
-    logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'} -> {args.out}")
+    logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'}  (unit {'ok' if unit_ok else 'FAIL'}, "
+                f"separation {'ok' if sep_ok else 'FAIL'}) -> {args.out}")
     if not ok:
         sys.exit(1)
 
