@@ -34,9 +34,11 @@ EXPERIMENTS
   2. ABLATION-VERIFICATION GATE (probe collapses to chance; generation stays valid).
   3. LOGIT-SPACE KL causal test: drug vs cell-line vs random, swept across layers.
   4. VARIANCE-vs-CAUSAL-EFFECT decomposition: variance share of each subspace vs its KL.
-  5. (--do_swap) ACTIVATION-SPACE drug swap: replace the drug component with another drug's; does the
-     readout respond more than to a matched-norm random injection? Distinguishes "inert" (encoded but
-     unreadable) from "routing failure" (readable but never routed).
+  5. (--do_swap) ACTIVATION-SPACE drug swap [HEADLINE]: replace the drug component with another drug's
+     (means estimated on HELD-OUT cells, swap run on disjoint cells, so estimation noise cannot fake the
+     null); does the readout respond more than to a matched-norm random injection? This — NOT the
+     ablation — is the drug-IDENTITY test. Ablation (3) is SUPPORTING ONLY: it shows the slab carries
+     functional variance, not that the drug direction is read (so no "causal" label is attached to it).
 
 SELFTEST (no model/data) — a synthetic linear readout that reads from a KNOWN direction and ignores
 another; verifies the gate collapses decodability and the KL test flags causal vs inert correctly:
@@ -387,6 +389,19 @@ def main():
     dose_lab = [str(r["dose"]) for r in rows]
     chance = 1.0 / n_drug_classes
 
+    # split-half partition for the HELD-OUT swap: estimate each drug's mean on the est-half cells and
+    # run the swap on the DISJOINT eval-half prompts, so mean-estimation noise cannot be what makes
+    # drug-B look like random. Partition is fixed across layers.
+    by_drug_idx = defaultdict(list)
+    for i, r in enumerate(rows):
+        by_drug_idx[r["drug"]].append(i)
+    est_mask = np.zeros(len(rows), dtype=bool)
+    for d, idxs in by_drug_idx.items():
+        order = list(idxs); rng.shuffle(order)
+        for i in order[:len(order) // 2]:
+            est_mask[i] = True
+    eval_rows_swap = [r for i, r in enumerate(rows) if not est_mask[i]][:args.n_kl_prompts]
+
     for L in layers:
         X = acts[L]
         H = X.shape[1]
@@ -454,17 +469,15 @@ def main():
         logger.info(f"  VARIANCE SHARE: pure-drug={vs['drug_pure']:.3f}  cell_line={vs['cell_line']:.3f}  "
                     f"context={vs['context']:.3f}")
 
-        # PURE-drug verdict
-        pv = "no pure-drug subspace (drug fully within context span)"
+        # ABLATION is SUPPORTING EVIDENCE ONLY — a functional-VARIANCE statement, never a drug-identity
+        # claim (only the SWAP can say whether the drug DIRECTION is read). No "causal" label here.
+        abl = "no pure-drug subspace (drug fully within context span)"
         if kl_pure[0] is not None and kl_rand_pure[0] is not None:
             ratio = kl_pure[0] / max(kl_rand_pure[0], 1e-9)
-            if ratio < 2.0:
-                pv = f"INERT: pure-drug KL ~ matched random (ratio {ratio:.2f}) -> encoded, not read"
-            elif kl_cl[0] and kl_pure[0] < 0.25 * kl_cl[0]:
-                pv = f"weak: pure-drug KL {ratio:.1f}x random but << cell-line -> minor causal role"
-            else:
-                pv = f"CAUSAL: pure-drug KL {ratio:.1f}x random and comparable to controls -> the model DOES read pure drug identity"
-        logger.info(f"  >>> PURE-DRUG VERDICT: {pv}")
+            frac_cl = (100 * kl_pure[0] / kl_cl[0]) if (kl_cl[0] and kl_cl[0] > 0) else float("nan")
+            abl = (f"pure-drug slab carries {ratio:.1f}x the functional variance of a matched-random "
+                   f"slab ({frac_cl:.0f}% of the cell-line control) — variance, NOT drug identity")
+        logger.info(f"  ABLATION (supporting only): {abl}")
 
         entry = {"gate_pass": bool(gate_ok), "frac_signal_removed": frac_removed,
                  "drug_decode": a_drug, "drug_decode_ablated": a_drug_abl,
@@ -473,19 +486,24 @@ def main():
                  "pure_drug_dims": int(d_pure), "raw_drug_dims": int(V_drug.shape[1]),
                  "kl": {"pure_drug": kl_pure, "random_matched": kl_rand_pure, "cell_line": kl_cl,
                         "context": kl_conf, "raw_drug": kl_drug, "random": kl_rand},
-                 "variance_share": vs, "pure_drug_verdict": pv}
+                 "variance_share": vs, "ablation_note": abl}
 
-        # (4) activation-space drug swap ON THE PURE-DRUG subspace (clean drug-specificity test)
+        # (4) activation-space drug swap ON THE PURE-DRUG subspace — THE HEADLINE drug-identity test.
+        # HELD-OUT MEANS: drug B's mean is estimated ONLY on est-half cells, and the swap is run on the
+        # disjoint eval-half prompts, so mean-estimation noise cannot manufacture the swap null.
         if args.do_swap and d_pure and gate_ok:
-            drug_mean = {d: X[[i for i, r in enumerate(rows) if r["drug"] == d]].mean(0)
-                         for d in set(drug_lab)}
+            drug_mean = {}
+            for d in set(drug_lab):
+                di = [i for i in by_drug_idx[d] if est_mask[i]]
+                if di:
+                    drug_mean[d] = X[di].mean(0)
             swap_kl, randinj_kl = [], []
-            for r in kl_rows_prompts:
+            for r in eval_rows_swap:
                 others = [d for d in drug_mean if d != r["drug"]]
                 if not others:
                     continue
                 b = others[rng.randint(len(others))]
-                comp_b = V_drug_pure @ (V_drug_pure.T @ drug_mean[b])   # drug B's PURE component
+                comp_b = V_drug_pure @ (V_drug_pure.T @ drug_mean[b])   # drug B's PURE component (held-out)
                 sk = kl_under_hook(model, tok, layers_mod, L, V_drug_pure, r["prompt"], r["response"],
                                    device, add_vec=comp_b)
                 rv = rng.randn(H); rv *= np.linalg.norm(comp_b) / (np.linalg.norm(rv) + 1e-9)
@@ -498,17 +516,21 @@ def main():
                 sv = ("drug-B >> random -> readout IS drug-direction sensitive (routing failure)"
                       if mb > 1.5 * mr else
                       "drug-B ~ random -> readout is NOT drug-specific (responds to magnitude only)")
-                logger.info(f"  SWAP (pure): inject drug-B {mb:.4f}  vs matched-norm random {mr:.4f}  -> {sv}")
-                entry["swap"] = {"drug_b_kl": mb, "random_inject_kl": mr, "n": len(swap_kl), "verdict": sv}
+                logger.info(f"  SWAP (pure, held-out means): inject drug-B {mb:.4f}  vs matched-norm "
+                            f"random {mr:.4f}  (n={len(swap_kl)})  -> {sv}   <<< HEADLINE")
+                entry["swap"] = {"drug_b_kl": mb, "random_inject_kl": mr, "n": len(swap_kl),
+                                 "verdict": sv, "held_out_means": True}
         result["layers"][str(L)] = entry
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(result, open(args.out, "w"), indent=2, default=float)
     logger.info("")
-    logger.info("READ: on a GATE-passing layer, compare PURE-drug KL (⊥ context) to its MATCHED-DIM")
-    logger.info("      random null. ~random => drug identity is encoded but causally inert. Also check")
-    logger.info("      'drug decodable with context removed': if ~chance, drug is not even separable")
-    logger.info("      from dose/plate/cell-line internally (a finding in itself).")
+    logger.info("READ (narrative order): (1) SWAP is the HEADLINE — drug-B vs matched-norm random on")
+    logger.info("      HELD-OUT cells; drug-B ~ random => the readout is NOT drug-specific. (2) ABLATION is")
+    logger.info("      SUPPORTING only — pure-drug KL > matched random means the slab carries functional")
+    logger.info("      variance, NOT that drug identity is read (no 'causal' label attached). (3) DISSOCIATION")
+    logger.info("      — 'drug decodable with context removed' rises with depth while variance-share stays")
+    logger.info("      ~flat: the drug is encoded more and more, yet read no more.")
     logger.info(f"-> {args.out}")
 
 
