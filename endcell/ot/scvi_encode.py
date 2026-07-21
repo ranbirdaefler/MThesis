@@ -30,6 +30,20 @@ USAGE (scvi env, cluster)
 import argparse, json, os, sys, logging
 import numpy as np
 
+# PyTorch >= 2.6 defaults torch.load(weights_only=True), which rejects the numpy globals stored in the
+# scvi-tools 1.2.0 model.pt (raises UnpicklingError on numpy.core.multiarray._reconstruct). The model is
+# the official tahoebio/Tahoe-100M-SCVI-v1 release (trusted source) -> restore the full (weights_only=False)
+# load that scvi 1.2.0 expects. Applied before scvi imports torch.load so its internal calls pick it up.
+try:
+    import torch as _torch
+    _ORIG_TORCH_LOAD = _torch.load
+    def _full_load(*a, **k):
+        k["weights_only"] = False
+        return _ORIG_TORCH_LOAD(*a, **k)
+    _torch.load = _full_load
+except Exception:
+    pass
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
