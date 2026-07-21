@@ -52,6 +52,12 @@ Decision is **data-driven** (Step 0a/0b), not a priori. PCA is the safer round-t
 the stronger denoiser. We may end up using **scVI for the coupling geometry and PCA/expression for the
 decoded target**, or scVI for both — Step 0 decides.
 
+**DECISION (locked): both embeddings built and gated in parallel**, winner chosen on 0a/0b evidence. The
+Tahoe rows carry only raw `genes`/`expressions` (sparse counts) + metadata — **no embedding is precomputed
+in the stream** — so PCA is fit by us on the panel, and scVI is obtained by either (i) joining Tahoe's
+*released* per-cell embeddings, or (ii) encoding raw counts with the released scVI model. A scouting step
+(`endcell/ot/scout_data.py`) resolves which scVI path is available before we build.
+
 **Gene-space check:** scVI decoder output must cover the 946-panel genes (L1000 landmarks are common HVGs;
 verify overlap; restrict/reorder to the panel before ranking).
 
@@ -115,6 +121,10 @@ comes from, per the auditor):
    v_k = mean(T_k) − mean(S_k). Restores **heterogeneity in the displacement** (different sub-states move
    differently). Rank schedules from Mert: [5,25]→K=125 for N≥250; [5,5]→K=25 for small conditions.
 
+**DECISION (locked): first pass builds T0/T1/T2 only** (T0 and T1 are free; T2 = entropic Sinkhorn
+barycentric). **T3/HiRef is deferred** — built only if T2 shows life (any `model−scramble` movement or a
+captured Bures term). This keeps the first pass to simple, correct OT and defers the heaviest engineering.
+
 Orthogonal **meta-cell** axis (the other half of A-02): optionally replace targets by the average of their
 k-NN in the treated set (extra denoising). Tested as an on/off ablation on T2/T3 — flagged because
 over-smoothing can erase rare responses (auditor's caveat); we report retained heterogeneity (Bures term).
@@ -138,8 +148,10 @@ Reuse `build_consensus_targets.py --emit per_cell` verbatim except the target so
 
 - **Cold-start from the same base** (`C2S-Scale-Pythia-1b-pt`), **identical hyperparameters** to Arm 1a and
   the single-cell run, so the *training target* is the sole independent variable.
-- **Match training length** to the single-cell / Arm 1a run (step-matched head-to-head; Arm 1a's undertraining
-  caveat is avoided by matching, or by running a full epoch for all arms — decide once, apply to all).
+- **Training length (locked): 24 h wall-clock cap per arm, checkpoint every 1000 steps**, stopped manually
+  ~20 h. Arms are compared at the **last checkpoint step they both reached** (targets are similar length, so
+  throughput is comparable across arms). Frequent checkpoints let us pick the matched-step comparison post
+  hoc and watch the loss/behaviour trajectory.
 - Validity gate before trusting any score: `emits_end_cell ≈ 0.99`, sane length ratio, hallucination ≈ 0.
 
 ---
