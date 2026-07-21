@@ -927,8 +927,13 @@ def construct_training_data(
         plate = row["plate"]
         sample = row["sample"]
         
-        # Check condition cap
-        condition_key = (drug, cell_line_id, plate)
+        # Check condition cap. DOSE is part of the condition identity (audit A-05): capping per
+        # (drug, cell_line, plate) alone is dose-blind, so with rows in storage order an earlier
+        # dose could consume a group's budget before later doses appear. We include the raw
+        # concentration string (units preserved, not an interchangeable float) so each dose gets its
+        # own budget. Affects FUTURE builds only; the existing canonical dataset is unchanged.
+        dose_conc = sample_to_conc.get(sample, "unknown")
+        condition_key = (drug, cell_line_id, plate, dose_conc)
         if condition_counts[condition_key] >= max_cells_per_condition:
             continue
         
@@ -1048,7 +1053,7 @@ def construct_training_data(
     logger.info(f"Tier 2 eval (unseen drugs): {len(tier2_eval):,}")
     logger.info(f"Tier 3 eval (unseen combos): {len(tier3_eval):,}")
     logger.info(f"Tier 4 eval (dose interpolation): {len(tier4_eval):,}")
-    logger.info(f"Unique (drug,cell_line,plate) conditions: {len(condition_counts):,}")
+    logger.info(f"Unique (drug,cell_line,plate,dose) conditions: {len(condition_counts):,}")
     logger.info(f"--- DIVERSITY (train) ---")
     logger.info(f"  Unique drugs in train: {len(train_drugs):,}")
     logger.info(f"  Unique (drug,cell_line) combos in train: {len(train_combos):,}")
@@ -1121,7 +1126,8 @@ def main():
     parser.add_argument("--output_dir", type=str, default="./tahoe_c2s_data",
                         help="Output directory for processed data")
     parser.add_argument("--cells_per_condition", type=int, default=10,
-                        help="Max cells to sample per (drug, cell_line, plate) condition")
+                        help="Max cells to sample per (drug, cell_line, plate, dose) condition "
+                             "(dose added per audit A-05 so a dose-blind cap can't starve later doses)")
     parser.add_argument("--held_out_drugs", type=int, default=50,
                         help="Number of drugs to hold out for Tier 2 eval")
     parser.add_argument("--panel_file", type=str, required=True,

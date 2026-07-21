@@ -65,11 +65,17 @@ def analyze(per_group, drug_cl_doses, drug_doses, tier_doses, cap, cap_inferred)
     dist_all = Counter(len(g["doses"]) for g in groups)
     dist_caphit = Counter(len(g["doses"]) for g in cap_hit)
 
-    # A-05 AT-RISK groups: hit the cap, hold a single dose, but the drug is multi-dose elsewhere
+    # A-05 AT-RISK groups: hit the cap, hold a single dose, but the drug is multi-dose elsewhere.
+    # NOTE this is a design-confounded UPPER BOUND — a drug being multi-dose on OTHER plates is the
+    # normal Tahoe design (one dose per plate/well), not proof this group lost a dose.
     at_risk = 0
     for (drug, cl, plate), g in per_group.items():
         if g["n"] >= cap and len(g["doses"]) == 1 and drug in multi_dose_drugs:
             at_risk += 1
+    # The REAL ceiling on possible loss: how often a single (drug,cl,plate) even holds >1 dose. If
+    # within-plate dose is near-degenerate, a dose-blind cap can harm at most that slice.
+    n_multidose_groups = sum(1 for g in groups if len(g["doses"]) > 1)
+    n_caphit_multidose = sum(1 for g in cap_hit if len(g["doses"]) > 1)
 
     # Tier-4 interpolation integrity: every tier4 drug should still have >=2 doses in TRAIN
     t4 = tier_doses.get("tier4_dose_interpolation", {})
@@ -89,6 +95,9 @@ def analyze(per_group, drug_cl_doses, drug_doses, tier_doses, cap, cap_inferred)
         "dose_count_per_group_caphit": dict(sorted(dist_caphit.items())),
         "at_risk_groups": at_risk,
         "frac_caphit_at_risk": round(at_risk / max(1, len(cap_hit)), 4),
+        "n_multidose_groups": n_multidose_groups,
+        "frac_groups_multidose": round(n_multidose_groups / max(1, n_groups), 4),
+        "n_caphit_multidose": n_caphit_multidose,
         "tier4_n_drugs": len(t4_drugs),
         "tier4_drugs_with_ge2_train_doses": t4_train_ok,
         "tier4_drugs_missing_train_doses": t4_train_single[:50],
@@ -98,28 +107,33 @@ def analyze(per_group, drug_cl_doses, drug_doses, tier_doses, cap, cap_inferred)
 def _verdict(r):
     lines = []
     hit = r["frac_cap_hit"]
-    risk = r["frac_caphit_at_risk"]
+    md = r["frac_groups_multidose"]
+    t4_ok = (r["tier4_n_drugs"] == 0) or (not r["tier4_drugs_missing_train_doses"])
     lines.append(f"cap={r['cap']}{' (INFERRED as max group size)' if r['cap_inferred'] else ''}  "
                  f"groups={r['n_groups']:,}  cap-hit={r['n_cap_hit']:,} ({hit:.1%})  "
                  f"multi-dose drugs={r['n_multi_dose_drugs']}/{r['n_total_drugs']}")
     lines.append(f"dose-count/group (all):     {r['dose_count_per_group_all']}")
     lines.append(f"dose-count/group (cap-hit): {r['dose_count_per_group_caphit']}")
-    lines.append(f"A-05 AT-RISK groups (cap-hit, single-dose, drug multi-dose elsewhere): "
-                 f"{r['at_risk_groups']:,}  = {risk:.1%} of cap-hit groups")
+    lines.append(f"within-plate multi-dose groups: {r['n_multidose_groups']:,} ({md:.1%} of all) "
+                 f"<- CEILING on possible dose loss; a (drug,cl,plate) with one dose cannot lose one. "
+                 f"{r['n_caphit_multidose']:,} multi-dose groups survived the cap.")
+    lines.append(f"at-risk UPPER BOUND (design-confounded: single-dose cap-hit groups of drugs that are "
+                 f"multi-dose ON OTHER plates = normal design, not loss): {r['at_risk_groups']:,}")
     if r["tier4_n_drugs"]:
         lines.append(f"Tier-4 interpolation: {r['tier4_drugs_with_ge2_train_doses']}/{r['tier4_n_drugs']} "
                      f"drugs still have >=2 train doses"
-                     + (f"  MISSING: {r['tier4_drugs_missing_train_doses']}"
-                        if r['tier4_drugs_missing_train_doses'] else "  (all OK)"))
-    if risk < 0.02 and (not r["tier4_drugs_missing_train_doses"]):
-        lines.append("VERDICT: A-05 did NOT materially bite — dose diversity is intact; note it as a "
-                     "design caveat, no re-preprocessing needed.")
-    elif risk < 0.10:
-        lines.append("VERDICT: minor dose-diversity loss - worth a footnote; re-preprocess only if a "
-                     "dose-resolved analysis needs it.")
+                     + ("  (all OK)" if t4_ok else f"  MISSING: {r['tier4_drugs_missing_train_doses']}"))
+    if md < 0.05 and t4_ok:
+        lines.append(f"VERDICT: A-05 does NOT materially bite. Within-plate dose is near-degenerate "
+                     f"({md:.1%} multi-dose), so a dose-blind cap can touch at most that slice, and the only "
+                     f"dose-dependent split (Tier-4) is fully intact. Record as a design caveat; the "
+                     f"preprocessor now keys the cap on dose for FUTURE builds. No regeneration needed.")
+    elif md < 0.20 and t4_ok:
+        lines.append("VERDICT: minor - some within-plate multi-dose groups exist but Tier-4 is intact. "
+                     "Footnote it; regenerate only for a dose-resolved analysis.")
     else:
-        lines.append("VERDICT: material dose-diversity loss - add dose to the cap key and regenerate "
-                     "for any dose-dependent claim (Tier-4 especially).")
+        lines.append("VERDICT: material - within-plate multi-dose is common and/or Tier-4 lost doses. "
+                     "Regenerate with the dose-aware cap key for any dose-dependent claim.")
     return "\n".join(lines)
 
 

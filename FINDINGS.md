@@ -52,6 +52,13 @@ under plate control; some magnitudes shrink (leakage inflated magnitudes, never 
 
 ---
 
+## Advisor audit responses (commit `ad7073a`)
+
+- **A-04 (J-space bridge Q6→Q7):** ✅ answered by **Q13** (`workspace_probe.py`) — the causal "decodable ≠ used" test, with the privileged-subspace framing.
+- **A-07 (calibration self-test didn't validate its claim):** ✅ fixed. The self-test now runs deterministic unit checks (perfect→metric max; zero-shift / flat-truth / no-others→None) **and asserts the DE-Δr exploit on the metric itself** — an uninformed leave-one-out mean baseline scores **de_delta = 1.000** while **NIR = 0.000**. Old pass condition never checked the advertised failure case. (`calibration_eval.py --selftest`.)
+- **A-05 (dose absent from the sampling-cap key):** ✅ checked (read-only `check_dose_coverage.py` over the JSONLs) — **does NOT materially bite.** Within-plate dose is near-degenerate: only **2.4%** of (drug,cell_line,plate) groups hold >1 dose (`{1: 38759, 2: 941, 3: 4}`), so a dose-blind cap can affect at most that slice; multi-dose groups survive the cap; and the only dose-dependent split, **Tier-4, is 60/60 intact**. The blunt "at-risk" count (10,116) is a design-confounded upper bound (single-dose plates of drugs that are multi-dose *on other plates* = normal Tahoe design, not loss). Action: **no regeneration**; the preprocessor now keys the cap on `(drug, cell_line, plate, dose)` (raw conc, units preserved) so **future** builds are dose-safe — the meta-cell rebuild inherits it.
+- **A-08 (provenance):** ⏳ `make_provenance.py` bundles RESULTS/*.json + fingerprints dataset/checkpoint (manifest hash) into a committable `artifacts/`; run in progress.
+
 ## Findings
 
 ### Q1. Is there drug-specific signal in the *data* at single-cell resolution?
