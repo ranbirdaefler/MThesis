@@ -61,6 +61,29 @@ in the stream** — so PCA is fit by us on the panel, and scVI is obtained by ei
 **Gene-space check:** scVI decoder output must cover the 946-panel genes (L1000 landmarks are common HVGs;
 verify overlap; restrict/reorder to the panel before ranking).
 
+### UPDATE (post-scout) — scVI resolved to ENCODE, and targets are DECODER-FREE
+
+**scVI source (resolved).** The released model is **`tahoebio/Tahoe-100M-SCVI-v1`**: `n_latent=10`, full
+**62,710-gene** input (all 946 panel genes present — scout confirmed), batch key = **plate**, scvi-tools
+**1.2.0**. Ships `model.pt` (1 GB) + `adata.h5ad` (42 GB, holds `obsm['X_latent_qzm']` for every cell).
+- **Primary = ENCODE:** download the 1 GB model, build a query AnnData of *our* cells (counts aligned to
+  the model's var_names via `prepare_query_anndata`, batch = plate), `get_latent_representation()` →
+  10-dim latent cache keyed by barcode. Runs in a **separate `scvi` env** (scvi-tools 1.2.0 pins
+  torch/lightning; keep it off the `c2s` env). Output is an env-agnostic `.npz` the rest of the pipeline reads.
+- **Fallback = JOIN:** if encode reproducibility is doubtful, download `adata.h5ad` (42 GB) and pull
+  `X_latent_qzm` for our barcodes directly (exact shipped latent, no API risk, heavier download).
+
+**Targets are DECODER-FREE (supersedes the "decode back" framing above).** We compute the OT **coupling**
+in scVI latent (clean matching geometry), but build the **target in expression space** as a coupling-weighted
+average of *real* treated cells:
+$$\text{target}(x_i) = \frac{\sum_j \pi_{ij}\, \mathrm{expr}(y_j)}{\sum_j \pi_{ij}} \quad\text{(panel expression, then rank}\to\text{top-K}\to\text{cell sentence)}$$
+Consequences: (a) targets are convex combinations of **real** treated profiles → always on the data manifold,
+subtle drug signal preserved exactly; (b) **Step 0b (decoder fidelity) is retired** — we never decode; the
+only latent requirement is that the coupling geometry is sensible (0a-style check on the *coupling*, not a
+decode); (c) T1 = `expr(x_i) + (mean_treated − mean_control)` and T2 = the π-weighted average above are both
+pure expression arithmetic guided by the latent coupling. The scVI **decoder** is needed only for Option B
+(latent predictor), which stays deferred.
+
 ---
 
 ## 2. Step 0 — three make-or-break gates BEFORE any training (cheap, CPU/1-GPU)
