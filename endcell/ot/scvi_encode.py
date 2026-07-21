@@ -50,20 +50,48 @@ logger = logging.getLogger(__name__)
 TAHOE_REPO = "tahoebio/Tahoe-100M"
 
 
-def load_var_names(repo):
-    """62,710 gene identifiers in the model's expected order, from gene_metadata.parquet."""
+def load_gene_metadata(repo):
     import pandas as pd
     from huggingface_hub import hf_hub_download
     p = hf_hub_download(repo, "metadata/gene_metadata.parquet", repo_type="dataset")
     gdf = pd.read_parquet(p)
     logger.info(f"gene_metadata: {len(gdf)} genes, columns={list(gdf.columns)}")
-    # scVI var_names are almost always ensembl ids; fall back to symbol/token if not present.
-    for col in ("ensembl_id", "gene_id", "ensembl", "gene_symbol", "gene_name", "symbol", "token_id"):
+    return gdf
+
+
+def get_ref_var_names(model_dir):
+    """The model's expected var_names, read directly from model.pt (scvi 1.2 stores them top-level)."""
+    import torch
+    d = torch.load(os.path.join(model_dir, "model.pt"), map_location="cpu", weights_only=False)
+    for k in ("var_names", "var_names_"):
+        if isinstance(d, dict) and k in d and d[k] is not None:
+            return [str(x) for x in d[k]]
+    logger.warning("could not read var_names from model.pt; will default to ensembl_id")
+    return None
+
+
+def choose_var_names(gdf, ref_vars):
+    """Pick the gene_metadata column (raw, or version-stripped ensembl) that best matches the model's
+    reference var_names, so prepare_query_anndata aligns instead of dropping 2/3 of genes."""
+    candidates = {}
+    for col in ("gene_symbol", "ensembl_id", "token_id"):
         if col in gdf.columns:
-            logger.info(f"using gene_metadata['{col}'] as var_names")
-            return gdf[col].astype(str).tolist(), gdf
-    # last resort: the row 'genes' are positional indices -> use the frame's own index order
-    return [str(i) for i in range(len(gdf))], gdf
+            candidates[col] = gdf[col].astype(str).tolist()
+    if "ensembl_id" in gdf.columns:  # try stripping the .N version suffix
+        candidates["ensembl_id_noversion"] = gdf["ensembl_id"].astype(str).str.split(".").str[0].tolist()
+    if not ref_vars:
+        col = "ensembl_id" if "ensembl_id" in candidates else next(iter(candidates))
+        return col, candidates[col], None
+    ref = set(ref_vars)
+    scored = []
+    for col, vals in candidates.items():
+        ov = len(ref & set(vals)) / max(1, len(ref))
+        logger.info(f"  var_names candidate '{col}': overlap with model ref = {ov:.1%}")
+        scored.append((ov, col, vals))
+    scored.sort(reverse=True, key=lambda t: t[0])
+    ov, col, vals = scored[0]
+    logger.info(f"chosen var_names column: '{col}' (overlap {ov:.1%})")
+    return col, vals, ov
 
 
 def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, seed):
@@ -73,6 +101,7 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
     from scipy import sparse
     from datasets import load_dataset
     G = len(var_names)
+    var_names = list(var_names)
     rows_idx, cols_idx, vals = [], [], []
     obs = {"barcode": [], "plate": [], "cell_line_id": [], "drug": [], "dose": []}
     counts_per_cond = {}
@@ -107,7 +136,8 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
     import pandas as pd
     A = ad.AnnData(X=X, obs=pd.DataFrame(obs))
     A.var_names = var_names
-    A.obs_names = [str(b) for b in obs["barcode"]]
+    A.obs_names = [f"{b}_{i}" for i, b in enumerate(obs["barcode"])]  # unique obs ids
+    A.layers["counts"] = A.X.copy()   # the model was set up with a 'counts' layer
     logger.info(f"built query AnnData: {A.shape}")
     return A
 
@@ -135,7 +165,9 @@ def main():
     ap.add_argument("--out", default="RESULTS/scvi_latent.npz")
     args = ap.parse_args()
 
-    var_names, _ = load_var_names(args.repo)
+    gdf = load_gene_metadata(args.repo)
+    ref_vars = get_ref_var_names(args.model_dir)
+    _, var_names, _ = choose_var_names(gdf, ref_vars)
     n_target = args.smoke if args.smoke else args.max_cells
     adata = stream_cells(args.repo, var_names, n_target, args.num_shards,
                          args.cells_per_condition, args.seed)
