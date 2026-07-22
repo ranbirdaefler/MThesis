@@ -150,12 +150,13 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
 
     # ---- PASS 2: DMSO controls for the needed keys ----
     logger.info(f"PASS 2 (controls): scanning up to {control_shards} random shards for DMSO")
-    control_cnt, covered = {}, set()
+    control_cnt, covered, ctrl_drugs = {}, set(), Counter()
     for row in load_dataset("parquet", data_files=shard_urls(control_shards, seed + 1),
                             split="train", streaming=True):
         drug = row.get("drug")
         if not _is_control(drug):
             continue
+        ctrl_drugs[str(drug)] += 1
         cl, plate = row.get("cell_line_id"), row.get("plate")
         key = (cl, plate)
         if key not in needed_keys or control_cnt.get(key, 0) >= control_per_group:
@@ -172,8 +173,7 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
     X = sparse.csr_matrix((np.concatenate(vals), (np.concatenate(rows_i), np.concatenate(cols_i))),
                           shape=(n, n_panel)) if vals else sparse.csr_matrix((n, n_panel))
     logger.info(f"built {n} cells; {n_control} control ({len(control_cnt)} cl,plate groups), {n_treated} treated")
-    logger.info(f"treated drugs: {len(drug_seen)-len([d for d in drug_seen if 'DMSO' in d.upper()])}; "
-                f"DMSO-like names seen: {[d for d in drug_seen if 'DMSO' in d.upper()][:5]}")
+    logger.info(f"treated drugs: {len(drug_seen)}; control drug names (pass 2): {ctrl_drugs.most_common(5)}")
     return X, meta
 
 
