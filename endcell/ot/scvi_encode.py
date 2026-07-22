@@ -86,8 +86,11 @@ def populate_required_obs(adata, model_dir):
     """Fill every obs field the model was set up with. tscp_count / size factor <- real total counts;
     batch / covariates <- our streamed columns when present (real plate etc.), else a query placeholder
     (scArches load_query_data tolerates unseen categories)."""
-    tscp = np.asarray(adata.layers["counts"].sum(1)).ravel().astype(np.float32)
+    X = adata.layers["counts"]
+    tscp = np.asarray(X.sum(1)).ravel().astype(np.float32)
     adata.obs["tscp_count"] = tscp
+    logger.info(f"counts: min={X.min():.3f} max={X.max():.3f} "
+                f"zero_count_cells={(tscp <= 0).sum()}/{len(tscp)}")
     sa = get_setup_args(model_dir)
     cont = list(sa.get("continuous_covariate_keys") or [])
     cats = list(sa.get("categorical_covariate_keys") or [])
@@ -179,12 +182,18 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
 
 
 def encode(adata, model_dir):
+    """Load the TRAINED reference model directly onto our (gene-aligned) adata. We do NOT use
+    load_query_data — that is scArches surgery for NEW batches; this model has batch_key=None, so
+    surgery only risks NaN-initialized buffers. prepare_query_anndata just reorders/pads genes to the
+    model's var_names order; SCVI.load then applies the trained weights."""
     import scvi
-    logger.info(f"scvi-tools {scvi.__version__}; preparing query against {model_dir}")
+    logger.info(f"scvi-tools {scvi.__version__}; aligning genes + loading trained model from {model_dir}")
     scvi.model.SCVI.prepare_query_anndata(adata, model_dir)
-    model = scvi.model.SCVI.load_query_data(adata, model_dir)
-    model.is_trained = True  # use reference weights directly, no surgery epochs
+    model = scvi.model.SCVI.load(model_dir, adata=adata)
     latent = model.get_latent_representation()
+    nnan = int(np.isnan(latent).sum())
+    if nnan:
+        logger.warning(f"latent has {nnan} NaNs in shape {latent.shape} (check zero-count cells / input)")
     logger.info(f"latent: {latent.shape}")
     return np.asarray(latent, dtype=np.float32)
 
@@ -208,6 +217,10 @@ def main():
     adata = stream_cells(args.repo, var_names, n_target, args.num_shards,
                          args.cells_per_condition, args.seed)
     adata = populate_required_obs(adata, args.model_dir)
+    keep = adata.obs["tscp_count"].values > 0            # zero-count cells -> size factor 0 -> NaN latent
+    if (~keep).any():
+        logger.warning(f"dropping {int((~keep).sum())} zero-count cells before encode")
+        adata = adata[keep].copy()
     latent = encode(adata, args.model_dir)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
