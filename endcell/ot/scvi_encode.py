@@ -193,15 +193,28 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
     return A
 
 
-def encode(adata, model_dir):
-    """Load the TRAINED reference model directly onto our (gene-aligned) adata. We do NOT use
-    load_query_data — that is scArches surgery for NEW batches; this model has batch_key=None, so
-    surgery only risks NaN-initialized buffers. prepare_query_anndata just reorders/pads genes to the
-    model's var_names order; SCVI.load then applies the trained weights."""
+def encode(adata, model_dir, ref_vars):
+    """Load the TRAINED reference model directly onto our adata. Gene alignment is done by POSITION,
+    not by name: our columns are in gene_metadata order and so are the model's var_names, so we assign
+    the model's var_names directly. We AVOID prepare_query_anndata's name-based reorder, which scrambles
+    genes when gene_symbol has duplicates (many symbols repeat in a 62,710-gene set) -> collapsed latent.
+    (batch_key=None, so no scArches surgery either.)"""
     import scvi, torch
     import scipy.sparse as sp
-    logger.info(f"scvi-tools {scvi.__version__}; aligning genes + loading trained model from {model_dir}")
-    scvi.model.SCVI.prepare_query_anndata(adata, model_dir)
+    logger.info(f"scvi-tools {scvi.__version__}; loading trained model from {model_dir}")
+    our = [str(x) for x in adata.var_names]
+    aligned = False
+    if ref_vars is not None and len(ref_vars) == len(our):
+        ew = sum(1 for a, b in zip(our, ref_vars) if a == b)
+        logger.info(f"var element-wise match to model order: {ew}/{len(our)}; "
+                    f"dups(ours)={len(our) - len(set(our))} dups(model)={len(ref_vars) - len(set(ref_vars))}")
+        if ew == len(our):
+            adata.var_names = list(ref_vars)          # identical order -> direct assign, NO reorder
+            aligned = True
+    if not aligned:
+        logger.warning("column order does not match model var order element-wise -> "
+                       "falling back to name-based prepare_query_anndata (may scramble on duplicates)")
+        scvi.model.SCVI.prepare_query_anndata(adata, model_dir)
     model = scvi.model.SCVI.load(model_dir, adata=adata)
 
     # --- localize NaN source: weights vs input ---
@@ -252,7 +265,7 @@ def main():
     if (~keep).any():
         logger.warning(f"dropping {int((~keep).sum())} zero-count cells before encode")
         adata = adata[keep].copy()
-    latent = encode(adata, args.model_dir)
+    latent = encode(adata, args.model_dir, ref_vars)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     np.savez_compressed(
