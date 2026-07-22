@@ -160,6 +160,8 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
         # row 'genes' are positional indices into the gene vocabulary (0..G-1)
         gi = np.asarray(g, dtype=np.int64)
         ev = np.asarray(e, dtype=np.float32)
+        ev = np.maximum(ev, 0.0)   # Tahoe 'expressions' carry rare negatives (min ~ -2); raw counts are >=0,
+                                   # and scVI log_variational = log(1+x) would give NaN on x < -1
         m = (gi >= 0) & (gi < G)
         rows_idx.append(np.full(m.sum(), n, dtype=np.int64))
         cols_idx.append(gi[m]); vals.append(ev[m])
