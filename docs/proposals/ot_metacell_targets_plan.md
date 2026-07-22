@@ -179,20 +179,71 @@ Reuse `build_consensus_targets.py --emit per_cell` verbatim except the target so
 
 ---
 
-## 7. Evaluation (leak-immune battery + the new latent metric)
+## 7. Evaluation — which target, and how we compare to the existing models
 
-Every number **within-plate** (the methods-note protocol). Score all arms identically:
+### 7.0 The framing: "consensus vs single-cell" is a false binary — it's the ε knob
 
-- **Existing leak-immune instruments:** within-plate NIR + **scramble** (same control, wrong drug token) +
-  **control-copy** (zero-drug-info) + **output-invariance**. The decisive causal number stays
-  `model − scramble` with clustered CIs.
-- **New — MW₂ / Bures population metric (answers A-01):** in embedding space, score a prediction by its
-  **MW₂ distance to its own drug's treated Gaussian vs to other drugs'** (a latent-space NIR), with
-  **matched population depth** across model / truth / ceiling / baselines (the A-01 fix). Report the Bures
-  (shape) term separately — does the model capture response *heterogeneity*, not just the mean shift?
-- **Ablation table (the A-02 deliverable):** T0(consensus) vs T1 vs T2 vs T3, ± meta-cell. "Paired vs purely
-  distributional" = T2/T3 vs T0; "unsmoothed vs smoothed" = meta-cell on/off. This isolates *where* any
-  benefit originates instead of reporting one number.
+The current model's two target styles are **not** rival choices with OT as a third; they are the two
+**endpoints of the entropic-regularization ε** on the same OT map:
+
+- **ε → ∞** ⇒ barycentric target → the treated **mean** = **consensus** (Arm 1a): every control cell maps to
+  one global pseudobulk.
+- **ε → 0** ⇒ sharp assignment: each control maps to its nearest **state-matched** treated cell ≈ single-cell,
+  but with a *matched* pairing, not the random control↔treated pairing the current model trains on.
+- **intermediate ε** ⇒ control-*specific* denoised targets (T2).
+
+So we do **not** pick a target a priori. The ladder **T0 (consensus) → T1 (mean-displacement) → T2
+(OT-barycentric)** *is* the answer to "which target," read off empirically. If compute forces a priority,
+the decisive contrast is **T2 vs T0** (does the state-matched pairing beat pure pseudobulk?).
+
+### 7.1 Two axes, kept separate (this is the whole point)
+
+Q1 says pseudobulk has more signal, so consensus/OT are better *learning targets* — but Q12/Q13 say the
+thesis bottleneck is the **objective/readout**, not target noise. "More signal in the target" ≠ "the model
+uses the drug." So every model is scored on **two independent axes**, and we never conflate them:
+
+| axis | question | metrics | expectation |
+|---|---|---|---|
+| **overall quality** | how close to the true treated profile? | NIR, ceiling ratio, **MW₂ / Bures** | aggregation helps (Q1) → consensus/OT win |
+| **drug specificity** | does the model USE the drug? | **model−scramble** (clustered CI), control-copy, output-invariance | target alone probably won't fix it (Q12/Q13) |
+
+`model−scramble` (same control cell, wrong drug token) is the **headline** — the drug-use number. NIR/MW₂ are
+the quality axis. Reporting one without the other is how the earlier "competent but blind" over-claim happened.
+
+### 7.2 The head-to-head table (extends the Arm 1a comparison to all targets)
+
+One table, **all models scored identically** — within-plate, matched training step, same eval protocol, target
+the only variable:
+
+| model | target | NIR | ceiling ratio | **model−scramble [CI]** | control-copy | output-inv | MW₂ (loc / Bures) |
+|---|---|---|---|---|---|---|---|
+| single-cell | real treated cell | | | | | | |
+| consensus (Arm 1a) | global pseudobulk (ε→∞) | | | | | | |
+| **T0** | consensus rebuilt (ε→∞, control) | | | | | | |
+| **T1** | control + mean shift | | | | | | |
+| **T2** | OT-barycentric (finite ε) | | | | | | |
+
+T0 re-derives consensus inside this pipeline (reproducibility check vs Arm 1a). T1/T2 test whether restoring
+the per-control pairing that consensus threw away buys anything on **either** axis.
+
+### 7.3 Why OT can beat consensus on a dimension consensus can't touch
+
+Consensus maps *every* control → one mean: it destroys the input→output correspondence (many-to-one, nothing
+per-cell to learn) **and collapses heterogeneity** (the model silently becomes a pseudobulk predictor — the
+A-02 "smoothing erases rare responses" caveat). **OT (T2) denoises WITHOUT collapsing**: different control
+cells get different, state-matched targets, so the model stays a genuine single-cell predictor, keeps a
+learnable one-to-one mapping, *and* gets a cleaner signal. Diagnostic: per-control target variance > 0 (0c) and
+predicted drug-drug geometry retains spread (not mode-collapsed like the single-cell model's CV 0.50, Q12).
+
+### 7.4 Pre-committed interpretation (no outcome is wasted)
+
+- **T2 wins on quality AND lifts model−scramble (CI excludes 0):** the pairing mattered — first genuine
+  drug-use; characterize which construction and whether the Bures term is captured.
+- **T2 wins on quality but model−scramble ≈ 0 (like consensus):** *expected under Q13.* Not a failure — the
+  cleanest proof yet that the defect is the **objective**, not the target. Greenlights **Arm 1b** (contrastive
+  / discrimination loss), for which the OT couplings and displacements built here are the raw material.
+- **The MW₂/Bures A-01 metric** additionally answers whether *any* model captures response **heterogeneity**
+  (shape), not just the mean shift — matched population depth across model/truth/ceiling/baselines.
 
 ---
 
