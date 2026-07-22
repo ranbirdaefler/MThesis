@@ -75,80 +75,105 @@ def build_tok2panel(repo, panel_symbols):
 
 
 def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
-                     control_per_group, max_cells, seed, smoke=0):
-    """Stream random shards; build CP10K panel expression + metadata. Returns (CSR expr, meta dict)."""
+                     control_per_group, max_cells, seed, smoke=0, control_shards=80,
+                     control_coverage=0.9):
+    """TWO PASSES (DMSO controls do NOT co-locate with treated shards, per the preprocessor):
+       (1) treated pass over `num_shards` random shards, capped per (drug,cl,plate,dose);
+       (2) DMSO control pass over `control_shards` random shards (whole-shard), keeping DMSO cells for
+           the (cell_line,plate) keys the treated pass needs, capped per group, early-stopping at
+           `control_coverage` of needed keys. Returns (CSR expr, meta)."""
     from scipy import sparse
     from datasets import load_dataset
     from huggingface_hub import HfApi
+    from collections import Counter
     all_files = [f for f in HfApi().list_repo_files(repo, repo_type="dataset")
                  if f.startswith("data/") and f.endswith(".parquet")]
     rng = np.random.RandomState(seed)
-    k = min(max(1, num_shards), len(all_files))
-    picks = sorted(rng.choice(len(all_files), k, replace=False).tolist())
-    urls = [f"https://huggingface.co/datasets/{repo}/resolve/main/{all_files[i]}" for i in picks]
-    logger.info(f"streaming {k} random shards of {len(all_files)}")
-    ds = load_dataset("parquet", data_files=urls, split="train", streaming=True)
 
     rows_i, cols_i, vals = [], [], []
     meta = {"barcode": [], "drug": [], "cell_line_id": [], "plate": [], "dose": [],
             "is_control": [], "lib_size": []}
-    treated_cnt, control_cnt = {}, {}
-    from collections import Counter
-    drug_seen = Counter()
-    target = smoke if smoke else max_cells
-    n = 0
-    for row in ds:
+    state = {"n": 0}
+
+    def add(row, drug, cl, plate, dose, is_ctrl):
         g, e = row.get("genes"), row.get("expressions")
         if g is None or e is None:
-            continue
-        drug, cl, plate = row.get("drug"), row.get("cell_line_id"), row.get("plate")
-        dose = row.get("sample")
-        drug_seen[str(drug)] += 1
-        is_ctrl = _is_control(drug)
-        if is_ctrl:
-            key = (cl, plate)
-            if control_cnt.get(key, 0) >= control_per_group:
-                continue
-            control_cnt[key] = control_cnt.get(key, 0) + 1
-        else:
-            key = (drug, cl, plate, dose)
-            if treated_cnt.get(key, 0) >= cells_per_condition:
-                continue
-            treated_cnt[key] = treated_cnt.get(key, 0) + 1
+            return False
         gi = np.asarray(g, dtype=np.int64)
-        ev = np.maximum(np.asarray(e, dtype=np.float32), 0.0)   # clip rare negatives (see scvi_encode)
-        lib = float(ev.sum())                                   # full-library size (all genes)
+        ev = np.maximum(np.asarray(e, dtype=np.float32), 0.0)   # clip rare negatives
+        lib = float(ev.sum())                                   # full-library size
         if lib <= 0:
-            continue
-        # map token IDs -> panel; drop out-of-vocab tokens (genes exceed the metadata length)
+            return False
         p = np.full(len(gi), -1, dtype=np.int32)
-        inrange = (gi >= 0) & (gi < len(tok2panel))
-        p[inrange] = tok2panel[gi[inrange]]
+        inr = (gi >= 0) & (gi < len(tok2panel))
+        p[inr] = tok2panel[gi[inr]]
         keep = p >= 0
         if keep.any():
-            pj = p[keep]
-            cp10k = ev[keep] / lib * 1e4                        # CP10K (linear); rank/average in this space
-            # collapse duplicate panel indices within the cell
-            order = np.argsort(pj)
-            pj_s, cv_s = pj[order], cp10k[order]
+            pj = p[keep]; cp10k = ev[keep] / lib * 1e4          # CP10K linear
+            order = np.argsort(pj); pj_s, cv_s = pj[order], cp10k[order]
             uniq, start = np.unique(pj_s, return_index=True)
-            summed = np.add.reduceat(cv_s, start)
-            rows_i.append(np.full(len(uniq), n, dtype=np.int64))
-            cols_i.append(uniq.astype(np.int64)); vals.append(summed.astype(np.float32))
+            rows_i.append(np.full(len(uniq), state["n"], dtype=np.int64))
+            cols_i.append(uniq.astype(np.int64)); vals.append(np.add.reduceat(cv_s, start).astype(np.float32))
         meta["barcode"].append(row.get("BARCODE_SUB_LIB_ID") or row.get("barcode"))
         meta["drug"].append(drug); meta["cell_line_id"].append(cl); meta["plate"].append(plate)
         meta["dose"].append(dose); meta["is_control"].append(bool(is_ctrl)); meta["lib_size"].append(lib)
-        n += 1
-        if n % 20000 == 0:
-            logger.info(f"  built {n} cells ({sum(meta['is_control'])} control)")
-        if n >= target:
+        state["n"] += 1
+        return True
+
+    def shard_urls(k, rs):
+        picks = sorted(np.random.RandomState(rs).choice(len(all_files), min(k, len(all_files)),
+                                                        replace=False).tolist())
+        return [f"https://huggingface.co/datasets/{repo}/resolve/main/{all_files[i]}" for i in picks]
+
+    # ---- PASS 1: treated ----
+    logger.info(f"PASS 1 (treated): {num_shards} random shards")
+    treated_cnt, needed_keys, drug_seen = {}, set(), Counter()
+    target = smoke if smoke else max_cells
+    for row in load_dataset("parquet", data_files=shard_urls(num_shards, seed),
+                            split="train", streaming=True):
+        drug, cl, plate, dose = row.get("drug"), row.get("cell_line_id"), row.get("plate"), row.get("sample")
+        drug_seen[str(drug)] += 1
+        if _is_control(drug):
+            continue
+        key = (drug, cl, plate, dose)
+        if treated_cnt.get(key, 0) >= cells_per_condition:
+            continue
+        if add(row, drug, cl, plate, dose, False):
+            treated_cnt[key] = treated_cnt.get(key, 0) + 1
+            needed_keys.add((cl, plate))
+        if state["n"] % 20000 == 0 and state["n"]:
+            logger.info(f"  treated {state['n']}  needed (cl,plate) keys {len(needed_keys)}")
+        if state["n"] >= target:
             break
+    n_treated = state["n"]
+    logger.info(f"PASS 1 done: {n_treated} treated; {len(needed_keys)} (cl,plate) keys need controls")
+
+    # ---- PASS 2: DMSO controls for the needed keys ----
+    logger.info(f"PASS 2 (controls): scanning up to {control_shards} random shards for DMSO")
+    control_cnt, covered = {}, set()
+    for row in load_dataset("parquet", data_files=shard_urls(control_shards, seed + 1),
+                            split="train", streaming=True):
+        drug = row.get("drug")
+        if not _is_control(drug):
+            continue
+        cl, plate = row.get("cell_line_id"), row.get("plate")
+        key = (cl, plate)
+        if key not in needed_keys or control_cnt.get(key, 0) >= control_per_group:
+            continue
+        if add(row, drug, cl, plate, row.get("sample"), True):
+            control_cnt[key] = control_cnt.get(key, 0) + 1
+            if control_cnt[key] >= 20:
+                covered.add(key)
+        if len(covered) >= control_coverage * max(1, len(needed_keys)):
+            logger.info(f"  reached {len(covered)}/{len(needed_keys)} key coverage -> stop control scan")
+            break
+    n = state["n"]
+    n_control = n - n_treated
     X = sparse.csr_matrix((np.concatenate(vals), (np.concatenate(rows_i), np.concatenate(cols_i))),
                           shape=(n, n_panel)) if vals else sparse.csr_matrix((n, n_panel))
-    logger.info(f"built {n} cells; {sum(meta['is_control'])} control, {n - sum(meta['is_control'])} treated")
-    dmso_like = [(d, c) for d, c in drug_seen.most_common() if "DMSO" in d.upper()]
-    logger.info(f"distinct drugs seen: {len(drug_seen)}; DMSO-like: {dmso_like[:5]}; "
-                f"top drugs: {drug_seen.most_common(8)}")
+    logger.info(f"built {n} cells; {n_control} control ({len(control_cnt)} cl,plate groups), {n_treated} treated")
+    logger.info(f"treated drugs: {len(drug_seen)-len([d for d in drug_seen if 'DMSO' in d.upper()])}; "
+                f"DMSO-like names seen: {[d for d in drug_seen if 'DMSO' in d.upper()][:5]}")
     return X, meta
 
 
@@ -224,6 +249,8 @@ def main():
     ap.add_argument("--num_shards", type=int, default=60)
     ap.add_argument("--cells_per_condition", type=int, default=120)
     ap.add_argument("--control_per_group", type=int, default=200)
+    ap.add_argument("--control_shards", type=int, default=80,
+                    help="shards scanned in the dedicated DMSO control pass (controls don't co-locate)")
     ap.add_argument("--max_cells", type=int, default=1_500_000)
     ap.add_argument("--pca_dim", type=int, default=50)
     ap.add_argument("--smoke", type=int, default=0)
@@ -238,7 +265,8 @@ def main():
     tok2panel = build_tok2panel(args.repo, panel_symbols)
     X, meta = stream_and_build(args.repo, tok2panel, len(panel_symbols), args.num_shards,
                                args.cells_per_condition, args.control_per_group,
-                               args.max_cells, args.seed, smoke=args.smoke)
+                               args.max_cells, args.seed, smoke=args.smoke,
+                               control_shards=args.control_shards)
     coords, pca = fit_pca(X, args.pca_dim, args.seed)
     cfg = {k: v for k, v in vars(args).items()}
     cfg["n_cells"] = int(X.shape[0]); cfg["n_control"] = int(sum(meta["is_control"]))
