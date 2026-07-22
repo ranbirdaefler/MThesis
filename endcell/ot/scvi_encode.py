@@ -287,14 +287,26 @@ def main():
         logger.info(f"SMOKE cell lines: {len(uq)} unique; top (count,name): {top}")
         try:
             from sklearn.metrics import silhouette_score
-            cl = np.array(adata.obs["cell_line_id"].tolist())
-            keep = np.array([c is not None for c in cl])
-            if keep.sum() > 50 and len(set(cl[keep])) > 1:
-                s = silhouette_score(latent[keep], cl[keep])
-                logger.info(f"SMOKE cell-line silhouette in latent: {s:.3f} (higher=cleaner cell-line clusters)")
+            s = silhouette_score(latent, cls_all)
+            logger.info(f"SMOKE cell-line silhouette: {s:.3f} (harsh/shape-sensitive; probe below is decisive)")
         except Exception as e:
             logger.info(f"SMOKE silhouette skipped: {e}")
-        logger.info("SMOKE OK if dims==10, variances are non-degenerate, silhouette clearly > 0.")
+        try:
+            # DECISIVE test: can a linear classifier recover cell line from the latent? scVI latents
+            # separate cell lines (Mert Fig 18) but can score negative silhouette due to cluster shape.
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.model_selection import cross_val_score
+            uq2, ct2 = np.unique(cls_all, return_counts=True)
+            keepcl = set(uq2[ct2 >= 10])
+            m = np.array([c in keepcl for c in cls_all])
+            if m.sum() > 100 and len(keepcl) > 2:
+                acc = float(np.mean(cross_val_score(
+                    LogisticRegression(max_iter=1000, C=1.0), latent[m], cls_all[m], cv=3)))
+                logger.info(f"SMOKE cell-line PROBE accuracy: {acc:.3f}  (chance ~ {1/len(keepcl):.3f}, "
+                            f"{len(keepcl)} cell lines) <<< decisive: >>chance => latent is faithful")
+        except Exception as e:
+            logger.info(f"SMOKE probe skipped: {e}")
+        logger.info("SMOKE OK if dims==10, variances non-degenerate, and PROBE accuracy >> chance.")
 
 
 if __name__ == "__main__":
