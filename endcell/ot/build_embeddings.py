@@ -45,27 +45,33 @@ def load_panel_symbols(panel_path):
     raise ValueError(f"cannot parse panel json {panel_path}")
 
 
-def build_pos2panel(repo, panel_symbols):
-    """array of length n_genes: gene position -> panel index (or -1). Tahoe row 'genes' are positional
-    indices into gene_metadata; map those whose gene_symbol is in the panel."""
+def build_tok2panel(repo, panel_symbols):
+    """array indexed by TOKEN ID: token_id -> panel index (or -1). Tahoe row 'genes' are token IDs into
+    the gene vocabulary (they exceed the 62,710-row metadata length), NOT positional indices; map via
+    gene_metadata['token_id'] -> gene_symbol -> panel."""
     import pandas as pd
     from huggingface_hub import hf_hub_download
     p = hf_hub_download(repo, "metadata/gene_metadata.parquet", repo_type="dataset")
     gdf = pd.read_parquet(p)
-    sym = gdf["gene_symbol"].astype(str).tolist()
+    if "token_id" not in gdf.columns:
+        raise ValueError(f"gene_metadata has no token_id column: {list(gdf.columns)}")
+    tok = gdf["token_id"].astype(np.int64).values
+    sym = gdf["gene_symbol"].astype(str).values
     panel_index = {s: i for i, s in enumerate(panel_symbols)}
-    pos2panel = np.full(len(sym), -1, dtype=np.int32)
+    max_tok = int(tok.max())
+    tok2panel = np.full(max_tok + 1, -1, dtype=np.int32)
     hit = 0
-    for pos, s in enumerate(sym):
-        j = panel_index.get(s, -1)
-        if j >= 0:
-            pos2panel[pos] = j
+    for i in range(len(tok)):
+        j = panel_index.get(sym[i], -1)
+        if j >= 0 and 0 <= tok[i] <= max_tok:
+            tok2panel[tok[i]] = j
             hit += 1
-    logger.info(f"panel mapping: {hit} gene positions map into {len(panel_symbols)} panel genes")
-    return pos2panel
+    logger.info(f"panel mapping via token_id: {hit}/{len(panel_symbols)} panel genes mapped; "
+                f"max_token={max_tok}")
+    return tok2panel
 
 
-def stream_and_build(repo, pos2panel, n_panel, num_shards, cells_per_condition,
+def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
                      control_per_group, max_cells, seed, smoke=0):
     """Stream random shards; build CP10K panel expression + metadata. Returns (CSR expr, meta dict)."""
     from scipy import sparse
@@ -105,11 +111,13 @@ def stream_and_build(repo, pos2panel, n_panel, num_shards, cells_per_condition,
             treated_cnt[key] = treated_cnt.get(key, 0) + 1
         gi = np.asarray(g, dtype=np.int64)
         ev = np.maximum(np.asarray(e, dtype=np.float32), 0.0)   # clip rare negatives (see scvi_encode)
-        lib = float(ev.sum())
+        lib = float(ev.sum())                                   # full-library size (all genes)
         if lib <= 0:
             continue
-        # accumulate panel counts for this cell
-        p = pos2panel[gi]
+        # map token IDs -> panel; drop out-of-vocab tokens (genes exceed the metadata length)
+        p = np.full(len(gi), -1, dtype=np.int32)
+        inrange = (gi >= 0) & (gi < len(tok2panel))
+        p[inrange] = tok2panel[gi[inrange]]
         keep = p >= 0
         if keep.any():
             pj = p[keep]
@@ -218,8 +226,8 @@ def main():
         selftest(); return
 
     panel_symbols = load_panel_symbols(args.panel)
-    pos2panel = build_pos2panel(args.repo, panel_symbols)
-    X, meta = stream_and_build(args.repo, pos2panel, len(panel_symbols), args.num_shards,
+    tok2panel = build_tok2panel(args.repo, panel_symbols)
+    X, meta = stream_and_build(args.repo, tok2panel, len(panel_symbols), args.num_shards,
                                args.cells_per_condition, args.control_per_group,
                                args.max_cells, args.seed, smoke=args.smoke)
     coords, pca = fit_pca(X, args.pca_dim, args.seed)
