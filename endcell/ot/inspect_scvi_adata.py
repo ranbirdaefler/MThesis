@@ -83,8 +83,8 @@ def main():
     Z = np.asarray(lat[idx], dtype=np.float32)
     logger.info(f"latent sample shape={Z.shape}  per-dim var={np.round(Z.var(0), 3)}")
 
-    cl_col = next((c for c in obs_cols if c.lower() in ("cell_line_id", "cell_line", "cell_name", "cellline")),
-                  next((c for c in obs_cols if "cell" in c.lower() and "line" in c.lower()), None))
+    cl_col = next((c for c in ("Cell_ID_Cellosaur", "cell_line_id", "cell_line", "Cell_Name_Vevo",
+                               "cell_name", "cellline") if c in obs_cols), None)
     if cl_col is None:
         logger.warning(f"no cell-line column found in {obs_cols}; skipping probe")
         return
