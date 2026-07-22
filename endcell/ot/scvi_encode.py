@@ -186,10 +186,29 @@ def encode(adata, model_dir):
     load_query_data — that is scArches surgery for NEW batches; this model has batch_key=None, so
     surgery only risks NaN-initialized buffers. prepare_query_anndata just reorders/pads genes to the
     model's var_names order; SCVI.load then applies the trained weights."""
-    import scvi
+    import scvi, torch
+    import scipy.sparse as sp
     logger.info(f"scvi-tools {scvi.__version__}; aligning genes + loading trained model from {model_dir}")
     scvi.model.SCVI.prepare_query_anndata(adata, model_dir)
     model = scvi.model.SCVI.load(model_dir, adata=adata)
+
+    # --- localize NaN source: weights vs input ---
+    bad = [n for n, p in model.module.named_parameters() if not torch.isfinite(p).all()]
+    logger.info(f"non-finite model params: {len(bad)}" + (f"  e.g. {bad[:5]}" if bad else "  (weights OK)"))
+    try:
+        cl = model.adata.layers["counts"]
+        data = cl.data if sp.issparse(cl) else np.asarray(cl).ravel()
+        logger.info(f"post-setup counts: min={float(data.min()):.3f} max={float(data.max()):.3f} "
+                    f"nan={bool(np.isnan(data).any())} neg={bool((data < 0).any())} nnz={data.size}")
+    except Exception as e:
+        logger.info(f"counts check skipped: {e}")
+    try:
+        sf = np.asarray(model.adata.obs["tscp_count"], dtype=np.float64)
+        logger.info(f"size factor tscp_count: min={sf.min():.3f} max={sf.max():.3f} "
+                    f"nan={bool(np.isnan(sf).any())} zeros={int((sf == 0).sum())}")
+    except Exception as e:
+        logger.info(f"size-factor check skipped: {e}")
+
     latent = model.get_latent_representation()
     nnan = int(np.isnan(latent).sum())
     if nnan:
