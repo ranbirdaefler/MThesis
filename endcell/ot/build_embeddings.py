@@ -31,7 +31,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 TAHOE_REPO = "tahoebio/Tahoe-100M"
-DMSO = {"DMSO_TF", "DMSO"}
+
+
+def _is_control(drug):
+    return drug is not None and "DMSO" in str(drug).upper()
 
 
 def load_panel_symbols(panel_path):
@@ -90,6 +93,8 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
     meta = {"barcode": [], "drug": [], "cell_line_id": [], "plate": [], "dose": [],
             "is_control": [], "lib_size": []}
     treated_cnt, control_cnt = {}, {}
+    from collections import Counter
+    drug_seen = Counter()
     target = smoke if smoke else max_cells
     n = 0
     for row in ds:
@@ -98,7 +103,8 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
             continue
         drug, cl, plate = row.get("drug"), row.get("cell_line_id"), row.get("plate")
         dose = row.get("sample")
-        is_ctrl = drug in DMSO
+        drug_seen[str(drug)] += 1
+        is_ctrl = _is_control(drug)
         if is_ctrl:
             key = (cl, plate)
             if control_cnt.get(key, 0) >= control_per_group:
@@ -140,6 +146,9 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
     X = sparse.csr_matrix((np.concatenate(vals), (np.concatenate(rows_i), np.concatenate(cols_i))),
                           shape=(n, n_panel)) if vals else sparse.csr_matrix((n, n_panel))
     logger.info(f"built {n} cells; {sum(meta['is_control'])} control, {n - sum(meta['is_control'])} treated")
+    dmso_like = [(d, c) for d, c in drug_seen.most_common() if "DMSO" in d.upper()]
+    logger.info(f"distinct drugs seen: {len(drug_seen)}; DMSO-like: {dmso_like[:5]}; "
+                f"top drugs: {drug_seen.most_common(8)}")
     return X, meta
 
 
