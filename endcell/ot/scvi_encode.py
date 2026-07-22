@@ -129,7 +129,8 @@ def choose_var_names(gdf, ref_vars):
         scored.append((ov, col, vals))
     scored.sort(reverse=True, key=lambda t: t[0])
     ov, col, vals = scored[0]
-    logger.info(f"chosen var_names column: '{col}' (overlap {ov:.1%})")
+    ndup = len(vals) - len(set(vals))
+    logger.info(f"chosen var_names column: '{col}' (overlap {ov:.1%}, {ndup} duplicate names of {len(vals)})")
     return col, vals, ov
 
 
@@ -144,7 +145,16 @@ def stream_cells(repo, var_names, n_target, num_shards, cells_per_condition, see
     rows_idx, cols_idx, vals = [], [], []
     obs = {"barcode": [], "plate": [], "cell_line_id": [], "drug": [], "dose": []}
     counts_per_cond = {}
-    ds = load_dataset(repo, split="train", streaming=True)
+    # sample RANDOM shards for cell-line/plate diversity (sequential shard-0 reads are homogeneous)
+    from huggingface_hub import HfApi
+    all_files = [f for f in HfApi().list_repo_files(repo, repo_type="dataset")
+                 if f.startswith("data/") and f.endswith(".parquet")]
+    rng = np.random.RandomState(seed)
+    k = min(max(1, num_shards), len(all_files))
+    picks = sorted(rng.choice(len(all_files), k, replace=False).tolist())
+    urls = [f"https://huggingface.co/datasets/{repo}/resolve/main/{all_files[i]}" for i in picks]
+    logger.info(f"sampling {k} random shards of {len(all_files)} for diversity")
+    ds = load_dataset("parquet", data_files=urls, split="train", streaming=True)
     n = 0
     for row in ds:
         g = row.get("genes"); e = row.get("expressions")
@@ -258,6 +268,10 @@ def main():
         v = latent.var(0)
         logger.info(f"SMOKE latent per-dim variance: {np.round(v, 3)}")
         logger.info(f"SMOKE latent dims={latent.shape[1]} (expect 10)  cells={latent.shape[0]}")
+        cls_all = np.array([str(c) for c in adata.obs["cell_line_id"].tolist()])
+        uq, ct = np.unique(cls_all, return_counts=True)
+        top = sorted(zip(ct.tolist(), uq.tolist()), reverse=True)[:8]
+        logger.info(f"SMOKE cell lines: {len(uq)} unique; top (count,name): {top}")
         try:
             from sklearn.metrics import silhouette_score
             cl = np.array(adata.obs["cell_line_id"].tolist())
