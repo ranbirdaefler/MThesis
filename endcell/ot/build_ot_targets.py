@@ -83,23 +83,31 @@ def parse_dose(conc_str):
 
 # ----------------------------------------------------------------- Tahoe metadata maps
 def load_meta_maps(repo):
+    """Exact columns as the preprocessor: Cell_ID_Cellosaur->cell_name, drug->moa-fine,
+    sample->drugname_drugconc (so OT prompts match the model's training/eval prompts verbatim)."""
     import pandas as pd
     from huggingface_hub import hf_hub_download
     def L(name):
         return pd.read_parquet(hf_hub_download(repo, f"metadata/{name}", repo_type="dataset"))
-    cl = L("cell_line_metadata.parquet")
-    dr = L("drug_metadata.parquet")
-    sm = L("sample_metadata.parquet")
-    cl_id = next((c for c in cl.columns if "Cell_ID" in c or c == "cell_line_id"), cl.columns[0])
-    cl_nm = next((c for c in cl.columns if "Name" in c or "name" in c), cl_id)
-    cvcl_to_name = dict(zip(cl[cl_id].astype(str), cl[cl_nm].astype(str)))
-    dcol = next((c for c in dr.columns if c == "drug"), dr.columns[0])
-    mcol = next((c for c in dr.columns if "moa" in c.lower()), None)
-    drug_to_moa = dict(zip(dr[dcol].astype(str), dr[mcol].astype(str))) if mcol else {}
-    scol = next((c for c in sm.columns if c == "sample"), sm.columns[0])
-    ccol = next((c for c in sm.columns if "conc" in c.lower() or "drugname" in c.lower()), None)
-    sample_to_conc = dict(zip(sm[scol].astype(str), sm[ccol].astype(str))) if ccol else {}
-    logger.info(f"meta maps: {len(cvcl_to_name)} cell lines, {len(drug_to_moa)} MoA, {len(sample_to_conc)} samples")
+    cl, dr, sm = L("cell_line_metadata.parquet"), L("drug_metadata.parquet"), L("sample_metadata.parquet")
+    cvcl_to_name = {}
+    for _, r in cl.iterrows():
+        cid, nm = r.get("Cell_ID_Cellosaur"), r.get("cell_name")
+        if nm is None or (isinstance(nm, float) and pd.isna(nm)):
+            nm = str(cid)
+        if cid is not None:
+            cvcl_to_name[str(cid)] = str(nm)
+    drug_to_moa = {}
+    for _, r in dr.iterrows():
+        d = r.get("drug")
+        if d:
+            drug_to_moa[str(d)] = str(r.get("moa-fine", r.get("moa_fine", "unknown")))
+    sample_to_conc = {}
+    for _, r in sm.iterrows():
+        s = r.get("sample")
+        if s is not None:
+            sample_to_conc[str(s)] = str(r.get("drugname_drugconc", "unknown"))
+    logger.info(f"meta maps: {len(cvcl_to_name)} cell lines, {len(drug_to_moa)} drugs, {len(sample_to_conc)} samples")
     return cvcl_to_name, drug_to_moa, sample_to_conc
 
 
