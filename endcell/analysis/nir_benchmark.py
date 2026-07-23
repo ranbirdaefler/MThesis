@@ -154,8 +154,38 @@ def fit_ridge(train, panel_index, P, ev, max_fit, ridge_lambda, rng):
     return mu_c, mu_s, W
 
 
+# ------------------------------ train-only per-drug displacement lookup (auditor A-03) -------------
+def fit_drug_displacement(train, panel_index, P, ev, min_cells=5):
+    """The simplest predictor that actually USES drug identity: the drug's mean rank displacement
+    (response - control), measured on TRAIN CELLS ONLY. Returns {(drug, cell_line): delta} plus the
+    cell-line-POOLED {(drug, None): delta} used for cross-context transfer when the (drug,cell_line)
+    pair is unseen. Eval tiers live in separate files, so no evaluation response can contribute to any
+    fitted delta (the auditor's explicit leak requirement)."""
+    from collections import defaultdict
+    acc = defaultdict(lambda: [np.zeros(P), 0])
+    for ex in train:
+        m = ex.get("metadata", {}) or {}
+        d, cl = m.get("drug"), m.get("cell_line_id")
+        if not d:
+            continue
+        ctrl = ev.control_from_prompt(ex["prompt"])
+        if not ctrl:
+            continue
+        c = sentence_to_rankarr(ctrl, panel_index, P)
+        t = sentence_to_rankarr(ex["response"], panel_index, P)
+        s = t - c
+        acc[(d, cl)][0] += s; acc[(d, cl)][1] += 1
+        acc[(d, None)][0] += s; acc[(d, None)][1] += 1
+    delta = {k: v[0] / v[1] for k, v in acc.items() if v[1] >= min_cells}
+    n_dc = sum(1 for k in delta if k[1] is not None)
+    logger.info(f"drug-displacement lookup fitted on TRAIN ONLY: {n_dc} (drug,cell_line) entries + "
+                f"{len(delta) - n_dc} pooled-drug entries (>= {min_cells} cells each)")
+    return delta
+
+
 # ----------------------------------------------------------------- benchmark one cell line
-def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_pb_fn=None):
+def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_pb_fn=None,
+                   lookup_fn=None):
     """by_drug: {drug: {"resp":[sentences], "ctrl":[sentences]}}. Returns per-drug NIR per predictor.
 
     CONSISTENT DENOISING is essential: split each drug into two disjoint halves; use half A as EVERY
@@ -198,6 +228,13 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_
         if ctrl_sents:
             preds["control"] = (pb_rank(ctrl_sents, panel_index, P),
                                 pb_expr(ctrl_sents, panel_index, P, lm))
+        # DRUG-LOOKUP baseline (A-03): control pseudobulk + the drug's TRAIN-only mean displacement.
+        # The simplest predictor that uses drug identity -> the yardstick the model must beat. Returns
+        # None when the drug is unseen in train (e.g. tier2), where no lookup is legitimately possible.
+        if lookup_fn is not None and ctrl_sents:
+            _lk = lookup_fn(d, ctrl_sents)
+            if _lk is not None:
+                preds["drug_lookup"] = _lk
         mr, me = model_pb_fn(d)
         if mr is not None:
             preds["model"] = (mr, me)
@@ -363,6 +400,13 @@ def main():
                          "model >> scramble => real drug use; model ~= scramble => plate leakage.")
     ap.add_argument("--model_path", default=None)
     ap.add_argument("--train_file", default=None)
+    ap.add_argument("--drug_lookup", action="store_true",
+                    help="add the A-03 DRUG-SPECIFIC baseline: control pseudobulk + the drug's "
+                         "TRAIN-only mean displacement (per drug x cell_line, pooled-drug fallback). "
+                         "The simplest predictor that uses drug identity -> the yardstick the model "
+                         "must beat. NA where the drug is unseen in train (e.g. tier2).")
+    ap.add_argument("--lookup_min_cells", type=int, default=5,
+                    help="min train cells per (drug,cell_line) to fit its displacement")
     ap.add_argument("--tiers", default="tier2_unseen_drugs,tier3_unseen_combos")
     ap.add_argument("--tier", default="tier2_unseen_drugs", help="single tier for --temp_sweep")
     ap.add_argument("--temps", default="0,0.5,0.8,1.0")
@@ -484,6 +528,27 @@ def main():
                 expr[gi] = max(0.0, lm["slope"] * np.log10(r) + lm["intercept"])
         return pred, expr
 
+    # drug-specific lookup baseline (A-03), fitted on TRAIN only
+    DELTA = fit_drug_displacement(train, panel_index, P, ev, args.lookup_min_cells) \
+        if args.drug_lookup else None
+
+    def lookup_fn_base(drug, cell_line, ctrl_sents):
+        if not DELTA:
+            return None
+        dl = DELTA.get((drug, cell_line))
+        if dl is None:
+            dl = DELTA.get((drug, None))     # fall back to cell-line-pooled = cross-context transfer
+        if dl is None:
+            return None                      # drug unseen in train -> no legitimate lookup (tier2)
+        c = pb_rank(ctrl_sents, panel_index, P)
+        pred = c + dl
+        order = np.argsort(pred)
+        expr = np.zeros(P)
+        for r, gi in enumerate(order, 1):
+            if pred[gi] < P:
+                expr[gi] = max(0.0, lm["slope"] * np.log10(r) + lm["intercept"])
+        return pred, expr
+
     # split-sample manifest: line indices reserved for SELECTION, to be excluded from scoring
     _manifest = None
     if args.exclude_manifest:
@@ -533,8 +598,9 @@ def main():
                     gens = generate(slot["prompts"][:args.k_samples], args.temperature)
                     return pb_rank(gens, panel_index, P), pb_expr(gens, panel_index, P, lm)
 
+            lk_fn = (lambda d, ctrl, _cl=cl: lookup_fn_base(d, _cl, ctrl)) if DELTA else None
             rows, profs = score_cellline(drugs, panel_index, P, lm, model_pb_fn, lin_fn, rng,
-                                         scram_pb_fn=scram_fn)
+                                         scram_pb_fn=scram_fn, lookup_fn=lk_fn)
             # cell_line and plate are kept SEPARATE: the clustered bootstrap must resample CELL LINES
             # (plates within a cell line are still correlated), not (cell_line, plate) groups.
             for r in rows:
@@ -553,7 +619,7 @@ def main():
                 break
 
         agg = {}
-        for name in ("model", "scramble", "linear", "control", "mean", "ceiling"):
+        for name in ("model", "scramble", "linear", "drug_lookup", "control", "mean", "ceiling"):
             for key in ("nir_rank", "nir_expr"):
                 vals = [r[name][key] for r in all_rows if name in r and r[name][key] is not None]
                 agg[f"{name}_{key}"] = (float(np.mean(vals)), len(vals)) if vals else (None, 0)
@@ -575,7 +641,7 @@ def main():
     logger.info("  NIR BENCHMARK (chance ~0.50; ceiling = achievable) — rank-NIR | expr-NIR")
     for tier, td in result["tiers"].items():
         logger.info(f"  [{tier}] (n={td['n_drugs']})")
-        for name in ("model", "scramble", "linear", "control", "mean", "ceiling"):
+        for name in ("model", "scramble", "linear", "drug_lookup", "control", "mean", "ceiling"):
             r = td["agg"][f"{name}_nir_rank"][0]
             e = td["agg"][f"{name}_nir_expr"][0]
             g = lambda x: f"{x:.3f}" if x is not None else "NA"
