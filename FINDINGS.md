@@ -224,6 +224,58 @@ under plate control; some magnitudes shrink (leakage inflated magnitudes, never 
 - **Framing (Gurnee et al. — representational selectivity / privileged subspace):** this is a concrete instance of the selectivity result. **Cell-line identity sits in the model's causally active / privileged subspace** (its J-space analogue) — it is read automatically, because emitting any plausible cell-type-consistent profile requires it. **Drug identity is encoded but lies outside that workspace.** The asymmetry is principled: cell-line conditioning is a fixed, always-needed lookup, whereas drug→gene response demands *flexible, context-dependent composition* about drug–gene relationships — and that never enters the causally active subspace. This elevates the result from "this model fails" to "this model fails in a way that reflects a general principle about how models allocate representation to automatic vs. flexible computation."
 - **Status:** ✅ **the drug-blindness is a readout-specificity failure, not an encoding failure.** Supersedes Q7 (the inconclusive steering probe). Corroborates the "read but not used" spine (Q6 + Q4) and gives it a mechanism. ➡️ motivates **Arm 1b** (objective-side discrimination loss: contrastive / swap-consistency / KL-maximizing auxiliary that rewards the readout for distinguishing drug directions). Confirmatory **held-out-means swap** done (job 596473) — null reproduced at every layer, estimation noise ruled out; **the experiment is complete.** Raw logs: `logs/workspace_probe_596144.out` (within-sample), `logs/workspace_probe_596473.out` (held-out); JSON: `RESULTS/workspace_probe.json`.
 
+### Q14. Do OPTIMAL-TRANSPORT (state-matched) training targets make the model use the drug? (Arm 1c — answers auditor A-02)
+- **Why:** Arm 1a (Q12) denoised the target and failed — but it also *destroyed the input→output correspondence*: consensus maps **every** control cell to one global pseudobulk (many-to-one; nothing per-cell to learn) and collapses heterogeneity. The auditor's A-02 proposed the missing middle: use **optimal transport** to pair each control cell with the treated cells it plausibly *becomes*, giving a target that is **denoised AND control-specific**. This is the last untested target-side lever, so it decides whether the target is the bottleneck at all.
+- **The ε-ladder framing (why this is a controlled sweep, not a new method).** Entropic-OT regularization ε interpolates between the two things we already tried: **ε→∞** ⇒ the coupling becomes uniform and the barycentric target → the treated **mean** = **consensus (Arm 1a)**; **ε→0** ⇒ sharp assignment ≈ a single (state-matched) treated cell ≈ the **single-cell** regime. So Arm 1c is one knob whose endpoints are our prior experiments, with the unexplored middle in between.
+
+- **How — methodology in full (the pipeline is new, so it is documented end-to-end):**
+
+  **(1) What optimal transport is here.** Given a cloud of control cells and a cloud of treated cells, OT finds the cheapest way to reshape one into the other. We use the **Kantorovich** form: a **coupling** `π` (a table where `π[i,j]` = mass moved from control cell *i* to treated cell *j*) with uniform marginals, minimizing `Σ_ij π[i,j]·C[i,j]` where `C[i,j] = ‖x_i − y_j‖²`. Solved with **entropic regularization + Sinkhorn** (alternating row/column rescaling of `K = exp(−C/ε)`, 250 iterations; hand-rolled, no external OT dependency). The coupling is turned into a prediction by the **barycentric projection** `T(x_i) = Σ_j π[i,j]·y_j / Σ_j π[i,j]` — a soft Monge map answering *"where does THIS control cell land after treatment?"*
+
+  **(2) Embedding — where the coupling lives (`build_embeddings.py`, `join_latent.py`).** OT's sample complexity degrades badly in high dimensions, so the coupling is computed in a low-dim embedding, not raw counts. We use the **released Tahoe scVI model** (`tahoebio/Tahoe-100M-SCVI-v1`, `n_latent=10`). **We JOIN the shipped per-cell latent** (`obsm['X_latent_qzm']`, 95.6M cells in the 40 GB minified `adata.h5ad`) by **`BARCODE_SUB_LIB_ID`** — matching Mert's approach — rather than re-encoding. *Why:* our re-encode produced a **degraded** latent (cell-line linear probe **0.11**) whereas the shipped latent is faithful (**probe 0.975**, per-dim variance ≈2). Root cause of the re-encode failure, found later: Tahoe's `genes` field holds **vocabulary token IDs, not positional indices** (values exceed the 62,710-row gene metadata), so positional mapping scrambles genes. The join is exact: **620,564/620,564 barcodes matched (100%)**, drug- and cell-line-agreement **1.000**.
+
+  **(3) Expression — what targets are built from.** Per cell we build a **946-gene L1000 panel** expression vector, mapped via `gene_metadata['token_id'] → gene_symbol → panel` (**946/946 panel genes mapped**), library-normalized to **CP10K**. Validation: PCA on this panel gives a cell-line probe of **0.864** (chance 0.02), i.e. the expression is correctly un-scrambled.
+
+  **(4) Population construction.** Condition = **(cell_line, plate, drug, dose)**; controls = **plate-matched DMSO**, so every coupling is computed **within (cell_line, plate)** and batch identity cannot drive it. DMSO controls do **not** co-locate with treated cells in Tahoe's shards, so the builder runs **two passes**: a treated pass over random shards, then a **dedicated DMSO scan** (220 shards) for the (cell_line, plate) keys the treated pass needs. Final cache: **620,564 cells = 600,000 treated + 20,564 control** (198 cell-line×plate groups), **106 drugs**, **50 cell lines**.
+
+  **(5) Targets — DECODER-FREE (the key design choice).** The coupling is computed in **scVI latent** (clean state geometry) but the target is built in **expression space** as a convex combination of *real* treated cells. This avoids the scVI decoder entirely — targets are always on the data manifold and the subtle drug signal is preserved exactly. For each control cell *i* in a condition:
+    - **T0 (consensus, ε→∞):** `target = mean(Y_expr)` — control-independent (= Arm 1a).
+    - **T1 (mean-displacement):** `target = X_expr_i + (mean(Y) − mean(X))` — keeps the control's identity, adds one global drug shift.
+    - **T2 (OT-barycentric, ε=0.5):** `target = (π @ Y_expr)_i / rowsum` — **control-specific and state-matched**.
+    Each target is ranked (desc) and truncated to top-K (K = median expressed panel genes among the condition's treated cells) → `[END_CELL]` sentence. The prompt is the **same control cell** + drug/dose/MoA text in the exact trainer format (real cell-line names and `moa-fine`), so the examples are drop-in compatible. Emitted: **3,856 usable conditions (≥60 treated, ≥60 control) → 381,485 examples per arm**.
+
+  **(6) Step-0 gates (run before training, all passed).**
+    - **0a signal survival:** **54%** of sampled conditions show a *significant* treated-vs-control shift in scVI latent (label-permutation test) — the drug survives the embedding for roughly the winnable half, consistent with Q11 (27% inert + many subtle).
+    - **0c target sanity:** per-control **T2 variance = 1.95 (>0)** — targets genuinely *vary across control cells* (the property consensus lacks) — and **‖T2 pseudobulk − real treated‖ = 0.006 (≈0)** — they reconstruct the treated cloud.
+    - **0d target-contrast:** targets differ from their control prompt by **T0 = 59.9 / T2 = 64.5** top-K genes — substantial, so there is real perturbation to learn.
+
+  **(7) Training + evaluation.** Cold-start from the same base (`C2S-Scale-Pythia-1b-pt`) with **identical hyperparameters** to the single-cell and consensus runs (1 epoch, lr 1e-5, grad-accum 16, max_length 8192, bf16) → the **target is the only variable**. T2 completed a full epoch (**23,842 steps**, train loss **1.6312**, eval loss 1.9433). Scored with the leak-immune battery: **within-plate NIR + scramble (same control, wrong drug token) + control-copy**, vs the fixed single-cell linear baseline.
+
+- **Answer — NO. State-matched OT targets do not make the model use the drug.** Validity is clean first (`emits_end_cell = 1.00`, hallucination 0.001, len_ratio 0.87 — generation is not broken):
+
+  | arm (identifiable subset, n=204 drugs, 40 cell lines) | value |
+  |---|---|
+  | model | 0.698 |
+  | scramble (same control, wrong drug) | 0.699 |
+  | **model − scramble** | **−0.001, clustered 95% CI [−0.018, +0.016] → NULL** |
+  | control-copy (zero drug info) | 0.766 (≈ model → leakage) |
+  | model − linear | +0.167 — **confounded**, matched by control-copy |
+
+  Aggregate expr-NIR (chance 0.50): model **0.511**, scramble 0.503, linear 0.500, control 0.504, mean 0.180, ceiling 0.576.
+
+- **The ε ladder is now swept, and every point is drug-blind:**
+
+  | target | ε | `model − scramble` | verdict |
+  |---|---|---|---|
+  | single-cell (real treated cell) | ≈0 | +0.014 [−0.016, +0.042] | null |
+  | **T2 OT-barycentric (Arm 1c)** | **0.5** | **−0.001 [−0.018, +0.016]** | **null** |
+  | consensus (global mean, Arm 1a) | →∞ | −0.010 [−0.022, +0.003] | null |
+
+  We swept from sharp per-cell matching to full pseudobulk collapse — including the causally-matched OT target that was the entire point of A-02 — and **no target construction makes the model use the drug.**
+- **Quality axis (tentative):** aggregate expr-NIR 0.498 (single-cell) → **0.511** (T2), a *marginal* improvement consistent with Q1 (aggregation aids prediction), still far below ceiling 0.576. **T0 was not trained** (skipped once T2 came back null), so the clean T2-vs-T0 quality comparison is **not** established — this quality claim is suggestive only.
+- **Caveats:** (a) the cache covers **106 of ~1,100 Tahoe drugs** (80-shard sample) — ample to test drug-use, not a population estimate; (b) T0/T1 untrained, so the ladder's *quality* decomposition is incomplete (the *drug-specificity* conclusion does not depend on it, since consensus and single-cell were already measured); (c) ε was fixed at 0.5 (no fine sweep) — but the two analytic endpoints are covered by Arm 1a and the single-cell model, so an intermediate ε would have to beat both endpoints *and* T2 to change the conclusion.
+- **Status:** ✅ **the target-side hypothesis is definitively closed.** Denoising (Q12), pairing, and state-matched optimal transport (Q14) all fail identically — the defect is **not** the training target. This is exactly the Q13 prediction (the readout is drug-agnostic: magnitude-sensitive, direction-blind), now confirmed by a controlled sweep rather than a single failed attempt. ➡️ **All remaining effort goes objective-side (Arm 1b)**: a contrastive / swap-consistency / discrimination loss that *forces* the readout to distinguish drug directions. The OT couplings built here (state-matched control→treated pairs) are the natural raw material for that loss. Artifacts: cache `/data/.../ot_cache`, targets `/data/.../ot_targets` (T0/T1/T2.jsonl + `step0_gates.json`), model `checkpoints/pythia_sft_ot_T2/final`, results `RESULTS/nir_ot_T2.json`, `RESULTS/stratify_ot_T2.json`.
+
 ---
 
 ## Synthesis — the unifying principle (evaluate by discrimination, not absolute prediction)
