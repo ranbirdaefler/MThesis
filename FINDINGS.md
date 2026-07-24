@@ -52,6 +52,49 @@ under plate control; some magnitudes shrink (leakage inflated magnitudes, never 
 
 ---
 
+## Validity note — the scramble null is NOT an artifact of swapping to SIMILAR drugs (read before quoting any `model − scramble`)
+
+**The objection.** The scramble ablation swaps the drug token and reads `model ≈ scramble` as "the model
+ignores the drug." But if the swapped-in drug has a **similar true response**, producing the same output is
+**correct, not blind**. The existing scramble picks a **different-MoA** drug — and Q11 showed MoA barely
+predicts response (within-MoA 2.322 ≈ between-MoA 2.377, ratio 0.977), so "different mechanism" is *not*
+"different response." The same gap applies to output-invariance (Q4) and the Q13 activation swap.
+
+**The test.** `scramble_distance_sweep.py` turns the single test into a **curve**: `model − scramble` as a
+function of the **response distance** between the real and swapped-in drug, `‖truth_A − truth_B‖` (which is
+exactly the NIR other-drug distance). For each sampled real drug A we generate its real-drug prediction, then
+scrambled predictions swapping A→B for B spanning the distance quantiles, and score all against A's own
+truth. 200 (drug, swap) pairs, 20 cell lines, tier2 unseen drugs, clustered CIs (resample cell lines).
+No `--same_plate_only` needed: the scramble **difference** cancels control/batch leakage (both arms share
+A's control cell), so grouping by cell line only maximises the available swap-distance range.
+
+| bin (swap distance) | single-cell `model − scramble` | T2 (OT) `model − scramble` |
+|---|---|---|
+| 0 — nearest (2.75–4.03) | −0.046 [−0.138, +0.065] | −0.001 [−0.028, +0.040] |
+| 1 (4.03–4.60) | +0.060 [−0.002, +0.124] | +0.031 [−0.007, +0.075] |
+| 2 (4.60–4.93) | −0.006 [−0.070, +0.050] | +0.017 [−0.029, +0.069] |
+| 3 (4.93–5.32) | −0.004 [−0.063, +0.059] | +0.043 [−0.022, +0.107] |
+| **4 — farthest (5.32–6.25)** | **−0.019 [−0.082, +0.062]** | **−0.005 [−0.033, +0.029]** |
+| **trend corr(distance, model−scramble)** | **+0.051** | **+0.012** |
+
+**Answer: the null holds at every distance, including the far tail.** No bin in either model has a CI
+excluding zero, and the trend correlations are ≈0. Telling the model it is a drug whose true response is
+maximally different (a 2.3× spread in distance) **still does not change the output** → drug-blindness is
+confirmed at the hardest setting, not manufactured by near-twin swaps. Two details strengthen this: (i) the
+single borderline value (+0.060, single-cell) is a **middle** bin — a genuine dissimilarity effect would be
+monotone and peak in the **far** bin, which it does not; (ii) the comparison is **paired** — model NIR drifts
+across bins (0.497→0.326) because far-from-everything drugs populate the far bins, but `model − scramble`
+uses the *same* A on both arms, so that drift cancels.
+- **Caveats:** n=40 per bin / 20 cell lines (CIs ±0.03–0.14 — excludes any large effect, not a tiny one);
+  the scramble arm used 4 generations vs the model's 8 for speed (adds noise, no directional bias); the far
+  tail is bounded by how dissimilar drugs within a cell line actually get (Q11: 78.7% have a plate-mate
+  closer than their own replicate).
+- **Status:** ✅ **strengthens Q4, Q12 and Q14.** Every `model − scramble` null in this file survives the
+  dissimilarity control. Logs: `logs/scramble_sweep_*.out`; JSON: `RESULTS/scramble_sweep_single.json`,
+  `RESULTS/scramble_sweep_T2.json`.
+
+---
+
 ## Advisor audit responses (commit `ad7073a`)
 
 - **A-04 (J-space bridge Q6→Q7):** ✅ answered by **Q13** (`workspace_probe.py`) — the causal "decodable ≠ used" test, with the privileged-subspace framing.
