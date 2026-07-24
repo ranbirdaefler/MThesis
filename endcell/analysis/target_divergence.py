@@ -146,6 +146,53 @@ def measure(name, rep, groups, K, by_abs):
             "K": K, "ceiling_retrieval": ceil, "n_ceiling": n, "n_pairs": len(divs)}
 
 
+def baseline_predictions(prof, groups):
+    """Drug-AGNOSTIC predictors, as predicted TREATED profiles (the same objects a model would emit):
+      control  : the group's control pseudobulk (the zero-drug-info leak baseline; scores 0.766 today)
+      loo_mean : mean of the OTHER drugs' half-A profiles (leave-one-out, drug-agnostic)
+      generic  : control + mean-over-drugs shift = 'a typical drug response' in this group
+      knn_ctrl : control + the shift of the drug whose CONTROL-side is nearest (no drug identity used)
+    Each is constant (or near-constant) across drugs within a group, so under SHIFT/RESIDUAL they must
+    collapse to chance -- that is the structural leak-proofing claim, tested rather than assumed."""
+    preds = {n: {} for n in ("control", "loo_mean", "generic", "knn_ctrl")}
+    for g, ds in groups.items():
+        ctrl = prof[(ds[0], g)]["ctrl"]
+        shifts = {d: prof[(d, g)]["A"] - ctrl for d in ds}
+        mean_shift = np.mean(np.stack([shifts[d] for d in ds]), axis=0)
+        for d in ds:
+            others = [o for o in ds if o != d]
+            preds["control"][(d, g)] = ctrl
+            preds["loo_mean"][(d, g)] = np.mean(np.stack([prof[(o, g)]["A"] for o in others]), axis=0)
+            preds["generic"][(d, g)] = ctrl + mean_shift
+            # knn over the CONTROL side: controls are shared within a group -> falls back to a random
+            # other drug's shift (still zero drug identity for THIS drug)
+            preds["knn_ctrl"][(d, g)] = ctrl + shifts[others[0]]
+    return preds
+
+
+def to_rep(pred, rep, prof, groups, M_ref):
+    """Map predicted TREATED profiles into the target representation (same frame as the truths)."""
+    if rep == "full":
+        return dict(pred)
+    out = {}
+    for (d, g), v in pred.items():
+        s = v - prof[(d, g)]["ctrl"]
+        out[(d, g)] = s if rep == "shift" else s - M_ref[g]
+    return out
+
+
+def measure_baselines(rep_name, rep_truth_A, preds, prof, groups, M_ref):
+    """Score each drug-agnostic baseline with the SAME retrieval NIR used for the ceiling."""
+    rows = {}
+    for name, pr in preds.items():
+        q = to_rep(pr, rep_name, prof, groups, M_ref)
+        nir, n = retrieval_nir(q, rep_truth_A, groups)
+        rows[name] = {"retrieval_nir": nir, "n": n}
+    txt = "  ".join(f"{k}={v['retrieval_nir']:.3f}" for k, v in rows.items())
+    logger.info(f"    baselines (drug-AGNOSTIC, must be ~0.50 if the rep is leak-proof): {txt}")
+    return rows
+
+
 def reliability(res, thr):
     vals = []
     for k in res["A"]:
@@ -166,9 +213,23 @@ def run(cache_dir, K, min_treated, min_control, min_drugs, thr, out_path):
         logger.info(f"RESIDUALIZATION SCOPE = {scope}  "
                     f"({'mean over drugs within (cell_line,plate) — also removes the PLATE signature' if scope=='plate' else 'mean over drugs within cell_line'})")
         full, shifts, res = make_reps(prof, groups, scope)
+        # reference frame for mapping PREDICTIONS into the residual space (same M as the truths)
+        unit = (lambda g: g) if scope == "plate" else (lambda g: g[0])
+        by_unit = defaultdict(list)
+        for (d, g) in prof:
+            by_unit[unit(g)].append((d, g))
+        M_unit = {u: np.mean(np.stack([prof[k]["A"] - prof[k]["ctrl"] for k in keys]), axis=0)
+                  for u, keys in by_unit.items()}
+        M_ref = {g: M_unit[unit(g)] for g in groups}
+        preds = baseline_predictions(prof, groups)
+
         m_full = measure("FULL profile  (current target)", full, groups, K, by_abs=False)
+        b_full = measure_baselines("full", full["A"], preds, prof, groups, M_ref)
         m_shift = measure("SHIFT (treated-control)      ", shifts, groups, K, by_abs=True)
+        b_shift = measure_baselines("shift", shifts["A"], preds, prof, groups, M_ref)
         m_res = measure("RESIDUAL (drug-specific)     ", res, groups, K, by_abs=True)
+        b_res = measure_baselines("residual", res["A"], preds, prof, groups, M_ref)
+        m_full["baselines"], m_shift["baselines"], m_res["baselines"] = b_full, b_shift, b_res
         rel = reliability(res, thr)
         logger.info(f"  reliability of residuals: mean cos(A,B)={rel['mean_cos']:+.3f}  "
                     f"reproducible (>{thr}) = {100*rel['frac_reproducible']:.0f}% of {rel['n']} conditions")
