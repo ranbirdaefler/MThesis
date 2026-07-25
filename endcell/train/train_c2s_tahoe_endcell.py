@@ -175,24 +175,29 @@ def train(args):
         tokenizer.pad_token_id = tokenizer.eos_token_id
     logger.info(f"  Vocab size: {tokenizer.vocab_size}")
 
-    # --- Register the [END_CELL] sentinel as an atomic special token ---
-    # The [END_CELL] data format terminates every response with this marker. Without
-    # registering it, the tokenizer splits it into subword pieces ('[', 'END', '_CELL', ']')
-    # and the model never sees a clean end-of-cell signal. add_special_tokens returns the
-    # number of NEW tokens added (0 if already present); we resize embeddings only if >0.
-    added = tokenizer.add_special_tokens({"additional_special_tokens": ["[END_CELL]"]})
+    # --- Register the sentinels as atomic special tokens ---
+    # The [END_CELL] data format terminates every response with this marker. Without registering it,
+    # the tokenizer splits it into subword pieces ('[', 'END', '_CELL', ']') and the model never sees
+    # a clean end-of-cell signal. [DOWN] is the same story for the Arm 1b RESIDUAL targets, which
+    # encode a signed DE signature as "<up genes> [DOWN] <down genes> [END_CELL]" -- if [DOWN] is split
+    # the up/down boundary is not a clean symbol. Registering it is harmless for the ordinary
+    # [END_CELL] datasets (the token simply never appears). add_special_tokens returns the number of
+    # NEW tokens added (0 if already present); we resize embeddings only if >0.
+    _sentinels = ["[END_CELL]", "[DOWN]"]
+    added = tokenizer.add_special_tokens({"additional_special_tokens": _sentinels})
     if added:
-        logger.info(f"  Added {added} special token(s): [END_CELL] -> id "
-                    f"{tokenizer.convert_tokens_to_ids('[END_CELL]')}")
+        logger.info(f"  Added {added} special token(s): "
+                    + ", ".join(f"{t} -> id {tokenizer.convert_tokens_to_ids(t)}" for t in _sentinels))
     else:
-        logger.info("  [END_CELL] already in tokenizer vocab")
-    # Verify it tokenizes atomically (single id, not split)
-    _ec_ids = tokenizer.encode("[END_CELL]", add_special_tokens=False)
-    if len(_ec_ids) != 1:
-        logger.warning(f"  [END_CELL] does not tokenize to a single id: {_ec_ids} "
-                       "-- sentinel may be split; check tokenizer.")
-    else:
-        logger.info(f"  [END_CELL] tokenizes atomically to id {_ec_ids[0]}")
+        logger.info(f"  {_sentinels} already in tokenizer vocab")
+    # Verify each tokenizes atomically (single id, not split)
+    for _t in _sentinels:
+        _ids = tokenizer.encode(_t, add_special_tokens=False)
+        if len(_ids) != 1:
+            logger.warning(f"  {_t} does not tokenize to a single id: {_ids} "
+                           "-- sentinel may be split; check tokenizer.")
+        else:
+            logger.info(f"  {_t} tokenizes atomically to id {_ids[0]}")
 
     # --- Load model ---
     logger.info(f"Loading model from {args.model_name}...")
@@ -217,7 +222,7 @@ def train(args):
     # fresh (randomly-initialized) embedding row for the new token so the model can learn it.
     if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
         model.resize_token_embeddings(len(tokenizer))
-        logger.info(f"  Resized token embeddings to {len(tokenizer)} (for [END_CELL])")
+        logger.info(f"  Resized token embeddings to {len(tokenizer)} (for {_sentinels})")
 
     model.to(device)
     n_params = sum(p.numel() for p in model.parameters())
