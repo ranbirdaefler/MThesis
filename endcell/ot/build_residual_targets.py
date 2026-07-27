@@ -159,6 +159,9 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0):
         cosines.append(cs)
         if cs > repro_thr:
             kept[k] = {"residual": (v["shift_full"] - generic[c]["full"]).astype(np.float32),
+                       # half-split residuals kept so evaluation can compute the achievable CEILING
+                       # (a real replicate scoring against the other half's truths)
+                       "residual_A": rA.astype(np.float32), "residual_B": rB.astype(np.float32),
                        "group": v["group"], "n_cells": v["n_cells"], "repro_cos": cs}
     cosines = np.array(cosines)
     logger.info(f"reliability: mean cos(A,B)={cosines.mean():+.3f}; "
