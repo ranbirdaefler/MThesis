@@ -161,6 +161,10 @@ def main():
         by_cl[k[1]].append(k)
     by_cl = {c: ks for c, ks in by_cl.items() if len(ks) >= args.min_drugs}
     truth = {k: signed_rank_from_vector(kept[k]["residual"], P, args.k_sig) for c in by_cl for k in by_cl[c]}
+    # CEILING must use DISJOINT halves: half-B scored against half-A truths. (Scoring half-B against the
+    # FULL residual is self-overlapping -- that bug returned a meaningless ceiling of 1.000.)
+    truth_A = {k: signed_rank_from_vector(kept[k]["residual_A"], P, args.k_sig)
+               for c in by_cl for k in by_cl[c] if "residual_A" in kept[k]}
 
     # model
     import torch
@@ -226,11 +230,12 @@ def main():
             v = np.mean(np.stack([signed_rank_from_sentence(g, gene_index, P, args.k_sig)
                                   for g in gens]), axis=0)
             row[arm] = nir_from_sims(cos(v, truth[key]), [cos(v, t) for t in oth_truth])
-        # ceiling (real half-B) and random floor
-        rB = signed_rank_from_vector(kept[key]["residual_B"], P, args.k_sig) \
-            if "residual_B" in kept[key] else None
-        if rB is not None:
-            row["ceiling"] = nir_from_sims(cos(rB, truth[key]), [cos(rB, t) for t in oth_truth])
+        # CEILING: real half-B replicate scored against DISJOINT half-A truths (no cell overlap)
+        if "residual_B" in kept[key] and key in truth_A:
+            rB = signed_rank_from_vector(kept[key]["residual_B"], P, args.k_sig)
+            othA = [truth_A[k] for k in others if k in truth_A]
+            if othA:
+                row["ceiling"] = nir_from_sims(cos(rB, truth_A[key]), [cos(rB, t) for t in othA])
         rv = np.zeros(P, np.float32); idx = rng.choice(P, 2 * args.k_sig, replace=False)
         rv[idx[:args.k_sig]] = 1.0; rv[idx[args.k_sig:]] = -1.0
         row["random"] = nir_from_sims(cos(rv, truth[key]), [cos(rv, t) for t in oth_truth])
