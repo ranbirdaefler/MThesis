@@ -143,7 +143,7 @@ def main():
     up_prof, dn_prof = rank_value_profiles([kept[k]["residual"] for c in by_cl for k in by_cl[c]],
                                            args.k_sig)
     # TRUE full treated profile = control + shift ; and its half-B replicate for the ceiling
-    truth_full, truth_B, ctrl_pb = {}, {}, {}
+    truth_full, truth_A, truth_B, ctrl_pb = {}, {}, {}, {}
     for c in by_cl:
         for k in by_cl[c]:
             g = kept[k]["group"]
@@ -151,6 +151,10 @@ def main():
             cp = np.asarray(np.log1p(X[rows].todense()).mean(0)).ravel().astype(np.float32)
             ctrl_pb[k] = cp
             truth_full[k] = cp + generic[c] + kept[k]["residual"]
+            # DISJOINT halves for the ceiling: half-B scored against half-A truths. (Scoring half-B
+            # against truth_full is self-overlapping -- that returned a meaningless ceiling of 1.000.)
+            if "residual_A" in kept[k]:
+                truth_A[k] = cp + generic[c] + kept[k]["residual_A"]
             if "residual_B" in kept[k]:
                 truth_B[k] = cp + generic[c] + kept[k]["residual_B"]
 
@@ -215,8 +219,12 @@ def main():
             row[arm] = score(base + args.alpha * r)
         row["control_copy"] = score(ctrl_pb[key])          # zero drug info (the historic 0.766 leak)
         row["generic"] = score(base)                       # drug-agnostic scaffold alone
-        if key in truth_B:
-            row["ceiling"] = score(truth_B[key])
+        if key in truth_B and key in truth_A:              # CEILING on disjoint halves
+            othA = [truth_A[k] for k in others if k in truth_A]
+            if othA:
+                row["ceiling"] = nir_from_dists(
+                    float(np.linalg.norm(truth_B[key] - truth_A[key])),
+                    [float(np.linalg.norm(truth_B[key] - t)) for t in othA])
         recs.append(row)
         if n % 20 == 0:
             logger.info(f"  {n}/{len(cond)} conditions scored")

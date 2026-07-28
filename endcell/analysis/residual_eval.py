@@ -78,6 +78,33 @@ def signed_rank_from_vector(res, P, k=100):
     return v
 
 
+def rank_value_profile(X, rows, P, kmax=400):
+    """Empirical log1p(CP10K) value as a function of expression rank, from REAL cells. Lets us decode an
+    ordinary cell sentence into the cache's units so a cell-sentence model can be scored in the SAME
+    residual space as the residual model (the apples-to-apples control)."""
+    import numpy as _np
+    acc = _np.zeros(kmax, dtype=_np.float64); n = 0
+    for i in rows:
+        v = _np.asarray(X[i].todense()).ravel()
+        s = _np.sort(v)[::-1][:kmax]
+        acc[:len(s)] += s; n += 1
+    return (acc / max(1, n)).astype(np.float32)
+
+
+def sentence_to_expression(sent, gene_index, P, rank_prof):
+    """ordinary '<genes ranked by expression> [END_CELL]' -> expression vector in cache units."""
+    v = np.zeros(P, dtype=np.float32)
+    r = 0
+    for g in sent.replace(END, " ").replace(DOWN, " ").split():
+        gi = gene_index.get(g)
+        if gi is None or v[gi] != 0:
+            continue
+        if r >= len(rank_prof):
+            break
+        v[gi] = rank_prof[r]; r += 1
+    return v
+
+
 def cos(a, b):
     na, nb = np.linalg.norm(a), np.linalg.norm(b)
     return float(a @ b / (na * nb)) if na > 1e-9 and nb > 1e-9 else 0.0
@@ -114,6 +141,11 @@ def main():
     ap.add_argument("--min_treated", type=int, default=40)
     ap.add_argument("--min_control", type=int, default=20)
     ap.add_argument("--min_drugs", type=int, default=4)
+    ap.add_argument("--model_kind", choices=["residual", "cellsentence"], default="residual",
+                    help="'residual' = model emits a signed [DOWN] signature (Arm 1b). 'cellsentence' = "
+                         "an ORDINARY model (single-cell / consensus / OT): its generated treated cell is "
+                         "decoded and converted to an IMPLIED residual (minus control, minus generic), so "
+                         "old models are scored in the SAME space -- the apples-to-apples control.")
     ap.add_argument("--truth_repro_thr", type=float, default=0.2,
                     help="reliability bar for the TRUTH residuals we score against (scoring against "
                          "an irreproducible truth is meaningless)")
@@ -198,6 +230,19 @@ def main():
             tok.padding_side = prev
         return outs
 
+    # for the cell-sentence control we need: an expression rank->value profile, each condition's control
+    # pseudobulk, and the per-cell-line generic shift (to convert a generated cell into a residual)
+    rank_prof, ctrl_pb = None, {}
+    if args.model_kind == "cellsentence":
+        allrows = np.concatenate([r for r in ctrl_rows.values()])[:4000]
+        rank_prof = rank_value_profile(X, allrows, P)
+        for c in by_cl:
+            for k in by_cl[c]:
+                rows = ctrl_rows[kept[k]["group"]]
+                ctrl_pb[k] = np.asarray(np.log1p(X[rows].todense()).mean(0)).ravel().astype(np.float32)
+        logger.info("cell-sentence control mode: generations decoded -> implied residual "
+                    "(minus control pseudobulk, minus per-cell-line generic shift)")
+
     recs = []
     cond_list = [k for c in by_cl for k in by_cl[c]]
     if args.held_out_only and trained:
@@ -227,8 +272,15 @@ def main():
         row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained, "swap_to": sk[0]}
         oth_truth = [truth[k] for k in others]
         for arm, gens in arms.items():
-            v = np.mean(np.stack([signed_rank_from_sentence(g, gene_index, P, args.k_sig)
-                                  for g in gens]), axis=0)
+            if args.model_kind == "residual":
+                v = np.mean(np.stack([signed_rank_from_sentence(g, gene_index, P, args.k_sig)
+                                      for g in gens]), axis=0)
+            else:
+                # ordinary model: decode the generated treated cell, subtract control + generic ->
+                # implied residual, then the SAME signed-rank encoding as the residual model
+                expr = np.mean(np.stack([sentence_to_expression(g, gene_index, P, rank_prof)
+                                         for g in gens]), axis=0)
+                v = signed_rank_from_vector(expr - ctrl_pb[key] - generic[c], P, args.k_sig)
             row[arm] = nir_from_sims(cos(v, truth[key]), [cos(v, t) for t in oth_truth])
         # CEILING: real half-B replicate scored against DISJOINT half-A truths (no cell overlap)
         if "residual_B" in kept[key] and key in truth_A:
