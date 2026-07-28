@@ -170,6 +170,45 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0):
     return kept, {c: generic[c]["full"] for c in generic}, ctrl_rows, X, meta
 
 
+def holdout_from_tiers(kept, tier2_file, tier3_file):
+    """Use the ORIGINAL preprocessing's held-out sets so our numbers are directly comparable to every
+    prior tier-2 / tier-3 result in the thesis, instead of a private random split.
+      tier2_unseen_drugs.jsonl  -> that drug set becomes `unseen_drug`
+      tier3_unseen_combos.jsonl -> those (drug, cell_line) pairs become `unseen_combo`
+    Returns (split, ho_drugs, ho_combos) or None if the overlap with our cache is too small to test."""
+    def read(path, combo=False):
+        out = set()
+        if not (path and os.path.exists(path)):
+            return out
+        for line in open(path):
+            m = json.loads(line).get("metadata", {})
+            d, c = m.get("drug"), m.get("cell_line_id")
+            if d:
+                out.add((str(d), str(c)) if combo else str(d))
+        return out
+    t2_drugs, t3_combos = read(tier2_file), read(tier3_file, combo=True)
+    cache_drugs = {k[0] for k in kept}
+    cache_combos = {(k[0], k[1]) for k in kept}
+    ho_drugs = t2_drugs & cache_drugs
+    ho_combos = (t3_combos & cache_combos) - {(d, c) for (d, c) in cache_combos if d in ho_drugs}
+    logger.info(f"tier-aligned holdout: tier2 file lists {len(t2_drugs)} drugs -> {len(ho_drugs)} present "
+                f"in our cache ({len(cache_drugs)} drugs); tier3 lists {len(t3_combos)} combos -> "
+                f"{len(ho_combos)} present")
+    if len(ho_drugs) < 3 and len(ho_combos) < 10:
+        logger.warning("tier overlap with the cache is too small to test -> falling back to a random split")
+        return None
+    split = {}
+    for k in kept:
+        d, c = k[0], k[1]
+        split[k] = "unseen_drug" if d in ho_drugs else ("unseen_combo" if (d, c) in ho_combos else "train")
+    n = defaultdict(int)
+    for v in split.values():
+        n[v] += 1
+    logger.info(f"holdout (tier-aligned): {n['train']} train | {n['unseen_combo']} unseen_combo (tier3) | "
+                f"{n['unseen_drug']} unseen_drug (tier2)")
+    return split, sorted(ho_drugs), sorted(ho_combos)
+
+
 def make_holdout(kept, frac_combos, frac_drugs, seed):
     """Three-way split for the generalization test.
       * unseen_drug  : every condition of a held-out DRUG -> the model never sees the token. Given the
@@ -217,7 +256,11 @@ def run(args):
     rng = np.random.RandomState(args.seed)
 
     split = None
-    if args.holdout_combos > 0 or args.holdout_drugs > 0:
+    if args.tier2_file or args.tier3_file:      # preferred: reuse the ORIGINAL held-out tiers
+        res = holdout_from_tiers(kept, args.tier2_file, args.tier3_file)
+        if res:
+            split, ho_drugs, ho_combos = res
+    if split is None and (args.holdout_combos > 0 or args.holdout_drugs > 0):
         split, ho_drugs, ho_combos = make_holdout(kept, args.holdout_combos, args.holdout_drugs, args.seed)
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -318,6 +361,11 @@ def main():
     ap.add_argument("--k_up", type=int, default=100)
     ap.add_argument("--k_down", type=int, default=100)
     ap.add_argument("--max_ctrl", type=int, default=60, help="control cells (=examples) per condition")
+    ap.add_argument("--tier2_file", default=None,
+                    help="eval_tier2_unseen_drugs.jsonl -> hold out THE SAME drugs the original "
+                         "preprocessing held out, so tier-2 numbers are comparable to prior results")
+    ap.add_argument("--tier3_file", default=None,
+                    help="eval_tier3_unseen_combos.jsonl -> hold out the same (drug, cell_line) combos")
     ap.add_argument("--holdout_combos", type=float, default=0.0,
                     help="fraction of (drug, cell_line) pairs withheld from training -> CROSS-CONTEXT "
                          "transfer test (drug seen in other cell lines)")
