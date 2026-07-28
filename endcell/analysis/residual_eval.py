@@ -243,6 +243,43 @@ def main():
         logger.info("cell-sentence control mode: generations decoded -> implied residual "
                     "(minus control pseudobulk, minus per-cell-line generic shift)")
 
+    # STRATIFIED SCRAMBLE PARTNERS. A random other drug may be a near-twin, in which case an unchanged
+    # output is CORRECT rather than blind -- that biases model-scramble toward zero. We therefore swap to
+    # three defined strata by residual cosine within the cell line:
+    #   near     = most SIMILAR drug      (weakest test; a small gap here is expected and fine)
+    #   orth     = most ORTHOGONAL (cos~0, unrelated program)
+    #   opposite = most ANTI-correlated   (sharpest test: the drug with the opposite signature)
+    # If the model truly reads the drug, the gap should GROW from near -> orth -> opposite.
+    partners = {}
+    for c, ks in by_cl.items():
+        for a in ks:
+            cs = [(cos(kept[a]["residual"], kept[b]["residual"]), b) for b in ks if b != a]
+            if len(cs) < 3:
+                continue
+            partners[a] = {"near": max(cs)[1],
+                           "orth": min(cs, key=lambda t: abs(t[0]))[1],
+                           "opposite": min(cs)[1],
+                           "cos_near": max(cs)[0],
+                           "cos_orth": min(cs, key=lambda t: abs(t[0]))[0],
+                           "cos_opposite": min(cs)[0]}
+    logger.info(f"stratified scramble partners built for {len(partners)} conditions")
+
+    gen_stats = {"n": 0, "has_down": 0, "up_len": [], "dn_len": [], "valid_frac": [], "dup_frac": []}
+
+    def track(gens):
+        for g in gens:
+            toks = [t for t in g.replace(END, " ").split() if t]
+            gen_stats["n"] += 1
+            if DOWN in toks:
+                gen_stats["has_down"] += 1
+                d = toks.index(DOWN)
+                gen_stats["up_len"].append(d); gen_stats["dn_len"].append(len(toks) - d - 1)
+            genes = [t for t in toks if t != DOWN]
+            if genes:
+                gen_stats["valid_frac"].append(np.mean([t in gene_index for t in genes]))
+                gen_stats["dup_frac"].append(1.0 - len(set(genes)) / len(genes))
+
+    pred_by_cl = defaultdict(list)   # for the mode-collapse check
     recs = []
     cond_list = [k for c in by_cl for k in by_cl[c]]
     if args.held_out_only and trained:
@@ -262,14 +299,24 @@ def main():
         ctrl_vec = np.asarray(X[rows[rng.randint(len(rows))]].todense()).ravel()
         prompt = brt.format_prompt(cvcl.get(c, c), d, brt.parse_dose(conc_of.get(ds, "unknown")),
                                    moa_of.get(d, "unclear"), brt.expr_to_sentence(ctrl_vec, panel))
-        # scramble: a different drug in the SAME cell line
-        sk = others[rng.randint(len(others))]
-        sp = scramble_prompt(prompt, d, sk[0], moa_of.get(sk[0], "unclear"))
-
+        # scramble arms across SIMILARITY STRATA (see partners{} above)
+        if key not in partners:
+            continue
+        pinfo = partners[key]
         arms = {"model": generate([prompt] * args.k_samples)}
-        if sp:
-            arms["scramble"] = generate([sp] * args.k_samples)
-        row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained, "swap_to": sk[0]}
+        for strat in ("near", "orth", "opposite"):
+            bkey = pinfo[strat]
+            sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"))
+            if sp:
+                arms[f"scramble_{strat}"] = generate([sp] * args.k_samples)
+        for g in arms.values():
+            track(g)
+        row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained,
+               "repro_cos": kept[key]["repro_cos"],
+               "swap_near": pinfo["near"][0], "swap_orth": pinfo["orth"][0],
+               "swap_opposite": pinfo["opposite"][0],
+               "cos_near": pinfo["cos_near"], "cos_orth": pinfo["cos_orth"],
+               "cos_opposite": pinfo["cos_opposite"]}
         oth_truth = [truth[k] for k in others]
         for arm, gens in arms.items():
             if args.model_kind == "residual":
@@ -282,6 +329,10 @@ def main():
                                          for g in gens]), axis=0)
                 v = signed_rank_from_vector(expr - ctrl_pb[key] - generic[c], P, args.k_sig)
             row[arm] = nir_from_sims(cos(v, truth[key]), [cos(v, t) for t in oth_truth])
+            if arm == "model":
+                row["cos_pred_truth"] = cos(v, truth[key])          # direct directional agreement
+                row["cos_pred_others"] = float(np.mean([cos(v, t) for t in oth_truth]))
+                pred_by_cl[c].append((key, v))                      # for the mode-collapse check
         # CEILING: real half-B replicate scored against DISJOINT half-A truths (no cell overlap)
         if "residual_B" in kept[key] and key in truth_A:
             rB = signed_rank_from_vector(kept[key]["residual_B"], P, args.k_sig)
@@ -297,45 +348,106 @@ def main():
 
     if not recs:
         logger.error("no conditions scored"); return
-    report(recs, args, rng)
+    report(recs, args, rng, gen_stats, pred_by_cl, kept)
 
 
-def report(recs, args, rng):
-    arms = ["model", "scramble", "ceiling", "random"]
-    logger.info("=" * 96)
+def _clustered_ci(recs, key_a, key_b, rng, n_boot):
+    pairs = [(r["cell_line"], r[key_a] - r[key_b]) for r in recs
+             if r.get(key_a) is not None and r.get(key_b) is not None]
+    if not pairs:
+        return None
+    cls = np.array([c for c, _ in pairs]); dif = np.array([d for _, d in pairs])
+    u = list(set(cls.tolist())); boot = []
+    for _ in range(n_boot):
+        take = rng.choice(len(u), len(u), replace=True)
+        boot.append(dif[np.concatenate([np.where(cls == u[t])[0] for t in take])].mean())
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return float(dif.mean()), float(lo), float(hi), len(pairs), len(u)
+
+
+def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
+    logger.info("=" * 100)
     logger.info(f"RESIDUAL-SPACE NIR  (chance 0.50)   n={len(recs)} conditions, "
-                f"{len(set(r['cell_line'] for r in recs))} cell lines")
+                f"{len(set(r['cell_line'] for r in recs))} cell lines   model_kind={args.model_kind}")
+
+    # --- (0) GENERATION VALIDITY: if the outputs are malformed, nothing below is meaningful ---
+    if gen_stats and gen_stats["n"]:
+        g = gen_stats
+        logger.info(f"  [validity] {g['n']} generations | has [DOWN] {100*g['has_down']/g['n']:.0f}% | "
+                    f"up-block {np.mean(g['up_len']) if g['up_len'] else 0:.0f} / "
+                    f"down-block {np.mean(g['dn_len']) if g['dn_len'] else 0:.0f} genes | "
+                    f"valid panel genes {100*np.mean(g['valid_frac']):.1f}% | "
+                    f"duplicates {100*np.mean(g['dup_frac']):.1f}%")
+
     means = {}
-    for a in arms:
+    for a in ("model", "scramble_near", "scramble_orth", "scramble_opposite", "ceiling", "random"):
         v = [r[a] for r in recs if r.get(a) is not None]
         if v:
             means[a] = float(np.mean(v))
-            logger.info(f"    {a:9s} {means[a]:.3f}   (n={len(v)})")
-    # model - scramble with clustered bootstrap over CELL LINES
-    pairs = [(r["cell_line"], r["model"] - r["scramble"]) for r in recs
-             if r.get("model") is not None and r.get("scramble") is not None]
-    if pairs:
-        cls = np.array([c for c, _ in pairs]); dif = np.array([d for _, d in pairs])
-        u = list(set(cls.tolist())); boot = []
-        for _ in range(args.n_boot):
-            take = rng.choice(len(u), len(u), replace=True)
-            keep = np.concatenate([np.where(cls == u[t])[0] for t in take])
-            boot.append(dif[keep].mean())
-        lo, hi = np.percentile(boot, [2.5, 97.5])
-        logger.info("-" * 96)
-        logger.info(f"    >>> model - scramble = {dif.mean():+.4f}   clustered 95% CI [{lo:+.4f}, {hi:+.4f}]"
-                    f"   ({len(u)} cell lines)")
-        verdict = ("DRUG USE: swapping the drug degrades the prediction -> the model USES the drug"
-                   if lo > 0 else
-                   "NULL: swapping the drug changes nothing -> the model does NOT use the drug")
-        logger.info(f"    >>> VERDICT: {verdict}")
+            logger.info(f"    {a:18s} {means[a]:.3f}   (n={len(v)})")
+
+    # --- (1) STRATIFIED model - scramble: the gap should GROW near -> orth -> opposite ---
+    logger.info("-" * 100)
+    logger.info("  model - scramble BY SIMILARITY STRATUM (a random swap can land on a near-twin, where")
+    logger.info("  an unchanged output is CORRECT; the opposite-signature swap is the sharpest test):")
+    strat_out = {}
+    for strat in ("near", "orth", "opposite"):
+        r = _clustered_ci(recs, "model", f"scramble_{strat}", rng, args.n_boot)
+        if r:
+            m, lo, hi, n, ncl = r
+            mc = np.mean([x[f"cos_{strat}"] for x in recs if x.get(f"cos_{strat}") is not None])
+            strat_out[strat] = {"gap": m, "ci": [lo, hi], "n": n, "mean_cos": float(mc)}
+            flag = "CI excludes 0" if lo > 0 else "CI spans 0"
+            logger.info(f"    {strat:9s} (mean cos(A,B)={mc:+.2f})  gap = {m:+.4f}  "
+                        f"CI [{lo:+.4f}, {hi:+.4f}]  {flag}")
+    if len(strat_out) == 3:
+        mono = strat_out["opposite"]["gap"] > strat_out["near"]["gap"]
+        logger.info(f"    >>> gap grows with dissimilarity: {'YES' if mono else 'NO'} "
+                    f"(near {strat_out['near']['gap']:+.4f} -> opposite {strat_out['opposite']['gap']:+.4f}). "
+                    f"{'Consistent with genuine drug use.' if mono else 'A flat profile is a red flag.'}")
+        best = strat_out["opposite"]
+        logger.info(f"    >>> HEADLINE (opposite-signature swap): {best['gap']:+.4f} "
+                    f"CI [{best['ci'][0]:+.4f}, {best['ci'][1]:+.4f}] -> "
+                    f"{'DRUG USE' if best['ci'][0] > 0 else 'NULL'}")
+
+    # --- (2) MODE COLLAPSE: are predictions for different drugs actually different? ---
+    if pred_by_cl and kept:
+        pc, tc = [], []
+        for c, lst in pred_by_cl.items():
+            if len(lst) < 3:
+                continue
+            for i in range(len(lst)):
+                for j in range(i + 1, len(lst)):
+                    pc.append(cos(lst[i][1], lst[j][1]))
+                    tc.append(cos(kept[lst[i][0]]["residual"], kept[lst[j][0]]["residual"]))
+        if pc:
+            logger.info("-" * 100)
+            logger.info(f"  [diversity] mean pairwise cos between PREDICTIONS for different drugs = "
+                        f"{np.mean(pc):+.3f}  vs between TRUTHS = {np.mean(tc):+.3f}")
+            logger.info(f"              (predictions ~1.0 => mode collapse: the model emits one profile "
+                        f"regardless of drug, which would make any gap trivially ~0)")
+
+    # --- (3) INSTRUMENT VALIDITY: does the model do better where the truth is more reproducible? ---
+    rc = [(r["repro_cos"], r["model"]) for r in recs
+          if r.get("repro_cos") is not None and r.get("model") is not None]
+    if len(rc) > 10:
+        a = np.array([x for x, _ in rc]); b = np.array([y for _, y in rc])
+        logger.info(f"  [validity] corr(condition reproducibility, model NIR) = {np.corrcoef(a, b)[0,1]:+.3f} "
+                    f"(positive => the model does better where the drug effect is real)")
+    cpt = [r["cos_pred_truth"] for r in recs if r.get("cos_pred_truth") is not None]
+    cpo = [r["cos_pred_others"] for r in recs if r.get("cos_pred_others") is not None]
+    if cpt:
+        logger.info(f"  [direction] cos(prediction, OWN truth) = {np.mean(cpt):+.3f}  vs "
+                    f"cos(prediction, OTHER drugs) = {np.mean(cpo):+.3f}")
+
     tr = [r for r in recs if r.get("trained")]
     ho = [r for r in recs if not r.get("trained")]
     if tr and ho:
         f = lambda s: np.mean([r["model"] for r in s if r.get("model") is not None])
-        logger.info(f"    trained conditions n={len(tr)} model={f(tr):.3f} | "
-                    f"held-out n={len(ho)} model={f(ho):.3f}  (gap => memorisation)")
-    logger.info("=" * 96)
+        logger.info(f"  [memorisation] trained n={len(tr)} model={f(tr):.3f} | "
+                    f"held-out n={len(ho)} model={f(ho):.3f}")
+    logger.info("=" * 100)
+    means["strata"] = strat_out
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump({"config": vars(args), "means": means, "records": recs}, open(args.out, "w"),
               indent=2, default=float)
