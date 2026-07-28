@@ -134,6 +134,9 @@ def main():
     ap.add_argument("--cache_dir")
     ap.add_argument("--model_path")
     ap.add_argument("--train_file", default=None, help="residual.jsonl (to flag/exclude trained conditions)")
+    ap.add_argument("--holdout", default=None,
+                    help="holdout.json manifest from build_residual_targets -> report train / "
+                         "unseen_combo (cross-context transfer) / unseen_drug separately")
     ap.add_argument("--held_out_only", action="store_true")
     ap.add_argument("--n_conditions", type=int, default=200)
     ap.add_argument("--k_samples", type=int, default=4)
@@ -180,6 +183,16 @@ def main():
         seed=args.seed)
     logger.info(f"conditions with residuals: {len(kept)}")
     cvcl, moa_of, conc_of = brt.load_meta_maps()
+
+    split_of = {}
+    if args.holdout and os.path.exists(args.holdout):
+        hm = json.load(open(args.holdout))
+        for kstr, v in hm["split"].items():
+            split_of[tuple(kstr.split("|"))] = v
+        from collections import Counter as _C
+        logger.info(f"holdout manifest: {dict(_C(split_of.values()))}  "
+                    f"({len(hm.get('holdout_drugs', []))} unseen drugs, "
+                    f"{len(hm.get('holdout_combos', []))} unseen combos)")
 
     trained = set()
     if args.train_file and os.path.exists(args.train_file):
@@ -312,6 +325,7 @@ def main():
         for g in arms.values():
             track(g)
         row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained,
+               "split": split_of.get(tuple(map(str, key)), "unknown"),
                "repro_cos": kept[key]["repro_cos"],
                "swap_near": pinfo["near"][0], "swap_orth": pinfo["orth"][0],
                "swap_opposite": pinfo["opposite"][0],
@@ -440,12 +454,46 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
         logger.info(f"  [direction] cos(prediction, OWN truth) = {np.mean(cpt):+.3f}  vs "
                     f"cos(prediction, OTHER drugs) = {np.mean(cpo):+.3f}")
 
-    tr = [r for r in recs if r.get("trained")]
-    ho = [r for r in recs if not r.get("trained")]
-    if tr and ho:
-        f = lambda s: np.mean([r["model"] for r in s if r.get("model") is not None])
-        logger.info(f"  [memorisation] trained n={len(tr)} model={f(tr):.3f} | "
-                    f"held-out n={len(ho)} model={f(ho):.3f}")
+    # --- (4) GENERALIZATION: the three-way split (the decisive test) ---
+    splits = defaultdict(list)
+    for r in recs:
+        splits[r.get("split", "unknown")].append(r)
+    if len(splits) > 1 or "unknown" not in splits:
+        logger.info("-" * 100)
+        logger.info("  GENERALIZATION — opposite-signature gap by split "
+                    "(train = memorisation; unseen_combo = CROSS-CONTEXT TRANSFER, the real test;")
+        logger.info("  unseen_drug = no drug information at all, expected ~0 given the SAR gate):")
+        gen_out = {}
+        for name in ("train", "unseen_combo", "unseen_drug", "unknown"):
+            sub = splits.get(name)
+            if not sub or len(sub) < 5:
+                continue
+            r = _clustered_ci(sub, "model", "scramble_opposite", rng, args.n_boot)
+            mo = np.mean([x["model"] for x in sub if x.get("model") is not None])
+            if r:
+                m, lo, hi, n, ncl = r
+                gen_out[name] = {"gap": m, "ci": [lo, hi], "n": n, "n_cell_lines": ncl, "model_nir": float(mo)}
+                logger.info(f"    {name:14s} n={n:4d} ({ncl:2d} cell lines)  model NIR={mo:.3f}  "
+                            f"gap = {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  "
+                            f"{'USES DRUG' if lo > 0 else 'null'}")
+        if "unseen_combo" in gen_out:
+            g = gen_out["unseen_combo"]
+            logger.info(f"    >>> CROSS-CONTEXT TRANSFER: {'YES' if g['ci'][0] > 0 else 'NO'} "
+                        f"({g['gap']:+.4f} CI [{g['ci'][0]:+.4f}, {g['ci'][1]:+.4f}]). "
+                        + ("The model applies a learned drug signature in a cell line it never saw it in."
+                           if g['ci'][0] > 0 else
+                           "Drug use does not transfer to new contexts -> memorisation only."))
+        if "train" in gen_out and "unseen_combo" in gen_out:
+            logger.info(f"    >>> memorisation premium: train {gen_out['train']['gap']:+.4f} vs "
+                        f"unseen_combo {gen_out['unseen_combo']['gap']:+.4f}")
+        means["generalization"] = gen_out
+    else:
+        tr = [r for r in recs if r.get("trained")]
+        ho = [r for r in recs if not r.get("trained")]
+        if tr and ho:
+            f = lambda s: np.mean([r["model"] for r in s if r.get("model") is not None])
+            logger.info(f"  [memorisation] trained n={len(tr)} model={f(tr):.3f} | "
+                        f"held-out n={len(ho)} model={f(ho):.3f}")
     logger.info("=" * 100)
     means["strata"] = strat_out
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)

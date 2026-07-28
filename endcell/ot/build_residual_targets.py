@@ -170,6 +170,42 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0):
     return kept, {c: generic[c]["full"] for c in generic}, ctrl_rows, X, meta
 
 
+def make_holdout(kept, frac_combos, frac_drugs, seed):
+    """Three-way split for the generalization test.
+      * unseen_drug  : every condition of a held-out DRUG -> the model never sees the token. Given the
+                       SAR gate (structure does not predict response) this SHOULD fail; it is the
+                       control proving that any transfer in `unseen_combo` comes from having seen the drug.
+      * unseen_combo : a held-out (drug, cell_line) pair whose drug IS seen in OTHER cell lines ->
+                       CROSS-CONTEXT TRANSFER, the scientifically meaningful test (Q11 found
+                       identifiability swings by 0.83 across cell lines, so this is genuinely open).
+      * train        : everything else.
+    Held out at the (drug, cell_line) level, so no plate/dose of a held-out combo leaks into training."""
+    rng = np.random.RandomState(seed)
+    drugs = sorted({k[0] for k in kept})
+    combos = sorted({(k[0], k[1]) for k in kept})
+    n_d = int(round(frac_drugs * len(drugs)))
+    ho_drugs = set(rng.choice(drugs, n_d, replace=False).tolist()) if n_d else set()
+    # candidate combos: drug not already fully held out, and the drug must survive in >=2 other lines
+    per_drug = defaultdict(list)
+    for (d, c) in combos:
+        per_drug[d].append(c)
+    cand = [(d, c) for (d, c) in combos if d not in ho_drugs and len(per_drug[d]) >= 3]
+    n_c = int(round(frac_combos * len(combos)))
+    idx = rng.choice(len(cand), min(n_c, len(cand)), replace=False) if cand else []
+    ho_combos = {cand[i] for i in np.atleast_1d(idx).tolist()} if len(cand) else set()
+    split = {}
+    for k in kept:
+        d, c = k[0], k[1]
+        split[k] = "unseen_drug" if d in ho_drugs else ("unseen_combo" if (d, c) in ho_combos else "train")
+    n = defaultdict(int)
+    for v in split.values():
+        n[v] += 1
+    logger.info(f"holdout: {n['train']} train | {n['unseen_combo']} unseen_combo "
+                f"({len(ho_combos)} drug x cell-line pairs) | {n['unseen_drug']} unseen_drug "
+                f"({len(ho_drugs)} drugs)")
+    return split, sorted(ho_drugs), sorted(ho_combos)
+
+
 def run(args):
     from scipy import sparse
     panel_genes = json.load(open(os.path.join(args.cache_dir, "panel_genes.json")))
@@ -180,11 +216,21 @@ def run(args):
     cvcl, moa_of, conc_of = load_meta_maps(args.repo)
     rng = np.random.RandomState(args.seed)
 
+    split = None
+    if args.holdout_combos > 0 or args.holdout_drugs > 0:
+        split, ho_drugs, ho_combos = make_holdout(kept, args.holdout_combos, args.holdout_drugs, args.seed)
+
     os.makedirs(args.out_dir, exist_ok=True)
     out_path = os.path.join(args.out_dir, "residual.jsonl")
     n_ex, n_cond = 0, 0
+    n_skipped_holdout = 0
     with open(out_path, "w") as out:
         for (d, c, p, ds), v in kept.items():
+            # held-out conditions are NEVER written to the training file (the manifest records them
+            # so evaluation can score each split separately)
+            if split is not None and split[(d, c, p, ds)] != "train":
+                n_skipped_holdout += 1
+                continue
             rows = ctrl_rows.get(v["group"])
             if rows is None or len(rows) == 0:
                 continue
@@ -211,10 +257,23 @@ def run(args):
                         cell_lines=np.array(list(generic.keys()), dtype=object),
                         generic_shift=np.stack([generic[c] for c in generic]),
                         panel_genes=np.array(panel_genes, dtype=object))
-    json.dump({"n_conditions_kept": len(kept), "n_examples": n_ex, "k_up": args.k_up,
-               "k_down": args.k_down, "repro_thr": args.repro_thr, "scope": "cell_line",
-               "down_token": DOWN, "end_token": END},
-              open(os.path.join(args.out_dir, "report.json"), "w"), indent=2)
+    report = {"n_conditions_kept": len(kept), "n_examples": n_ex, "k_up": args.k_up,
+              "k_down": args.k_down, "repro_thr": args.repro_thr, "scope": "cell_line",
+              "down_token": DOWN, "end_token": END}
+    if split is not None:
+        # manifest: which conditions are train / unseen_combo / unseen_drug, so residual_eval can
+        # score each split separately and we can claim generalization (or not) honestly.
+        json.dump({"split": {"|".join(map(str, k)): v for k, v in split.items()},
+                   "holdout_drugs": ho_drugs,
+                   "holdout_combos": ["|".join(map(str, kk)) for kk in ho_combos]},
+                  open(os.path.join(args.out_dir, "holdout.json"), "w"), indent=2)
+        report["holdout"] = {"n_train": sum(1 for v in split.values() if v == "train"),
+                             "n_unseen_combo": sum(1 for v in split.values() if v == "unseen_combo"),
+                             "n_unseen_drug": sum(1 for v in split.values() if v == "unseen_drug"),
+                             "n_conditions_excluded_from_training": n_skipped_holdout}
+        logger.info(f"holdout manifest -> {args.out_dir}/holdout.json "
+                    f"({n_skipped_holdout} conditions withheld from training)")
+    json.dump(report, open(os.path.join(args.out_dir, "report.json"), "w"), indent=2)
     logger.info(f"wrote {n_ex} examples from {n_cond} conditions -> {out_path}")
     logger.info(f"reconstruction assets -> {args.out_dir}/reconstruction.npz")
     logger.info(f"NOTE: register '{DOWN}' as a special token in the trainer alongside '{END}'.")
@@ -259,6 +318,12 @@ def main():
     ap.add_argument("--k_up", type=int, default=100)
     ap.add_argument("--k_down", type=int, default=100)
     ap.add_argument("--max_ctrl", type=int, default=60, help="control cells (=examples) per condition")
+    ap.add_argument("--holdout_combos", type=float, default=0.0,
+                    help="fraction of (drug, cell_line) pairs withheld from training -> CROSS-CONTEXT "
+                         "transfer test (drug seen in other cell lines)")
+    ap.add_argument("--holdout_drugs", type=float, default=0.0,
+                    help="fraction of DRUGS withheld entirely -> unseen-drug control (expected to fail "
+                         "given the SAR gate; proves transfer requires having seen the drug)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out_dir", default="RESULTS/residual_targets")
     ap.add_argument("--selftest", action="store_true")
