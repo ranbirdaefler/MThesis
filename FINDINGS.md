@@ -24,6 +24,16 @@ equal to a scrambled-drug prompt. Mechanistically the drug **is** read into the 
 only resolvable under aggregation. Net: a deep single-cell LLM neither beats simple baselines on an
 honest metric nor captures the drug — the single-cell, transformer extension of the DrEval critique.
 
+**(3) …and the cause is the OUTPUT ENCODING, which is fixable (Q15).** Because a cell sentence ranks
+genes by expression, **83% of the target tokens are identical between any two drugs** (34.6/200 differ),
+so cross-entropy gets ~1% of its gradient from drug identity — which is why *every* change to target
+*content* failed identically (Q12 consensus, Q14 OT, the whole ε-ladder). Re-encoding the target as the
+**drug-specific residual** (a signed DE signature, generic program subtracted) raises that to 60% of
+tokens and produces the **first non-null `model − scramble` in this project: +0.072 [+0.032, +0.110]**
+under an opposite-signature swap, with a monotone dissimilarity gradient and a matched single-cell
+control that stays null. So the drug-blindness is **not** an inherent limit of the architecture or the
+data — it is a consequence of how the prediction target is tokenized.
+
 ---
 
 ## Canonical datasets / models (use these; everything else is historical)
@@ -318,6 +328,63 @@ uses the *same* A on both arms, so that drift cancels.
 - **Quality axis (tentative):** aggregate expr-NIR 0.498 (single-cell) → **0.511** (T2), a *marginal* improvement consistent with Q1 (aggregation aids prediction), still far below ceiling 0.576. **T0 was not trained** (skipped once T2 came back null), so the clean T2-vs-T0 quality comparison is **not** established — this quality claim is suggestive only.
 - **Caveats:** (a) the cache covers **106 of ~1,100 Tahoe drugs** (80-shard sample) — ample to test drug-use, not a population estimate; (b) T0/T1 untrained, so the ladder's *quality* decomposition is incomplete (the *drug-specificity* conclusion does not depend on it, since consensus and single-cell were already measured); (c) ε was fixed at 0.5 (no fine sweep) — but the two analytic endpoints are covered by Arm 1a and the single-cell model, so an intermediate ε would have to beat both endpoints *and* T2 to change the conclusion.
 - **Status:** ✅ **the target-side hypothesis is definitively closed.** Denoising (Q12), pairing, and state-matched optimal transport (Q14) all fail identically — the defect is **not** the training target. This is exactly the Q13 prediction (the readout is drug-agnostic: magnitude-sensitive, direction-blind), now confirmed by a controlled sweep rather than a single failed attempt. ➡️ **All remaining effort goes objective-side (Arm 1b)**: a contrastive / swap-consistency / discrimination loss that *forces* the readout to distinguish drug directions. The OT couplings built here (state-matched control→treated pairs) are the natural raw material for that loss. Artifacts: cache `/data/.../ot_cache`, targets `/data/.../ot_targets` (T0/T1/T2.jsonl + `step0_gates.json`), model `checkpoints/pythia_sft_ot_T2/final`, results `RESULTS/nir_ot_T2.json`, `RESULTS/stratify_ot_T2.json`.
+- 🔁 **CORRECTION (from Q15's stratified scramble):** the "T2 is drug-blind" verdict was measured with a **random-partner** scramble in full-profile space (−0.001). Under the sharper **opposite-signature** swap in residual space, T2 scores **+0.0263, CI [+0.0069, +0.0476] — CI excludes zero — with a monotone gradient** (near +0.007 → orth +0.014 → opposite +0.026). So **T2 does use the drug weakly**; the original null was an *underpowered instrument*, not an absence of signal. The single-cell model remains null under the same sharp test, so the ε-ladder conclusion (target content alone does not solve drug-blindness) stands, but "OT achieved nothing" is **too strong** and is retracted. See Q15 §methodology for why a random swap under-detects.
+
+### Q15. Does changing WHAT THE TOKENS ENCODE make the model use the drug? (Arm 1b stage 1 — residual targets)
+- **Why:** Q12/Q14 swept the ε-ladder of target *content* and all failed identically. The remaining explanation is a **ratio**: in a ~200-gene cell sentence ranked by expression, the drug-specific part is a handful of genes, so cross-entropy allocates ~1% of its gradient to drug identity. Changing *what the target is* never changed that ratio. This arm changes **what the tokens encode**.
+- **The measurement that motivated it (`target_divergence.py`, 6,602 conditions / 125 groups):**
+
+  | representation | inter-drug top-200 tokens DIFFERING | replicate retrieval ceiling |
+  |---|---|---|
+  | FULL profile (the old target) | **34.6 / 200 (17%)** | 0.742 |
+  | SHIFT (treated − control) | 111.4 (56%) | 0.742 |
+  | **RESIDUAL (drug-specific)** | **120.3 / 200 (60%)** | 0.747 |
+
+  So **83% of the old target's tokens are identical between any two drugs in the same context.** ❌ *Note the ceiling is UNCHANGED* — an earlier hypothesis that residualization raises the ceiling is **retracted**; subtracting a per-group constant leaves pairwise distances unchanged. The information was always present (~0.74); the **tokenization discarded it**.
+
+- **How — methodology in full:**
+
+  **(1) Target construction (`build_residual_targets.py`).** For each condition (drug, cell_line, plate, dose) with ≥40 treated and ≥20 plate-matched control cells, from the 620k-cell `ot_cache` in log1p(CP10K) panel space:
+  `residual = (treated_pseudobulk − control_pseudobulk) − mean_over_drugs(treated − control)`.
+  The control subtraction removes the cell's own state; the **mean-over-drugs subtraction removes the generic drug program** (Q8: ~0.26 of "skill" that is drug-AGNOSTIC and matched by a no-fit baseline). What remains is what makes *this* drug different.
+  - **Scope = cell line, not plate** — measured: 62% of conditions reproducible vs **19%** at plate scope (a plate holds too few drugs to estimate the mean, so subtracting a noisy mean injects noise).
+  - **Reliability filter (filter, not weight):** keep a condition only if its residual reproduces across a half-split, `cos(res_A, res_B) > 0.2`. **KEPT 4,091/6,617 (62%)**, exactly matching the divergence prediction. The other 38% are noise.
+  - **Encoding (sign is biology):** `"<up genes, most up-regulated first> [DOWN] <down genes> [END_CELL]"` — a signed DE signature, 100 genes per block. `[DOWN]` is **registered as an atomic special token** in the trainer alongside `[END_CELL]` (verified: id 50278; unregistered it splits into subwords and the up/down boundary stops being a clean symbol).
+  - **Emission:** `per_cell` — every plate-matched control cell in the condition becomes a prompt (prompt format identical to the original trainer: real cell-line name, drug, dose, `moa-fine`, control cell sentence), with the condition-level residual as the response. **245,444 examples from 4,091 conditions.**
+  - Also writes `reconstruction.npz` (per-cell-line generic shift) so full profiles can be rebuilt at evaluation.
+
+  **(2) Training.** Cold start from `C2S-Scale-Pythia-1b-pt`, **identical hyperparameters to every prior arm** (1 epoch, lr 1e-5, grad-accum 16, max_length 8192, bf16) → the target encoding is the only variable. Completed 15,340 steps, train loss 1.8714, plateaued. Loader `shuffle=True` (checked — the file is written in condition order, so without shuffling every optimizer step would have seen 16 copies of one target).
+
+  **(3) Evaluation (`residual_eval.py`).** Scored in **residual space** (where the model was trained): predicted and true residuals are both mapped to a **signed rank vector** (top-k up positive, top-k down negative, weight `1/log2(rank+1)`) so a generated sentence and a continuous truth are compared like for like; similarity = cosine; **NIR** = fraction of other drugs *in the same cell line* whose truth is less similar than the drug's own. Clustered 95% CI over **cell lines**.
+
+  **(4) STRATIFIED SCRAMBLE — the methodological fix that made the result visible.** A scramble that swaps to a *random* other drug can land on a **near-twin**, where an unchanged output is **correct, not blind** — this biases `model − scramble` toward zero (the same lesson as the earlier swap-distance sweep). We therefore swap to **three defined strata** by residual cosine within the cell line: `near` (most similar), `orth` (cos ≈ 0), `opposite` (most anti-correlated — the sharpest test). **If drug use is genuine the gap must GROW near → orth → opposite**; a flat profile is a red flag.
+
+  **(5) THE CONTROL that makes the result interpretable.** The residual model is scored in a new space, so a positive could be an artifact of the *metric* rather than the training. We therefore scored the **single-cell** and **OT/T2** models through the **identical pipeline, on identical conditions and strata** (`--model_kind cellsentence`): their generated treated cell is decoded via an empirical rank→value profile in cache units, then `− control pseudobulk − generic shift` gives an **implied residual**, scored the same way.
+
+- **Answer — YES. The residual model uses the drug, and the control confirms it is not a metric artifact.**
+
+  | stratum (swap partner) | **residual model** | single-cell (control) | OT/T2 (control) |
+  |---|---|---|---|
+  | `near` (mean cos +0.41) | −0.0045 [−0.040, +0.028] | −0.0140 [−0.045, +0.018] | +0.0073 [−0.008, +0.023] |
+  | `orth` (cos ≈ 0.00) | +0.0349 [−0.005, +0.077] | −0.0206 [−0.050, +0.006] | +0.0144 [−0.003, +0.032] |
+  | **`opposite` (cos −0.33)** | **+0.0716 [+0.0316, +0.1096]** ✅ | −0.0204 [−0.054, +0.010] ✗ | +0.0263 [+0.0069, +0.0476] ✅ |
+  | **gradient with dissimilarity** | **YES** | **NO (flat)** | YES |
+
+  Absolute NIR: model 0.652, scramble_near 0.656, scramble_orth 0.617, scramble_opposite 0.580, **ceiling 0.964**, random floor 0.486. Reconstructed full-profile space (random-partner scramble, not stratified): `model − scramble = +0.0150 [+0.0008, +0.0309]`, ceiling 0.868.
+- **Three independent checks agree, and only the residual model passes all three:**
+
+  | check | residual | single-cell | OT |
+  |---|---|---|---|
+  | corr(condition reproducibility, model NIR) — better where the drug effect is *real*? | **+0.111** ✓ | −0.117 ✗ | −0.216 ✗ |
+  | prediction diversity (mean pairwise cos between predictions; truths = −0.005) | **+0.176** | +0.303 | +0.633 (collapsed) |
+  | cos(prediction, own truth) vs other drugs | **+0.067 / −0.002** | +0.026 | +0.049 |
+- **Caveats (all material):**
+  - **Scoring paths differ**: the residual model is scored natively; the controls go through decode→subtract. The single-cell null proves the path does not *manufacture* positives, but it cannot rule out a magnitude advantage. **Residual vs OT CIs overlap** ([+0.032,+0.110] vs [+0.007,+0.048]) — "residual beats OT" is *suggestive, not established*.
+  - **26% of generations lack `[DOWN]`** (up-block 100 / down-block 76 genes; 99.3% valid panel genes, 0.3% duplicates). A quarter of outputs are malformed signatures — fixing this should *increase* the effect.
+  - **All scored conditions were trained on** → this demonstrates the model **reads the drug token** (memorization also requires that), **not generalization**. A held-out-shard cache is the outstanding test.
+  - **Reconstructed number is not stratified** (random partner), so +0.0150 understates by the same near-twin logic.
+  - **Large headroom**: model 0.652 vs ceiling 0.964.
+- **Status:** ✅ **first non-null `model − scramble` in this project**, with a matched control and a monotone dissimilarity gradient. The bottleneck was **what the output tokens encode**, not the target's content (Q12/Q14) and not the drug's presence in the representation (Q13). ➡️ Next: stratify the reconstructed eval; fix the `[DOWN]` emission rate; **held-out conditions for generalization**; then stages 2–3 (profile-level contrastive loss, drug-conditioned modulation) per `docs/proposals/arm1b_objective_spec.md`. Artifacts: targets `/data/.../residual_targets/`, model `checkpoints/pythia_sft_residual/final`, results `RESULTS/re_residual_model.json`, `RESULTS/re_singlecell_model.json`, `RESULTS/re_ot_model.json`, `RESULTS/reconstructed_eval_v2.json`; log `logs/arm1b_ctrl_*.out`.
 
 ---
 
