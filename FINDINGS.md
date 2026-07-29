@@ -29,7 +29,7 @@ genes by expression, **83% of the target tokens are identical between any two dr
 so cross-entropy gets ~1% of its gradient from drug identity — which is why *every* change to target
 *content* failed identically (Q12 consensus, Q14 OT, the whole ε-ladder). Re-encoding the target as the
 **drug-specific residual** (a signed DE signature, generic program subtracted) raises that to 60% of
-tokens and produces the **first non-null `model − scramble` in this project: +0.072 [+0.032, +0.110]**
+tokens and produces the **first non-null `model − scramble` in this project: +0.143 [+0.111, +0.179]**
 under an opposite-signature swap, with a monotone dissimilarity gradient and a matched single-cell
 control that stays null. So the drug-blindness is **not** an inherent limit of the architecture or the
 data — it is a consequence of how the prediction target is tokenized.
@@ -363,24 +363,36 @@ uses the *same* A on both arms, so that drift cancels.
 
 - **Answer — YES. The residual model uses the drug, and the control confirms it is not a metric artifact.**
 
-  | stratum (swap partner) | **residual model** | single-cell (control) | OT/T2 (control) |
-  |---|---|---|---|
-  | `near` (mean cos +0.41) | −0.0045 [−0.040, +0.028] | −0.0140 [−0.045, +0.018] | +0.0073 [−0.008, +0.023] |
-  | `orth` (cos ≈ 0.00) | +0.0349 [−0.005, +0.077] | −0.0206 [−0.050, +0.006] | +0.0144 [−0.003, +0.032] |
-  | **`opposite` (cos −0.33)** | **+0.0716 [+0.0316, +0.1096]** ✅ | −0.0204 [−0.054, +0.010] ✗ | +0.0263 [+0.0069, +0.0476] ✅ |
-  | **gradient with dissimilarity** | **YES** | **NO (flat)** | YES |
+  ⚠️ **First measured with `--max_new_tokens 600`, which SILENTLY TRUNCATED 26% of generations.** A
+  signature is 100 up + `[DOWN]` + 100 down ≈ 201 gene symbols, and gene symbols are 2–4 BPE tokens each
+  (~500–800 tokens), so a quarter of generations never reached `[DOWN]` and were scored with their entire
+  down-block missing. **Re-running at 1400 tokens roughly doubled the measured effect.** Both are shown;
+  the 1400-token row is the correct one. *Methodological lesson: for generation-based evals, log the
+  `[END_CELL]` completion rate — a token budget that looks generous can halve a result.*
 
-  Absolute NIR: model 0.652, scramble_near 0.656, scramble_orth 0.617, scramble_opposite 0.580, **ceiling 0.964**, random floor 0.486. Reconstructed full-profile space (random-partner scramble, not stratified): `model − scramble = +0.0150 [+0.0008, +0.0309]`, ceiling 0.868.
+  | stratum (swap partner) | **residual model** (max_tok **1400**) | ⚠️ same, truncated (600) | single-cell (control) | OT/T2 (control) |
+  |---|---|---|---|---|
+  | `near` (mean cos +0.41) | **+0.0351 [+0.0061, +0.0656]** ✅ | −0.0045 (spans 0) | −0.0140 [−0.045, +0.018] | +0.0073 [−0.008, +0.023] |
+  | `orth` (cos ≈ 0.00) | **+0.0716 [+0.0371, +0.1059]** ✅ | +0.0349 (spans 0) | −0.0206 [−0.050, +0.006] | +0.0144 [−0.003, +0.032] |
+  | **`opposite` (cos −0.33)** | **+0.1429 [+0.1112, +0.1787]** ✅ | +0.0716 [+0.032, +0.110] | −0.0204 [−0.054, +0.010] ✗ | +0.0263 [+0.0069, +0.0476] ✅ |
+  | **gradient with dissimilarity** | **YES (all three strata clear zero)** | YES | **NO (flat)** | YES |
+
+  Absolute NIR at 1400 tokens: model **0.704**, scramble_near 0.669, scramble_orth 0.632,
+  scramble_opposite 0.561, **ceiling 0.964**, random floor 0.486; `[DOWN]` present in **91%** of
+  generations (up-block 123 / down-block 103 genes, 98.8% valid panel genes, 1.7% duplicates).
+  Reconstructed full-profile space (random-partner scramble, **not** stratified, and still at the old
+  token budget): `model − scramble = +0.0150 [+0.0008, +0.0309]`, ceiling 0.868 — understated on both
+  counts, to be re-run.
 - **Three independent checks agree, and only the residual model passes all three:**
 
-  | check | residual | single-cell | OT |
+  | check | residual (1400 tok) | single-cell | OT |
   |---|---|---|---|
-  | corr(condition reproducibility, model NIR) — better where the drug effect is *real*? | **+0.111** ✓ | −0.117 ✗ | −0.216 ✗ |
-  | prediction diversity (mean pairwise cos between predictions; truths = −0.005) | **+0.176** | +0.303 | +0.633 (collapsed) |
-  | cos(prediction, own truth) vs other drugs | **+0.067 / −0.002** | +0.026 | +0.049 |
+  | corr(condition reproducibility, model NIR) — better where the drug effect is *real*? | **+0.144** ✓ | −0.117 ✗ | −0.216 ✗ |
+  | prediction diversity (mean pairwise cos between predictions; truths = −0.005) | **+0.124** (most diverse) | +0.303 | +0.633 (collapsed) |
+  | cos(prediction, own truth) vs other drugs | **+0.084 / −0.000** | +0.026 | +0.049 |
 - **Caveats (all material):**
   - **Scoring paths differ**: the residual model is scored natively; the controls go through decode→subtract. The single-cell null proves the path does not *manufacture* positives, but it cannot rule out a magnitude advantage. **Residual vs OT CIs overlap** ([+0.032,+0.110] vs [+0.007,+0.048]) — "residual beats OT" is *suggestive, not established*.
-  - **26% of generations lack `[DOWN]`** (up-block 100 / down-block 76 genes; 99.3% valid panel genes, 0.3% duplicates). A quarter of outputs are malformed signatures — fixing this should *increase* the effect.
+  - **Token-budget truncation (RESOLVED):** at 600 tokens 26% of generations never reached `[DOWN]`; at 1400 tokens that is 9%, and the effect roughly doubled. The remaining 9% still understate it slightly.
   - **All scored conditions were trained on** → this demonstrates the model **reads the drug token** (memorization also requires that), **not generalization**. A held-out-shard cache is the outstanding test.
   - **Reconstructed number is not stratified** (random partner), so +0.0150 understates by the same near-twin logic.
   - **Large headroom**: model 0.652 vs ceiling 0.964.
