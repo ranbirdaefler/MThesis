@@ -68,12 +68,34 @@ SIMS = {
 }
 
 
-def r_disc(res_g, res_own, res_others, sim, k=100):
-    """The contrastive reward as the trainer computes it."""
+def r_disc(res_g, res_own, res_others, sim, k=100, neg_agg="mean", tau=0.1):
+    """The contrastive reward. `neg_agg` chooses how the negatives are aggregated:
+
+      max      : own - max_j sim_j          <- ORIGINAL, and BROKEN. The max over J noisy similarities
+                 is biased upward (E[max] ~ sigma*sqrt(2 ln J)), which drags every REAL cell's reward
+                 negative -- so a zero vector (sim=0 to everything) scores 0 and beats real cells.
+                 Measured: generic_response and orthogonal_to_all both hacked this.
+      mean     : own - mean_j sim_j         <- unbiased; a real cell has sim_own > 0 ~= mean_others,
+                 so it scores positive while a zero vector still scores 0 and loses.
+      opposite : own - sim to the single most ANTI-correlated drug (a fixed negative, no max bias)
+      infonce  : log softmax(own / tau) over {own} u negatives -- bounded, and a vector equidistant
+                 from everything gets the MINIMUM rather than 0.
+    """
     own = sim(res_g, res_own, k)
     if not len(res_others):
         return own
-    return own - max(sim(res_g, o, k) for o in res_others)
+    sims = [sim(res_g, o, k) for o in res_others]
+    if neg_agg == "max":
+        return own - max(sims)
+    if neg_agg == "mean":
+        return own - float(np.mean(sims))
+    if neg_agg == "opposite":
+        return own - sims[int(np.argmin([sim(res_own, o, k) for o in res_others]))]
+    if neg_agg == "infonce":
+        z = np.array([own] + sims, dtype=np.float64) / max(tau, 1e-6)
+        z -= z.max()
+        return float(z[0] - np.log(np.exp(z).sum()))
+    raise ValueError(neg_agg)
 
 
 # ----------------------------------------------------------------- the decode path (as in training)
@@ -191,9 +213,12 @@ def run(args):
     logger.info(f"probing {len(conds)} conditions")
 
     out = {"sims": {}, "n_conditions": len(conds)}
+    aggs = [a.strip() for a in args.neg_aggs.split(",") if a.strip()]
     for sim_name, sim in SIMS.items():
+      for agg in aggs:
+        NEG = agg
         logger.info("=" * 100)
-        logger.info(f"SIMILARITY VARIANT: {sim_name}")
+        logger.info(f"VARIANT: similarity={sim_name}  negatives={agg}")
         own_true, own_rt, other_rt = [], [], []
         pool_curve = defaultdict(list)
         adv = defaultdict(list)
@@ -213,29 +238,29 @@ def run(args):
             # ---- G1/G2: real own-drug cells, with TRUE expression vs after the SENTENCE ROUND-TRIP ----
             for i in rows[:args.n_cells]:
                 e = np.asarray(np.log1p(X[i].todense())).ravel().astype(np.float32)
-                own_true.append(r_disc(build_cell_residual(e, cpb, gen), res_own, res_oth, sim, args.k_sig))
+                own_true.append(r_disc(build_cell_residual(e, cpb, gen), res_own, res_oth, sim, args.k_sig, NEG))
                 rt = build_cell_residual(roundtrip(e, P, rank_prof), cpb, gen)
-                own_rt.append(r_disc(rt, res_own, res_oth, sim, args.k_sig))
+                own_rt.append(r_disc(rt, res_own, res_oth, sim, args.k_sig, NEG))
             # real cells of ANOTHER drug, scored as if they were this drug (the discrimination contrast)
             ok = others_k[rng.randint(len(others_k))]
             orows = rows_of.get(ok, [])
             for i in list(orows)[:args.n_cells]:
                 e = np.asarray(np.log1p(X[i].todense())).ravel().astype(np.float32)
                 rt = build_cell_residual(roundtrip(e, P, rank_prof), cpb, gen)
-                other_rt.append(r_disc(rt, res_own, res_oth, sim, args.k_sig))
+                other_rt.append(r_disc(rt, res_own, res_oth, sim, args.k_sig, NEG))
 
             # ---- G3: pooling curve (how many cells to beat single-cell noise) ----
             for m in (1, 2, 4, 8, 16, 40):
                 if len(rows) >= m:
                     e = np.asarray(np.log1p(X[rows[:m]].todense()).mean(0)).ravel().astype(np.float32)
                     rt = build_cell_residual(roundtrip(e, P, rank_prof), cpb, gen)
-                    pool_curve[m].append(r_disc(rt, res_own, res_oth, sim, args.k_sig))
+                    pool_curve[m].append(r_disc(rt, res_own, res_oth, sim, args.k_sig, NEG))
 
             # ---- G4: adversarial probes ----
             cell_e = np.asarray(np.log1p(X[ctrl_rows[kept[k]['group']][0]].todense())).ravel().astype(np.float32)
             for name, pv in adversarial_probes(P, rank_prof, cpb, gen, [res_own] + res_oth,
                                                cell_e, canonical, rng).items():
-                adv[name].append(r_disc(pv, res_own, res_oth, sim, args.k_sig))
+                adv[name].append(r_disc(pv, res_own, res_oth, sim, args.k_sig, NEG))
 
             # ---- G5: cross-drug RANK-INVARIANCE (the sharpest kill condition) ----
             take = rows[:args.n_rank_cells]
@@ -243,10 +268,10 @@ def run(args):
                 cells = [build_cell_residual(roundtrip(
                     np.asarray(np.log1p(X[i].todense())).ravel().astype(np.float32), P, rank_prof), cpb, gen)
                     for i in take]
-                rA = [r_disc(v, res_own, res_oth, sim, args.k_sig) for v in cells]
+                rA = [r_disc(v, res_own, res_oth, sim, args.k_sig, NEG) for v in cells]
                 res_B = kept[ok]["residual"]
                 oth_B = [kept[o]["residual"] for o in by_cl[c] if o != ok]
-                rB = [r_disc(v, res_B, oth_B, sim, args.k_sig) for v in cells]
+                rB = [r_disc(v, res_B, oth_B, sim, args.k_sig, NEG) for v in cells]
                 from scipy.stats import spearmanr
                 rho = spearmanr(rA, rB).statistic
                 if rho == rho:
@@ -256,8 +281,8 @@ def run(args):
             if "residual_A" in kept[k] and "residual_B" in kept[k]:
                 e = np.asarray(np.log1p(X[rows[:8]].todense()).mean(0)).ravel().astype(np.float32)
                 rt = build_cell_residual(roundtrip(e, P, rank_prof), cpb, gen)
-                ra = r_disc(rt, kept[k]["residual_A"], res_oth, sim, args.k_sig)
-                rb = r_disc(rt, kept[k]["residual_B"], res_oth, sim, args.k_sig)
+                ra = r_disc(rt, kept[k]["residual_A"], res_oth, sim, args.k_sig, NEG)
+                rb = r_disc(rt, kept[k]["residual_B"], res_oth, sim, args.k_sig, NEG)
                 reliab_sig.append((ra + rb) / 2.0); reliab_noise.append(ra - rb)
 
             # ---- G7: strata by condition reproducibility ----
@@ -272,8 +297,9 @@ def run(args):
         d = margin / (sd + 1e-9)
         logger.info(f"  G1 DISCRIMINATION  own-drug cells {m_own_r:+.4f} vs other-drug cells {m_oth:+.4f}"
                     f"   margin {margin:+.4f}  (Cohen d {d:+.2f})   {'PASS' if margin > 0 else 'FAIL'}")
-        logger.info(f"  G2 DECODE COST     true expression {m_own_t:+.4f} -> after sentence round-trip "
-                    f"{m_own_r:+.4f}   (retained {100*m_own_r/(m_own_t+1e-9):.0f}%)")
+        logger.info(f"  G2 DECODE COST     own-drug reward: true expression {m_own_t:+.4f} -> after "
+                    f"sentence round-trip {m_own_r:+.4f}  (delta {m_own_r-m_own_t:+.4f}; a large "
+                    f"NEGATIVE delta means the decode is destroying signal)")
         pc = {m: float(np.mean(v)) for m, v in sorted(pool_curve.items())}
         logger.info(f"  G3 POOLING         reward vs #cells pooled: "
                     + "  ".join(f"m={m}:{v:+.3f}" for m, v in pc.items()))
@@ -296,7 +322,7 @@ def run(args):
         st = {k2: float(np.nanmean(v)) for k2, v in strata.items() if len(v)}
         logger.info(f"  G7 STRATA          {st}")
 
-        out["sims"][sim_name] = {
+        out["sims"][f"{sim_name}|{agg}"] = {
             "own_true": m_own_t, "own_roundtrip": m_own_r, "other_drug": m_oth,
             "margin": margin, "cohen_d": d, "pooling": pc, "adversarial": {k2: float(np.mean(v)) for k2, v in adv.items()},
             "rank_invariance": ri, "reliability_snr": snr, "strata": st,
@@ -361,6 +387,8 @@ def main():
     ap.add_argument("--min_control", type=int, default=20)
     ap.add_argument("--min_drugs", type=int, default=4)
     ap.add_argument("--repro_thr", type=float, default=0.2)
+    ap.add_argument("--neg_aggs", default="max,mean,opposite,infonce",
+                    help="how to aggregate negatives; 'max' is the original and is biased")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", default="RESULTS/reward_calibration.json")
     ap.add_argument("--selftest", action="store_true")
