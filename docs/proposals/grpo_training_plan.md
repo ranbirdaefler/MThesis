@@ -72,10 +72,29 @@ expr(g)     = decode(g) via the empirical rank→value profile
 residual(g) = expr(g) − ctrl_pb − generic[cell_line]
 ```
 
-### 5.2 Contrastive discrimination term
+### 5.2 Contrastive discrimination term — **CALIBRATED** (`reward_calibration.py`, 100 conditions)
 ```
-R_disc = sim(residual(g), residual_true) − max_over_j sim(residual(g), residual_other_j)
+R_disc = sim_rank(residual(g), residual_true) − MEAN_over_j sim_rank(residual(g), residual_other_j)
 ```
+**`max_j` is REJECTED — it was measurably hackable.** The max over J noisy similarities is biased upward
+(E[max] ≈ σ√(2 ln J)), which dragged every REAL cell's reward *negative* (−0.077), so a zero vector
+(similarity 0 to everything) scored 0.000 and beat real cells. Measured: `generic_response` and
+`orthogonal_to_all` both hacked it. **Every non-max aggregation has ZERO hacks.**
+
+| variant | margin | Cohen d | decode cost | G5 rank-inv | pooled m | hacks |
+|---|---|---|---|---|---|---|
+| cosine\|max | +0.095 | 0.72 | −0.142 | +0.281 | 1 | 3 ✗ |
+| rank\|max | +0.111 | 1.08 | −0.016 | +0.065 | 6 | 2 ✗ |
+| cosine\|mean | +0.106 | 0.82 | −0.035 | −0.100 | 4 | 0 |
+| **rank\|mean (CHOSEN)** | **+0.112** | **1.12** | **+0.001** | **−0.014** | **8** | **0** |
+| rank\|opposite | +0.148 | 0.88 | +0.001 | −0.021 | 7 | 0 |
+| rank\|infonce | (log scale) | 1.11 | −0.053 | −0.010 | 7 | 0 |
+
+**Why `rank` (signed-rank encoding) over raw-residual cosine:** it is **decode-invariant** (delta +0.001
+vs cosine's −0.035…−0.055) — mechanically expected, since rank encoding depends only on gene *order* and
+the decode is a rank→value map, so the lossy step costs nothing. It also has the best Cohen d.
+**Fallback if training is unstable:** `rank|infonce` — bounded below, and the adversarial probes sit
+~1.0 below real cells (vs ~0.13 for mean), i.e. a much larger safety margin.
 - Cancels the generic program **by construction** — the model cannot farm reward by predicting the
   average response (same logic that makes NIR calibrated and `model − scramble` leak-immune).
 - Dense → gradient even when all K samples are mediocre.
@@ -84,8 +103,13 @@ R_disc = sim(residual(g), residual_true) − max_over_j sim(residual(g), residua
   per-drug baseline offset **and** the upward bias of `max_over_j` (E[max of J noisy sims] ≈ σ√(2 ln J),
   and J varies 20–204 per cell line). That cancellation requires J and the negative set to be constant
   within a group.
-- **Similarity function (cosine vs rank-weighted set overlap): no literature guidance exists.** Settle in
-  Step 0.
+- ✅ **Settled empirically in Step 0** (no literature guidance existed): **signed-rank encoding, mean
+  aggregation**. See the table above.
+- ⚠ **G6 reliability is <1 for all rank variants** (0.71–0.82; cosine gets 1.11–1.29): the reward varies
+  more between disjoint-half truths of the *same* condition than between conditions. Within a GRPO group
+  the truth is FIXED, so this does not perturb rollout ranking — but it means we optimize toward a noisy
+  target, which is exactly failure mode #14. Monitoring must track gold with a *different* distance and
+  disjoint-half truths.
 
 ### 5.3 Validity term — with a dead-band, never a cliff
 ```
@@ -161,7 +185,11 @@ simultaneously** switch the KL estimator to `ρ·k3` or `sg(ρ)·k2`.
 systematically by condition and `token-mean` would re-weight the curriculum toward longer-sentence
 conditions. ⚠ No source addresses this trade-off.
 
-**6.5 — K: start at 16, then set by the Step-0 rule** (smallest K such that the drug-signal component of
+**6.5 — K=16, and POOLED-SAMPLE m≈8 (measured, not guessed).** Step-0 G3: a single generated cell
+retains only **35%** of the 40-cell margin under `rank|mean`, giving m ≈ 8 for parity. So a "sample" is a
+pool of ~8 generations sharing one reward; K groups of m preserves advantage variance while cutting reward
+noise ~√m. Cost: K×m generations per prompt — the dominant compute item, and the reason to start small.
+*(Superseded guidance, kept for context:)* **start at 16, then set by the Step-0 rule** (smallest K such that the drug-signal component of
 within-group reward variance exceeds the decode-noise component). ⚠ No source supports a universal "G≥8";
 C2S-Scale reportedly used 24/prompt but on **bulk** profiles — a far cleaner reward than ours.
 
@@ -315,7 +343,7 @@ under §6.2) · per-token entropy (diagnostic only).
 
 | stage | what | gate |
 |---|---|---|
-| **0** | Offline reward calibration (§8) | margin exists; adversarial inputs low; **rank-invariance ≠ 1** |
+| **0** | ✅ **DONE** — offline reward calibration (§8) | **PASSED**: margin +0.112 (d 1.12), 0 hacks, rank-invariance −0.014. Chose `rank|mean`, m≈8 |
 | **1** | DE-weighted warm-start SFT (§7) — *its own arm* | format valid; **non-null `model − scramble`** (else stop) |
 | **2** | GRPO on 410M locally, then 1B small-scale, identifiable drugs | reward rises, validity holds, no collapse |
 | **3** | GRPO full run, widened curriculum | held-out `model − scramble` > 0 |
