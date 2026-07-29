@@ -138,6 +138,10 @@ def main():
                     help="holdout.json manifest from build_residual_targets -> report train / "
                          "unseen_combo (cross-context transfer) / unseen_drug separately")
     ap.add_argument("--held_out_only", action="store_true")
+    ap.add_argument("--min_split_n", type=int, default=40,
+                    help="minimum scorable conditions before a split gets a verdict (a clustered CI over "
+                         "a handful of points can exclude zero by chance)")
+    ap.add_argument("--min_split_cell_lines", type=int, default=10)
     ap.add_argument("--n_conditions", type=int, default=200)
     ap.add_argument("--k_samples", type=int, default=4)
     ap.add_argument("--k_sig", type=int, default=100)
@@ -464,9 +468,19 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                     "(train = memorisation; unseen_combo = CROSS-CONTEXT TRANSFER, the real test;")
         logger.info("  unseen_drug = no drug information at all, expected ~0 given the SAR gate):")
         gen_out = {}
+        # A clustered bootstrap over a handful of points produces a wide CI that can exclude zero by
+        # chance. Require enough conditions AND cell lines before reporting a verdict at all -- a split
+        # with n=6 is UNDERPOWERED, which is a different statement from "no effect".
+        MIN_N, MIN_CL = args.min_split_n, args.min_split_cell_lines
         for name in ("train", "unseen_combo", "unseen_drug", "unknown"):
             sub = splits.get(name)
-            if not sub or len(sub) < 5:
+            if not sub:
+                continue
+            n_cl_sub = len({r["cell_line"] for r in sub})
+            if len(sub) < MIN_N or n_cl_sub < MIN_CL:
+                logger.info(f"    {name:14s} n={len(sub):4d} ({n_cl_sub:2d} cell lines)  "
+                            f"UNDERPOWERED (need n>={MIN_N} and >={MIN_CL} cell lines) -- NO VERDICT")
+                gen_out[name] = {"n": len(sub), "n_cell_lines": n_cl_sub, "underpowered": True}
                 continue
             r = _clustered_ci(sub, "model", "scramble_opposite", rng, args.n_boot)
             mo = np.mean([x["model"] for x in sub if x.get("model") is not None])
@@ -476,14 +490,18 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                 logger.info(f"    {name:14s} n={n:4d} ({ncl:2d} cell lines)  model NIR={mo:.3f}  "
                             f"gap = {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  "
                             f"{'USES DRUG' if lo > 0 else 'null'}")
-        if "unseen_combo" in gen_out:
-            g = gen_out["unseen_combo"]
+        g = gen_out.get("unseen_combo")
+        if g and g.get("underpowered"):
+            logger.info(f"    >>> CROSS-CONTEXT TRANSFER: UNTESTED -- only {g['n']} scorable held-out "
+                        f"combos ({g['n_cell_lines']} cell lines). This is NOT a negative result; the "
+                        f"split is too small. Rebuild with more held-out (drug, cell_line) pairs.")
+        elif g:
             logger.info(f"    >>> CROSS-CONTEXT TRANSFER: {'YES' if g['ci'][0] > 0 else 'NO'} "
-                        f"({g['gap']:+.4f} CI [{g['ci'][0]:+.4f}, {g['ci'][1]:+.4f}]). "
+                        f"({g['gap']:+.4f} CI [{g['ci'][0]:+.4f}, {g['ci'][1]:+.4f}], n={g['n']}). "
                         + ("The model applies a learned drug signature in a cell line it never saw it in."
                            if g['ci'][0] > 0 else
                            "Drug use does not transfer to new contexts -> memorisation only."))
-        if "train" in gen_out and "unseen_combo" in gen_out:
+        if all(k in gen_out and "gap" in gen_out[k] for k in ("train", "unseen_combo")):
             logger.info(f"    >>> memorisation premium: train {gen_out['train']['gap']:+.4f} vs "
                         f"unseen_combo {gen_out['unseen_combo']['gap']:+.4f}")
         means["generalization"] = gen_out
