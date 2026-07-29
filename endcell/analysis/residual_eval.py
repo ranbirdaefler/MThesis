@@ -281,6 +281,35 @@ def main():
                            "cos_opposite": min(cs)[0]}
     logger.info(f"stratified scramble partners built for {len(partners)} conditions")
 
+    # ---------------- BASELINES in residual space (model-vs-scramble alone says the model REACTS to the
+    # drug token, not that it is any good). Each is a predictor of the drug-specific residual:
+    #   drug_lookup : this drug's mean residual measured in OTHER cell lines -> the cross-context lookup
+    #                 table. THE bar to beat: a lookup can memorise a drug, only a model can adapt it.
+    #   moa_lookup  : mean residual of OTHER drugs sharing this drug's MoA in the same cell line.
+    #                 Diagnostic for the MoA leak: our prompt contains 'Mechanism: {moa}', so if the model
+    #                 merely reads the MoA it should not beat this.
+    #   control_copy: predicting the control cell -> residual = -generic (constant) -> chance by
+    #                 construction. Confirms the residual frame is leak-proof (control-copy scores 0.766
+    #                 in full-profile space).
+    #   generic     : predicting the average drug response -> residual = 0 -> chance by construction.
+    by_drug_all = defaultdict(list)
+    for k in kept:
+        by_drug_all[k[0]].append(k)
+
+    def bl_drug_lookup(key):
+        d, c = key[0], key[1]
+        oth = [kept[k2]["residual"] for k2 in by_drug_all[d] if k2[1] != c]
+        return np.mean(np.stack(oth), 0) if oth else None
+
+    def bl_moa_lookup(key):
+        d, c = key[0], key[1]
+        m = moa_of.get(d)
+        if not m or m in ("unclear", "unknown", "nan", "None"):
+            return None
+        same = [kept[k2]["residual"] for k2 in by_cl.get(c, [])
+                if k2[0] != d and moa_of.get(k2[0]) == m]
+        return np.mean(np.stack(same), 0) if same else None
+
     gen_stats = {"n": 0, "has_down": 0, "up_len": [], "dn_len": [], "valid_frac": [], "dup_frac": []}
 
     def track(gens):
@@ -360,6 +389,15 @@ def main():
         rv = np.zeros(P, np.float32); idx = rng.choice(P, 2 * args.k_sig, replace=False)
         rv[idx[:args.k_sig]] = 1.0; rv[idx[args.k_sig:]] = -1.0
         row["random"] = nir_from_sims(cos(rv, truth[key]), [cos(rv, t) for t in oth_truth])
+        # ---- BASELINES (scored identically: same truths, same NIR, same comparison set) ----
+        for bname, bvec in (("drug_lookup", bl_drug_lookup(key)),
+                            ("moa_lookup", bl_moa_lookup(key)),
+                            ("control_copy", -generic[c]),
+                            ("generic", np.zeros(P, np.float32))):
+            if bvec is None:
+                continue
+            bs = signed_rank_from_vector(np.asarray(bvec, dtype=np.float32), P, args.k_sig)
+            row[bname] = nir_from_sims(cos(bs, truth[key]), [cos(bs, t) for t in oth_truth])
         recs.append(row)
         if n % 20 == 0:
             logger.info(f"  {n}/{len(cond_list)} conditions scored")
@@ -398,11 +436,34 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                     f"duplicates {100*np.mean(g['dup_frac']):.1f}%")
 
     means = {}
-    for a in ("model", "scramble_near", "scramble_orth", "scramble_opposite", "ceiling", "random"):
+    for a in ("ceiling", "model", "scramble_near", "scramble_orth", "scramble_opposite",
+              "drug_lookup", "moa_lookup", "control_copy", "generic", "random"):
         v = [r[a] for r in recs if r.get(a) is not None]
         if v:
             means[a] = float(np.mean(v))
-            logger.info(f"    {a:18s} {means[a]:.3f}   (n={len(v)})")
+            tag = ""
+            if a == "drug_lookup":
+                tag = "   <- THE BAR: a lookup memorises a drug; only a model can adapt it"
+            elif a == "moa_lookup":
+                tag = "   <- MoA-leak diagnostic (our prompt contains 'Mechanism:')"
+            elif a in ("control_copy", "generic"):
+                tag = "   <- must be ~0.50 (drug-agnostic by construction)"
+            logger.info(f"    {a:18s} {means[a]:.3f}   (n={len(v)}){tag}")
+
+    # head-to-head against each baseline, clustered CI -- the "is the model any GOOD" question,
+    # which is separate from "does the model react to the drug token" (model - scramble).
+    logger.info("-" * 100)
+    logger.info("  model - BASELINE (clustered CI over cell lines). Positive => the model beats a")
+    logger.info("  predictor that needs no generation at all:")
+    base_out = {}
+    for b in ("drug_lookup", "moa_lookup", "control_copy", "generic"):
+        r = _clustered_ci(recs, "model", b, rng, args.n_boot)
+        if r:
+            m, lo, hi, n, ncl = r
+            base_out[b] = {"gap": m, "ci": [lo, hi], "n": n}
+            logger.info(f"    model - {b:14s} {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  n={n}  "
+                        f"{'model WINS' if lo > 0 else ('model LOSES' if hi < 0 else 'tie')}")
+    means["vs_baselines"] = base_out
 
     # --- (1) STRATIFIED model - scramble: the gap should GROW near -> orth -> opposite ---
     logger.info("-" * 100)

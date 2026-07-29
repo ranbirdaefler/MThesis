@@ -262,6 +262,34 @@ def run(args):
             split, ho_drugs, ho_combos = res
     if split is None and (args.holdout_combos > 0 or args.holdout_drugs > 0):
         split, ho_drugs, ho_combos = make_holdout(kept, args.holdout_combos, args.holdout_drugs, args.seed)
+    # TOP-UP: the original tier-3 set overlaps our cache on only ~17 combos, far too few to test
+    # cross-context transfer (a clustered CI over a handful of points is meaningless). Add RANDOM
+    # (drug, cell_line) combos on top of the tier-aligned ones until the split is powered. The
+    # tier-aligned subset stays identifiable in the manifest for comparability.
+    if split is not None and args.holdout_combos > 0:
+        n_combo = sum(1 for v in split.values() if v == "unseen_combo")
+        cur_combos = {(k[0], k[1]) for k, v in split.items() if v == "unseen_combo"}
+        if n_combo < args.min_combo_conditions:
+            rng2 = np.random.RandomState(args.seed + 7)
+            per_drug = defaultdict(set)
+            for k in kept:
+                per_drug[k[0]].add(k[1])
+            cand = sorted({(k[0], k[1]) for k, v in split.items()
+                           if v == "train" and len(per_drug[k[0]]) >= 2} - cur_combos)
+            need = args.min_combo_conditions - n_combo
+            add, i = set(), 0
+            order = rng2.permutation(len(cand))
+            while i < len(order) and sum(1 for k in kept
+                                         if (k[0], k[1]) in add) < need:
+                add.add(cand[order[i]]); i += 1
+            for k in kept:
+                if split[k] == "train" and (k[0], k[1]) in add:
+                    split[k] = "unseen_combo"
+            ho_combos = sorted(cur_combos | add)
+            n2 = sum(1 for v in split.values() if v == "unseen_combo")
+            logger.info(f"combo top-up: {n_combo} tier-aligned -> {n2} conditions "
+                        f"({len(cur_combos)} tier-aligned + {len(add)} random pairs) so the "
+                        f"cross-context transfer test is powered")
 
     os.makedirs(args.out_dir, exist_ok=True)
     out_path = os.path.join(args.out_dir, "residual.jsonl")
@@ -369,6 +397,9 @@ def main():
     ap.add_argument("--holdout_combos", type=float, default=0.0,
                     help="fraction of (drug, cell_line) pairs withheld from training -> CROSS-CONTEXT "
                          "transfer test (drug seen in other cell lines)")
+    ap.add_argument("--min_combo_conditions", type=int, default=200,
+                    help="top up unseen_combo with random (drug,cell_line) pairs until this many "
+                         "conditions are held out (tier-3 overlap alone gives ~27, far too few)")
     ap.add_argument("--holdout_drugs", type=float, default=0.0,
                     help="fraction of DRUGS withheld entirely -> unseen-drug control (expected to fail "
                          "given the SAR gate; proves transfer requires having seen the drug)")
