@@ -91,6 +91,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 
 # --------------------------------------------------------------------------- primitives
+def _reject(x, g):
+    """Component of x orthogonal to g. Removes the generic DIRECTION entirely, so no per-drug
+    scaling of the generic program can survive into the residual."""
+    gg = float(g @ g)
+    return x if gg < 1e-12 else x - (float(x @ g) / gg) * g
+
+
 def cos(a, b):
     na, nb = np.linalg.norm(a), np.linalg.norm(b)
     return float(a @ b / (na * nb)) if na > 1e-9 and nb > 1e-9 else 0.0
@@ -126,7 +133,8 @@ def clustered_ci(values, clusters, rng, n_boot=2000):
 
 # --------------------------------------------------------------------------- residual construction
 def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
-                     split_controls=True, loo_generic=False, generic_scope="cell_line"):
+                     split_controls=True, loo_generic=False, generic_scope="cell_line",
+                     project_generic=False):
     """Per-condition residuals with the halves built from DISJOINT cells AND (optionally) disjoint
     control cells.
 
@@ -207,10 +215,23 @@ def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
                 gen = {h: (tot[h] - stack[h][j]) / (m - 1) for h in stack}
             else:
                 gen = {h: tot[h] / m for h in stack}
-            rA = cond[k]["shift_A"] - gen["A"]
-            rB = cond[k]["shift_B"] - gen["B"]
+            if project_generic:
+                # Remove the generic DIRECTION, not a fixed vector. Subtracting mean-over-drugs
+                # removes the generic program's AVERAGE magnitude but not each drug's own scaling
+                # of it: if shift(d,c) ~ a_d*g(c) + specific, then residual keeps
+                # (a_d - mean(a))*g(c). Every potent drug then carries a positive multiple of g(c)
+                # and every weak drug a negative one, so unrelated drugs correlate and the same
+                # drug correlates with itself across lines for a reason that is not drug identity.
+                # Projecting per condition removes that component exactly.
+                rA = _reject(cond[k]["shift_A"], gen["A"])
+                rB = _reject(cond[k]["shift_B"], gen["B"])
+            else:
+                rA = cond[k]["shift_A"] - gen["A"]
+                rB = cond[k]["shift_B"] - gen["B"]
+            r_full = (_reject(cond[k]["shift_full"], gen["full"]) if project_generic
+                      else cond[k]["shift_full"] - gen["full"])
             out[k] = {
-                "residual": (cond[k]["shift_full"] - gen["full"]).astype(np.float32),
+                "residual": r_full.astype(np.float32),
                 "residual_A": rA.astype(np.float32), "residual_B": rB.astype(np.float32),
                 "repro_cos": cos(rA, rB),
                 "shift_norm": float(np.linalg.norm(cond[k]["shift_full"])),
@@ -534,6 +555,8 @@ def main():
                          "leaves PLATE structure in every residual on that plate, which makes "
                          "unrelated same-plate conditions correlate and can fail the negative "
                          "control. Run both.")
+    ap.add_argument("--project_generic", action="store_true",
+                    help="remove the generic DIRECTION per condition (orthogonal rejection) instead of subtracting the mean vector. Kills potency leakage: the mean subtraction leaves (a_d - mean(a))*g(c) in every residual, which makes unrelated drugs correlate.")
     ap.add_argument("--min_neg_margin", type=float, default=0.15,
                     help="T must exceed the structure-matched negative control by at least this "
                          "much, or the verdict is VOID. Guards the failure mode where every arm "
@@ -555,7 +578,8 @@ def main():
     # the corrected build (disjoint control halves) is the headline
     kept = build_conditions(args.cache_dir, args.min_treated, args.min_control, args.seed,
                             split_controls=not args.shared_controls, loo_generic=args.loo_generic,
-                            generic_scope=args.generic_scope)
+                            generic_scope=args.generic_scope,
+                            project_generic=args.project_generic)
     results["main"] = report(kept, args, rng)
 
     # (1) quantify the shared-control bias by rebuilding the production way
@@ -564,7 +588,8 @@ def main():
         logger.info("CONTROL-SPLIT BIAS CHECK — rebuilding the PRODUCTION way (shared ctrl_pb)")
         kept_shared = build_conditions(args.cache_dir, args.min_treated, args.min_control, args.seed,
                                        split_controls=False, loo_generic=args.loo_generic,
-                                       generic_scope=args.generic_scope)
+                                       generic_scope=args.generic_scope,
+                                       project_generic=args.project_generic)
         f = {k: v for k, v in kept_shared.items() if v["repro_cos"] > args.repro_thr}
         rows = transfer_pairs(f, same_drug=True, cross_line=True,
                               same_dose_only=args.same_dose_only, seed=args.seed)
