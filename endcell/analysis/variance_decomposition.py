@@ -305,6 +305,43 @@ def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, 
     return rows
 
 
+def cross_line_diff_drug_pairs(kept, n_pairs=4000, seed=0, min_rel=0.05):
+    """STRUCTURE-MATCHED negative control: DIFFERENT drug, DIFFERENT cell line.
+
+    This differs from T in exactly ONE way -- the drug match is broken -- while preserving T's
+    cross-cell-line (and hence cross-plate) structure. The same-plate control cannot do this job:
+    it breaks the drug match AND holds the cell line fixed, so it differs from T in two ways at
+    once and a difference between them is not attributable to drug identity.
+
+    It needs its own sampler because transfer_pairs() groups different-drug pairs BY PLATE, which
+    forces every such pair to share a cell line -- so asking it for cross_line=True silently
+    returns nothing. (That is exactly what happened on the first plate-scope run: the verdict
+    fell back to the same-plate control without saying so.)
+    """
+    rng = np.random.RandomState(seed + 31337)
+    ks = list(kept.keys())
+    if len(ks) < 4:
+        return []
+    rows = []
+    for _ in range(n_pairs * 4):
+        if len(rows) >= n_pairs:
+            break
+        k1 = ks[rng.randint(len(ks))]
+        k2 = ks[rng.randint(len(ks))]
+        if k1[0] == k2[0] or k1[1] == k2[1]:      # need different drug AND different cell line
+            continue
+        rel1 = spearman_brown(kept[k1]["repro_cos"])
+        rel2 = spearman_brown(kept[k2]["repro_cos"])
+        if rel1 < min_rel or rel2 < min_rel:
+            continue
+        r_between = cos(kept[k1]["residual"], kept[k2]["residual"])
+        rows.append({"cluster": k1[0], "drug": k1[0], "cl1": k1[1], "cl2": k2[1],
+                     "same_plate": False, "same_dose": k1[3] == k2[3],
+                     "r_between": r_between, "rel_gm": float(np.sqrt(rel1 * rel2)),
+                     "T": float(r_between / np.sqrt(rel1 * rel2))})
+    return rows
+
+
 def simulate_null(kept, n_drugs=60, n_lines=6, seed=0, kappa_frac=0.0):
     """What does the estimator return when the interaction is EXACTLY `kappa_frac`?
 
@@ -392,14 +429,16 @@ def report(kept, args, rng):
     # (different drug AND same cell line), so it cannot be subtracted from T directly. The
     # STRUCTURE-MATCHED one differs from T in exactly one way -- the drug match is broken, the
     # cross-cell-line structure is preserved -- and it is the one the verdict is gated on.
-    neg_variants = {
-        "diff_drug_same_plate": dict(same_drug=False, cross_line=False),
-        "diff_drug_cross_line": dict(same_drug=False, cross_line=True),   # STRUCTURE-MATCHED
+    neg_sources = {
+        "diff_drug_same_plate": lambda: transfer_pairs(kept_f, same_drug=False, cross_line=False,
+                                                       seed=args.seed),
+        "diff_drug_cross_line": lambda: cross_line_diff_drug_pairs(kept_f, seed=args.seed),
     }
     neg_T = {}
-    for name, kw in neg_variants.items():
-        rows = transfer_pairs(kept_f, seed=args.seed, **kw)
+    for name, src in neg_sources.items():
+        rows = src()
         if not rows:
+            logger.warning(f"  negative control [{name}] produced NO PAIRS -- it cannot gate anything")
             continue
         ci = clustered_ci([r["T"] for r in rows], [r["cluster"] for r in rows], rng, args.n_boot)
         m, lo, hi, n, _ = ci
@@ -527,6 +566,14 @@ def selftest():
     good = abs(nm) < 0.05
     ok &= good
     print(f"  negative control (independent drugs): T={nm:+.3f}  {'OK' if good else 'FAIL'}")
+
+    # the structure-matched sampler must produce pairs AND read ~0 on independent drugs
+    xl = cross_line_diff_drug_pairs(synth, n_pairs=800, seed=1)
+    xm = float(np.mean([r["T"] for r in xl])) if xl else float("nan")
+    good = len(xl) > 200 and abs(xm) < 0.05
+    ok &= good
+    print(f"  structure-matched control (diff drug, diff line): n={len(xl)} T={xm:+.3f}  "
+          f"{'OK' if good else 'FAIL'}")
 
     # Spearman-Brown sanity
     good = abs(spearman_brown(0.5) - 2 / 3) < 1e-9
