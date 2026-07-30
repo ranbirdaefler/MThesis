@@ -281,15 +281,19 @@ uses the *same* A on both arms, so that drift cancels.
 
   Per gate-passing layer (all 7 passed):
 
-  | layer | drug decode (context removed) | ablate pure-drug KL | random @ matched dim | ratio | cell-line KL (+ctrl) | var-share pure-drug / cell-line | **SWAP: drug-B vs matched noise** |
-  |---|---|---|---|---|---|---|---|
-  | 2 | 0.354 | 0.155 | 0.016 | 9.4× | 1.115 | 0.036 / 0.580 | **0.106 < 0.916** |
-  | 4 | 0.429 | 1.563 | 0.065 | 24× | 4.180 | 0.031 / 0.641 | **1.805 < 2.150** |
-  | 6 | 0.529 | 1.435 | 0.120 | 12× | 4.307 | 0.030 / 0.665 | **1.593 < 1.957** |
-  | 8 | 0.569 | 0.596 | 0.125 | 4.8× | 5.419 | 0.030 / 0.667 | **0.593 < 1.184** |
-  | 9 | 0.602 | 0.418 | 0.037 | 11× | 4.689 | 0.031 / 0.655 | **0.334 < 0.760** |
-  | 12 | 0.873 | 0.133 | 0.034 | 3.9× | 0.135 | 0.030 / 0.568 | **0.107 < 0.233** |
-  | 16 | 0.883 | 0.015 | 0.005 | 3.2× | 0.059 | 0.033 / 0.493 | **0.031 < 0.036** |
+  ⚠️ **CORRECTED against `RESULTS/workspace_probe.json` (2026-07-30).** The previously published version of this table had three errors: the decode column was the *context-removed* series but labelled as raw decode (the two differ, and only the raw one peaks at layer 9 — which is what the prose quotes); the `random @ matched dim` column matched no series in the JSON, so the ratio column derived from it was wrong (layer 6 read 12× against a true 5.7×); and the swap column carried the *within-sample* values while the only run on disk is the **held-out-means** one. **No conclusion changes** — every ratio still exceeds 1 (3.6–18.6×), the swap is still below matched noise at all seven depths, and context-removed decodability still rises monotonically with depth. The table is now regenerated from the JSON.
+
+  | layer | decode (raw) | decode (context removed) | ablate pure-drug KL | random @ matched dim | ratio | cell-line KL (+ctrl) | var-share pure-drug / cell-line | **SWAP: drug-B vs matched noise** |
+  |---|---|---|---|---|---|---|---|---|
+  | 2 | 0.408 | 0.354 | 0.155 | 0.012 | 12.7× | 1.115 | 0.031 / 0.580 | **0.104 < 0.917** |
+  | 4 | 0.585 | 0.429 | 1.563 | 0.084 | 18.6× | 4.180 | 0.031 / 0.641 | **1.855 < 2.156** |
+  | 6 | 0.692 | 0.529 | 1.435 | 0.251 | 5.7× | 4.307 | 0.030 / 0.665 | **1.618 < 1.958** |
+  | 8 | 0.779 | 0.569 | 0.596 | 0.042 | 14.1× | 5.419 | 0.030 / 0.667 | **0.599 < 1.163** |
+  | 9 | **0.821** | 0.602 | 0.418 | 0.100 | 4.2× | 4.689 | 0.031 / 0.655 | **0.333 < 0.761** |
+  | 12 | 0.754 | 0.873 | 0.133 | 0.035 | 3.8× | 0.135 | 0.030 / 0.568 | **0.105 < 0.227** |
+  | 16 | 0.758 | **0.883** | 0.015 | 0.004 | 3.6× | 0.059 | 0.033 / 0.493 | **0.031 < 0.036** |
+
+  The two decode series behave differently and the distinction is load-bearing: the **raw** probe peaks at layer 9 (0.821) then declines to 0.758 — this is the "82% / 76%" the prose quotes — whereas with cell line, plate and dose projected out decodability rises **monotonically** to 0.883. The dissociation claim rests on the context-removed series, which is the honest one.
 
   Three findings, in order of how load-bearing they are:
   1. **The swap is null at every layer (headline).** Overwriting drug A's code with drug B's perturbs the output *no more than — actually less than — matched-norm noise*, at all 7 depths. The readout responds to the *magnitude* of activity in the drug subspace, not to *which drug* it encodes. This is the mechanistic statement of drug-blindness, and it is confound-clean and depth-invariant.

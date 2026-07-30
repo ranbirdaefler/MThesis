@@ -147,21 +147,27 @@ line.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrrrr}
 \toprule
-Layer & Drug decode & Ablate drug (KL) & Random, matched dim & Ratio & \textbf{Swap vs matched noise} \\
+Layer & Decode & Decode & Ablate pure & Random & Ratio & \textbf{Swap vs} \\
+      & (raw)  & (context removed) & drug (KL) & matched dim & & \textbf{matched noise} \\
 \midrule
-2  & 0.354 & 0.155 & 0.016 & $9.4\times$ & \textbf{0.106 $<$ 0.916} \\
-4  & 0.429 & 1.563 & 0.065 & $24\times$  & \textbf{1.805 $<$ 2.150} \\
-6  & 0.529 & 1.435 & 0.120 & $12\times$  & \textbf{1.593 $<$ 1.957} \\
-8  & 0.569 & 0.596 & 0.125 & $4.8\times$ & \textbf{0.593 $<$ 1.184} \\
-9  & 0.602 & 0.418 & 0.037 & $11\times$  & \textbf{0.334 $<$ 0.760} \\
-12 & 0.873 & 0.133 & 0.034 & $3.9\times$ & \textbf{0.107 $<$ 0.233} \\
-16 & 0.883 & 0.015 & 0.005 & $3.2\times$ & \textbf{0.031 $<$ 0.036} \\
+2  & 0.408 & 0.354 & 0.155 & 0.012 & $12.7\times$ & \textbf{0.104 $<$ 0.917} \\
+4  & 0.585 & 0.429 & 1.563 & 0.084 & $18.6\times$ & \textbf{1.855 $<$ 2.156} \\
+6  & 0.692 & 0.529 & 1.435 & 0.251 & $5.7\times$  & \textbf{1.618 $<$ 1.958} \\
+8  & 0.779 & 0.569 & 0.596 & 0.042 & $14.1\times$ & \textbf{0.599 $<$ 1.163} \\
+9  & \textbf{0.821} & 0.602 & 0.418 & 0.100 & $4.2\times$  & \textbf{0.333 $<$ 0.761} \\
+12 & 0.754 & 0.873 & 0.133 & 0.035 & $3.8\times$  & \textbf{0.105 $<$ 0.227} \\
+16 & 0.758 & \textbf{0.883} & 0.015 & 0.004 & $3.6\times$  & \textbf{0.031 $<$ 0.036} \\
 \bottomrule
 \end{tabular}
-\caption{All seven layers pass the removal gate (88--95\% of above-chance drug signal removed).
-The swap is the identity test, and it is null at every depth.}
+\caption{All seven layers pass the removal gate (88--95\% of above-chance drug signal removed);
+chance is $0.083$. Two decode series are shown because they behave differently and the distinction
+matters: the \emph{raw} probe peaks at layer 9 and then declines, whereas with cell line, plate and
+dose projected out decodability rises monotonically to layer 16. The swap is the identity test ---
+drug-B injection against a random vector of identical norm, both with drug means estimated on a
+held-out half --- and it is null at every depth. Swap values carry no dispersion: the probe reduces
+the per-prompt distributions to two means before storing them.}
 \label{tab:workspace}
 \end{table}
 

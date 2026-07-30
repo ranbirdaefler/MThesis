@@ -65,6 +65,17 @@ The tie term is not cosmetic. In residual space (Section~\ref{sec:methods-residu
 ``the average drug response'' is exactly the zero vector, every similarity against it is zero, and a
 strict inequality scores it $0.000$ rather than the $0.500$ it deserves.
 
+\paragraph{Which $\NIR$ variant, and why it must be stated.} Our instruments compute $\NIR$ under
+two similarity functions and store both: \texttt{nir\_expr}, Euclidean distance in expression space,
+and \texttt{nir\_rank}, the same construction over rank vectors. \textbf{Every $\NIR$ figure in this
+thesis is \texttt{nir\_expr}}, and the choice is load-bearing rather than incidental: under
+\texttt{nir\_rank} the tier-2 aggregate places \emph{every} arm below chance, including the noise
+ceiling itself ($0.380$, against the model's $0.313$ and a drug-agnostic linear map's $0.285$). A
+metric on which a real replicate of a condition fails to be retrieved above chance is not measuring
+what its name suggests, and it is not the metric the calibration analysis of
+Section~\ref{sec:res-metrics} endorsed --- the $\DRF$ result is computed on the expression-space
+variant. We report the calibrated one and name it here so the stored artifacts cannot be misread.
+
 \paragraph{Metric calibration (\DRF).} We port the framework of Miller et al.~\cite{miller}, in
 which each \emph{metric} is graded rather than each model, by asking how well it separates a
 positive from a negative control:
