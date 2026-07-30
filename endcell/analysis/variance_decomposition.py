@@ -126,7 +126,7 @@ def clustered_ci(values, clusters, rng, n_boot=2000):
 
 # --------------------------------------------------------------------------- residual construction
 def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
-                     split_controls=True, loo_generic=False):
+                     split_controls=True, loo_generic=False, generic_scope="cell_line"):
     """Per-condition residuals with the halves built from DISJOINT cells AND (optionally) disjoint
     control cells.
 
@@ -184,10 +184,15 @@ def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
     logger.info(f"conditions with enough cells: {len(cond)}  "
                 f"(split_controls={split_controls}, loo_generic={loo_generic})")
 
-    # GENERIC shift = mean over drugs, per CELL LINE (measured: cell-line scope 62% vs plate 19%)
+    # GENERIC shift = mean over drugs. Scope is a DIAGNOSTIC, not a fixed choice:
+    #   cell_line -- what the production pipeline uses (62% reproducible vs 19% at plate scope)
+    #   plate     -- fewer drugs per group, so a noisier mean, BUT it removes plate/batch structure.
+    # A cell-line-scoped generic leaves any plate-specific component in EVERY residual on that plate,
+    # which makes unrelated same-plate conditions correlate. That is a candidate explanation for a
+    # failing negative control, so both scopes must be runnable.
     by_cl = defaultdict(list)
     for k in cond:
-        by_cl[k[1]].append(k)
+        by_cl[k[1] if generic_scope == "cell_line" else (k[1], k[2])].append(k)
 
     out = {}
     for c, keys in by_cl.items():
@@ -332,8 +337,14 @@ def report(kept, args, rng):
                     "mean_residual_norm": float(rn.mean()), "mean_shift_norm": float(sn.mean())}
     logger.info(f"  SCOPE  ||residual|| / ||shift|| = {frac:.3f}   "
                 f"||generic|| / ||shift|| = {out['scope']['generic_over_shift']:.3f}")
+    orth = frac ** 2 + out["scope"]["generic_over_shift"] ** 2
     logger.info(f"         => the drug-SPECIFIC component is {100*frac:.0f}% of the response this "
                 f"project models. EVERY claim is scoped by this number.")
+    logger.info(f"         orthogonality check: (r/s)^2 + (g/s)^2 = {orth:.3f}  "
+                + ("(~1 => residual and generic are essentially ORTHOGONAL, so the decomposition is "
+                   "clean and the two fractions are variance shares)" if abs(orth - 1) < 0.05 else
+                   "(FAR from 1 => the components overlap; the fractions are NOT variance shares)"))
+    out["scope"]["orthogonality"] = float(orth)
 
     # ---- the transfer coefficient, on the reliability-filtered set and unfiltered ----
     for tag, sub in (("repro-filtered (cos>0.2, the training set)",
@@ -355,16 +366,31 @@ def report(kept, args, rng):
 
     kept_f = {k: v for k, v in kept.items() if v["repro_cos"] > args.repro_thr}
 
-    # ---- (2) NEGATIVE CONTROL: different drugs, same plate ----
-    neg = transfer_pairs(kept_f, same_drug=False, cross_line=False, seed=args.seed)
-    if neg:
-        ci = clustered_ci([r["T"] for r in neg], [r["cluster"] for r in neg], rng, args.n_boot)
-        m, lo, hi, n, ncl = ci
-        out["negative_control_diff_drug_same_plate"] = {"T": m, "ci": [lo, hi], "n_pairs": n}
-        logger.info(f"  NEGATIVE CONTROL (different drugs, SAME plate)  T = {m:+.3f} "
-                    f"CI [{lo:+.3f}, {hi:+.3f}]  ({n} pairs)")
-        logger.info("       must be ~0. If it is high, 'transfer' is a shared artifact (incomplete "
-                    "generic removal or batch), not drug biology, and T is uninterpretable.")
+    # ---- (2) NEGATIVE CONTROLS ----
+    # TWO of them. The same-plate one holds batch constant but differs from T in TWO ways at once
+    # (different drug AND same cell line), so it cannot be subtracted from T directly. The
+    # STRUCTURE-MATCHED one differs from T in exactly one way -- the drug match is broken, the
+    # cross-cell-line structure is preserved -- and it is the one the verdict is gated on.
+    neg_variants = {
+        "diff_drug_same_plate": dict(same_drug=False, cross_line=False),
+        "diff_drug_cross_line": dict(same_drug=False, cross_line=True),   # STRUCTURE-MATCHED
+    }
+    neg_T = {}
+    for name, kw in neg_variants.items():
+        rows = transfer_pairs(kept_f, seed=args.seed, **kw)
+        if not rows:
+            continue
+        ci = clustered_ci([r["T"] for r in rows], [r["cluster"] for r in rows], rng, args.n_boot)
+        m, lo, hi, n, _ = ci
+        raw = float(np.mean([r["r_between"] for r in rows]))
+        neg_T[name] = {"T": m, "ci": [lo, hi], "n_pairs": n, "raw_cos": raw}
+        tag = "  <- STRUCTURE-MATCHED: the verdict is gated on this" if "cross_line" in name else ""
+        logger.info(f"  NEGATIVE CONTROL [{name}]  raw cos {raw:+.3f} -> T = {m:+.3f} "
+                    f"CI [{lo:+.3f}, {hi:+.3f}]  ({n} pairs){tag}")
+    out["negative_controls"] = neg_T
+    logger.info("       Both must be ~0. If a negative control approaches T, then what T measures is "
+                "NOT drug identity -- it is a component shared by unrelated conditions (incomplete "
+                "generic removal, or plate/batch structure surviving a cell-line-scoped generic).")
 
     # ---- (4) DOSE: same drug, SAME line, different dose ----
     dose_rows = transfer_pairs(kept_f, same_drug=True, cross_line=False, seed=args.seed)
@@ -387,26 +413,50 @@ def report(kept, args, rng):
     out["simulated_null"] = sims
     t_null = sims["kappa_frac=0.0"]["T_hat"]
 
-    # ---- verdict ----
+    # ---- verdict -- GATED ON THE NEGATIVE CONTROL ----
+    # An earlier version of this function compared T to the simulated null and printed a verdict
+    # WITHOUT consulting the negative control. On the first real run that produced a confident
+    # "a REAL interaction exists" while the structure-matched null sat within 0.03 of T. The gate
+    # now runs first and can veto; a verdict is never printed on an uninterpretable T.
     key = [k for k in out if k.startswith("T::repro-filtered")]
     if key and np.isfinite(t_null):
         T = out[key[0]]["T"]
         lo, hi = out[key[0]]["ci"]
         gap = t_null - T
+        nm = neg_T.get("diff_drug_cross_line") or neg_T.get("diff_drug_same_plate")
         logger.info("-" * 100)
         logger.info(f"  VERDICT  T = {T:.3f} [{lo:.3f}, {hi:.3f}]  vs  simulated kappa=0 null "
                     f"{t_null:.3f}   (shortfall {gap:+.3f})")
-        if hi >= t_null - 0.03:
+        verdict = None
+        if nm is not None and (T - nm["T"]) < args.min_neg_margin:
+            verdict = "VOID"
+            logger.info(f"     >>> VERDICT VOID. The negative control is {nm['T']:+.3f}, only "
+                        f"{T - nm['T']:+.3f} below T (need >= {args.min_neg_margin:+.3f}). Unrelated "
+                        "conditions transfer about as well as the same drug does, so the shortfall "
+                        "below the null is NOT evidence of a drug x cell-line interaction -- it is a "
+                        "component shared by conditions that have nothing to do with each other.")
+            logger.info("     >>> Do NOT report an interaction fraction from this run. Diagnose first: "
+                        "(a) plate-scope generic (--generic_scope plate) -- a cell-line-scoped generic "
+                        "leaves plate/batch structure in every residual; (b) control-split noise -- "
+                        "Spearman-Brown corrects for halving the TREATED cells, not the CONTROL cells, "
+                        "so rel is under-estimated and every T is inflated by the same factor, which is "
+                        "exactly what makes all arms converge; (c) raise --min_control.")
+        elif hi >= t_null - 0.03:
+            verdict = "PER_DRUG_CONSTANT"
             logger.info("     => the residual is, to measurement precision, a PER-DRUG CONSTANT. There is "
                         "no cell-line-specific component for a conditional model to capture; a lookup "
                         "table is the correct model and the conditional arms failed for a structural "
                         "reason. The interaction budget is <= "
                         f"{100*max(0.0, gap):.0f}% of residual variance.")
         else:
+            verdict = "REAL_INTERACTION"
             logger.info(f"     => a REAL interaction exists: roughly {100*gap:.0f}% of the residual "
-                        "variance is drug x cell-line. That is the conditional target, and it is what "
-                        "drug_lookup structurally cannot reach.")
-        out["verdict"] = {"T": T, "ci": [lo, hi], "T_null": t_null, "interaction_frac": max(0.0, gap)}
+                        "variance is drug x cell-line, ABOVE what unrelated conditions share "
+                        f"(negative control {nm['T']:+.3f}). That is the conditional target, and it is "
+                        "what drug_lookup structurally cannot reach.")
+        out["verdict"] = {"T": T, "ci": [lo, hi], "T_null": t_null, "verdict": verdict,
+                          "negative_control": (nm or {}).get("T"),
+                          "interaction_frac": max(0.0, gap) if verdict == "REAL_INTERACTION" else None}
     logger.info("=" * 100)
     return out
 
@@ -479,6 +529,15 @@ def main():
                     help="reproduce the production build (one ctrl_pb for both halves) to MEASURE "
                          "the bias it induces; the default corrected build splits controls")
     ap.add_argument("--loo_generic", action="store_true")
+    ap.add_argument("--generic_scope", choices=["cell_line", "plate"], default="cell_line",
+                    help="scope of the mean-over-drugs subtraction. A cell-line-scoped generic "
+                         "leaves PLATE structure in every residual on that plate, which makes "
+                         "unrelated same-plate conditions correlate and can fail the negative "
+                         "control. Run both.")
+    ap.add_argument("--min_neg_margin", type=float, default=0.15,
+                    help="T must exceed the structure-matched negative control by at least this "
+                         "much, or the verdict is VOID. Guards the failure mode where every arm "
+                         "converges because a shared component dominates.")
     ap.add_argument("--n_boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", default="RESULTS/variance_decomp.json")
@@ -495,7 +554,8 @@ def main():
 
     # the corrected build (disjoint control halves) is the headline
     kept = build_conditions(args.cache_dir, args.min_treated, args.min_control, args.seed,
-                            split_controls=not args.shared_controls, loo_generic=args.loo_generic)
+                            split_controls=not args.shared_controls, loo_generic=args.loo_generic,
+                            generic_scope=args.generic_scope)
     results["main"] = report(kept, args, rng)
 
     # (1) quantify the shared-control bias by rebuilding the production way
@@ -503,7 +563,8 @@ def main():
         logger.info("")
         logger.info("CONTROL-SPLIT BIAS CHECK — rebuilding the PRODUCTION way (shared ctrl_pb)")
         kept_shared = build_conditions(args.cache_dir, args.min_treated, args.min_control, args.seed,
-                                       split_controls=False, loo_generic=args.loo_generic)
+                                       split_controls=False, loo_generic=args.loo_generic,
+                                       generic_scope=args.generic_scope)
         f = {k: v for k, v in kept_shared.items() if v["repro_cos"] > args.repro_thr}
         rows = transfer_pairs(f, same_drug=True, cross_line=True,
                               same_dose_only=args.same_dose_only, seed=args.seed)
