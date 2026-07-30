@@ -46,6 +46,17 @@ other cell line). This is the pre-registered "honest partial" branch of `arm1b_o
 and it makes the thesis the single-cell cell-sentence-LLM instance of the CMap/LINCS-era result that a
 per-perturbation mean beats the deep model.
 
+**(5) …but the lookup is NOT the ceiling — ~45% of the drug-specific signal is context-dependent and
+unclaimed (Q17).** Because NIR is compressive near 0.96, `drug_lookup ≈ ceiling` does *not* mean the
+modelling target has vanished; measured in cosine space with the noise divided out, the transfer
+coefficient is **T = 0.557 [0.513, 0.601]** against a simulated κ=0 null of **1.001**, with a
+structure-matched negative control at **+0.000**. So the drug-specific residual decomposes into a per-drug
+constant β(d) — which the lookup captures — **plus a drug × cell-line interaction κ(d,c) worth ≈45% of the
+variance, which no lookup can structurally reach and which the model does not reach either.** Scope: the
+drug-specific residual is **62% of the total response variance** (generic + batch is 38%). The thesis
+therefore does *not* end in closure: it ends with a **quantified, unclaimed conditional target** — the
+per-drug mean is most of what anyone has captured, but it is not most of what is there.
+
 ---
 
 ## Canonical datasets / models (use these; everything else is historical)
@@ -471,6 +482,39 @@ uses the *same* A on both arms, so that drift cancels.
   - This model (`pythia_sft_residual_holdout2`) trained on 3,353 conditions vs Q15's 4,091, so its absolute gap (+0.09/+0.10) is **below** Q15's +0.143 — that is the holdout cost, not a regression.
   - Cache still covers 106 of ~1,100 Tahoe drugs.
 - **Status:** ✅ **the drug use generalizes.** The residual encoding produces a drug representation that transfers to unseen (drug, cell_line) pairings with no memorization premium — the first genuine generalization result in this project. It does **not** beat a per-drug lookup, which is the pre-registered honest-partial outcome. ➡️ Next: the noise-corrected transfer coefficient (decides whether headroom exists); the drug-side **channel gate** (`targets` and `pubchem_cid` columns exist in `drug_metadata.parquet` and **no script has ever read them** — `sar_gate.py` probes only for SMILES, so the SAR negative closed *structure*, not *target*). Artifacts: targets `/data/.../residual_targets_holdout2/`, model `checkpoints/pythia_sft_residual_holdout2/final`, results `RESULTS/re_holdout2_stratified.json`; logs `logs/arm1b_gen_609403.out`, `logs/re_eval2_610304.out`.
+
+### Q17. How much of the drug-specific residual is a per-drug CONSTANT vs a drug × cell-line INTERACTION? (the headroom bound)
+- **Why:** Q16 left two numbers pointing opposite ways and NIR could not adjudicate. `drug_lookup_1` (one other cell line) sat **0.136 below** the ceiling, arguing for real cell-line-specific structure; yet `drug_lookup` (averaged over ~38 conditions) recovered to **0.963 ≈ ceiling 0.968**, and averaging removes only *noise*, never the systematic miss of the target line's own interaction — so a large interaction should have left it on a plateau. The tie-breaker matters enormously: if the residual is a per-drug constant, a lookup is the correct model and every conditional arm in this project failed for a **structural** reason; if not, there is a conditional target nobody has reached.
+- **How (methodology in full, `variance_decomposition.py`):** model the response as
+  `shift(d,c) = generic(c) + β(d) + κ(d,c) + ε`, and estimate the **transfer coefficient**
+  `T = var(β) / (var(β) + var(κ))` — the fraction of noise-free residual variance that is a per-drug constant.
+  - **Estimator — disattenuated cross-line correlation.** `T̂ = cos(r(d,c₁), r(d,c₂)) / sqrt(ρ(d,c₁)·ρ(d,c₂))` with `ρ` = Spearman–Brown of the half-split cosine. Dividing out reliability is *essential*: measurement noise alone depresses the raw cross-line cosine and would otherwise read as interaction.
+  - **Validated against planted ground truth**: recovers T = 1.00 / 0.70 / 0.40 to within **0.005**. And it shows why the correction is not optional — at **κ = 0 the RAW cross-line cosine is 0.734**, which read naively reports "27% interaction" where the truth is zero.
+  - **Clustered bootstrap over DRUGS** (the estimand is a per-drug property), not cell lines.
+  - **Simulated null** calibrated to the measured noise: at κ=0 the estimator returns **1.001**, so T is read against that, never against 1.0.
+- ⚠️ **A false-alarm VOID, and the control-design lesson that produced it.** The first run compared T (0.511) against a negative control of **different drugs on the SAME plate**, which came back **+0.485** — nearly equal to T — and the run was correctly declared VOID. But that control differs from T in **two** ways at once (different drug *and* same cell line). Plate/batch structure surviving a cell-line-scoped generic inflates *same-plate* comparisons while leaving *cross-line* comparisons untouched, so it depressed the control's usefulness without ever touching T. Adding the **structure-matched** control — different drug, **different cell line**, breaking only the drug match — resolves it: it reads **+0.000** at *every* configuration.
+  A second bug compounded this: `transfer_pairs` grouped different-drug pairs by plate, so requesting cross-line pairs returned an **empty list** and the verdict silently fell back to the same-plate control. It now needs its own sampler and warns on an empty control.
+- **Answer — a REAL interaction exists, and it is large.**
+
+  | config | T (repro-filtered) | same-plate null | **structure-matched null** | dose | shared−split bias |
+  |---|---|---|---|---|---|
+  | **`--generic_scope plate`** | **0.557 [0.513, 0.601]** | −0.018 | **+0.000 [−0.019, +0.021]** | 0.703 | −0.000 |
+  | plate + `--project_generic` | 0.545 [0.503, 0.585] | −0.019 | +0.010 [−0.010, +0.029] | 0.682 | −0.004 |
+  | cell-line (production scope) | 0.517 [0.474, 0.560] | +0.478 | +0.000 [−0.010, +0.010] | 0.484 | +0.254 |
+
+  Against a simulated κ=0 null of **1.001**, the shortfall is **0.444 / 0.456 / 0.484** →
+  **≈44–48% of the drug-specific residual variance is drug × cell-line interaction.** Robust to the generic's scope, to orthogonal-rejection of the generic direction, and to control splitting. **`drug_lookup` captures the β(d) main effect and structurally cannot reach the remaining ~45%.**
+- **Three internal consistency checks, all passing:**
+  1. **Dose ordering.** At plate scope, same-drug/same-line/**different-dose** transfer is **0.703**, *above* cross-cell-line **0.557** — changing the dose costs less than changing the cell line, which is the biologically correct ordering. At cell-line scope the ordering **inverts** (0.484 < 0.517), another sign the plate-scoped build is the clean one.
+  2. **Control-split bias vanishes.** At plate scope shared-control and split-control T agree to **−0.000** (0.557 vs 0.557). At cell-line scope they differ by **+0.254**. The discrepancy was plate contamination, not the control split.
+  3. **Orthogonality.** `(‖r‖/‖s‖)² + (‖g‖/‖s‖)²` = **1.002** (plate) and **0.999** (cell line) — residual and generic are essentially orthogonal, so the fractions below are genuine variance shares.
+- **SCOPE — what fraction of the response this frame covers (never previously computed):** at plate scope `‖residual‖/‖shift‖ = 0.786` and `‖generic‖/‖shift‖ = 0.620`, i.e. **62% of the perturbation response variance is drug-specific** and 38% is the generic program plus batch. (At cell-line scope, 79% / 21% — higher only because the cell-line generic does not absorb the plate component.) **Every claim in this project is scoped by this number.**
+- 🔁 **RETRACTED: the "62% vs 19% reproducibility" justification for cell-line scope.** That comparison was measured with **shared** controls, which inflate cell-line reproducibility far more than plate reproducibility. Measured honestly with **split** controls the two are comparable — **20% (plate) vs 16% (cell line)** — so the reproducibility argument does not favour cell-line scope. Combined with the dose-ordering inversion and the control-split bias, **plate scope is the better build**, and the residual training targets (built at cell-line scope) therefore retain batch structure.
+- **Caveats:**
+  - `model − scramble` in Q15/Q16 is **unaffected** by the scope issue: it is a paired contrast in which both arms share the control cell and are scored against the same truth, so any shared component cancels. But the residual **training targets** do contain plate/batch structure the model may partly be learning — a plate-scope rebuild is the natural follow-up.
+  - T on the unfiltered set is *higher* than on the repro-filtered set (0.598 vs 0.557); disattenuation is unstable at very low reliability, so the filtered value is the one to quote.
+  - The simulated null assumes Gaussian noise; if real noise is structured differently the null could shift, though it would have to move by ~0.45 to change the conclusion.
+- **Status:** ✅ **the headroom is real and quantified.** The Q16 ambiguity resolves in favour of genuine cell-line-specific structure: `drug_lookup` 0.963 ≈ ceiling 0.968 was **NIR compression** at the top of the scale, and `drug_lookup_1` 0.832 was the honest signal. **≈45% of the drug-specific signal is context-dependent, and neither the 1B model (0.639) nor any lookup reaches it.** ➡️ This *reopens* the modelling question rather than closing it, and it converts the thesis's central claim from a closure into a quantified, unclaimed target. Artifacts: `RESULTS/vd3_{plate,plate_proj,cellline}.json`, `RESULTS/vardecomp_*.json`; log `logs/vardecomp3_*.out`.
 
 ---
 

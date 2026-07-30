@@ -356,33 +356,70 @@ and $\NIR$ near $0.96$ is compressive, collapsing a wide range of cosines into a
 \subsection{How much is left? The transfer coefficient}
 \label{sec:res-transfer}
 
-\pending{\texttt{variance\_decomposition.py} is running.}
+Sections~\ref{sec:res-generalisation} and~\ref{sec:res-lookup} leave two numbers pointing opposite
+ways, and $\NIR$ cannot adjudicate between them. \texttt{drug\_lookup\_1} sits $0.136$ below the
+ceiling despite using \emph{more} cells than the ceiling's half-sample, arguing for real
+cell-line-specific structure; yet averaging many lines recovers to $0.963$, and averaging removes only
+\emph{noise}, never the systematic miss of the target line's own interaction. The question is
+therefore posed in cosine space with the noise divided out (Section~\ref{sec:methods-vardecomp}).
 
-The two lookup arms point in opposite directions and $\NIR$ cannot adjudicate between them.
-\texttt{drug\_lookup\_1} sits $0.136$ below the ceiling despite using \emph{more} cells than the
-ceiling's half-sample, which argues for real cell-line-specific structure. Yet averaging many lines
-recovers to $0.963$, and averaging removes only \emph{noise}, never the systematic miss of the
-target line's own interaction --- so a large interaction should have left \texttt{drug\_lookup} on a
-plateau well below the ceiling.
+\paragraph{A false alarm, and the control-design lesson it produced.} The first run compared
+$\Tcoef$ against a negative control of \emph{different drugs on the same plate}, which returned
+$+0.485$ against $\Tcoef = 0.511$, and was correctly declared void. But that control differs from
+$\Tcoef$ in \textbf{two} ways at once --- different drug \emph{and} same cell line. Plate structure
+surviving a cell-line-scoped generic inflates \emph{same-plate} comparisons while leaving
+\emph{cross-line} comparisons untouched, so it destroyed the control's usefulness without ever
+touching $\Tcoef$. A \emph{structure-matched} control --- different drug, \textbf{different cell
+line}, breaking only the drug match --- resolves it, and reads $+0.000$ in every configuration. The
+episode is worth reporting rather than hiding: a negative control that differs from the estimand in
+more than one way cannot bound it.
 
-The question is therefore posed in cosine space with the noise divided out
-(Section~\ref{sec:methods-vardecomp}). Validation shows why this is necessary: at $\kappa = 0$ the
-raw cross-line cosine is $0.734$, which read naively reports $27\%$ interaction where the truth is
-zero.
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Configuration & $\Tcoef$ & same-plate null & \textbf{matched null} & dose & shared$-$split \\
+\midrule
+\textbf{plate-scoped generic} & \textbf{0.557} [0.513, 0.601] & $-0.018$ & \textbf{+0.000} & 0.703 & $-0.000$ \\
+plate + generic projected out & 0.545 [0.503, 0.585] & $-0.019$ & +0.010 & 0.682 & $-0.004$ \\
+cell-line-scoped (production) & 0.517 [0.474, 0.560] & $+0.478$ & +0.000 & 0.484 & $+0.254$ \\
+\bottomrule
+\end{tabular}
+\caption{The transfer coefficient. Against a simulated $\kappa = 0$ null of $1.001$, the shortfall is
+$0.444$--$0.484$. The matched negative control is $\approx 0$ throughout.}
+\label{tab:transfer}
+\end{table}
 
-\begin{description}
-  \item[If $\Tcoef$ is near its $\kappa = 0$ null] the drug-specific residual is, to measurement
-        precision, a per-drug constant. A lookup table is then the correct model for this task; the
-        failure of the consensus arm, the OT arm and the whole $\varepsilon$-ladder is
-        \emph{structural} rather than an engineering shortfall; and the thesis closes with a
-        quantitative statement of why conditional generation cannot help.
-  \item[If $\Tcoef$ falls well below the null] a real drug$\times$cell-line interaction exists, the
-        lookup's $0.963$ is an artifact of $\NIR$ compression, and there is a conditional target that
-        no lookup can structurally reach.
-\end{description}
+\paragraph{Answer: roughly 45\% of the drug-specific residual variance is drug$\times$cell-line
+interaction}, robust to the generic's scope, to projecting the generic direction out, and to control
+splitting. The per-drug constant $\beta(d)$ --- which \texttt{drug\_lookup} reproduces at $0.963$ ---
+is therefore \emph{not} the whole signal. There is a conditional target worth about half the
+drug-specific variance that no lookup can structurally reach, and that the model does not reach
+either.
 
-The same run reports $\lVert\resid\rVert / \lVert\shift\rVert$, the fraction of the total
-perturbation response that the drug-specific frame covers, which scopes every claim made above.
+Three internal checks agree. \textbf{Dose ordering}: at plate scope, same-drug/same-line/different-dose
+transfer is $0.703$, \emph{above} cross-cell-line $0.557$ --- changing the dose costs less than
+changing the cell line, the biologically correct ordering; at cell-line scope the ordering inverts.
+\textbf{Control-split bias}: at plate scope the shared- and split-control builds agree to $-0.000$,
+against $+0.254$ at cell-line scope, so that discrepancy was plate contamination rather than the split.
+\textbf{Orthogonality}: $(\lVert\resid\rVert/\lVert\shift\rVert)^2 +
+(\lVert\textrm{generic}\rVert/\lVert\shift\rVert)^2 = 1.002$, so the two components are essentially
+orthogonal and the fractions below are genuine variance shares.
+
+\paragraph{Scope of the whole thesis.} At plate scope $\lVert\resid\rVert/\lVert\shift\rVert = 0.786$
+and $\lVert\textrm{generic}\rVert/\lVert\shift\rVert = 0.620$: \textbf{62\% of the perturbation
+response variance is drug-specific}, and 38\% is the generic program plus batch. Every claim in this
+thesis is scoped by this number, and it has not previously been computed for this task.
+
+\paragraph{A retraction this forces.} The justification for estimating the generic per cell line
+rather than per plate was a reproducibility comparison, $62\%$ against $19\%$. That was measured with
+\emph{shared} control cells, which inflate cell-line reproducibility far more than plate
+reproducibility. Measured with split controls the two are comparable ($20\%$ plate, $16\%$ cell line),
+so the argument does not favour cell-line scope. Combined with the dose-ordering inversion and the
+control-split bias, the plate-scoped build is the better one --- and the residual training targets,
+built at cell-line scope, therefore retain batch structure. This does not affect $\gap$, which is a
+paired contrast in which any shared component cancels, but it makes a plate-scoped rebuild the
+natural next arm.
 
 \subsection{Scope: what is closed by measurement}
 \label{sec:res-scope}
