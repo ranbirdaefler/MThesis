@@ -414,6 +414,7 @@ uses the *same* A on both arms, so that drift cancels.
   | prediction diversity (mean pairwise cos between predictions; truths = −0.005) | **+0.124** (most diverse) | +0.303 | +0.633 (collapsed) |
   | cos(prediction, own truth) vs other drugs | **+0.084 / −0.000** | +0.026 | +0.049 |
 - **Caveats (all material):**
+  - ⚠️ **THE CONTROL COMPARISON IS NOT MATCHED-BUDGET — the three-column table above is confounded.** Verified from the saved configs: `re_residual_maxtok.json` ran at **`max_new_tokens=1400`**, while **both** controls (`re_singlecell_model.json`, `re_ot_model.json`) ran at **600**. Since the token budget alone *doubles* the measured effect for the residual model (+0.0716 → +0.1429), the controls were given half the budget of the treatment. The direction of the bias favours our conclusion: truncation pushes a gap toward zero, so an under-budgeted control looks *more* null than it is. Mitigating (but not sufficient): a cell sentence is ~123 gene symbols where a residual signature is ~201, so 600 tokens bind far less on the controls — but the generation completion rate for the control arms was logged and never persisted, so this cannot be checked from the artifacts. **Action: re-run both controls at 1400 before quoting the three-column comparison.** Until then the residual model's own gradient (+0.0351 → +0.0716 → +0.1429, all clearing zero) stands on its own, and Q16 is unaffected (every arm there ran at 1400 inside a single job).
   - **Scoring paths differ**: the residual model is scored natively; the controls go through decode→subtract. The single-cell null proves the path does not *manufacture* positives, but it cannot rule out a magnitude advantage. **Residual vs OT CIs overlap** ([+0.032,+0.110] vs [+0.007,+0.048]) — "residual beats OT" is *suggestive, not established*.
   - **Token-budget truncation (RESOLVED):** at 600 tokens 26% of generations never reached `[DOWN]`; at 1400 tokens that is 9%, and the effect roughly doubled. The remaining 9% still understate it slightly.
   - **All scored conditions were trained on** → this demonstrates the model **reads the drug token** (memorization also requires that), **not generalization**. A held-out-shard cache is the outstanding test.
@@ -579,7 +580,7 @@ panel-τ ≈ 0.26 (convention-invariant by construction); DE-Δr(Spearman K50) �
 
 | predictor | info | DE-Δr K50 | partial-DE (ctrl removed) | panel-τ |
 |---|---|---|---|---|
-| revert_center (all genes → P/2) | none | **1.000** | NA (pure control) | NA |
+| revert_center (all genes → P/2) | none | **0.9999** [0.99991, 0.99992] | NA (undefined) | NA (undefined) |
 | revert_mean (predict = mean control) | none (no fit) | 0.961 | 0.25 | 0.27 |
 | ridge linear (control→shift) | control | 0.947 | 0.28 | 0.27 |
 | noise ceiling (2 real cells) | — | 0.76 | — | — |

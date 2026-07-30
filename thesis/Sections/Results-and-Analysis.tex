@@ -6,9 +6,11 @@
 
 \paragraph{A zero-information baseline scores above the noise ceiling.} A predictor that places
 every gene at the middle rank --- carrying no information about drug, cell, or biology --- scores
-$\DEdr(K{=}50) = 1.000$, above the two-real-cell noise ceiling ($0.76$) and above the model
-($0.73$). The ordering is inverted: less information yields a higher score, which is the signature
-of an artifact rather than of skill. The cause is control regression-to-the-mean: $\DEdr$ correlates
+$\DEdr(K{=}50) = 0.9999$ [$0.99991$, $0.99992$], above the two-real-cell noise ceiling ($0.76$) and
+above the model ($0.73$). The ordering is inverted: less information yields a higher score, which is
+the signature of an artifact rather than of skill. Note also that this predictor's partial-$\DEdr$
+and $\paneltau$ are \emph{undefined} rather than merely poor --- its shift from control is
+identically zero, so there is nothing left to correlate once the control is regressed out. The cause is control regression-to-the-mean: $\DEdr$ correlates
 predicted and true change from control, and a prediction that reverts toward the centre correlates
 with the true change by construction.
 
@@ -18,7 +20,7 @@ with the true change by construction.
 \toprule
 Predictor & Information & $\DEdr$ (K50) & partial-$\DEdr$ \\
 \midrule
-\texttt{revert\_center} (all genes $\rightarrow P/2$) & none & \textbf{1.000} & n/a \\
+\texttt{revert\_center} (all genes $\rightarrow P/2$) & none & \textbf{0.9999} & undefined \\
 \texttt{revert\_mean} (predict mean control) & none, no fit & 0.961 & 0.25 \\
 ridge linear (control $\rightarrow$ shift) & control & 0.947 & 0.28 \\
 noise ceiling (two real cells) & --- & 0.76 & --- \\
@@ -247,10 +249,23 @@ Gradient with dissimilarity & \textbf{yes (all three clear zero)} & no (flat) & 
 \bottomrule
 \end{tabular}
 \caption{Stratified scramble. The monotone gradient is itself the evidence: a metric artifact would
-not order itself by swap dissimilarity. The single-cell control, scored through the identical
-pipeline, stays null --- so the result is not manufactured by the scoring path.}
+not order itself by swap dissimilarity. \todo{the two control columns ran at a 600-token generation
+budget against the residual model's 1400 --- see the caveat below. Re-run before quoting the
+cross-model comparison.}}
 \label{tab:residual-strata}
 \end{table}
+
+\paragraph{A confound in the control columns, stated rather than buried.} The residual model's
+figures come from a run at $1400$ generation tokens; both control arms ran at $600$. Since the token
+budget alone doubles the measured effect for the residual model, the controls were given half the
+treatment's budget. The bias runs in the direction that flatters our conclusion --- truncation drives
+a gap toward zero, so an under-budgeted control looks \emph{more} null than it is --- which is
+precisely why it must be stated. Mitigating but not sufficient: a cell sentence is roughly $123$ gene
+symbols against a residual signature's $201$, so the cap binds far less on the controls; the
+completion rates were logged but not persisted, so this cannot be verified from the artifacts.
+\todo{re-run both controls at 1400} Two things are unaffected: the residual model's own gradient
+across strata, every point of which clears zero within a single matched run, and all of
+Section~\ref{sec:res-generalisation}, where every arm ran at $1400$ inside one job.
 
 Three further checks agree, and only the residual model passes all three: the correlation between
 condition reproducibility and model $\NIR$ is $+0.144$ (positive: the model does better where the
