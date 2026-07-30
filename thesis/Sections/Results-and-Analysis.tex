@@ -316,6 +316,21 @@ one fired. The model reads and transfers the drug, but recovers only a small fra
 signature. That it beats \texttt{moa\_lookup} rules out the explanation that it is simply reading the
 \texttt{Mechanism:} field of the prompt --- though at $0.529$ that is a low bar.
 
+\paragraph{This is DrEval's finding, in transcriptomic space.} DrEval reports that deep learning
+models barely outperform a naive predictor of mean drug and cell-line
+effects~\cite{dreval}. Their \texttt{NaiveMeanEffectsPredictor} is
+$\hat{y}_{ij} = \mu^c_i + \mu^d_j - \mu$; our \texttt{drug\_lookup} is the $\beta(d)$ term of that
+same additive model, measured in a frame where the $\textrm{generic}(c)$ term has already been
+subtracted. The finding replicates and sharpens: on a $946$-gene transcriptomic response rather than
+a scalar potency, and with the comparison made against a proper within-condition replicate ceiling,
+the additive drug main effect reaches $0.963$ of a $0.968$ ceiling while a $1$B-parameter model
+reaches $0.639$.
+
+Note also that this result lands in the split where DrEval specifically warns the drug-average
+baseline will look strong: \texttt{unseen\_combo} is Leave-Pairs-Out, and DrEval reports
+that good LPO performance is reachable by predicting each drug's training average~\cite{partin}.
+We take that warning as the hypothesis rather than the caveat, and measure it. It holds.
+
 \paragraph{A retraction, made before it entered the record.} It is tempting to read
 $\textrm{ceiling} - \texttt{drug\_lookup} = +0.005$ as ``the modelling target has vanished''. That
 inference is not supported, for three reasons that all favour the lookup: the ceiling is scored

@@ -54,6 +54,18 @@ a calibrated metric and a proper replicate ceiling, at single-cell resolution --
 finding that a per-perturbation mean is hard to beat may be less a warning about weak baselines than
 a restatement of it.
 
+It also places this work as the single-cell, generative instance of DrEval's
+critique~\cite{dreval}. DrEval audits drug \emph{sensitivity} prediction and finds that deep models
+barely outperform a naive additive predictor of mean drug and cell-line effects. Our
+\texttt{drug\_lookup} is that predictor's drug term, and the finding replicates on a
+$946$-dimensional transcriptomic response: $0.963$ against a $0.968$ replicate ceiling, versus
+$0.639$ for the model. Three of DrEval's six pathologies --- pseudoreplication, biased evaluation
+metrics, and missing ablation studies --- turn out to structure the entire methodology of this
+thesis, which arrived at clustered bootstraps over cell lines, a discrimination metric immune to
+between-drug variance, and a token-level scramble ablation independently. That convergence is worth
+recording: the controls a critical benchmark demands are the same controls a single negative result
+needs in order to mean anything.
+
 \paragraph{What would change the conclusion.} A drug$\times$cell-line interaction large enough to be
 resolvable would restore a conditional target that no lookup can reach. A working drug-side
 information channel --- most plausibly protein target rather than chemical structure, which is closed

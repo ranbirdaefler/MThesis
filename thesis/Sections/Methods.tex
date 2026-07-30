@@ -108,8 +108,12 @@ does not imply ``different response''. Two remedies are used:
 \end{enumerate}
 
 \paragraph{Uncertainty.} All confidence intervals are clustered bootstraps resampling \emph{cell
-lines}, not conditions --- drugs within a cell line are pseudoreplicates, and an observation-level
-interval would be badly anti-conservative. For the transfer coefficient
+lines}, not conditions. Conditions within a cell line are pseudoreplicates in Hurlbert's
+sense~\cite{hurlbert} --- multiple measurements of one unit treated as independent --- and an
+observation-level interval would be badly anti-conservative. This is one of the six pathologies
+DrEval~\cite{dreval} identifies in this field, and the structure of our data is the same as the one
+they describe: hundreds of thousands of cells resolving to a few hundred conditions over $50$ cell
+lines. For the transfer coefficient
 (Section~\ref{sec:methods-vardecomp}) the cluster is the \emph{drug}, since the estimand is a
 per-drug property.
 
@@ -199,18 +203,30 @@ other drugs in the same cell line.
 \subsection{Generalisation design}
 \label{sec:methods-holdout}
 
-A three-way split, keyed at the \textbf{(drug, cell line)} level so that every plate and dose of a
-held-out pair goes to the held-out split and no sibling condition leaks into training:
+Following DrEval's insistence that the split match the intended
+application~\cite{dreval}, and using its nomenclature, we build a three-way split keyed at the
+\textbf{(drug, cell line)} level so that every plate and dose of a held-out pair goes to the held-out
+split and no sibling condition leaks into training:
 \begin{description}
-  \item[\texttt{unseen\_drug}] every condition of a held-out drug. The model never sees the token.
-        This is the \emph{control}: given that chemical structure does not predict response
-        (Section~\ref{sec:res-scope}), it should fail, and its failing is what proves that any
-        transfer observed in \texttt{unseen\_combo} comes from having seen the drug.
-  \item[\texttt{unseen\_combo}] a held-out (drug, cell line) pair whose drug is seen in at least
-        three other cell lines. This is cross-context transfer and the scientifically meaningful
-        test.
+  \item[\texttt{unseen\_drug} --- Leave-Drugs-Out (LDO)] every condition of a held-out drug. The
+        model never sees the token. The application is drug design. This is the \emph{control}:
+        given that chemical structure does not predict response (Section~\ref{sec:res-scope}), it
+        should fail, and its failing is what proves that any transfer observed in
+        \texttt{unseen\_combo} comes from having seen the drug.
+  \item[\texttt{unseen\_combo} --- Leave-Pairs-Out (LPO)] a held-out (drug, cell line) pair whose
+        drug is seen in at least three other cell lines. The application is missing-value
+        imputation. This is cross-context transfer and the scientifically meaningful test.
   \item[\texttt{train}] everything else.
 \end{description}
+
+We do not build a Leave-Cell-Lines-Out (LCO) split here; Section~\ref{sec:limitations} argues it is
+the natural next axis and explains why its interest is contingent on the transfer coefficient.
+
+\paragraph{A warning we inherit with the vocabulary.} DrEval reports, citing~\cite{partin}, that
+apparently good LPO and LCO performance can be reached simply by predicting each drug's average
+response across the training cell lines. Our transfer result is an LPO result and therefore sits
+exactly in that regime. This is the reason the baseline ladder below is not optional: the
+drug-average predictor is not a formality to be dismissed, it is the hypothesis under test.
 
 \paragraph{Stratified sampling.} Evaluation samples conditions under an explicit per-split quota. A
 uniform draw reproduces the pool's proportions, which starves precisely the split the experiment
@@ -260,7 +276,19 @@ To separate the per-drug main effect from the drug$\times$cell-line interaction 
   \Tcoef \;=\; \frac{\operatorname{var}\beta}{\operatorname{var}\beta + \operatorname{var}\kappa},
 \end{equation}
 where $\beta$ is constant across cell lines and $\kappa$ is the interaction --- the only component a
-conditional model can win on. $\Tcoef$ is estimated by disattenuated cross-line correlation,
+conditional model can win on.
+
+\paragraph{This is DrEval's naive predictor, in transcriptomic space.} DrEval's
+\texttt{NaiveMeanEffectsPredictor}~\cite{dreval} predicts
+$\hat{y}_{ij} = \mu + (\mu^c_i - \mu) + (\mu^d_j - \mu) = \mu^c_i + \mu^d_j - \mu$: an additive
+model of cell-line and drug main effects, with no interaction term. Our
+$\textrm{generic}(c) + \beta(d)$ is precisely that quantity, lifted from a scalar potency to a
+$946$-dimensional profile. It follows that $\kappa$ \emph{is} the term their naive model omits, and
+that $1 - \Tcoef$ measures exactly the headroom available above it. DrEval finds that deep models
+barely beat this additive baseline on drug sensitivity; the transfer coefficient asks whether, in
+the transcriptomic setting, there is anything above it to win in the first place.
+
+$\Tcoef$ is estimated by disattenuated cross-line correlation,
 \begin{equation}
   \hat{\Tcoef} \;=\; \frac{\cos\!\big(\resid(d,c_1),\, \resid(d,c_2)\big)}
                            {\sqrt{\rho(d,c_1)\,\rho(d,c_2)}},

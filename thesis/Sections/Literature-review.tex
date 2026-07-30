@@ -44,6 +44,59 @@ comparison, not to an absolute score. Second, and more consequentially, the per-
 result is not merely a warning about weak baselines: it is a statement about the \emph{structure of
 the data}. Section~\ref{sec:res-lookup} takes it as a hypothesis and measures it directly.
 
+\subsection{DrEval, and the six pathologies}
+\label{sec:lit-dreval}
+
+The most direct precedent for this thesis is DrEval~\cite{dreval}, which audits the drug response
+prediction field and identifies six obstacles to clinical translation: non-reproducible models, data
+leakage causing weak generalisation, pseudoreplication, biased evaluation metrics, missing ablation
+studies, and inconsistent response data. Its central empirical finding is that \emph{deep learning
+models barely outperform a naive predictor of mean drug and cell line effects}, and that no complex
+model significantly outperforms a properly tuned tree-based ensemble in the settings that matter.
+
+One caveat must be stated before the parallel is drawn. DrEval evaluates drug \emph{sensitivity}
+prediction --- a scalar viability or potency measure such as IC$_{50}$ or AUC, predicted from
+cell-line omics --- whereas this thesis predicts the full transcriptomic \emph{response}. The tasks
+are different. What transfers is the diagnosis, not the measurement.
+
+Three of DrEval's six pathologies structure the methodology of Section~\ref{sec:methods}, and we
+adopt its vocabulary throughout:
+
+\paragraph{Pseudoreplication.} Following Hurlbert~\cite{hurlbert}, treating multiple measurements
+from one unit as independent. DrEval notes that GDSC2's $395{,}025$ measurements derive from only
+$969$ cell lines and $287$ drugs. Our situation is identical in structure: hundreds of thousands of
+cells resolve to a few hundred conditions over $50$ cell lines. All uncertainty in this thesis is
+therefore a clustered bootstrap over cell lines.
+
+\paragraph{Biased evaluation.} DrEval frames this as a version of Simpson's paradox: because drugs
+act at vastly different concentrations, most variance in a drug response dataset is
+\emph{between-drug}, so a model that memorises each drug's mean explains most of it. Their
+illustration is stark --- a global Pearson correlation of $0.90$ against an average per-drug Pearson
+of $0.01$. Section~\ref{sec:res-metrics} reports the transcriptomic analogue, in which a
+zero-information baseline scores $\DEdr = 1.000$, and Section~\ref{sec:methods-metrics} explains why
+a discrimination metric evaluated \emph{within} a comparison set is immune to this failure by
+construction.
+
+\paragraph{Application-aware splits.} DrEval insists that the split match the intended application,
+and names four: Leave-Pairs-Out (LPO, missing-value imputation), Leave-Cell-Lines-Out (LCO,
+personalised medicine), Leave-Drugs-Out (LDO, drug design), and Leave-Tissue-Out (LTO, drug
+repurposing). Our three-way holdout maps onto this directly --- \texttt{unseen\_combo} is LPO,
+\texttt{unseen\_drug} is LDO, and the cell-line split proposed in Section~\ref{sec:limitations} is
+LCO --- and we use their names in Section~\ref{sec:methods-holdout}.
+
+This mapping carries a warning we take seriously. DrEval reports, citing~\cite{partin}, that
+apparently good LPO and LCO performance \emph{can be reached by predicting each drug's average
+response across the training cell lines}. Our strongest positive result
+(Section~\ref{sec:res-generalisation}) is an LPO result, and therefore lands precisely in the regime
+where that baseline is expected to look good. Section~\ref{sec:res-lookup} measures the baseline
+rather than assuming it away, and finds that it does indeed beat the model.
+
+\paragraph{Missing ablations.} DrEval's remedy is randomisation and robustness tests. The scramble
+ablation of Section~\ref{sec:methods-controls} is exactly such a test, specialised to the drug
+token, and it is the instrument on which every drug-use claim in this thesis rests.
+
+\subsection{Metric calibration}
+
 Miller et al.~\cite{miller} supply the tool that makes this tractable. Their Dynamic Range Fraction
 (\DRF) grades a \emph{metric} rather than a model, by asking what fraction of the interval between a
 drug-agnostic baseline and a same-condition noise ceiling the metric actually resolves. Their

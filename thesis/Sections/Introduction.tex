@@ -36,9 +36,16 @@ We fine-tune \texttt{C2S-Scale-Pythia-1b} on Tahoe-100M and ask three questions 
 \end{enumerate}
 
 The third question is where the work lives. A negative answer to (1) and (2) alone would restate
-what a growing benchmark literature already reports~\cite{ahlmanneltze,perturbench,kernfeld}. What
-this thesis adds is a mechanism for the failure, a repair that follows from the mechanism, and a
-quantitative bound on how much the repair can ever recover.
+what a growing critical literature already reports~\cite{dreval,ahlmanneltze,perturbench,kernfeld}.
+What this thesis adds is a mechanism for the failure, a repair that follows from the mechanism, and
+a quantitative bound on how much the repair can ever recover.
+
+The closest precedent is DrEval~\cite{dreval}, which audits drug \emph{sensitivity} prediction and
+finds that deep models barely outperform a naive additive predictor of mean drug and cell-line
+effects. This thesis can be read as its single-cell, generative counterpart: a different task ---
+predicting a $946$-dimensional transcriptomic response rather than a scalar potency --- reaching the
+same structural conclusion, and then going one step further by localising the failure inside the
+model and asking how much signal was ever available to capture.
 
 \subsection{Summary of findings}
 

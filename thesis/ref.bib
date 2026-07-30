@@ -121,6 +121,60 @@
   year    = {2025}
 }
 
+% [OK] DrEval. Verified against the PDF: bioRxiv 2025.05.26.655288, posted
+% 29 May 2025. Shared first authors Bernett & Iversen; shared last Baum & List.
+% THE framing paper for this thesis. Six obstacles to clinical translation:
+% non-reproducible models, data leakage, pseudoreplication, biased evaluation,
+% missing ablation studies, inconsistent viability data. Key finding: deep
+% learning models barely outperform a naive predictor of mean drug and cell
+% line effects. NOTE the task differs from ours -- DrEval evaluates drug
+% SENSITIVITY (IC50/AUC scalars) from cell-line omics, whereas we predict the
+% full transcriptomic response. The pathologies are shared; the task is not.
+@article{dreval,
+  title   = {From Hype to Health Check: Critical Evaluation of Drug Response Prediction Models with {DrEval}},
+  author  = {Bernett, Judith and Iversen, Pascal and Picciani, Mario and Wilhelm, Mathias and Baum, Katharina and List, Markus},
+  journal = {bioRxiv},
+  year    = {2025},
+  doi     = {10.1101/2025.05.26.655288},
+  note    = {Preprint, posted 29 May 2025}
+}
+
+% [OK] Verified from DrEval's bibliography. The origin of the term
+% pseudoreplication, and the justification for clustering our bootstrap over
+% cell lines rather than over conditions.
+@article{hurlbert,
+  title   = {Pseudoreplication and the Design of Ecological Field Experiments},
+  author  = {Hurlbert, Stuart H.},
+  journal = {Ecological Monographs},
+  volume  = {54},
+  number  = {2},
+  pages   = {187--211},
+  year    = {1984},
+  doi     = {10.2307/1942661}
+}
+
+% [OK] Verified from DrEval's bibliography.
+@article{partin,
+  title   = {Deep learning methods for drug response prediction in cancer: Predominant and emerging trends},
+  author  = {Partin, Alexander and Brettin, Thomas S. and Zhu, Yitan and Narykov, Oleksandr and Clyde, Austin and Overbeek, Jamie and Stevens, Rick L.},
+  journal = {Frontiers in Medicine},
+  volume  = {10},
+  year    = {2023},
+  doi     = {10.3389/fmed.2023.1086097}
+}
+
+% [OK] Verified from DrEval's bibliography.
+@article{hauptmann,
+  title   = {A fair experimental comparison of neural network architectures for latent representations of multi-omics for drug response prediction},
+  author  = {Hauptmann, Tony and Kramer, Stefan},
+  journal = {BMC Bioinformatics},
+  volume  = {24},
+  number  = {1},
+  pages   = {45},
+  year    = {2023},
+  doi     = {10.1186/s12859-023-05166-7}
+}
+
 % [VERIFY] Kernfeld et al. -- systematic comparison of expression forecasting
 % methods. Confirm title, year and venue.
 @article{kernfeld,
@@ -209,9 +263,10 @@
 
 % ===========================================================================
 % STILL TO ADD
-%   - the DrEval critique (referenced in FINDINGS' thesis spine; find the
-%     actual paper and add it -- the spine calls this work "the single-cell,
-%     transformer extension of the DrEval critique", so it must be cited)
+%   - Li et al. 2023 -- DrEval cites this (alongside Partin) for "seemingly
+%     good performance for LPO and LCO can be reached by predicting the average
+%     response of each drug". Pull the full entry from DrEval's bibliography;
+%     it is NOT the BMC Bioinformatics 24(1):45 entry, which is Hauptmann.
 %   - MolFormer, for the SAR gate's chemical embedding
 %   - RDKit / Morgan fingerprints (Rogers & Hahn 2010, "Extended-Connectivity
 %     Fingerprints", JCIM)
