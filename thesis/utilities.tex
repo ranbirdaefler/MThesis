@@ -1,0 +1,42 @@
+% ---------------------------------------------------------------------------
+% utilities.tex -- shared macros and page setup
+% ---------------------------------------------------------------------------
+
+% utilities.tex is \include-d AFTER \begin{document}, so preamble-only commands
+% (\geometry, \usepackage, ...) cannot be used here. \newgeometry is the in-body form.
+\newgeometry{margin=2.5cm}
+\onehalfspacing
+
+% blank page helper used by main.tex
+\newcommand\myemptypage{%
+  \null
+  \thispagestyle{empty}%
+  \addtocounter{page}{-1}%
+  \newpage
+}
+
+% ---------------------------------------------------------------------------
+% Shorthands for the quantities used throughout. Defining them once keeps the
+% notation identical in Methods and Results.
+% ---------------------------------------------------------------------------
+\newcommand{\NIR}{\textrm{NIR}}                       % normalised inverse rank
+\newcommand{\DRF}{\textrm{DRF}}                       % dynamic range fraction
+\newcommand{\DEdr}{\textrm{DE-}\Delta r}              % the standard DE metric
+\newcommand{\paneltau}{\textrm{panel-}\tau}
+\newcommand{\ENDCELL}{\texttt{[END\_CELL]}}
+\newcommand{\DOWN}{\texttt{[DOWN]}}
+\newcommand{\gap}{\Delta_{\textrm{scr}}}              % model - scramble
+\newcommand{\Tcoef}{\mathcal{T}}                      % transfer coefficient
+\newcommand{\resid}{r}                                % drug-specific residual
+\newcommand{\shift}{s}                                % treated - control shift
+
+% confidence interval, e.g. \ci{+0.1002}{+0.0661}{+0.1368}
+\newcommand{\ci}[3]{$#1$ \,[$#2$, $#3$]}
+
+% ---------------------------------------------------------------------------
+% DRAFT MARKERS -- remove before submission.
+% \todo{...}    work still to do
+% \pending{...} a result that has not landed yet
+% ---------------------------------------------------------------------------
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+\newcommand{\pending}[1]{\textbf{[PENDING: #1]}}

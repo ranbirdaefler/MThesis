@@ -1,0 +1,117 @@
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{Motivation}
+
+Predicting how a cell's transcriptome responds to a drug is one of the central computational
+problems in pharmacogenomics. If a model could take an untreated cell and a compound and emit the
+treated cell's expression profile, it would allow \emph{in silico} screening across combinations of
+compound, dose and cellular context that are far too numerous to assay experimentally.
+
+Two developments make the problem newly tractable in principle. First, single-cell perturbation
+atlases have grown by orders of magnitude; Tahoe-100M~\cite{tahoe100m} provides roughly
+$100$ million drug-treated single-cell profiles across a panel of cancer cell lines. Second,
+single-cell foundation models~\cite{scgpt,geneformer} and, more specifically, the
+Cell2Sentence family~\cite{c2s,c2sscale} have shown that a cell's transcriptome can be serialised as
+a \emph{cell sentence} --- gene symbols listed in descending order of expression --- and modelled
+autoregressively by a pretrained language model. The combination invites an obvious experiment:
+fine-tune a cell-sentence language model on a large perturbation atlas and ask whether it learns
+drug-specific biology.
+
+This thesis reports that experiment and its outcome. The headline is negative, but the value is in
+\emph{why} it is negative and in how far the negative can be pushed before it stops being a property
+of the model and becomes a property of the data.
+
+\subsection{The question}
+
+We fine-tune \texttt{C2S-Scale-Pythia-1b} on Tahoe-100M and ask three questions in sequence:
+
+\begin{enumerate}
+  \item \textbf{Is the model any good?} Does it beat trivial baselines on a metric that is
+        \emph{calibrated} --- that is, on a metric a zero-information predictor cannot exploit?
+  \item \textbf{Does it use the drug at all?} If we hold the input cell fixed and change only the
+        drug token in the prompt, does the output change?
+  \item \textbf{If not, why not, and is it fixable?} Is the failure in the data, the architecture,
+        the training target, or the way the target is written down?
+\end{enumerate}
+
+The third question is where the work lives. A negative answer to (1) and (2) alone would restate
+what a growing benchmark literature already reports~\cite{ahlmanneltze,perturbench,kernfeld}. What
+this thesis adds is a mechanism for the failure, a repair that follows from the mechanism, and a
+quantitative bound on how much the repair can ever recover.
+
+\subsection{Summary of findings}
+
+\begin{description}
+  \item[The evaluation is the first result.] The metric the field standardises on is exploitable.
+        A zero-information baseline that places every gene at the middle rank scores
+        $\DEdr = 1.000$ --- above the noise ceiling ($0.76$) and above the model ($0.73$). The
+        ordering is inverted: less information yields a higher score. Under a Dynamic Range Fraction
+        analysis~\cite{miller} computed within plate, $\NIR$ is the only calibrated metric
+        ($\DRF = +0.446$); every rank- and correlation-based prediction metric we tested has a
+        negative $\DRF$, meaning it rewards the generic gene ordering rather than the drug.
+
+  \item[The model is drug-blind.] On every instrument that isolates the drug --- forced-choice
+        grading, output invariance, the scramble ablation, and $\NIR$ --- the model is at chance and
+        statistically indistinguishable from a prompt carrying the \emph{wrong} drug. A
+        zero-drug-information control-copy baseline scores $0.766$ against the model's $0.768$.
+
+  \item[The blindness is a readout failure, not an encoding failure.] Drug identity is linearly
+        decodable from the residual stream at $82\%$ (layer 9) and rises to $0.88$ by layer 16 once
+        context is projected out, while the drug subspace's causal variance share stays flat near
+        $3\%$. A matched-norm activation swap --- overwriting drug A's code with drug B's inside the
+        confound-purified drug subspace --- perturbs the output \emph{no more than matched noise} at
+        every depth tested. The generation readout is sensitive to the \emph{magnitude} of activity
+        in the drug region and blind to its \emph{direction}.
+
+  \item[No target-side fix works.] Entropic optimal-transport regularisation gives a one-parameter
+        family whose endpoints are exactly the two target-side repairs we tried. Sweeping it leaves
+        the model drug-blind at every point.
+
+  \item[The bottleneck is the tokenisation.] Because a cell sentence ranks genes by expression,
+        $83\%$ of the target tokens are identical between any two drugs in the same context.
+        Cross-entropy therefore allocates roughly $1\%$ of its gradient to drug identity.
+        Re-encoding the target as the \emph{drug-specific residual} raises the differing fraction to
+        $60\%$ and produces the first non-null drug effect in this project:
+        $\gap = \ci{+0.143}{+0.111}{+0.179}$.
+
+  \item[And it generalises.] On a holdout keyed at the (drug, cell line) level, conditions whose
+        \emph{pairing} was never trained on score $\gap = \ci{+0.1002}{+0.0661}{+0.1368}$
+        ($n=250$, 38 cell lines), statistically indistinguishable from the trained split's
+        $+0.0898$. There is no memorisation premium: the model learned a drug representation that
+        transfers to cell lines in which it never saw that drug.
+
+  \item[But a lookup table wins.] A per-drug mean residual measured in \emph{other} cell lines
+        scores $\NIR = 0.963$ against a replicate ceiling of $0.968$; the $1$B-parameter model
+        reaches $0.639$. If a drug's response is largely a per-drug constant, then a conditional
+        generative model has almost nothing to condition on --- which would make the failure of
+        every conditional arm structural rather than an engineering shortfall.
+        \pending{the transfer coefficient $\Tcoef$ quantifies ``largely''; see
+        Section~\ref{sec:res-transfer}}
+\end{description}
+
+\subsection{Contributions}
+
+\begin{enumerate}
+  \item A \textbf{metric-calibration audit} demonstrating that the standard evaluation for
+        single-cell perturbation prediction is saturated by a control regression-to-the-mean
+        artifact, with a zero-information baseline that scores above the noise ceiling. This
+        transfers to any work using $\DEdr$-family metrics.
+  \item A \textbf{mechanistic localisation} of drug-blindness to the generation readout, using
+        logit-space ablation with a confound-purified subspace, a passing removal gate, a positive
+        control, and a translation-clean matched-norm swap.
+  \item A \textbf{repair} --- residual target encoding --- that produces drug use which generalises
+        to unseen (drug, cell line) pairings with no memorisation premium.
+  \item A \textbf{quantitative bound} on the remaining headroom, separating the per-drug main effect
+        from the drug$\times$cell-line interaction. \pending{$\Tcoef$}
+\end{enumerate}
+
+\subsection{Outline}
+
+Section~\ref{sec:litreview} places the work against single-cell foundation models, the perturbation
+prediction literature, the baseline critique, and the connectivity-mapping tradition whose central
+assumption this thesis ends up measuring. Section~\ref{sec:methods} describes the data, the model,
+the metric-calibration framework, and --- at length, because they are load-bearing --- the controls
+that make each negative result interpretable. Section~\ref{sec:results} reports the results in the
+order the argument requires. Section~\ref{sec:limitations} states the scope honestly, including the
+channels closed by measurement and the ones merely untested. Section~\ref{sec:conclusions} concludes.

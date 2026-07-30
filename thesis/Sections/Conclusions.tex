@@ -1,0 +1,72 @@
+\section{Conclusions}
+\label{sec:conclusions}
+
+This thesis asked whether a large language model fine-tuned on the largest available single-cell
+drug-perturbation atlas learns drug-specific biology. It does not --- and the interesting content is
+in the chain of results establishing why, how far the failure can be repaired, and what bounds the
+repair.
+
+\paragraph{The evaluation had to be fixed first.} The metric the field standardises on is exploitable:
+a zero-information baseline placing every gene at the middle rank scores $\DEdr = 1.000$, above both
+the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed within plate, only
+$\NIR$ --- a discrimination metric, in which the generic response cancels --- is calibrated. Every
+rank- and correlation-based prediction metric tested is inverted. This is the most portable result
+here, since it applies to any work scored on $\DEdr$-family metrics.
+
+\paragraph{The model is drug-blind, and the blindness is a readout failure.} Four independent
+instruments agree that swapping the drug token changes the output by nothing. Yet drug identity is
+linearly decodable from the residual stream, rising to $0.88$ by layer 16 with context removed,
+while the purified drug subspace's causal variance share stays flat near $3\%$. A matched-norm swap
+--- overwriting one drug's code with another's --- moves the output no more than matched noise at
+every depth. The model computes an increasingly explicit drug representation and sets it aside. Read
+through representational selectivity, the asymmetry is principled: cell-line conditioning is a fixed
+lookup that emitting any plausible profile requires, whereas drug$\rightarrow$gene response demands
+flexible composition and never enters the causally active subspace.
+
+\paragraph{The bottleneck was the tokenisation, and it is repairable.} Because a cell sentence ranks
+genes by expression, $83\%$ of the target tokens are identical between any two drugs in the same
+context, so cross-entropy allocates roughly $1\%$ of its gradient to drug identity. This explains a
+uniform pattern of failure: an entire $\varepsilon$-ladder of target constructions, from a single
+state-matched treated cell to a full pseudobulk collapse, is drug-blind at every point, because all
+of them change \emph{what the target is} and none change \emph{what the tokens encode}. Re-encoding
+the target as the drug-specific residual raises the differing fraction to $60\%$ and produces the
+first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
+matched control that stays null.
+
+\paragraph{And the repaired drug use generalises.} On a holdout keyed at the (drug, cell line) level,
+pairings never seen in training score \ci{+0.1002}{+0.0661}{+0.1368}, indistinguishable from trained
+conditions. There is no memorisation premium: the model learned a drug representation that transfers
+to contexts in which it never observed that drug. Held-out \emph{drugs} remain null, the control
+firing as designed.
+
+\paragraph{But a lookup table wins, and that is the finding.} A per-drug mean residual measured in
+other cell lines scores $0.963$ against a $0.968$ replicate ceiling; the model reaches $0.639$. If a
+drug's transcriptional response is largely a per-drug constant, then a conditional generative model
+has almost nothing to condition on, and the uniform failure of the conditional arms is structural
+rather than an engineering shortfall --- the correct formulation of this task would be retrieval, not
+generation. \pending{the transfer coefficient quantifies ``largely''; the claim is qualitative until
+it lands}
+
+That conclusion connects this work to an assumption the field has carried since the Connectivity
+Map: that a compound induces a characteristic signature stable enough across cellular contexts for
+signature-similarity querying to be meaningful. This thesis measures that assumption directly, with
+a calibrated metric and a proper replicate ceiling, at single-cell resolution --- and the modern
+finding that a per-perturbation mean is hard to beat may be less a warning about weak baselines than
+a restatement of it.
+
+\paragraph{What would change the conclusion.} A drug$\times$cell-line interaction large enough to be
+resolvable would restore a conditional target that no lookup can reach. A working drug-side
+information channel --- most plausibly protein target rather than chemical structure, which is closed
+by measurement, or mechanism at the granularity tested, which is also closed --- would reopen the
+unseen-drug question that the present work scopes itself out of. Both are single measurements, both
+require no GPU time, and both are specified in Section~\ref{sec:limitations}.
+
+\paragraph{A note on method.} The substantive results here rest on controls that were added in
+response to specific objections: plate-matched comparison sets after a zero-information baseline
+scored $0.766$ cross-plate; a swap-distance sweep after it was pointed out that scrambling to a
+similar drug is a weak test; a removal gate before trusting any ablation null; matched-norm
+injection before reading a swap; clustered bootstraps over cell lines rather than conditions; and a
+pre-registered interpretation written before the decisive result, whose middle branch is the one
+that fired. Several claims were retracted along the way and are struck rather than deleted. In a
+literature where the central problem is that uninformative baselines score well, the controls are
+not an appendix to the result --- they are most of it.

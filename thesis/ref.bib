@@ -1,0 +1,221 @@
+% ===========================================================================
+% ref.bib
+%
+% ⚠ EVERY ENTRY IS FLAGGED. The SUBSTANCE of each work is characterised
+% correctly in the text (what the paper shows, why it matters here), but the
+% bibliographic DETAILS -- year, venue, volume, author order, DOI -- were
+% written from memory and MUST be checked against the actual source before
+% submission. Replace each "% [VERIFY]" with "% [OK <date>]" once confirmed.
+%
+% Fastest route: look each up on Google Scholar / PubMed / bioRxiv and paste
+% the exported BibTeX over the entry, keeping the citation key unchanged so
+% the .tex files do not need editing.
+% ===========================================================================
+
+% --------------------------------------------------------------- data & models
+
+% [VERIFY] Vevo Therapeutics / Arc Institute. Check author list and whether the
+% 2025 preprint has since appeared in a journal.
+@article{tahoe100m,
+  title   = {Tahoe-100M: A giga-scale single-cell perturbation atlas},
+  author  = {{Vevo Therapeutics}},
+  journal = {bioRxiv},
+  year    = {2025},
+  note    = {Dataset: \url{https://huggingface.co/datasets/tahoebio/Tahoe-100M}}
+}
+
+% [VERIFY] Levine et al., Cell2Sentence. Believed ICML 2024; there is also an
+% earlier bioRxiv version -- cite whichever the reader should find.
+@inproceedings{c2s,
+  title     = {Cell2Sentence: Teaching Large Language Models the Language of Biology},
+  author    = {Levine, Daniel and others},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024}
+}
+
+% [VERIFY] C2S-Scale. The project has been using bioRxiv 2025.04.14.648850v4 --
+% confirm the DOI and the final author list.
+@article{c2sscale,
+  title   = {Scaling Large Language Models for Next-Generation Single-Cell Analysis},
+  author  = {{C2S-Scale authors}},
+  journal = {bioRxiv},
+  year    = {2025},
+  note    = {2025.04.14.648850}
+}
+
+% [VERIFY] Cui et al., scGPT, Nature Methods 2024.
+@article{scgpt,
+  title   = {scGPT: toward building a foundation model for single-cell multi-omics using generative AI},
+  author  = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Wang, Bo},
+  journal = {Nature Methods},
+  year    = {2024}
+}
+
+% [VERIFY] Theodoris et al., Geneformer, Nature 2023, vol 618.
+@article{geneformer,
+  title   = {Transfer learning enables predictions in network biology},
+  author  = {Theodoris, Christina V. and others},
+  journal = {Nature},
+  year    = {2023}
+}
+
+% --------------------------------------------------- perturbation prediction
+
+% [VERIFY] Roohani, Huang, Leskovec. Nature Biotechnology 2023.
+@article{gears,
+  title   = {Predicting transcriptional outcomes of novel multigene perturbations with GEARS},
+  author  = {Roohani, Yusuf and Huang, Kexin and Leskovec, Jure},
+  journal = {Nature Biotechnology},
+  year    = {2023}
+}
+
+% [VERIFY] Lotfollahi et al., CPA. Molecular Systems Biology 2023.
+@article{cpa,
+  title   = {Predicting cellular responses to complex perturbations in high-throughput screens},
+  author  = {Lotfollahi, Mohammad and others},
+  journal = {Molecular Systems Biology},
+  year    = {2023}
+}
+
+% [VERIFY] Lotfollahi, Wolf, Theis. scGen. Nature Methods 2019.
+@article{scgen,
+  title   = {scGen predicts single-cell perturbation responses},
+  author  = {Lotfollahi, Mohammad and Wolf, F. Alexander and Theis, Fabian J.},
+  journal = {Nature Methods},
+  year    = {2019}
+}
+
+% [VERIFY] Replogle et al., genome-scale Perturb-seq. Cell 2022.
+@article{replogle,
+  title   = {Mapping information-rich genotype-phenotype landscapes with genome-scale Perturb-seq},
+  author  = {Replogle, Joseph M. and others},
+  journal = {Cell},
+  year    = {2022}
+}
+
+% [VERIFY] Norman et al., Science 2019.
+@article{norman,
+  title   = {Exploring genetic interaction manifolds constructed from rich single-cell phenotypes},
+  author  = {Norman, Thomas M. and others},
+  journal = {Science},
+  year    = {2019}
+}
+
+% [VERIFY] Peidli et al., scPerturb. Nature Methods 2024.
+@article{scperturb,
+  title   = {scPerturb: harmonized single-cell perturbation data},
+  author  = {Peidli, Stefan and others},
+  journal = {Nature Methods},
+  year    = {2024}
+}
+
+% ------------------------------------------------- the baseline critique
+
+% [VERIFY] Ahlmann-Eltze, Huber, Anders. bioRxiv 2024; believed to have appeared
+% in Nature Methods 2025. THIS IS THE MOST IMPORTANT CITATION IN THE THESIS --
+% get the version and title exactly right.
+@article{ahlmanneltze,
+  title   = {Deep learning-based predictions of gene perturbation effects do not yet outperform simple linear baselines},
+  author  = {Ahlmann-Eltze, Constantin and Huber, Wolfgang and Anders, Simon},
+  journal = {Nature Methods},
+  year    = {2025}
+}
+
+% [VERIFY] Kernfeld et al. -- systematic comparison of expression forecasting
+% methods. Confirm title, year and venue.
+@article{kernfeld,
+  title   = {A systematic comparison of computational methods for expression forecasting},
+  author  = {Kernfeld, Eric and others},
+  journal = {bioRxiv},
+  year    = {2023}
+}
+
+% [VERIFY] PerturBench. Confirm authors and venue.
+@article{perturbench,
+  title   = {PerturBench: Benchmarking Machine Learning Models for Cellular Perturbation Analysis},
+  author  = {{PerturBench authors}},
+  journal = {arXiv},
+  year    = {2024}
+}
+
+% [VERIFY] Miller et al. 2025 -- the Dynamic Range Fraction framework this
+% thesis ports. Confirm the exact reference; the project has been citing it as
+% "Miller et al. 2025" throughout.
+@article{miller,
+  title   = {Dynamic range and the calibration of metrics for single-cell perturbation prediction},
+  author  = {Miller, and others},
+  journal = {bioRxiv},
+  year    = {2025}
+}
+
+% ----------------------------------------------- connectivity mapping / L1000
+
+% [VERIFY] Lamb et al., Science 2006, vol 313, pp 1929--1935.
+@article{cmap,
+  title   = {The Connectivity Map: using gene-expression signatures to connect small molecules, genes, and disease},
+  author  = {Lamb, Justin and others},
+  journal = {Science},
+  year    = {2006}
+}
+
+% [VERIFY] Subramanian et al., Cell 2017, vol 171. Source of the 978-gene L1000
+% landmark set that defines this thesis's gene panel.
+@article{l1000,
+  title   = {A Next Generation Connectivity Map: L1000 Platform and the First 1,000,000 Profiles},
+  author  = {Subramanian, Aravind and others},
+  journal = {Cell},
+  year    = {2017}
+}
+
+% ------------------------------------------------------------ interpretability
+
+% [VERIFY] Gurnee et al. -- the representational-selectivity / privileged-subspace
+% framing. CHECK WHICH PAPER: the project has cited "Gurnee et al." for
+% selectivity, but Gurnee has several relevant works ("Finding Neurons in a
+% Haystack", "Language Models Represent Space and Time", "Universal Neurons").
+% Pick the one that actually supports the claim made in Section 4, or replace.
+@article{gurnee,
+  title   = {Finding Neurons in a Haystack: Case Studies with Sparse Probing},
+  author  = {Gurnee, Wes and others},
+  journal = {Transactions on Machine Learning Research},
+  year    = {2023}
+}
+
+% ------------------------------------------------------------ optimal transport
+
+% [VERIFY] Cuturi, NeurIPS 2013. This one is safe.
+@inproceedings{cuturi,
+  title     = {Sinkhorn Distances: Lightspeed Computation of Optimal Transport},
+  author    = {Cuturi, Marco},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2013}
+}
+
+% [VERIFY] Schiebinger et al., Waddington-OT. Cell 2019, vol 176.
+@article{schiebinger,
+  title   = {Optimal-Transport Analysis of Single-Cell Gene Expression Identifies Developmental Trajectories in Reprogramming},
+  author  = {Schiebinger, Geoffrey and others},
+  journal = {Cell},
+  year    = {2019}
+}
+
+% [VERIFY] Lopez et al., scVI. Nature Methods 2018.
+@article{scvi,
+  title   = {Deep generative modeling for single-cell transcriptomics},
+  author  = {Lopez, Romain and Regier, Jeffrey and Cole, Michael B. and Jordan, Michael I. and Yosef, Nir},
+  journal = {Nature Methods},
+  year    = {2018}
+}
+
+% ===========================================================================
+% STILL TO ADD
+%   - the DrEval critique (referenced in FINDINGS' thesis spine; find the
+%     actual paper and add it -- the spine calls this work "the single-cell,
+%     transformer extension of the DrEval critique", so it must be cited)
+%   - MolFormer, for the SAR gate's chemical embedding
+%   - RDKit / Morgan fingerprints (Rogers & Hahn 2010, "Extended-Connectivity
+%     Fingerprints", JCIM)
+%   - Pythia (Biderman et al. 2023) for the backbone
+%   - Benjamini-Hochberg for the FDR procedure
+%   - a Cellosaurus reference for cell-line identifiers
+% ===========================================================================

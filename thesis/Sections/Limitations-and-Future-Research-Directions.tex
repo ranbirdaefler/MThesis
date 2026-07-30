@@ -1,0 +1,105 @@
+\section{Limitations and Future Research Directions}
+\label{sec:limitations}
+
+\subsection{Limitations of scope}
+
+\paragraph{Drug coverage.} The residual analysis is built on a cache of $620{,}564$ cells covering
+$106$ drugs across $50$ cell lines, sampled from Tahoe's shards --- roughly a tenth of the atlas's
+compound set. This is ample to test whether the model uses the drug, and to measure transfer, but it
+is not a population estimate. Any claim about the \emph{distribution} of drug behaviours should be
+read against the broader characterisation, which used $6{,}628$ conditions.
+
+\paragraph{Only reproducible conditions.} The residual arm retains the $62\%$ of conditions whose
+residual reproduces across a half-split ($\cos > 0.2$). This is the right choice --- training on
+irreproducible residuals is training on noise --- but it means results describe the winnable
+fraction of the task, not all of it. The filter may additionally select \emph{toward}
+context-independent conditions, which would bias the transfer coefficient upward; the analysis in
+Section~\ref{sec:methods-vardecomp} therefore reports both filtered and unfiltered estimates.
+
+\paragraph{Pseudobulk resolution.} Residuals are condition-level pseudobulks over $\geq 40$ treated
+cells. The single-cell heterogeneity of the response is not modelled in this frame, and the
+project's own earlier results show why: at single-cell resolution the drug moves a cell less than
+noise does (SNR $\approx 0.75$, median $0$ differentially expressed genes at FDR $q<0.05$).
+
+\paragraph{Cross-plate absolutes.} The residual-space scores are computed with comparison sets
+grouped by cell line rather than by plate. The \emph{difference} $\gap$ is leak-immune, because both
+arms share the same control cell, but the absolute $\NIR$ values in that frame are not directly
+comparable to the within-plate tables elsewhere. \todo{rescore the generation-free arms within plate
+--- this costs no GPU time}
+
+\paragraph{Frame coverage.} What fraction of the total perturbation response the drug-specific
+residual represents is \pending{$\lVert\resid\rVert/\lVert\shift\rVert$}. Until it is known, the
+correct reading of every positive and negative result in this thesis is bounded: closing the
+drug-specific component means one thing if it is most of the response and another if it is a tenth
+of it.
+
+\subsection{Limitations of the unseen-drug evaluation}
+
+Two defects, both of which must be stated rather than papered over.
+
+\paragraph{It is not a clean held-out-drug design.} The prompt contains
+\texttt{Mechanism: \{moa\}}, so holding out a drug still hands the model the held-out drug's class
+label. The correct design is leave-one-\emph{mechanism}-out. The leak is probably small ---
+\texttt{moa\_lookup} scores $0.529$, so the mechanism label carries little about the response --- but
+the design is wrong and no unseen-drug claim should be made until it is fixed.
+
+\paragraph{It is underpowered by construction.} The confidence interval half-width on the
+\texttt{unseen\_drug} gap is $\approx \pm 0.087$, against a maximum effect available through the
+mechanism channel of $\approx 0.033$. The arm therefore \emph{cannot} detect the largest effect it
+could plausibly be measuring. Its null is a statement about power, not about absence, and is
+reported as such.
+
+\subsection{Directions}
+
+\paragraph{Finish the bound.} The transfer coefficient (Section~\ref{sec:res-transfer}) is the
+single measurement that determines whether anything further is worth attempting. If the residual is
+a per-drug constant to measurement precision, the modelling question is closed and the correct
+formulation of this task is retrieval, not conditional generation.
+
+\paragraph{The one untested channel.} An unseen drug can only be predicted through a property it
+shares with drugs seen in training. Chemical structure is closed and mechanism-at-MoA-granularity is
+closed, but \emph{protein target} has never been tested --- and it is the channel a knowledge-based
+approach would exploit, since two structurally unrelated molecules inhibiting the same protein
+should produce related transcriptional responses. Tahoe's own metadata carries target annotations
+that no analysis in this work has read. The measurement is a lookup baseline exactly parallel to
+\texttt{moa\_lookup}, plus a count-matched null and a leave-drug-out multi-channel regression to
+close the ``a model would combine channels'' objection. It requires no GPU time.
+
+Two distinct mechanisms would be worth separating there: \emph{similarity transfer} (an unseen drug
+resembles a seen drug with the same target) and a \emph{compositional rule} (the named target's
+pathway moves, which applies to any drug whose target is named, including one with no similar drug
+in training). The second is the stronger result and does not reduce to a lookup.
+
+\paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
+axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks
+whether the control cell's state is used \emph{compositionally} with the drug. Its interest is
+contingent on the transfer coefficient --- if the residual is context-independent, predicting a new
+cell line reduces to recalling the drug's signature and ignoring the context.
+
+\paragraph{Objectives that were considered and rejected.} Recorded so they are not re-litigated:
+\begin{itemize}
+  \item \textbf{Reinforcement learning with a contrastive reward.} Its mechanism --- a per-sequence
+        reward, so the token-dilution ratio never enters the gradient --- attacks a bottleneck that
+        the residual encoding has already lifted ($34.6 \rightarrow 120.3$ differing tokens); and its
+        reward optimises similarity to the true residual, which is precisely what
+        \texttt{drug\_lookup} already achieves at $0.963$. Its best case is convergence to the
+        lookup.
+  \item \textbf{A differentiable profile-level contrastive loss.} The natural construction,
+        $\textrm{score}(g) = \sum_i P(\textrm{token}_i = g)\,w(i)$, presumes gene $\approx$ token,
+        but $86.9\%$ of the $946$ panel genes share a first sub-token under this tokeniser (mean
+        $3.254$ BPE tokens per gene, only 8 single-token). Under teacher forcing the difficulty
+        compounds: the residual target \emph{is} the drug signature, so the true prefix identifies
+        the drug within a handful of symbols and the gradient vanishes exactly at the
+        drug-blind solution the loss exists to penalise.
+  \item \textbf{Loss re-weighting toward differentially expressed genes.} Re-weighted cross-entropy
+        against a single target contains no negatives, so nothing in it forces the output for one
+        drug to differ from another's. Given that the readout is direction-blind
+        (Section~\ref{sec:res-mechanism}), it addresses token dilution but not the actual defect.
+\end{itemize}
+
+\paragraph{Generality.} Everything here is one backbone on one atlas in one representation. Whether
+the readout-specificity failure is a property of cell-sentence models specifically, or of
+autoregressive conditional generation over transcriptomes generally, is open. The mechanistic
+protocol of Section~\ref{sec:methods-probe} --- purified subspace, removal gate, positive control,
+matched-norm swap --- transfers unchanged to any model with an accessible residual stream, and is
+probably the most reusable artifact of this work.

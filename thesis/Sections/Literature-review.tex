@@ -1,0 +1,104 @@
+\section{Literature review}
+\label{sec:litreview}
+
+\todo{all citations carry a [VERIFY] flag in \texttt{ref.bib} --- venue and year must be checked
+against the sources before submission. The substance of each characterisation below is believed
+correct; the bibliographic details are not yet verified.}
+
+\subsection{Single-cell foundation models}
+
+Transformer models pretrained on large single-cell corpora --- scGPT~\cite{scgpt},
+Geneformer~\cite{geneformer} --- treat a cell's expression profile as a sequence and transfer to
+downstream tasks by fine-tuning. Cell2Sentence~\cite{c2s} takes a more literal route: it serialises
+a cell as a \emph{cell sentence}, the gene symbols ordered by descending expression, and fine-tunes
+an ordinary pretrained language model on the resulting text. C2S-Scale~\cite{c2sscale} scales this
+to larger backbones and adds perturbation-prediction tasks. The representation discards expression
+magnitude and retains only rank, a choice that Section~\ref{sec:res-encoding} shows is the decisive
+one for this task --- though not for the reason usually given.
+
+The appeal of the cell-sentence formulation is that it inherits a language model's pretrained
+priors over gene symbols. The cost, which this thesis quantifies, is that the token sequence is
+dominated by highly-expressed housekeeping genes that are identical across conditions.
+
+\subsection{Perturbation response prediction}
+
+Dedicated architectures for perturbation prediction include scGen~\cite{scgen}, which applies a
+latent-space arithmetic shift; CPA~\cite{cpa}, which disentangles perturbation and covariate
+factors; and GEARS~\cite{gears}, which uses a gene--gene knowledge graph to extrapolate to unseen
+genetic perturbations. These are largely developed on genetic perturbation atlases
+(Perturb-seq~\cite{replogle}, \cite{norman}), with scPerturb~\cite{scperturb} providing harmonised
+benchmarks across modalities.
+
+\subsection{The baseline critique --- and why it dictates our evaluation}
+
+A recent and now substantial line of work reports that these models do not outperform simple
+baselines. Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} show that deep learning predictions
+of perturbation effects do not yet beat linear baselines; Kernfeld et al.~\cite{kernfeld} reach a
+similar conclusion in a systematic comparison of expression-forecasting methods; and
+PerturBench~\cite{perturbench} formalises the comparison. The recurring finding is that a
+\emph{per-perturbation mean} --- predicting the average observed response of that perturbation --- is
+a remarkably strong baseline.
+
+Two things follow for this thesis. First, any claim we make must be anchored to a baseline
+comparison, not to an absolute score. Second, and more consequentially, the per-perturbation-mean
+result is not merely a warning about weak baselines: it is a statement about the \emph{structure of
+the data}. Section~\ref{sec:res-lookup} takes it as a hypothesis and measures it directly.
+
+Miller et al.~\cite{miller} supply the tool that makes this tractable. Their Dynamic Range Fraction
+(\DRF) grades a \emph{metric} rather than a model, by asking what fraction of the interval between a
+drug-agnostic baseline and a same-condition noise ceiling the metric actually resolves. Their
+argument is a steelman against work like ours --- that apparent single-cell nulls are metric
+miscalibration rather than model failure --- so our critique has to survive their test rather than
+sidestep it. Section~\ref{sec:res-metrics} reports that it does, and that on their own criterion
+only one of the five metrics we examined is calibrated.
+
+\subsection{Connectivity mapping and signature transfer}
+
+The Connectivity Map programme~\cite{cmap,l1000} built a drug-discovery methodology on a specific
+premise: that a compound induces a characteristic transcriptional signature which is stable enough
+across cellular contexts that querying a reference database by signature similarity is informative.
+The L1000 platform~\cite{l1000} operationalised this at scale, and the 978-gene landmark set it
+introduced defines the gene panel used throughout this thesis (intersected with Tahoe's measured
+genes, giving $946$ genes).
+
+That premise --- \emph{a drug's signature transfers across cell lines} --- is normally assumed
+rather than measured. Section~\ref{sec:res-transfer} measures it directly, noise-corrected, at
+single-cell resolution. The result determines whether a conditional model has anything left to
+predict once the per-drug constant is accounted for, and therefore whether the negative results in
+this thesis are engineering shortfalls or structural consequences.
+
+\subsection{Interpretability: decodable versus used}
+
+Linear probing establishes that information is \emph{present} in a representation, not that it is
+\emph{used}. The distinction is central here, because we find both: the drug is decodable at $82\%$
+and simultaneously ignored by generation. Resolving this requires causal intervention rather than
+probing --- activation patching and directional ablation --- and a matched-norm control, since an
+intervention that fails to move the output proves nothing unless a matched random intervention
+does.
+
+The framing we adopt is representational selectivity~\cite{gurnee}: models allocate their causally
+active subspace to computations that are always required, and information that is needed only for
+flexible, context-dependent composition may be represented without entering that subspace. Our
+result is a concrete instance --- cell-line identity is read automatically because emitting any
+plausible profile requires it, whereas drug$\rightarrow$gene response demands flexible composition
+and never enters the workspace.
+
+\subsection{Optimal transport for state matching}
+
+Optimal transport provides a principled way to pair untreated cells with the treated cells they
+plausibly become. Entropic regularisation with Sinkhorn iterations~\cite{cuturi} makes this
+tractable at scale, and Waddington-OT~\cite{schiebinger} established the approach in
+developmental single-cell trajectories. We use it in Section~\ref{sec:res-epsilon} not as a proposed
+method but as a \emph{controlled sweep}: the regularisation parameter $\varepsilon$ interpolates
+between two target constructions we had already tested independently, so a null across the sweep is
+conclusive in a way that a single failed attempt would not be. Couplings are computed in the latent
+space of the released Tahoe scVI model~\cite{scvi}.
+
+\subsection{Positioning}
+
+This thesis sits at the intersection of three of the above. From the baseline critique it takes the
+finding that simple predictors are hard to beat, and supplies a mechanism. From metric calibration
+it takes the instrument, and shows the standard metric fails the instrument's own test. From
+connectivity mapping it takes an assumption that has been load-bearing for two decades, and measures
+it. The contribution is not that a large model failed --- it is the account of why, localised to a
+specific component, repaired, and then bounded.

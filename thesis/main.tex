@@ -1,0 +1,33 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{amsmath} % Required for inserting some mathematical notations and commands
+\usepackage{hyperref} % Required for inserting hyperlinks
+\usepackage{graphicx} % Required for inserting images
+\usepackage{geometry} % Setting margins
+\usepackage{lipsum} % Sample text generation
+\usepackage{afterpage} % Required for \myemptypage
+\usepackage{setspace} % Required for setting line spacing
+\usepackage{booktabs} % Required for tables
+\usepackage[backend=biber, style=numeric, natbib=true, sorting=none]{biblatex} % Required for bibliography
+\addbibresource{ref.bib} % Adds the bibliography reference
+\raggedbottom
+
+\begin{document}
+\include{utilities}
+
+\myemptypage
+\myemptypage
+\include{Sections/Acknowledgements}
+\myemptypage
+
+\tableofcontents
+\newpage
+
+\include{Sections/Introduction}
+\include{Sections/Literature-review}
+\include{Sections/Methods}
+\include{Sections/Results-and-Analysis}
+\include{Sections/Limitations-and-Future-Research-Directions}
+\include{Sections/Conclusions}
+
+\printbibliography
+\end{document}

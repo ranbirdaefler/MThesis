@@ -1,0 +1,295 @@
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Data}
+\label{sec:methods-data}
+
+\paragraph{Corpus.} Tahoe-100M~\cite{tahoe100m}: drug-treated single-cell transcriptomes across
+cancer cell lines, with plate-matched DMSO controls. Metadata supplies cell line
+(Cellosaurus ID), drug, dose (\texttt{drugname\_drugconc}), plate, and a fine-grained
+mechanism-of-action annotation (\texttt{moa-fine}).
+
+\paragraph{Gene panel.} All analysis is restricted to the $946$ genes in the intersection of the
+L1000 landmark set~\cite{l1000} with Tahoe's measured genes. Expression is library-normalised to
+counts-per-10k and $\log1p$-transformed.
+
+\paragraph{A representational pitfall worth recording.} Tahoe's per-cell \texttt{genes} field holds
+\emph{vocabulary token identifiers}, not positional indices into the gene metadata table. Mapping
+them positionally scrambles gene identity silently --- values exceed the metadata row count, so the
+error surfaces only as an out-of-bounds index at the tail. All expression construction here maps
+\texttt{gene\_metadata['token\_id']} $\rightarrow$ gene symbol $\rightarrow$ panel index.
+Validation: a PCA cell-line probe on the resulting panel reaches $0.864$ against a chance rate of
+$0.02$.
+
+\paragraph{Splits.} Three evaluation tiers: \emph{tier 1} seen conditions, \emph{tier 2} unseen
+drugs, \emph{tier 3} unseen (drug, cell line) combinations.
+
+\subsection{Model and representation}
+
+\paragraph{Cell sentences.} A cell is written as its expressed panel genes in descending order of
+expression, terminated by \ENDCELL. The prompt supplies cell line, drug, dose, mechanism, and the
+untreated control cell's own sentence; the response is the treated cell's sentence.
+
+\paragraph{Backbone.} \texttt{C2S-Scale-Pythia-1b}~\cite{c2sscale}, cold-started for every arm from
+the same base checkpoint with identical hyperparameters (1 epoch, learning rate $10^{-5}$,
+gradient accumulation 16, maximum length 8192, bf16), so that in each experiment the training
+target or objective is the only variable.
+
+\paragraph{Sentinels.} \ENDCELL{} and, for the residual arm, \DOWN{} are registered as atomic
+special tokens. This matters: unregistered, \DOWN{} splits into sub-words and the up/down boundary
+ceases to be a clean symbol.
+
+\subsection{Metrics}
+\label{sec:methods-metrics}
+
+\paragraph{The standard metric.} $\DEdr$ correlates predicted and true differential expression
+against control over the top-$K$ differential genes. $\paneltau$ is Kendall's $\tau$ over the full
+panel.
+
+\paragraph{Normalised Inverse Rank.} For a prediction $\hat{y}$ of condition $i$, with truths
+$\{y_j\}$ over the comparison set,
+\begin{equation}
+  \NIR(\hat{y}, i) \;=\; \frac{1}{|J|}\sum_{j \in J}
+    \Big[\mathbf{1}\{\sigma(\hat{y}, y_i) > \sigma(\hat{y}, y_j)\}
+       + \tfrac{1}{2}\,\mathbf{1}\{\sigma(\hat{y}, y_i) = \sigma(\hat{y}, y_j)\}\Big],
+\end{equation}
+the fraction of \emph{other} conditions whose truth the prediction resembles less than its own,
+with ties counted at one half. Chance is $0.50$. Because the generic response is present in every
+condition's truth in equal measure, it cancels in the comparison: $\NIR$ is a
+\emph{discrimination} metric, and only the drug-specific difference decides it.
+
+The tie term is not cosmetic. In residual space (Section~\ref{sec:methods-residual}) a predictor of
+``the average drug response'' is exactly the zero vector, every similarity against it is zero, and a
+strict inequality scores it $0.000$ rather than the $0.500$ it deserves.
+
+\paragraph{Metric calibration (\DRF).} Following Miller et al.~\cite{miller}, each metric $m$ is
+graded rather than each model:
+\begin{equation}
+  \DRF(m) \;=\; \frac{m(\textrm{pos}) - m(\textrm{neg})}{m(\textrm{perfect}) - m(\textrm{neg})},
+\end{equation}
+with $\textrm{pos}$ an interpolated-duplicate noise ceiling and $\textrm{neg}$ a drug-agnostic
+leave-one-out mean. A negative \DRF{} means the metric scores the uninformative baseline
+\emph{above} the noise ceiling --- it is inverted, and rewards the generic gene ordering.
+
+\subsection{Controls}
+\label{sec:methods-controls}
+
+The negative results in this thesis are only as strong as the controls that make them
+interpretable. Each of the following was added in response to a specific objection.
+
+\paragraph{Plate confounding.} Drug and plate are partially confounded by Tahoe's design: each drug
+is assayed on its own plate(s), with roughly 4--12 drugs per plate and plate-matched controls.
+Discrimination grouped by cell line alone therefore lets the \emph{batch} signature stand in for
+drug identity --- demonstrated directly, in that a zero-drug-information control-copy baseline
+scores $\NIR = 0.766$ cross-plate. Every discrimination instrument gained a
+\texttt{--same\_plate\_only} mode and all discrimination results were re-run within plate.
+Conclusions are unchanged; some magnitudes shrink.
+
+\paragraph{The scramble ablation.} The central manipulation. The prompt is left byte-identical
+except that the drug name and mechanism are replaced by another drug's, while the control cell and
+the scoring truth are unchanged. Because both arms share the same control cell, control- and
+batch-derived leakage cancels in the \emph{difference} $\gap = \NIR_{\textrm{model}} -
+\NIR_{\textrm{scramble}}$. This is the only manipulation that isolates drug use, and every drug-use
+claim in this thesis is anchored to it rather than to a comparison against a drug-agnostic
+predictor.
+
+\paragraph{Swap similarity --- stratified scramble.} A scramble that swaps in a drug with a
+\emph{similar} true response is a weak test: an unchanged output would then be correct, not blind.
+This is a real risk here, because same-mechanism drugs are barely more similar than random pairs
+(within-MoA distance $2.322$ versus between-MoA $2.377$, ratio $0.977$), so ``different mechanism''
+does not imply ``different response''. Two remedies are used:
+\begin{enumerate}
+  \item a \emph{swap-distance sweep} that turns the single test into a curve of $\gap$ against the
+        response distance $\lVert y_A - y_B \rVert$ between the real and swapped-in drug; and
+  \item a \emph{stratified scramble} with three defined partners per condition chosen by residual
+        cosine within the cell line --- \texttt{near} (most similar), \texttt{orth} ($\cos\approx0$)
+        and \texttt{opposite} (most anti-correlated). Genuine drug use must produce a gap that
+        \emph{grows} across the strata; a flat profile is a red flag.
+\end{enumerate}
+
+\paragraph{Uncertainty.} All confidence intervals are clustered bootstraps resampling \emph{cell
+lines}, not conditions --- drugs within a cell line are pseudoreplicates, and an observation-level
+interval would be badly anti-conservative. For the transfer coefficient
+(Section~\ref{sec:methods-vardecomp}) the cluster is the \emph{drug}, since the estimand is a
+per-drug property.
+
+\paragraph{Generation validity.} Every generation-based evaluation reports the \ENDCELL{}/\DOWN{}
+completion rate, the fraction of emitted symbols that are valid panel genes, and the duplicate rate,
+before any score is quoted. This is not hygiene: a $600$-token generation cap silently truncated
+$26\%$ of generations in an early run and \emph{halved} the measured effect.
+
+\subsection{Mechanistic probing}
+\label{sec:methods-probe}
+
+To distinguish ``cannot represent the drug'' from ``represents but does not use it'':
+
+\paragraph{Decodability.} Per-layer linear probes on the residual stream at the last prompt token,
+predicting drug identity.
+
+\paragraph{Confound purification.} The raw drug subspace is partly a batch subspace --- probing
+dose and plate from \emph{inside} it recovers dose at $0.90$--$0.95$. A context subspace is built
+from the union of cell line, plate and dose, and the drug axis is orthogonalised against it. Every
+causal claim uses the purified subspace.
+
+\paragraph{Removal gate.} Before any ``ablating the drug does nothing'' result is trusted, the
+subspace must be shown to contain the drug: the fraction of above-chance probe accuracy removed by
+projecting it out must exceed $0.8$. Without this gate the null is unfalsifiable.
+
+\paragraph{Causal test.} Log-probabilities of the teacher-forced true response are read clean, then
+re-read with a forward hook projecting the subspace out at every position; the statistic is the mean
+KL divergence over response tokens. Measuring in logit space rather than by generating removes the
+sampling-noise floor that made an earlier steering experiment inconclusive.
+
+\paragraph{The identity test.} Ablation shows a subspace carries functional variance; it cannot show
+that the subspace's \emph{drug-specific content} is read. Only a swap can. For each cell that truly
+received drug A, drug A's code is overwritten with drug B's \emph{within the purified subspace}, and
+the resulting KL is compared against injecting a random vector of \emph{identical norm}. Drug means
+are estimated on a held-out half of the cells and the swap performed on the disjoint half, so
+mean-estimation noise cannot itself manufacture a null.
+
+\subsection{Target constructions}
+
+\paragraph{Consensus.} Cells grouped by (drug, cell line, dose) and averaged into one pseudobulk
+sentence, with every original prompt retained so only the response changes.
+
+\paragraph{Optimal transport.} For each (cell line, plate) group, a coupling $\pi$ between control
+and treated cells minimising $\sum_{ij}\pi_{ij}\lVert x_i - y_j\rVert^2$ under uniform marginals,
+solved by Sinkhorn iteration~\cite{cuturi} on $K = \exp(-C/\varepsilon)$. Couplings are computed in
+the released Tahoe scVI latent~\cite{scvi} ($n_{\textrm{latent}} = 10$), joined per cell by barcode
+rather than re-encoded --- a re-encode produced a degraded latent (cell-line probe $0.11$ versus
+$0.975$ for the shipped latent). Targets are built \emph{decoder-free}, as convex combinations of
+real treated cells in expression space, so they always lie on the data manifold.
+
+The regularisation parameter defines a ladder whose endpoints are experiments we had already run:
+$\varepsilon\rightarrow\infty$ gives a uniform coupling and hence the treated mean (consensus);
+$\varepsilon\rightarrow 0$ gives near-hard assignment, approximately a single state-matched treated
+cell. This is what makes the sweep conclusive rather than anecdotal.
+
+\subsection{Residual targets}
+\label{sec:methods-residual}
+
+For each condition (drug, cell line, plate, dose) with at least $40$ treated and $20$ plate-matched
+control cells:
+\begin{equation}
+  \resid(d,c) \;=\; \underbrace{\big(\bar{y}_{\textrm{treated}} - \bar{y}_{\textrm{control}}\big)}_{\shift(d,c)}
+  \;-\; \underbrace{\frac{1}{|D_c|}\sum_{d' \in D_c} \shift(d',c)}_{\textrm{generic}(c)} .
+\end{equation}
+The control subtraction removes the cell's own state; the mean-over-drugs subtraction removes the
+\emph{generic drug program} --- the stress and cell-cycle response common to all compounds, which
+Section~\ref{sec:res-metrics} shows accounts for essentially all of the model's apparent skill. What
+remains is what makes \emph{this} drug different.
+
+\paragraph{Scope.} The generic is estimated per \emph{cell line}, not per plate: reproducibility is
+$62\%$ at cell-line scope versus $19\%$ at plate scope, because a plate holds too few drugs to
+estimate the mean and subtracting a noisy mean injects noise.
+
+\paragraph{Reliability filter.} A condition is kept only if its residual reproduces across a
+half-split, $\cos(\resid_A, \resid_B) > 0.2$. This retains $4{,}091$ of $6{,}617$ conditions
+($62\%$); the remainder are noise.
+
+\paragraph{Encoding.} \texttt{<up genes> \DOWN{} <down genes> \ENDCELL}, $100$ genes per block,
+ordered by signed residual magnitude. Sign is biology, so it is given a symbol rather than being
+folded into a magnitude ranking.
+
+\paragraph{Scoring.} Predicted and true residuals are both mapped to a signed rank vector (top-$k$
+up positive, top-$k$ down negative, weight $1/\log_2(\textrm{rank}+1)$) so a generated sentence and
+a continuous truth are compared like for like; similarity is cosine and the score is $\NIR$ over
+other drugs in the same cell line.
+
+\subsection{Generalisation design}
+\label{sec:methods-holdout}
+
+A three-way split, keyed at the \textbf{(drug, cell line)} level so that every plate and dose of a
+held-out pair goes to the held-out split and no sibling condition leaks into training:
+\begin{description}
+  \item[\texttt{unseen\_drug}] every condition of a held-out drug. The model never sees the token.
+        This is the \emph{control}: given that chemical structure does not predict response
+        (Section~\ref{sec:res-scope}), it should fail, and its failing is what proves that any
+        transfer observed in \texttt{unseen\_combo} comes from having seen the drug.
+  \item[\texttt{unseen\_combo}] a held-out (drug, cell line) pair whose drug is seen in at least
+        three other cell lines. This is cross-context transfer and the scientifically meaningful
+        test.
+  \item[\texttt{train}] everything else.
+\end{description}
+
+\paragraph{Stratified sampling.} Evaluation samples conditions under an explicit per-split quota. A
+uniform draw reproduces the pool's proportions, which starves precisely the split the experiment
+exists to test: in a first run, $250$ constructed held-out combinations yielded only $33$ scored
+conditions, purely as an artifact of the sampler.
+
+\subsection{Baselines}
+\label{sec:methods-baselines}
+
+Each is a predictor of the drug-specific residual, scored through an identical pipeline --- same
+truths, same signed-rank encoding, same comparison set.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Baseline & Information used & Role \\
+\midrule
+\texttt{drug\_lookup}   & this drug's mean residual, all other cell lines & the bar to beat \\
+\texttt{drug\_lookup\_1} & this drug in \emph{one} other cell line & removes the averaging advantage \\
+\texttt{moa\_lookup}    & other drugs sharing this drug's MoA, same cell line & mechanism-leak diagnostic \\
+\texttt{control\_copy}  & none (predict the control cell) & must be $\approx 0.50$ \\
+\texttt{generic}        & none (predict the average response) & must be $\approx 0.50$ \\
+\texttt{random}         & none & floor \\
+\bottomrule
+\end{tabular}
+\caption{The baseline ladder. \texttt{drug\_lookup} is the pre-registered win condition: a lookup
+can reproduce a memorised average, so only a model that tailors the response to the control cell's
+state can beat it.}
+\label{tab:baselines}
+\end{table}
+
+\texttt{drug\_lookup\_1} selects a cell \emph{line} and averages that line's conditions rather than
+selecting a single condition, because $62\%$ of drugs are multi-dose and a single condition would
+confound ``different cell line'' with ``different dose''. Baselines are reported per split: on
+\texttt{unseen\_drug} the same-drug lookups are \emph{oracles}, since they read the held-out drug's
+own residuals, information the model is definitionally denied. \texttt{moa\_lookup} is not an oracle
+in any split, as it uses only drugs that were in training.
+
+\subsection{Variance decomposition}
+\label{sec:methods-vardecomp}
+
+To separate the per-drug main effect from the drug$\times$cell-line interaction we model
+\begin{equation}
+  \resid(d,c) \;=\; \beta(d) \;+\; \kappa(d,c) \;+\; \epsilon,
+  \qquad
+  \Tcoef \;=\; \frac{\operatorname{var}\beta}{\operatorname{var}\beta + \operatorname{var}\kappa},
+\end{equation}
+where $\beta$ is constant across cell lines and $\kappa$ is the interaction --- the only component a
+conditional model can win on. $\Tcoef$ is estimated by disattenuated cross-line correlation,
+\begin{equation}
+  \hat{\Tcoef} \;=\; \frac{\cos\!\big(\resid(d,c_1),\, \resid(d,c_2)\big)}
+                           {\sqrt{\rho(d,c_1)\,\rho(d,c_2)}},
+  \qquad
+  \rho \;=\; \frac{2\cos(\resid_A, \resid_B)}{1 + \cos(\resid_A, \resid_B)},
+\end{equation}
+with $\rho$ the Spearman--Brown reliability of the full-sample residual. Dividing out the
+reliability is essential: measurement noise alone depresses the raw cross-line cosine and would
+otherwise be read as interaction.
+
+Five controls accompany the estimate, each capable of changing the conclusion:
+\begin{enumerate}
+  \item \textbf{Control half-split.} The production target builder subtracts one control pseudobulk
+        from both halves, so control-estimation error is common to $\resid_A$ and $\resid_B$; this
+        inflates the reliability and biases $\Tcoef$ \emph{downward}, manufacturing apparent
+        interaction. Both builds are run and the bias reported.
+  \item \textbf{Negative control.} Different drugs sharing a plate. Must be $\approx 0$; if not,
+        the apparent transfer is incomplete generic removal or batch structure.
+  \item \textbf{Simulated null.} At $\kappa = 0$ the estimator does not return $1.0$. A simulation
+        calibrated to the measured noise level fixes the reference. In validation the raw cross-line
+        cosine at $\kappa = 0$ is $0.734$, which read naively reports $27\%$ interaction where the
+        truth is zero.
+  \item \textbf{Dose strata.} Same drug, same cell line, different dose is not cross-line transfer;
+        it is reported separately and serves as a reference scale.
+  \item \textbf{Leave-one-out generic.} The generic includes drug $d$, leaving a $-1/m$ self-term.
+\end{enumerate}
+Validation against planted ground truth recovers $\Tcoef = 1.00$, $0.70$ and $0.40$ to within
+$0.005$, and the different-drug negative control returns $-0.001$.
+
+Finally, $\lVert \resid \rVert / \lVert \shift \rVert$ reports what fraction of the total
+perturbation response the drug-specific frame covers --- the number that scopes every claim in this
+thesis. \pending{both quantities}
