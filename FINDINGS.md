@@ -34,6 +34,18 @@ under an opposite-signature swap, with a monotone dissimilarity gradient and a m
 control that stays null. So the drug-blindness is **not** an inherent limit of the architecture or the
 data — it is a consequence of how the prediction target is tokenized.
 
+**(4) …and that drug use GENERALIZES to unseen contexts, but is beaten by a lookup table (Q16).** On a
+tier-aligned three-way holdout, conditions whose **(drug, cell_line) pairing was never trained on** score
+**+0.1002 [+0.0661, +0.1368]** (n=250, 38 cell lines) — statistically indistinguishable from the trained
+split's +0.0898, i.e. **no memorization premium**: the model learned a drug representation that applies in
+cell lines it never saw that drug in, rather than memorizing pairings. Held-out *drugs* stay null, the
+control firing as designed. But the model recovers only a small fraction of the signature: a numpy lookup
+of the drug's mean residual from other cell lines scores **0.963** against a **0.968** replicate ceiling,
+while the 1B model reaches **0.639** (`model − drug_lookup` −0.3245; −0.1936 even against a *single*
+other cell line). This is the pre-registered "honest partial" branch of `arm1b_objective_spec.md` §7 —
+and it makes the thesis the single-cell cell-sentence-LLM instance of the CMap/LINCS-era result that a
+per-perturbation mean beats the deep model.
+
 ---
 
 ## Canonical datasets / models (use these; everything else is historical)
@@ -397,6 +409,68 @@ uses the *same* A on both arms, so that drift cancels.
   - **Reconstructed number is not stratified** (random partner), so +0.0150 understates by the same near-twin logic.
   - **Large headroom**: model 0.652 vs ceiling 0.964.
 - **Status:** ✅ **first non-null `model − scramble` in this project**, with a matched control and a monotone dissimilarity gradient. The bottleneck was **what the output tokens encode**, not the target's content (Q12/Q14) and not the drug's presence in the representation (Q13). ➡️ Next: stratify the reconstructed eval; fix the `[DOWN]` emission rate; **held-out conditions for generalization**; then stages 2–3 (profile-level contrastive loss, drug-conditioned modulation) per `docs/proposals/arm1b_objective_spec.md`. Artifacts: targets `/data/.../residual_targets/`, model `checkpoints/pythia_sft_residual/final`, results `RESULTS/re_residual_model.json`, `RESULTS/re_singlecell_model.json`, `RESULTS/re_ot_model.json`, `RESULTS/reconstructed_eval_v2.json`; log `logs/arm1b_ctrl_*.out`.
+
+### Q16. Does the residual model's drug use GENERALIZE, or is it a memorized lookup? (Arm 1b stage 1 — held-out evaluation)
+- **Why:** Q15's `+0.143` was measured on conditions that were **all trained on** (stated in its own caveats). Memorization *also* requires reading the drug token, so Q15 proves the token is read but **cannot** distinguish "learned a transferable drug representation" from "memorized a per-drug lookup". Since the pre-registered win condition in `arm1b_objective_spec.md` §5 is `model > drug_lookup`, and §7 pre-registers the "memorizes averages, adds no tailoring" branch, this is the test that decides which branch fired.
+- **How — methodology in full:**
+
+  **(1) Three-way holdout (`make_holdout` in `build_residual_targets.py`).** From the 4,091 reproducible conditions:
+  - `unseen_drug` — **every** condition of a held-out drug (11 drugs, 488 conditions). The model never sees the token. Given the SAR gate this *should* fail; it is the **control** proving that any transfer in `unseen_combo` comes from having seen the drug.
+  - `unseen_combo` — a held-out **(drug, cell_line) pair** whose drug is seen in ≥3 other cell lines (159 pairs, 250 conditions). **Cross-context transfer — the scientifically meaningful test**, and genuinely open given Q11's cell-line identifiability swing of 0.83.
+  - `train` — the remaining 3,353 conditions → **201,164 examples** (exactly 60 control cells per condition).
+  - **Dose/plate leak ruled out:** the split is keyed on `(drug, cell_line)`, so *every* plate and dose of a held-out pair goes to the held-out split. Verified in code, not assumed.
+
+  **(2) Two instrument bugs found and fixed — both would have hidden the result.**
+  - **Proportional-sampling dilution.** The first run built 250 `unseen_combo` conditions but scored only **33**: the eval drew a *uniform* 500 from the 4,091-condition pool, which reproduces the pool's proportions (3353/250/488 → 410/33/57, exactly). The transfer test was starved by the sampler, not by the build. Fixed with `--split_quota`, which allocates the generation budget where n is short. **Lesson: a stratified question needs a stratified sampler; a uniform draw silently answers a different question.**
+  - **Degenerate-tie NIR.** "Predict the average drug response" *is* the zero vector in residual space (the generic program is subtracted by construction), so every cosine against it is 0.0 and the strict `mean(own > x)` scored it **0.000**, not the 0.500 the header claimed. `nir_from_sims` is now tie-aware (Mann–Whitney convention). Ties are measure-zero for real vectors, so no other arm moved — `generic` now reads **0.500 exactly**, as designed.
+  - Also hardened: `--max_new_tokens` **default raised 600 → 1400** in `residual_eval.py` and `reconstructed_eval.py`. The 600 default is the Q15 scar (26% truncation halved a measured effect); leaving it as a default that one forgotten flag restores was an unacceptable footgun.
+
+  **(3) The baseline ladder (each a predictor of the drug-specific residual, scored through the identical pipeline — same truths, same signed-rank encoding, same comparison set).**
+
+  | baseline | information used | role |
+  |---|---|---|
+  | `drug_lookup` | this drug's mean residual in **all other cell lines** | THE bar — a lookup memorizes; only a model can adapt |
+  | `drug_lookup_1` | this drug in **ONE** other cell line (that line's conditions averaged) | removes the cross-line **denoising** advantage |
+  | `moa_lookup` | **other** drugs sharing this drug's MoA, same cell line | MoA-leak diagnostic (our prompt contains `Mechanism:`) |
+  | `control_copy` / `generic` / `random` | none | must sit at ~0.50 by construction |
+
+  `drug_lookup_1` picks a **cell line** and averages that line's conditions — *not* one condition — because 62% of drugs are multi-dose (Q11), so a single condition would confound "different cell line" with "different dose". It runs on a private `RandomState` so it cannot shift the generation stream.
+  **Baselines are reported per split**, because on `unseen_drug` the same-drug lookups are **oracles** — they read the held-out drug's own residuals, information the model is definitionally denied. `moa_lookup` is *not* an oracle (it uses drugs that were in training), so it is a fair contest in every split.
+
+- **Answer — YES. Drug use transfers to unseen contexts, with NO memorization premium.** (n=570 conditions, stratified `train=200 / unseen_combo=250 / unseen_drug=120`; validity clean first: 9,120 generations, `[DOWN]` 93%, up-block 124 / down-block 103, valid panel genes 98.9%, duplicates 1.4%.)
+
+  | split | n (cell lines) | model NIR | **opposite-swap gap** | verdict |
+  |---|---|---|---|---|
+  | train | 200 (40) | 0.657 | **+0.0898 [+0.0530, +0.1269]** | uses drug |
+  | **`unseen_combo`** | **250 (38)** | **0.650** | **+0.1002 [+0.0661, +0.1368]** | **CROSS-CONTEXT TRANSFER: YES** |
+  | `unseen_drug` | 120 (36) | 0.586 | +0.0195 [−0.0452, +0.0860] | null (as designed) |
+
+  **Memorization premium ≈ zero** (train +0.0898 vs unseen_combo +0.1002, CIs almost fully overlapping). Held-out (drug, cell_line) pairings score *as well as* trained ones → the model did **not** memorize pairings; it learned a drug representation that applies in cell lines it never saw that drug in. The `unseen_drug` null is the control firing correctly: same model, same instrument, drug token carrying no learned information → no gap.
+
+- **But the model loses to every drug-side lookup, and that is the pre-registered "honest partial" branch:**
+
+  | arm | NIR | `model −` arm (clustered CI over cell lines) |
+  |---|---|---|
+  | ceiling (within-condition replicate) | **0.968** | — |
+  | `drug_lookup` | **0.963** | **−0.3245 [−0.3539, −0.2975]** LOSES |
+  | **`drug_lookup_1`** | **0.832** | **−0.1936 [−0.2285, −0.1612]** LOSES |
+  | model | 0.639 | — |
+  | `moa_lookup` (n=143) | 0.529 | +0.1042 [+0.0144, +0.1882] wins |
+  | `generic` | **0.500** | +0.1388 [+0.1086, +0.1650] |
+  | `random` | 0.502 | — |
+  | `control_copy` | 0.478 | +0.1613 [+0.1314, +0.1907] |
+
+  On the held-out split specifically: `model − drug_lookup` **−0.3170**, `model − drug_lookup_1` **−0.1825**. So `arm1b_objective_spec.md` §7's middle branch has fired: *"> 0 but ≤ drug_lookup → the model memorizes per-drug averages but adds no cell-state tailoring; an honest partial result."* The transfer is real; the recovered fraction of the signature is small.
+
+- ⚠️ **RETRACTED before it entered this file: "`ceiling − drug_lookup = +0.004` ⇒ the drug residual is context-independent ⇒ the modelling target has vanished."** That reading is not supported by the comparison, for three reasons that all favour the lookup: (i) the **ceiling is scored against a HALF-sample truth** while every baseline is scored against the **FULL-sample** truth; (ii) `drug_lookup` averages ~38 conditions against the ceiling's single noisy half; (iii) **NIR near 0.96 is compressive** — a wide range of cosines collapses into a few thousandths. A lookup that merely *ties* a split-half ceiling in cosine is still compatible with much of the residual being cell-line-specific. The auto-verdict that asserted this has been removed from `residual_eval.py` and replaced by the caveats. *(Any log line reading "HEADROOM … has essentially vanished" predates the patch — ignore it.)*
+- **The two lookup arms genuinely disagree, and NIR cannot adjudicate — this is the open question.** `drug_lookup_1` sits **0.136 below the ceiling** despite using *more* cells than the ceiling's half-sample, which argues for real cell-line-specific structure. Yet averaging many lines recovers to 0.963 ≈ ceiling — and averaging can only remove **noise**, never the systematic miss of the target line's own interaction, so a large interaction should have left `drug_lookup` on a plateau well below the ceiling. Both readings survive in NIR because of the compression at (ii)–(iii) above. ➡️ **Resolvable only in cosine space:** a noise-corrected cross-cell-line transfer coefficient with control cells half-split and a same-plate/different-drug negative control. **That number sizes the entire remaining prize and nobody has computed it.**
+- **Caveats:**
+  - `unseen_drug` is **underpowered by construction**, so its null is uninformative: CI half-width ±0.087 against a maximum available MoA-channel effect of ~0.033. Report it as a *power* statement, never as evidence of absence.
+  - `unseen_drug` is also **not a clean tier-2 design** — the prompt contains `Mechanism: {moa}`, so a drug-level split hands the model the held-out drug's class label. Leave-one-MoA-out is the correct split. Mitigating: `moa_lookup` 0.529 says the leak is small.
+  - Absolute numbers here are **cross-plate**; the `model − scramble` *difference* is leak-immune (both arms share the same control cell), but the absolute NIRs are not directly comparable to within-plate tables elsewhere in this file.
+  - This model (`pythia_sft_residual_holdout2`) trained on 3,353 conditions vs Q15's 4,091, so its absolute gap (+0.09/+0.10) is **below** Q15's +0.143 — that is the holdout cost, not a regression.
+  - Cache still covers 106 of ~1,100 Tahoe drugs.
+- **Status:** ✅ **the drug use generalizes.** The residual encoding produces a drug representation that transfers to unseen (drug, cell_line) pairings with no memorization premium — the first genuine generalization result in this project. It does **not** beat a per-drug lookup, which is the pre-registered honest-partial outcome. ➡️ Next: the noise-corrected transfer coefficient (decides whether headroom exists); the drug-side **channel gate** (`targets` and `pubchem_cid` columns exist in `drug_metadata.parquet` and **no script has ever read them** — `sar_gate.py` probes only for SMILES, so the SAR negative closed *structure*, not *target*). Artifacts: targets `/data/.../residual_targets_holdout2/`, model `checkpoints/pythia_sft_residual_holdout2/final`, results `RESULTS/re_holdout2_stratified.json`; logs `logs/arm1b_gen_609403.out`, `logs/re_eval2_610304.out`.
 
 ---
 

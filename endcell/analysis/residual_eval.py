@@ -111,8 +111,15 @@ def cos(a, b):
 
 
 def nir_from_sims(own, others):
+    """Tie-aware (Mann-Whitney convention): ties count half. Without this a DEGENERATE predictor -- one
+    whose similarity to every truth is identical -- scores 0.000 instead of the 0.500 it deserves. That is
+    not hypothetical: 'predict the average drug response' IS the all-zero vector in residual space (the
+    generic program is subtracted out by construction), every cosine against it is 0.0, and the strict
+    `>` scored it 0.000 while the header claimed it must be ~0.50."""
     o = [x for x in others if x is not None]
-    return float(np.mean([own > x for x in o])) if o else None
+    if not o:
+        return None
+    return float(np.mean([1.0 if own > x else (0.5 if own == x else 0.0) for x in o]))
 
 
 # ----------------------------------------------------------------- prompts
@@ -143,6 +150,12 @@ def main():
                          "a handful of points can exclude zero by chance)")
     ap.add_argument("--min_split_cell_lines", type=int, default=10)
     ap.add_argument("--n_conditions", type=int, default=200)
+    ap.add_argument("--split_quota", default=None,
+                    help="stratified sampling by holdout split, e.g. "
+                         "'train=200,unseen_combo=250,unseen_drug=150'. Overrides --n_conditions. A "
+                         "UNIFORM sample reproduces the pool's proportions, so the held-out splits the "
+                         "run exists to test arrive starved (250 built unseen_combo conditions yielded "
+                         "only 33 scored in a 500-of-4091 draw). Spend the budget where n is short.")
     ap.add_argument("--k_samples", type=int, default=4)
     ap.add_argument("--k_sig", type=int, default=100)
     ap.add_argument("--min_treated", type=int, default=40)
@@ -158,7 +171,11 @@ def main():
                          "an irreproducible truth is meaningless)")
     ap.add_argument("--temperature", type=float, default=0.8)
     ap.add_argument("--top_p", type=float, default=0.9)
-    ap.add_argument("--max_new_tokens", type=int, default=600)
+    ap.add_argument("--max_new_tokens", type=int, default=1400,
+                    help="NEVER lower this. A signature is 100 up + [DOWN] + 100 down ~= 201 gene "
+                         "symbols at 2-4 BPE tokens each. At 600 the old default, 26%% of generations "
+                         "never reached [DOWN] and were scored with the whole down-block missing, which "
+                         "HALVED a measured effect (Q15). One forgotten flag was worth +0.0716 vs +0.1429.")
     ap.add_argument("--gen_batch_size", type=int, default=8)
     ap.add_argument("--bf16", action="store_true")
     ap.add_argument("--n_boot", type=int, default=2000)
@@ -301,6 +318,28 @@ def main():
         oth = [kept[k2]["residual"] for k2 in by_drug_all[d] if k2[1] != c]
         return np.mean(np.stack(oth), 0) if oth else None
 
+    rng_bl = np.random.RandomState(args.seed + 977)   # private: must not shift the generation stream
+
+    def bl_drug_lookup_1(key):
+        """Same drug, ONE randomly chosen other CELL LINE -- no cross-line averaging. drug_lookup averages
+        over many cell lines and so is DENOISED, while the ceiling is one noisy half against another; that
+        alone could explain a lookup sitting at the ceiling. This arm removes the averaging advantage.
+
+        Pick a LINE and average that line's conditions, do NOT pick one condition: 62% of drugs are
+        multi-dose (Q11), so a single condition confounds 'different cell line' with 'different dose' and
+        a low score would be unreadable.
+
+        READ IT AGAINST THE CEILING, NOT AGAINST drug_lookup. Under exact context-independence this is a
+        full-sample estimate of what the ceiling estimates from a half, so it should MEET or EXCEED the
+        ceiling; drug_lookup_1 < ceiling is conservative evidence that the residual IS cell-line-specific."""
+        d, c = key[0], key[1]
+        lines = sorted({k2[1] for k2 in by_drug_all[d] if k2[1] != c})
+        if not lines:
+            return None
+        pick = lines[rng_bl.randint(len(lines))]
+        v = [kept[k2]["residual"] for k2 in by_drug_all[d] if k2[1] == pick]
+        return np.mean(np.stack(v), 0) if v else None
+
     def bl_moa_lookup(key):
         d, c = key[0], key[1]
         m = moa_of.get(d)
@@ -332,7 +371,27 @@ def main():
         cond_list = [k for k in cond_list if k not in trained]
         logger.info(f"held-out-only: {len(cond_list)} conditions never trained on")
     rng.shuffle(cond_list)
-    cond_list = cond_list[:args.n_conditions]
+    if split_of and args.split_quota:
+        quota = {}
+        for part in args.split_quota.split(","):
+            k, _, v = part.partition("=")
+            quota[k.strip()] = int(v)
+        by_split_pool = defaultdict(list)
+        for k in cond_list:
+            by_split_pool[split_of.get(tuple(map(str, k)), "unknown")].append(k)
+        picked, short = [], []
+        for name, want in quota.items():
+            avail = by_split_pool.get(name, [])
+            picked.extend(avail[:want])
+            if len(avail) < want:
+                short.append(f"{name} {len(avail)}/{want}")
+        rng.shuffle(picked)
+        cond_list = picked
+        logger.info("stratified sample: " + ", ".join(
+            f"{n}={min(len(by_split_pool.get(n, [])), w)}" for n, w in quota.items())
+            + (f"   [SHORT: {'; '.join(short)}]" if short else ""))
+    else:
+        cond_list = cond_list[:args.n_conditions]
 
     for n, key in enumerate(cond_list):
         d, c, p, ds = key
@@ -391,6 +450,7 @@ def main():
         row["random"] = nir_from_sims(cos(rv, truth[key]), [cos(rv, t) for t in oth_truth])
         # ---- BASELINES (scored identically: same truths, same NIR, same comparison set) ----
         for bname, bvec in (("drug_lookup", bl_drug_lookup(key)),
+                            ("drug_lookup_1", bl_drug_lookup_1(key)),
                             ("moa_lookup", bl_moa_lookup(key)),
                             ("control_copy", -generic[c]),
                             ("generic", np.zeros(P, np.float32))):
@@ -437,18 +497,35 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
 
     means = {}
     for a in ("ceiling", "model", "scramble_near", "scramble_orth", "scramble_opposite",
-              "drug_lookup", "moa_lookup", "control_copy", "generic", "random"):
+              "drug_lookup", "drug_lookup_1", "moa_lookup", "control_copy", "generic", "random"):
         v = [r[a] for r in recs if r.get(a) is not None]
         if v:
             means[a] = float(np.mean(v))
             tag = ""
             if a == "drug_lookup":
                 tag = "   <- THE BAR: a lookup memorises a drug; only a model can adapt it"
+            elif a == "drug_lookup_1":
+                tag = "   <- same, ONE other cell line (no averaging) -> isolates transfer from denoising"
             elif a == "moa_lookup":
                 tag = "   <- MoA-leak diagnostic (our prompt contains 'Mechanism:')"
             elif a in ("control_copy", "generic"):
                 tag = "   <- must be ~0.50 (drug-agnostic by construction)"
             logger.info(f"    {a:18s} {means[a]:.3f}   (n={len(v)}){tag}")
+
+    # HEADROOM: what is left for ANY conditional model above a cross-cell-line lookup table. If this is
+    # ~0 the task has collapsed to retrieval -- the drug residual carries no cell-line-specific component
+    # resolvable above replicate noise, and no amount of modelling can recover one that is not there.
+    if "ceiling" in means and "drug_lookup" in means:
+        hr = means["ceiling"] - means["drug_lookup"]
+        logger.info(f"    >>> ceiling - drug_lookup = {hr:+.3f}  (NOT a headroom estimate -- see below)")
+        logger.info("        This difference CANNOT be read as 'how much a model could add'. Three "
+                    "asymmetries all favour the lookup: (i) the ceiling is scored against a HALF-sample "
+                    "truth while every baseline is scored against the FULL-sample truth; (ii) drug_lookup "
+                    "averages many cell lines while the ceiling is one noisy half vs another; (iii) NIR "
+                    "near 0.96 is compressive, so a wide range of cosines collapses into a few thousandths. "
+                    "A lookup that merely TIES a split-half ceiling in cosine is still compatible with much "
+                    "of the residual being cell-line-specific. Use drug_lookup_1 vs ceiling, and a "
+                    "noise-corrected transfer coefficient, to answer that question.")
 
     # head-to-head against each baseline, clustered CI -- the "is the model any GOOD" question,
     # which is separate from "does the model react to the drug token" (model - scramble).
@@ -456,7 +533,7 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     logger.info("  model - BASELINE (clustered CI over cell lines). Positive => the model beats a")
     logger.info("  predictor that needs no generation at all:")
     base_out = {}
-    for b in ("drug_lookup", "moa_lookup", "control_copy", "generic"):
+    for b in ("drug_lookup", "drug_lookup_1", "moa_lookup", "control_copy", "generic"):
         r = _clustered_ci(recs, "model", b, rng, args.n_boot)
         if r:
             m, lo, hi, n, ncl = r
@@ -551,6 +628,21 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                 logger.info(f"    {name:14s} n={n:4d} ({ncl:2d} cell lines)  model NIR={mo:.3f}  "
                             f"gap = {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  "
                             f"{'USES DRUG' if lo > 0 else 'null'}")
+                # Baselines PER SPLIT. Pooling them mixes regimes: on unseen_drug the lookup is an
+                # ORACLE -- it reads the held-out drug's true residuals, information the model is
+                # definitionally denied -- so only the train / unseen_combo rows are fair contests.
+                for b in ("drug_lookup", "drug_lookup_1", "moa_lookup"):
+                    rb = _clustered_ci(sub, "model", b, rng, args.n_boot)
+                    if rb:
+                        mb, lob, hib, nb, _ = rb
+                        gen_out[name][f"vs_{b}"] = {"gap": mb, "ci": [lob, hib], "n": nb}
+                        # Only the same-DRUG lookups are oracles on unseen_drug: they read the held-out
+                        # drug's own residuals, which the model is definitionally denied. moa_lookup uses
+                        # OTHER drugs that WERE in training, so it is a fair contest in every split.
+                        note = ("  (lookup is an ORACLE here -- reads the held-out drug's own residuals)"
+                                if name == "unseen_drug" and b.startswith("drug_lookup") else "")
+                        logger.info(f"        vs {b:14s} {mb:+.4f}  CI [{lob:+.4f}, {hib:+.4f}]  "
+                                    f"{'WINS' if lob > 0 else ('LOSES' if hib < 0 else 'tie')}{note}")
         g = gen_out.get("unseen_combo")
         if g and g.get("underpowered"):
             logger.info(f"    >>> CROSS-CONTEXT TRANSFER: UNTESTED -- only {g['n']} scorable held-out "

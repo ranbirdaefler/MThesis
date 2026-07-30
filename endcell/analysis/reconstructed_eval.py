@@ -106,7 +106,9 @@ def main():
     ap.add_argument("--truth_repro_thr", type=float, default=0.2)
     ap.add_argument("--temperature", type=float, default=0.8)
     ap.add_argument("--top_p", type=float, default=0.9)
-    ap.add_argument("--max_new_tokens", type=int, default=600)
+    ap.add_argument("--max_new_tokens", type=int, default=1400,
+                    help="NEVER lower this -- at 600 a quarter of generations are silently truncated "
+                         "before [DOWN] and the measured effect halves (Q15).")
     ap.add_argument("--gen_batch_size", type=int, default=8)
     ap.add_argument("--bf16", action="store_true")
     ap.add_argument("--n_boot", type=int, default=2000)
