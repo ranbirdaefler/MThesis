@@ -24,13 +24,20 @@
   note    = {Dataset: \url{https://huggingface.co/datasets/tahoebio/Tahoe-100M}}
 }
 
-% [VERIFY] Levine et al., Cell2Sentence. Believed ICML 2024; there is also an
-% earlier bioRxiv version -- cite whichever the reader should find.
+% [OK] Verified from the PDF. THE BACKBONE OF THIS THESIS. Proceedings of the
+% 41st ICML (2024); preprint bioRxiv 2023.09.11.557287, v4 posted 29 Oct 2024.
+% Code: github.com/vandijklab/cell2sentence
+% Key technical claim we build on AND complicate: expression is recoverable
+% from rank via a fitted log-linear model e_i = a_d*log(r_i) + b_d, with
+% R^2 = 0.815 on PBMC -- i.e. cell sentences preserve expression. Our finding
+% is that expression rank is nonetheless the wrong thing to preserve for DRUG
+% discrimination, since 83% of the ranked tokens are shared across drugs.
 @inproceedings{c2s,
   title     = {Cell2Sentence: Teaching Large Language Models the Language of Biology},
-  author    = {Levine, Daniel and others},
-  booktitle = {International Conference on Machine Learning (ICML)},
-  year      = {2024}
+  author    = {Levine, Daniel and Rizvi, Syed Asad and L{\'e}vy, Sacha and Pallikkavaliyaveetil, Nazreen and Zhang, David and Chen, Xingyu and Ghadermarzi, Sina and Wu, Ruiming and Zheng, Zihe and Vrkic, Ivan and Zhong, Anna and Raskin, Daphne and Han, Insu and de Oliveira Fonseca, Antonio Henrique and Ortega Caro, Josue and Karbasi, Amin and Dhodapkar, Rahul M. and van Dijk, David},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  note      = {Preprint: bioRxiv 2023.09.11.557287}
 }
 
 % [VERIFY] C2S-Scale. The project has been using bioRxiv 2025.04.14.648850v4 --
@@ -111,14 +118,84 @@
 
 % ------------------------------------------------- the baseline critique
 
-% [VERIFY] Ahlmann-Eltze, Huber, Anders. bioRxiv 2024; believed to have appeared
-% in Nature Methods 2025. THIS IS THE MOST IMPORTANT CITATION IN THE THESIS --
-% get the version and title exactly right.
+% [OK] Verified from Miller et al.'s bibliography (their ref 2). NOTE: my
+% earlier title was WRONG -- it is "gene perturbation effect prediction",
+% singular, not "predictions of gene perturbation effects". Journal version.
+% The SKEPTIC side of the dispute, on GENETIC perturbation.
 @article{ahlmanneltze,
-  title   = {Deep learning-based predictions of gene perturbation effects do not yet outperform simple linear baselines},
+  title   = {Deep-learning-based gene perturbation effect prediction does not yet outperform simple linear baselines},
   author  = {Ahlmann-Eltze, Constantin and Huber, Wolfgang and Anders, Simon},
   journal = {Nature Methods},
+  volume  = {22},
+  number  = {8},
+  pages   = {1657--1661},
+  year    = {2025},
+  doi     = {10.1038/s41592-025-02772-6}
+}
+
+% [OK] Verified from the PDF. THE PROPONENT side of the dispute. Introduces the
+% interpolated duplicate (positive control) and the Dynamic Range Fraction
+% (DRF). 14 Perturb-seq datasets, 13 metrics, 8 deep learning models. Finds
+% MSE and Pearson(delta_ctrl) poorly calibrated; WMSE, weighted R2 delta and
+% NIR consistently calibrated; and that under calibrated metrics deep models
+% DO beat mean/control/linear baselines. Scope: GENETIC perturbation.
+% This thesis ports their DRF framework and reaches the opposite conclusion on
+% DRUG perturbation -- using their own instrument.
+@article{miller,
+  title   = {Deep Learning-Based Genetic Perturbation Models Do Outperform Uninformative Baselines on Well-Calibrated Metrics},
+  author  = {Miller, Henry E. and Mejia, Gabriel M. and Leblanc, Francis J. A. and Wang, Bo and Swain, Brendan and de Lima Camillo, Lucas Paulo},
+  journal = {bioRxiv},
+  year    = {2025},
+  doi     = {10.1101/2025.10.20.683304},
+  note    = {Preprint, posted 21 October 2025. Shift Bioscience Ltd.}
+}
+
+% [OK] Verified from Miller et al.'s bibliography (their ref 10). THE SOURCE OF
+% NIR -- Miller ADOPTS it, calling it the metric "introduced by Wu et al.,
+% described as the 'transposed-rank' metric in that work". Cite this for NIR
+% itself and Miller for its calibration.
+@article{perturbench,
+  title   = {PerturBench: Benchmarking Machine Learning Models for Cellular Perturbation Analysis},
+  author  = {Wu, Yan and Wershof, Esther and Schmon, Sebastian M. and Nassar, Marcel and Osi{\'n}ski, B{\l}a{\.z}ej and Eksi, Ridvan and Zhang, Kun and Graepel, Thore},
+  journal = {arXiv preprint arXiv:2408.10609},
+  year    = {2024}
+}
+
+% [OK] Verified from Miller et al.'s bibliography (their ref 9). Source of the
+% weighted metrics (WMSE, weighted R2 delta) that DRF also finds calibrated.
+@article{mejia,
+  title   = {Diversity by design: Addressing mode collapse improves scRNA-seq perturbation modeling on well-calibrated metrics},
+  author  = {Mejia, Gabriel M. and Miller, Henry E. and Leblanc, Francis J. A. and Wang, Bo and Swain, Brendan and de Lima Camillo, Lucas Paulo},
   year    = {2025}
+}
+
+% [OK] Verified from Miller et al.'s bibliography. Further skeptic-side
+% benchmarks, useful for establishing that the negative reports are numerous.
+@article{csendes,
+  title   = {Benchmarking foundation cell models for post-perturbation {RNA-seq} prediction},
+  author  = {Csendes, Gerold and Sanz, Gema and Szalay, Krist{\'o}f Z. and Szalai, Bence},
+  journal = {BMC Genomics},
+  volume  = {26},
+  number  = {1},
+  pages   = {393},
+  year    = {2025}
+}
+
+@article{bendidi,
+  title   = {Benchmarking transcriptomics foundation models for perturbation analysis: one {PCA} still rules them all},
+  author  = {Bendidi, Ihab and Whitfield, Shawn and Kenyon-Dean, Kian and Ben Yedder, Hanene and El Mesbahi, Yassir and Noutahi, Emmanuel and Denton, Alisandra K.},
+  journal = {arXiv preprint arXiv:2410.13956},
+  year    = {2024}
+}
+
+@article{bunne,
+  title   = {How to build the virtual cell with artificial intelligence: Priorities and opportunities},
+  author  = {Bunne, Charlotte and Roohani, Yusuf and Rosen, Yanay and Gupta, Ankit and Zhang, Xikun and Roed, Marcel and Alexandrov, Theo and AlQuraishi, Mohammed and Brennan, Patricia and Burkhardt, Daniel B.},
+  journal = {Cell},
+  volume  = {187},
+  number  = {25},
+  pages   = {7045--7063},
+  year    = {2024}
 }
 
 % [OK] DrEval. Verified against the PDF: bioRxiv 2025.05.26.655288, posted
@@ -184,23 +261,7 @@
   year    = {2023}
 }
 
-% [VERIFY] PerturBench. Confirm authors and venue.
-@article{perturbench,
-  title   = {PerturBench: Benchmarking Machine Learning Models for Cellular Perturbation Analysis},
-  author  = {{PerturBench authors}},
-  journal = {arXiv},
-  year    = {2024}
-}
 
-% [VERIFY] Miller et al. 2025 -- the Dynamic Range Fraction framework this
-% thesis ports. Confirm the exact reference; the project has been citing it as
-% "Miller et al. 2025" throughout.
-@article{miller,
-  title   = {Dynamic range and the calibration of metrics for single-cell perturbation prediction},
-  author  = {Miller, and others},
-  journal = {bioRxiv},
-  year    = {2025}
-}
 
 % ----------------------------------------------- connectivity mapping / L1000
 

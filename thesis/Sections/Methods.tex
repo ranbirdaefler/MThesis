@@ -46,8 +46,11 @@ ceases to be a clean symbol.
 against control over the top-$K$ differential genes. $\paneltau$ is Kendall's $\tau$ over the full
 panel.
 
-\paragraph{Normalised Inverse Rank.} For a prediction $\hat{y}$ of condition $i$, with truths
-$\{y_j\}$ over the comparison set,
+\paragraph{Normalised Inverse Rank.} Introduced by Wu et al.\ in
+PerturBench~\cite{perturbench} (there called the ``transposed-rank'' metric) and identified by
+Miller et al.~\cite{miller} as one of the few consistently calibrated metrics across 14 Perturb-seq
+datasets. For a prediction $\hat{y}$ of condition $i$, with truths $\{y_j\}$ over the comparison
+set,
 \begin{equation}
   \NIR(\hat{y}, i) \;=\; \frac{1}{|J|}\sum_{j \in J}
     \Big[\mathbf{1}\{\sigma(\hat{y}, y_i) > \sigma(\hat{y}, y_j)\}
@@ -62,14 +65,23 @@ The tie term is not cosmetic. In residual space (Section~\ref{sec:methods-residu
 ``the average drug response'' is exactly the zero vector, every similarity against it is zero, and a
 strict inequality scores it $0.000$ rather than the $0.500$ it deserves.
 
-\paragraph{Metric calibration (\DRF).} Following Miller et al.~\cite{miller}, each metric $m$ is
-graded rather than each model:
+\paragraph{Metric calibration (\DRF).} We port the framework of Miller et al.~\cite{miller}, in
+which each \emph{metric} is graded rather than each model, by asking how well it separates a
+positive from a negative control:
 \begin{equation}
   \DRF(m) \;=\; \frac{m(\textrm{pos}) - m(\textrm{neg})}{m(\textrm{perfect}) - m(\textrm{neg})},
 \end{equation}
-with $\textrm{pos}$ an interpolated-duplicate noise ceiling and $\textrm{neg}$ a drug-agnostic
-leave-one-out mean. A negative \DRF{} means the metric scores the uninformative baseline
-\emph{above} the noise ceiling --- it is inverted, and rewards the generic gene ordering.
+with $\textrm{pos}$ an interpolated-duplicate noise ceiling --- their positive control, which
+interpolates a technical duplicate toward the mean baseline with per-gene weights given by
+differential-expression significance --- and $\textrm{neg}$ a drug-agnostic leave-one-out mean. A
+negative \DRF{} means the metric scores the uninformative baseline \emph{above} the noise ceiling:
+it is inverted, and rewards the generic gene ordering rather than the drug.
+
+Adopting this framework is deliberate. Miller et al.\ use it to argue that reports of deep models
+failing to beat uninformative baselines reflect miscalibrated evaluation rather than model failure
+(Section~\ref{sec:lit-dispute}). Evaluating our model on the metric \emph{their} analysis endorses
+means the result reported in Section~\ref{sec:res-blind} cannot be dismissed on the grounds their
+own paper raises.
 
 \subsection{Controls}
 \label{sec:methods-controls}

@@ -35,17 +35,41 @@ We fine-tune \texttt{C2S-Scale-Pythia-1b} on Tahoe-100M and ask three questions 
         the training target, or the way the target is written down?
 \end{enumerate}
 
-The third question is where the work lives. A negative answer to (1) and (2) alone would restate
-what a growing critical literature already reports~\cite{dreval,ahlmanneltze,perturbench,kernfeld}.
-What this thesis adds is a mechanism for the failure, a repair that follows from the mechanism, and
-a quantitative bound on how much the repair can ever recover.
+The third question is where the work lives. A negative answer to (1) and (2) alone would take a side
+in an argument the field has not settled, and this thesis is best read as an attempt to adjudicate
+one corner of it.
 
-The closest precedent is DrEval~\cite{dreval}, which audits drug \emph{sensitivity} prediction and
-finds that deep models barely outperform a naive additive predictor of mean drug and cell-line
-effects. This thesis can be read as its single-cell, generative counterpart: a different task ---
-predicting a $946$-dimensional transcriptomic response rather than a scalar potency --- reaching the
-same structural conclusion, and then going one step further by localising the failure inside the
-model and asking how much signal was ever available to capture.
+\subsection{An unsettled dispute}
+
+Two camps disagree about whether deep perturbation models work at all.
+
+\emph{Against}: Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} report that deep-learning-based
+gene perturbation effect prediction does not outperform simple linear baselines;
+DrEval~\cite{dreval} finds that deep models barely beat a naive predictor of mean drug and
+cell-line effects; and several independent benchmarks
+concur~\cite{csendes,bendidi,kernfeld,perturbench}. The recurring finding is that a
+\emph{per-perturbation mean} is remarkably hard to beat.
+
+\emph{For}: Miller et al.~\cite{miller} argue that these conclusions stem from the
+\emph{metrics}, not the models. They introduce a framework of positive and negative controls and a
+quantitative calibration measure --- the Dynamic Range Fraction --- and show across 14 Perturb-seq
+datasets that common metrics such as MSE and control-referenced correlation are poorly calibrated,
+while weighted and rank-based alternatives are not. Under calibrated metrics, they report, deep
+models \emph{do} beat mean, control and linear baselines.
+
+The disagreement is empirically decidable, but only within the setting where it is tested --- and
+the setting of this thesis has not been tested by either camp. Miller and Ahlmann-Eltze study
+\textbf{genetic} perturbation; DrEval studies \textbf{drug sensitivity} as a scalar potency. None
+studies drug perturbation predicted as a full transcriptomic response by a generative language
+model.
+
+Our approach is to adopt the \emph{proponents'} instrument. We port Miller's calibration framework
+and confirm its central methodological claim emphatically --- in our setting only one metric of five
+is calibrated at all --- and then evaluate the model on precisely the metric their analysis
+endorses. Siding with the sceptics using the proponents' own instrument is the strongest available
+form of the argument, since it cannot be answered by the objection their paper itself raises. What
+this thesis adds beyond the verdict is a mechanism for the failure, a repair that follows from the
+mechanism, and a quantitative bound on how much the repair can ever recover.
 
 \subsection{Summary of findings}
 

@@ -60,6 +60,21 @@ numbers, since real cell lines carry 20--204 drugs. It also survives holding the
 one earlier claim that did not survive is retracted here: \texttt{weighted\_r2} is approximately
 neutral rather than strongly inverted.
 
+\paragraph{This replicates Miller et al.\ --- and then diverges from them.} Their central
+methodological claim is confirmed emphatically: metric choice dominates, the rank-based metric is
+the one that survives, and the correlation-based metrics they identify as poorly calibrated are
+exactly the ones that fail here. The agreement extends to the specific metrics --- they find
+$\NIR$ consistently calibrated across 14 Perturb-seq datasets, and we find it is the only
+calibrated metric of the five we tested on drug perturbation. Our \texttt{weighted\_r2} result is
+also consistent with their finding that weighted metrics behave better than unweighted ones.
+
+The divergence comes at the next step. Miller et al.\ conclude that under calibrated metrics deep
+models outperform uninformative baselines; Section~\ref{sec:res-blind} evaluates on the calibrated
+metric and finds the model at chance. Two differences in setting are candidates for the
+discrepancy --- genetic versus drug perturbation, and a discriminative regression model versus an
+autoregressive generative one --- and Section~\ref{sec:res-lookup} supplies a third and more
+structural possibility.
+
 \paragraph{The metric can discriminate; the model cannot.} A spike-in forced choice between two real
 drug populations separates them essentially perfectly at pseudobulk ($\paneltau = 1.000$, $\DEdr =
 0.995$, top-$n$ $\tau = 0.987$, plate held constant). The instrument is not the bottleneck.

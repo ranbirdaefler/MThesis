@@ -13,6 +13,16 @@ $\NIR$ --- a discrimination metric, in which the generic response cancels --- is
 rank- and correlation-based prediction metric tested is inverted. This is the most portable result
 here, since it applies to any work scored on $\DEdr$-family metrics.
 
+This also settles how the thesis enters the dispute of Section~\ref{sec:lit-dispute}. Miller et
+al.~\cite{miller} argue that reports of deep models failing to beat uninformative baselines reflect
+miscalibrated evaluation rather than model failure, and on genetic perturbation they support that
+with calibrated-metric benchmarks. We port their framework, confirm its methodological claim
+emphatically --- metric choice dominates, and only the rank-based metric survives --- and then find
+that on drug perturbation the model is at chance \emph{on the metric their own analysis endorses}.
+That is the strongest form the sceptical result can take: it cannot be answered with the objection
+their paper raises. Their conclusion is not overturned so much as bounded --- it does not extend
+from genetic perturbation to this task, and the per-drug-constant finding above suggests why.
+
 \paragraph{The model is drug-blind, and the blindness is a readout failure.} Four independent
 instruments agree that swapping the drug token changes the output by nothing. Yet drug identity is
 linearly decodable from the residual stream, rising to $0.88$ by layer 16 with context removed,
