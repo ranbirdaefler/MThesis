@@ -235,6 +235,24 @@ storing them, so none exists, and the evidence is that seven independent depths 
 \label{fig:mechanism}
 \end{figure}
 
+\paragraph{A confound in the swap's control, found late and stated here rather than buried.}
+\todo{rerun in flight; the numbers below are from the confounded control and must not be quoted
+until it lands} The injected drug-B component lies entirely \emph{within} the purified subspace ---
+at most ten dimensions --- while the matched-norm random vector was drawn from the \emph{full}
+$2048$-dimensional residual stream, and the hook ablates that subspace \emph{before} adding. Roughly
+$99.5\%$ of the random vector's energy therefore landed in directions that were never ablated,
+including the cell-line directions this same experiment measures at $\approx 0.6$ variance share and
+15--20$\times$ the KL. ``The swap moves the output less than matched noise'' is precisely what that
+arrangement predicts, whatever the readout actually does: the control matched the norm but not the
+subspace.
+
+The corrected control randomises the \emph{direction within} the slab at fixed subspace and fixed
+norm, reports a paired bootstrap interval rather than two bare means, and gates on the purified
+subspace rather than the raw one. What is unaffected is everything that does not rest on the swap:
+the ablation ratios, whose null was already a matched-\emph{dimension} random subspace and is
+correctly constructed; the variance shares; and the decodability-versus-depth dissociation. What is
+affected is the direction-blindness claim specifically, which rests on the swap alone.
+
 \paragraph{The headline is the swap.} Overwriting drug A's code with drug B's, inside the purified
 subspace, perturbs the output \emph{less} than matched-norm noise, at all seven depths. The readout
 responds to the \emph{magnitude} of activity in the drug region, not to \emph{which} drug it

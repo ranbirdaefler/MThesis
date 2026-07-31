@@ -430,9 +430,22 @@ def main():
         a_drug, a_shuf = probe_acc(X, drug_lab, np.random.RandomState(1))
         a_drug_abl, _ = probe_acc(project_out(X, V_drug), drug_lab, np.random.RandomState(1))
         # residual PURE-drug decodability: is drug decodable AFTER removing all context?
-        a_drug_pureonly, _ = probe_acc(project_out(X, V_conf), drug_lab, np.random.RandomState(1))
+        Xc = project_out(X, V_conf)
+        a_drug_pureonly, _ = probe_acc(Xc, drug_lab, np.random.RandomState(1))
         frac_removed = ((a_drug - a_drug_abl) / (a_drug - chance)) if (a_drug and a_drug > chance) else None
-        gate_ok = (frac_removed is not None and frac_removed > 0.8)
+        # GATE ON THE SUBSPACE THE CAUSAL CLAIMS ACTUALLY USE. The line above gates V_drug (raw),
+        # but every causal statement in this experiment is made on V_drug_pure -- so on its own it
+        # certifies that the RAW slab carries the drug, which is not what needs certifying. Here we
+        # ask the same question of the purified slab: after removing context, does projecting out
+        # V_drug_pure remove the drug signal that remains?
+        a_pure_abl, _ = probe_acc(project_out(Xc, V_drug_pure), drug_lab, np.random.RandomState(1))
+        frac_removed_pure = ((a_drug_pureonly - a_pure_abl) / (a_drug_pureonly - chance)) \
+            if (a_drug_pureonly and a_drug_pureonly > chance) else None
+        gate_ok = (frac_removed is not None and frac_removed > 0.8
+                   and frac_removed_pure is not None and frac_removed_pure > 0.8)
+        logger.info(f"  GATE (pure subspace, the one the causal claims use): drug decodable after "
+                    f"context removal {a_drug_pureonly:.3f} -> ablated {a_pure_abl:.3f} | removed "
+                    f"{100*(frac_removed_pure or 0):.0f}%")
         logger.info(f"  GATE: drug decodable {a_drug:.3f} (chance {chance:.3f}) -> ablated {a_drug_abl:.3f} "
                     f"| removed {100*(frac_removed or 0):.0f}% of signal  [{'PASS' if gate_ok else 'FAIL'}]")
         logger.info(f"  CONFOUND: raw drug subspace also decodes cell_line={_f(cross['cell_line'])} "
@@ -480,6 +493,8 @@ def main():
         logger.info(f"  ABLATION (supporting only): {abl}")
 
         entry = {"gate_pass": bool(gate_ok), "frac_signal_removed": frac_removed,
+                 "frac_signal_removed_pure": frac_removed_pure,
+                 "drug_decode_pure_ablated": a_pure_abl,
                  "drug_decode": a_drug, "drug_decode_ablated": a_drug_abl,
                  "drug_decode_context_removed": a_drug_pureonly, "chance": chance,
                  "confound_crossdecode": cross, "overlaps": overlaps,
@@ -497,7 +512,7 @@ def main():
                 di = [i for i in by_drug_idx[d] if est_mask[i]]
                 if di:
                     drug_mean[d] = X[di].mean(0)
-            swap_kl, randinj_kl = [], []
+            swap_kl, randinj_kl, in_slab = [], [], []
             for r in eval_rows_swap:
                 others = [d for d in drug_mean if d != r["drug"]]
                 if not others:
@@ -506,19 +521,53 @@ def main():
                 comp_b = V_drug_pure @ (V_drug_pure.T @ drug_mean[b])   # drug B's PURE component (held-out)
                 sk = kl_under_hook(model, tok, layers_mod, L, V_drug_pure, r["prompt"], r["response"],
                                    device, add_vec=comp_b)
-                rv = rng.randn(H); rv *= np.linalg.norm(comp_b) / (np.linalg.norm(rv) + 1e-9)
+                # MATCHED-NORM RANDOM CONTROL -- drawn INSIDE the purified subspace.
+                #
+                # This previously drew rng.randn(H) in the FULL residual space and matched only the
+                # L2 norm. That is not a matched control: comp_b lies entirely within span(V_pure)
+                # (<= 10 dims), the hook ablates V_pure before adding, so a full-space random vector
+                # puts ~1 - d_pure/H  (about 99.5%) of its energy into directions that were never
+                # ablated -- including the cell-line directions this same experiment measures at
+                # ~0.6 variance share and 15-20x the KL. "Swap moves the output less than matched
+                # noise" is then exactly what the confound predicts, whatever the readout does.
+                # The control must randomise the DIRECTION WITHIN the slab while holding the
+                # subspace and the norm fixed.
+                rv = V_drug_pure @ rng.randn(V_drug_pure.shape[1])
+                rv *= np.linalg.norm(comp_b) / (np.linalg.norm(rv) + 1e-9)
                 rk = kl_under_hook(model, tok, layers_mod, L, V_drug_pure, r["prompt"], r["response"],
                                    device, add_vec=rv.astype(np.float32))
+                # diagnostic: if this is ever far from 1.0 the control has drifted out of the slab
+                frac_in = float(np.linalg.norm(V_drug_pure.T @ rv) ** 2 /
+                                (np.linalg.norm(rv) ** 2 + 1e-12))
                 if sk is not None and rk is not None:
-                    swap_kl.append(sk); randinj_kl.append(rk)
+                    swap_kl.append(sk); randinj_kl.append(rk); in_slab.append(frac_in)
             if swap_kl:
                 mb, mr = float(np.mean(swap_kl)), float(np.mean(randinj_kl))
+                sb, sr = float(np.std(swap_kl, ddof=1)), float(np.std(randinj_kl, ddof=1))
+                n = len(swap_kl)
+                # PAIRED difference: the two arms use the same prompts and the same drug means, so
+                # the pairing is real and an unpaired comparison of two means throws it away. The
+                # previous version stored two bare means and no dispersion at all, which left the
+                # thesis's most load-bearing mechanistic number with no uncertainty behind it.
+                dif = np.array(swap_kl) - np.array(randinj_kl)
+                bs = np.array([np.mean(dif[rng.randint(0, n, n)]) for _ in range(2000)])
+                dlo, dhi = float(np.percentile(bs, 2.5)), float(np.percentile(bs, 97.5))
                 sv = ("drug-B >> random -> readout IS drug-direction sensitive (routing failure)"
-                      if mb > 1.5 * mr else
-                      "drug-B ~ random -> readout is NOT drug-specific (responds to magnitude only)")
-                logger.info(f"  SWAP (pure, held-out means): inject drug-B {mb:.4f}  vs matched-norm "
-                            f"random {mr:.4f}  (n={len(swap_kl)})  -> {sv}   <<< HEADLINE")
-                entry["swap"] = {"drug_b_kl": mb, "random_inject_kl": mr, "n": len(swap_kl),
+                      if dlo > 0 else
+                      ("drug-B ~ random -> readout is NOT drug-specific (responds to magnitude only)"
+                       if dhi > 0 else
+                       "drug-B < random -> injecting the RIGHT drug moves the output LESS than a "
+                       "random direction of the same norm in the same slab"))
+                logger.info(f"  SWAP (pure, held-out means): inject drug-B {mb:.4f}+-{sb:.4f}  vs "
+                            f"matched random IN-SLAB {mr:.4f}+-{sr:.4f}  (n={n})")
+                logger.info(f"       paired difference {float(dif.mean()):+.4f} "
+                            f"[{dlo:+.4f}, {dhi:+.4f}]  -> {sv}   <<< HEADLINE")
+                logger.info(f"       control sanity: {100*float(np.mean(in_slab)):.1f}% of the random "
+                            f"vector's energy lies inside the purified subspace (must be ~100)")
+                entry["swap"] = {"drug_b_kl": mb, "random_inject_kl": mr, "n": n,
+                                 "drug_b_sd": sb, "random_sd": sr,
+                                 "paired_diff": float(dif.mean()), "paired_ci": [dlo, dhi],
+                                 "random_energy_in_slab": float(np.mean(in_slab)),
                                  "verdict": sv, "held_out_means": True}
         result["layers"][str(L)] = entry
 

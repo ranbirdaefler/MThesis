@@ -177,6 +177,86 @@ readout account standing alone.
 
 ---
 
+## 3. `probe2.sbatch` — RERUN the mechanistic probe with a corrected control  (GPU, ~2 h)
+
+**This one is not optional.** A structural audit found that the headline swap in Q13 --- the
+thesis's most novel result --- was compared against a control that is not matched in the way the
+claim requires.
+
+`comp_b` is drug B's projection **into** the purified slab, at most 10 dimensions. The old control
+drew `rng.randn(H)` in the **full 2048-dimensional** residual space and matched only the L2 norm.
+The hook ablates `V_drug_pure` before adding, so the swap arm perturbs only inside the ablated slab
+while roughly **99.5\% of the random vector's energy lands in directions that were never ablated**
+--- including the cell-line directions this same experiment measures at ~0.6 variance share and
+15--20$\times$ the KL. "The swap moves the output less than matched noise" is exactly what that
+confound predicts, whatever the readout actually does.
+
+Three fixes, all local:
+
+1. the random vector is now drawn **inside** `V_drug_pure` (`V_drug_pure @ randn(d_pure)`, norm-matched),
+   randomising direction while holding subspace and norm fixed;
+2. a **paired** bootstrap difference with a CI replaces two bare means --- the arms share prompts and
+   drug means, so the pairing is real, and the previous version stored no dispersion at all;
+3. the removal gate now also runs on `V_drug_pure`, the subspace the causal claims actually use. The
+   old gate ran on the **raw** slab, certifying something other than what needed certifying.
+
+```bash
+scp endcell/analysis/workspace_probe.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > probe2.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=probe2
+#SBATCH --account=3180408
+#SBATCH --partition=gpuh200
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=08:00:00
+#SBATCH --output=logs/probe2_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+$PY workspace_probe.py --selftest
+$PY workspace_probe.py \
+    --model_path "$D/checkpoints/pythia_sft_endcell/final" \
+    --data_dir "$D/data_diverse2_endcell_big" \
+    --layers 2,4,6,8,9,12,16 --n_drugs 12 --cells_per_drug 40 --do_swap \
+    --out RESULTS/workspace_probe_v3.json
+echo done
+EOF
+sbatch probe2.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/probe2_*.out | head -1); grep -E "SELFTEST|GATE|CONFOUND|pure-drug subspace|causal KL|SWAP|paired difference|control sanity|HEADLINE" $LOG
+```
+
+**Read `control sanity` first** --- it reports what fraction of the random vector's energy lies inside
+the purified subspace, and it must be ~100\%. If it is not, the control has drifted out of the slab
+again and nothing below it is readable.
+
+Then the **paired difference and its CI**, which is now the headline rather than two bare means:
+
+- **CI excludes zero, positive** --- injecting the right drug moves the output MORE than a random
+  direction of the same norm in the same slab. The readout *is* drug-direction sensitive, and Q13's
+  conclusion **inverts**: the failure is a routing problem, not direction-blindness.
+- **CI spans zero** --- the original conclusion survives, now on a control that supports it.
+- **CI excludes zero, negative** --- the strangest outcome and worth reporting as such.
+
+Any of the three is publishable. The current number is not, because its control cannot distinguish
+them.
+
+---
+
 ## Validated locally before sending
 
 | check | result |
