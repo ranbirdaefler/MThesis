@@ -1,0 +1,49 @@
+% fig-nir.tex -- NIR as a discrimination score. Goes with the metric definition.
+% No data dependency.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\small,
+  lbl/.style={font=\scriptsize, text=black!70},
+  strong/.style={font=\scriptsize, text=black!90},
+  own/.style={circle, fill=black!85, inner sep=2pt},
+  other/.style={circle, draw=black!55, fill=white, inner sep=1.9pt},
+  ar/.style={-{Stealth[length=4.5pt]}, black!65},
+]
+
+\node[lbl, anchor=south] at (2.05,0.44) {other drugs in the same comparison set};
+\node[strong, anchor=south] at (6.30,0.44) {own truth};
+
+\fill[black!10, rounded corners=1pt] (0.55,0.00) rectangle (6.30,0.34);
+\foreach \x in {0.95, 1.75, 2.60, 3.55, 4.45, 5.45} {\node[other] at (\x,0.17) {};}
+\node[own] at (6.30,0.17) {};
+\node[other] at (7.15,0.17) {};
+\node[other] at (7.85,0.17) {};
+\node[anchor=west, font=\small] at (8.35,0.17) {$\NIR = \tfrac{6}{8}$};
+
+\draw[ar] (0.45,-0.26) -- (8.15,-0.26);
+\node[lbl, anchor=north] at (4.30,-0.38)
+  {similarity of the prediction to each condition's truth $\longrightarrow$};
+
+\draw[decorate, decoration={brace, mirror, amplitude=3.5pt}, black!55]
+  (0.55,-0.80) -- (6.30,-0.80);
+\node[strong, anchor=north] at (3.40,-0.96) {the shaded fraction \emph{is} the score};
+
+\node[lbl, anchor=west] at (0.45,-1.50) {own truth ranked first $\Rightarrow \NIR \to 1$};
+\node[lbl, anchor=west] at (0.45,-1.84) {own truth ranked at random $\Rightarrow \NIR = 0.5$};
+\node[strong, anchor=west] at (0.45,-2.18)
+  {every similarity \emph{identical} $\Rightarrow \NIR = 0.5$ by the half-tie rule, not $0$};
+
+\end{tikzpicture}
+\caption[NIR is a discrimination score]{\textbf{$\NIR$ asks whether a prediction resembles its own
+condition's truth more than it resembles the truths of the other drugs in the same comparison set.}
+The generic response --- the stress and cell-cycle program every compound triggers --- is present in
+every truth in equal measure, so it cancels in the comparison and only the drug-specific difference
+decides. Two consequences follow, and both matter downstream. Chance at $0.50$ is a statement about
+the \emph{comparison set}, not about the model: conditions are grouped by (cell line, plate) in the
+expression frame and by cell line in the residual frame, and the two are not interchangeable. And a
+predictor whose similarities are all identical --- the zero vector, which is what ``predict the
+average drug response'' becomes in residual space --- must score $0.50$ rather than $0$, which is why
+ties are counted at one half rather than dropped.}
+\label{fig:nir}
+\end{figure}

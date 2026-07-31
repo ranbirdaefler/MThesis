@@ -1,0 +1,65 @@
+% fig-scramble.tex -- the scramble ablation and why its difference is leak-immune.
+% No data dependency.
+% Layout note: the prompt boxes are ~2.2cm tall once the shaded spans are set, which is far more
+% than a four-line block looks like it should need. Every band below them is placed against that
+% measured height, not against an estimate.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\small,
+  lbl/.style={font=\scriptsize, text=black!70},
+  strong/.style={font=\scriptsize, text=black!90},
+  promptbox/.style={draw=black!35, rounded corners=2pt, inner sep=5pt, fill=black!2},
+  ar/.style={-{Stealth[length=4.5pt]}, black!65},
+]
+\newcommand{\spanhl}[1]{\colorbox{black!14}{#1}}
+
+\node[lbl, anchor=west] at (0.15,0.00) {real prompt};
+\node[promptbox, anchor=north west] (p1) at (0.15,-0.26) {%
+  \renewcommand{\arraystretch}{0.9}%
+  \begin{tabular}{@{}l@{~~}l@{}}
+  \ttfamily\scriptsize Cell line:    & \ttfamily\scriptsize MCF7 \\
+  \ttfamily\scriptsize Drug:         & \ttfamily\scriptsize \spanhl{Lapatinib} \\
+  \ttfamily\scriptsize Mechanism:    & \ttfamily\scriptsize \spanhl{EGFR inhibitor} \\
+  \ttfamily\scriptsize Control cell: & \ttfamily\scriptsize ACTB GAPDH \ldots \\
+  \end{tabular}};
+
+\node[lbl, anchor=west] at (0.15,-2.86) {scrambled prompt --- only the two shaded spans differ};
+\node[promptbox, anchor=north west] (p2) at (0.15,-3.12) {%
+  \renewcommand{\arraystretch}{0.9}%
+  \begin{tabular}{@{}l@{~~}l@{}}
+  \ttfamily\scriptsize Cell line:    & \ttfamily\scriptsize MCF7 \\
+  \ttfamily\scriptsize Drug:         & \ttfamily\scriptsize \spanhl{Vorinostat} \\
+  \ttfamily\scriptsize Mechanism:    & \ttfamily\scriptsize \spanhl{HDAC inhibitor} \\
+  \ttfamily\scriptsize Control cell: & \ttfamily\scriptsize ACTB GAPDH \ldots \\
+  \end{tabular}};
+
+\node[draw=black!35, rounded corners=2pt, inner sep=6pt, align=center, fill=black!3]
+  (truth) at (9.30,-2.55) {truth for\\\textbf{Lapatinib}\\{\scriptsize drawn once}};
+
+\draw[ar] (p1.east) .. controls (6.6,-1.35) and (7.6,-1.85) .. (truth.north west);
+\draw[ar] (p2.east) .. controls (6.6,-4.20) and (7.6,-3.30) .. (truth.south west);
+
+\node[anchor=north, font=\small] at (9.30,-3.70)
+  {$\gap = \NIR_{\text{real}} - \NIR_{\text{scrambled}}$};
+
+\draw[ar, dashed, black!45] (1.20,-6.10) -- (8.10,-6.10);
+\node[strong, anchor=south, align=center] at (4.65,-6.02)
+  {the shared control cell enters \emph{both} arms, so control- and batch-derived};
+\node[strong, anchor=north, align=center] at (4.65,-6.20)
+  {leakage cancels in the difference};
+
+\end{tikzpicture}
+\caption[The scramble ablation]{\textbf{The scramble replaces the drug name and its mechanism and
+nothing else.} Both arms are conditioned on the same control cell and scored against the same truth,
+so any leakage through the control cell or the plate enters both arms in equal measure and cancels in
+the difference $\gap$. This is why $\gap$, rather than a comparison against a drug-agnostic
+predictor, is the quantity every drug-use claim in this thesis is anchored to: the drug-agnostic
+comparison is not leak-immune, and a zero-drug-information control-copy baseline scores $\NIR =
+0.766$ cross-plate precisely because it inherits that leakage. A refinement matters here and is
+developed in Section~\ref{sec:methods-controls}: if the swapped-in drug happens to have a
+\emph{similar} true response then an unchanged output is correct rather than blind, so the swap
+partner is chosen from three defined similarity strata and the evidence is the \emph{gradient} across
+them rather than any single value.}
+\label{fig:scramble}
+\end{figure}

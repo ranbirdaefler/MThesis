@@ -76,6 +76,8 @@ what its name suggests, and it is not the metric the calibration analysis of
 Section~\ref{sec:res-metrics} endorsed --- the $\DRF$ result is computed on the expression-space
 variant. We report the calibrated one and name it here so the stored artifacts cannot be misread.
 
+\input{figs/fig-nir}
+
 \paragraph{Metric calibration (\DRF).} We port the framework of Miller et al.~\cite{miller}, in
 which each \emph{metric} is graded rather than each model, by asking how well it separates a
 positive from a negative control:
@@ -130,7 +132,7 @@ does not imply ``different response''. Two remedies are used:
         \emph{grows} across the strata; a flat profile is a red flag.
 \end{enumerate}
 
-\input{figs/fig-instrument}
+\input{figs/fig-scramble}
 
 \paragraph{Uncertainty.} All confidence intervals are clustered bootstraps resampling \emph{cell
 lines}, not conditions. Conditions within a cell line are pseudoreplicates in Hurlbert's
