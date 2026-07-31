@@ -46,16 +46,26 @@ other cell line). This is the pre-registered "honest partial" branch of `arm1b_o
 and it makes the thesis the single-cell cell-sentence-LLM instance of the CMap/LINCS-era result that a
 per-perturbation mean beats the deep model.
 
-**(5) …but the lookup is NOT the ceiling — ~45% of the drug-specific signal is context-dependent and
-unclaimed (Q17).** Because NIR is compressive near 0.96, `drug_lookup ≈ ceiling` does *not* mean the
-modelling target has vanished; measured in cosine space with the noise divided out, the transfer
-coefficient is **T = 0.557 [0.513, 0.601]** against a simulated κ=0 null of **1.001**, with a
-structure-matched negative control at **+0.000**. So the drug-specific residual decomposes into a per-drug
-constant β(d) — which the lookup captures — **plus a drug × cell-line interaction κ(d,c) worth ≈45% of the
-variance, which no lookup can structurally reach and which the model does not reach either.** Scope: the
-drug-specific residual is **62% of the total response variance** (generic + batch is 38%). The thesis
-therefore does *not* end in closure: it ends with a **quantified, unclaimed conditional target** — the
-per-drug mean is most of what anyone has captured, but it is not most of what is there.
+**(5) …and the lookup is at the ACHIEVABLE ceiling, because the remaining 45% is unlearnable (Q17, Q19).**
+The response decomposes as β(d) + κ(d,c): measured in cosine space with noise divided out, the transfer
+coefficient is **T = 0.557 [0.513, 0.601]** against a simulated κ=0 null of **1.001** and a
+structure-matched negative control at **+0.000**, so κ is ≈45% of the drug-specific variance. But κ has
+**no learnable structure** — no cell line bends different drugs in a consistent direction (excess
+within-line consistency **−0.007**, interval excluding anything above +0.002). So κ acts as *irreducible
+noise for any predictor*, which is why `drug_lookup` reaches 0.963 against a 0.968 ceiling: not because
+the interaction is small, but because it is **unpredictable**. Nothing beats a lookup on seen drugs.
+Scope: the drug-specific residual is **62% of the total response variance**.
+
+**(6) The model's only opportunity is the UNSEEN drug — and that regime is open (Q18).** A lookup
+structurally requires the drug to have been seen. For drugs that have not been, two knowledge channels
+carry real signal against count-matched nulls: **protein target +0.0844 [+0.0592, +0.1095]** and
+**MoA +0.0780 [+0.0555, +0.1027]**, while chemical structure stays closed (+0.0137, spans zero). This
+**retracts the project's own pre-registration**, which inferred "unseen drugs are out of reach" from a
+gate that tested chemical *structure* — the channel our own drug-knowledge spec ranked lowest — and
+never read the `targets` column sitting in Tahoe's metadata. The thesis therefore ends not in closure
+but with a **specific, measured opportunity**: on seen drugs nothing can beat retrieval; on unseen drugs,
+where retrieval is impossible, drug-side knowledge works and the model has something a dictionary
+cannot do. That is also DrEval's Leave-Drugs-Out — the setting that matters for drug design.
 
 ---
 
@@ -520,6 +530,40 @@ uses the *same* A on both arms, so that drift cancels.
   - T on the unfiltered set is *higher* than on the repro-filtered set (0.598 vs 0.557); disattenuation is unstable at very low reliability, so the filtered value is the one to quote.
   - The simulated null assumes Gaussian noise; if real noise is structured differently the null could shift, though it would have to move by ~0.45 to change the conclusion.
 - **Status:** ✅ **the headroom is real and quantified.** The Q16 ambiguity resolves in favour of genuine cell-line-specific structure: `drug_lookup` 0.963 ≈ ceiling 0.968 was **NIR compression** at the top of the scale, and `drug_lookup_1` 0.832 was the honest signal. **≈45% of the drug-specific signal is context-dependent, and neither the 1B model (0.639) nor any lookup reaches it.** ➡️ This *reopens* the modelling question rather than closing it, and it converts the thesis's central claim from a closure into a quantified, unclaimed target. Artifacts: `RESULTS/vd3_{plate,plate_proj,cellline}.json`, `RESULTS/vardecomp_*.json`; log `logs/vardecomp3_*.out`.
+
+### Q18. Is unseen-drug generalisation reachable through any drug-side channel? (the pre-registration was wrong)
+- **Why:** an unseen drug can only be predicted through a property it **shares** with drugs seen in training. Two design docs (`grpo_training_plan.md` §9, `arm1b_objective_spec.md` §2) pre-registered that unseen drugs were out of reach — and both inferred it from the **SAR gate**, which tested Morgan fingerprints and MolFormer, i.e. chemical **structure**. But `pubchem_drug_injection_spec.md` §2 ranks raw structure the **lowest**-value channel and protein targets **"the key feature"**. The pre-registration generalised from the weakest channel to the strongest. This measures the strongest.
+- **How (`channel_gate.py`):** for each condition (d,c) and each channel X, predict d's residual as the mean residual of the **other drugs in the same cell line** that share property X with d — exactly `moa_lookup`'s construction, generalised. It uses only drugs that *were* in training, so unlike `drug_lookup` it is a fair contest in every split. Scored with the same signed-rank → cosine → tie-aware NIR as everything else.
+  - **The control that makes it readable:** every channel is paired with a **count-matched random null** — the same *number* of partner drugs, drawn at random from the same cell line, averaged identically. Without it, a channel above chance cannot be distinguished from "averaging k residuals denoises, and denoised residuals beat chance", which is true of any k and says nothing about the channel.
+  - **Coverage is reported before any verdict.** A channel annotated on few drugs cannot be *closed* by a null — it was never tested.
+  - Validated against planted truth in both directions: a planted working channel returns +0.397 (sd 0.029 over 24 worlds), a planted useless one −0.016 (sd 0.091). Two bugs were caught this way rather than by review: the null originally drew from a pool *excluding* the channel's own picks (which depletes it of exactly the partners the channel selected and anti-correlates the arms), and the original selftest asserted a single draw of a quantity with sd ≈ 0.09 fell within 0.10, i.e. tested luck.
+- **Answer — TWO CHANNELS ARE LIVE. Unseen-drug generalisation is NOT closed.**
+
+  | channel | coverage | n scored | NIR | count-matched null | channel − null | verdict |
+  |---|---|---|---|---|---|---|
+  | **protein target** | 52/96 (54%) | 894 | **0.586** | 0.502 | **+0.0844 [+0.0592, +0.1095]** | **LIVE** |
+  | **MoA** | 31/96 (32%) | 1053 | **0.573** | 0.495 | **+0.0780 [+0.0555, +0.1027]** | **LIVE** |
+  | chemical structure | 96/96 (100%) | 4084 | 0.484 | 0.470 | +0.0137 [−0.0013, +0.0278] | closed |
+
+  Tahoe's `drug_metadata.parquet` carries **`targets` (264 drugs, 280 distinct symbols, 550 edges)** and `pubchem_cid` (377/379) — and **no script in this repository had ever read either column.** Chemistry is closed, reproducing the SAR gate in the NIR frame; both knowledge channels clear their nulls decisively.
+- 🔁 **RETRACTS the pre-registration in both design docs.** The correct statement is: *chemical structure does not predict response (measured, twice, in two frames); protein target and mechanism **do** (measured); therefore unseen-drug generalisation is reachable through drug-side knowledge, not through chemistry.*
+- **Caveats:** target coverage is 54% and MoA 32%, so these are measured on the annotated subset; the absolute NIR (~0.58) is far below `drug_lookup`'s 0.963, so the unseen-drug ceiling is much lower than the seen-drug one; and target and MoA overlap (among dual-annotated drugs, 86 target-sharing pairs share no MoA class), so whether target adds **over** MoA is a further question this run does not answer.
+- **Status:** ✅ **unseen-drug generalisation is live through target and MoA.** ➡️ The next arm is a channel-conditioned prompt (`Targets: EGFR, ERBB2` appended to `Mechanism:`) evaluated on a **leave-one-MoA-out** split. Artifacts: `RESULTS/channel_gate.json`; log `logs/channelgate_*.out`.
+
+### Q19. Is the drug × cell-line interaction LEARNABLE, or merely present? (the κ-structure test)
+- **Why:** Q17 established that ~45% of the drug-specific residual variance is interaction. It said nothing about whether anything can *learn* it. If each cell line modulates drug response in a consistent direction, that direction is estimable from the line's own cells and a conditional model has a concrete target; if the interaction is specific to each (drug, cell line) pairing, the variance is real but there is nothing to generalise from.
+- **How (`variance_decomposition.py --kappa_structure`):** `κ(d,c) = residual(d,c) − β̂(d)` with **β̂ estimated leave-one-cell-line-out**, so κ is not contaminated by its own residual — without that, subtracting a mean containing r(d,c) induces a −1/(m−1) correlation and biases the signal arm *downward by construction*, which would make a structured interaction look idiosyncratic. Signal = `cos(κ(d,c), κ(d′,c))` for different drugs in the **same** line; null = the same across **different** lines. Both disattenuated by κ's own split-half reliability, since κ is a difference of two noisy quantities and is noisier than the residual it comes from. Validated against planted truth: a structured world returns same-line +0.977 vs cross-line −0.108 (excess **+1.085**); an idiosyncratic world returns excess **+0.001**.
+- **Answer — IDIOSYNCRATIC. There is no consistent per-cell-line direction.**
+
+  | config | same cell line | different cell lines | **excess within-line** |
+  |---|---|---|---|
+  | plate-scoped generic | −0.004 [−0.011, +0.002] | +0.003 | **−0.007** |
+  | cell-line-scoped | −0.003 [−0.021, +0.015] | +0.002 | **−0.005** |
+
+  (1,280 and 1,022 conditions from drugs seen in ≥3 cell lines; mean κ reliability 0.33; 4,000 pairs per arm.) The interval on the signal arm is tight enough to exclude anything above +0.002, so this is a **real null, not an underpowered one**. T reconfirmed in the same run at 0.551 [0.511, 0.589] (plate) and 0.509 (cell line), with the structure-matched negative control at −0.001 / +0.009.
+- **This resolves the Q16/Q17 tension.** `drug_lookup` reaching 0.963 against a 0.968 ceiling is **not** because κ is small — κ is 45% of the variance. It is because κ is **unpredictable**, so it acts as irreducible noise for *any* predictor, and the lookup is therefore already at the **achievable** ceiling. Nothing can beat it on seen drugs. What a lookup structurally cannot do is handle a drug it has never seen — and Q18 shows that regime has live channels. **The model's only opportunity is the unseen-drug regime**, which is also DrEval's Leave-Drugs-Out, the setting that matters for drug design.
+- **Caveats:** κ reliability is 0.33, so κ is noisy; the disattenuation corrects this in expectation and the CI is tight, but a *weakly* structured interaction below the resolution of 4,000 pairs at that reliability would not be detected. The claim is that no per-cell-line direction exists **at this sample size**, not that none exists in principle.
+- **Status:** ✅ **the interaction is real but has no learnable structure.** Artifacts: `RESULTS/kappa_{plate,cellline}.json`; log `logs/kappa_*.out`.
 
 ---
 

@@ -334,23 +334,25 @@ Gradient with dissimilarity & \textbf{yes (all three clear zero)} & no (flat) & 
 \bottomrule
 \end{tabular}
 \caption{Stratified scramble. The monotone gradient is itself the evidence: a metric artifact would
-not order itself by swap dissimilarity. \todo{the two control columns ran at a 600-token generation
-budget against the residual model's 1400 --- see the caveat below. Re-run before quoting the
-cross-model comparison.}}
+not order itself by swap dissimilarity. Control columns are quoted at a matched $1400$-token
+generation budget; see below.}
 \label{tab:residual-strata}
 \end{table}
 
-\paragraph{A confound in the control columns, stated rather than buried.} The residual model's
-figures come from a run at $1400$ generation tokens; both control arms ran at $600$. Since the token
-budget alone doubles the measured effect for the residual model, the controls were given half the
-treatment's budget. The bias runs in the direction that flatters our conclusion --- truncation drives
-a gap toward zero, so an under-budgeted control looks \emph{more} null than it is --- which is
-precisely why it must be stated. Mitigating but not sufficient: a cell sentence is roughly $123$ gene
-symbols against a residual signature's $201$, so the cap binds far less on the controls; the
-completion rates were logged but not persisted, so this cannot be verified from the artifacts.
-\todo{re-run both controls at 1400} Two things are unaffected: the residual model's own gradient
-across strata, every point of which clears zero within a single matched run, and all of
-Section~\ref{sec:res-generalisation}, where every arm ran at $1400$ inside one job.
+\paragraph{A budget confound, checked rather than argued away.} The residual model's figures came
+from a run at $1400$ generation tokens while both control arms had originally run at $600$ --- and
+since the token budget alone doubles the measured effect for the residual model, that is a real
+asymmetry, biased in the direction that flatters our conclusion. There was a plausible argument that
+it did not matter, namely that a cell sentence is roughly $123$ gene symbols against a residual
+signature's $201$, so the cap binds far less on a control. But the generation completion rates were
+logged and never persisted, so the argument could not be checked against the artifacts, and an
+unverifiable argument in favour of one's own result is worth very little.
+
+Re-running both controls at $1400$ settles it. The single-cell control moves from
+$-0.014 / -0.021 / -0.020$ to $-0.001 / -0.001 / -0.008$ --- flat and null at every stratum, as
+before --- and the optimal-transport control from $+0.007 / +0.014 / +0.026$ to
+$-0.007 / +0.016 / \ci{+0.025}{+0.008}{+0.042}$. Both are unchanged in substance. The comparison is
+now matched and the conclusion is unaffected.
 
 \begin{figure}[htbp]
 \centering
@@ -535,6 +537,40 @@ against $+0.254$ at cell-line scope, so that discrepancy was plate contamination
 (\lVert\textrm{generic}\rVert/\lVert\shift\rVert)^2 = 1.002$, so the two components are essentially
 orthogonal and the fractions below are genuine variance shares.
 
+\paragraph{Is that interaction learnable, or merely present?} $\Tcoef$ says how \emph{large} $\kappa$
+is; it says nothing about whether anything could learn it. If a cell line modulated drug responses
+in a consistent direction, that direction would be estimable from the line's own cells and a
+conditional model would have a concrete target. Writing $\kappa(d,c) = \resid(d,c) - \hat{\beta}(d)$
+with $\hat{\beta}$ estimated leave-one-cell-line-out --- necessary, since a mean containing
+$\resid(d,c)$ would bias the signal arm downward by construction --- and disattenuating by
+$\kappa$'s own split-half reliability:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Configuration & same cell line & different cell lines & excess within-line \\
+\midrule
+plate-scoped generic & \ci{-0.004}{-0.011}{+0.002} & $+0.003$ & $\mathbf{-0.007}$ \\
+cell-line-scoped & \ci{-0.003}{-0.021}{+0.015} & $+0.002$ & $\mathbf{-0.005}$ \\
+\bottomrule
+\end{tabular}
+\caption{No cell line bends different drugs in a consistent direction. $4{,}000$ pairs per arm; the
+signal interval excludes anything above $+0.002$, so this is a real null rather than an underpowered
+one.}
+\label{tab:kappa}
+\end{table}
+
+\textbf{The interaction is idiosyncratic}: real, large, and specific to each (drug, cell line)
+pairing. This resolves the tension the previous section could not. A lookup reaching $0.963$ against
+a $0.968$ ceiling is \emph{not} evidence that $\kappa$ is small --- it is $45\%$ of the variance. It
+is that $\kappa$ is \emph{unpredictable}, so it behaves as irreducible noise for any predictor, and
+the lookup is therefore already at the \emph{achievable} ceiling. Nothing beats it on seen drugs.
+
+What a lookup structurally cannot do is handle a drug it has never seen --- and
+Section~\ref{sec:res-scope} shows that regime has live channels. The model's opportunity is not the
+interaction; it is the unseen drug.
+
 \paragraph{Scope of the whole thesis.} At plate scope $\lVert\resid\rVert/\lVert\shift\rVert = 0.786$
 and $\lVert\textrm{generic}\rVert/\lVert\shift\rVert = 0.620$: \textbf{62\% of the perturbation
 response variance is drug-specific}, and 38\% is the generic program plus batch. Every claim in this
@@ -553,26 +589,48 @@ natural next arm.
 \subsection{Scope: what is closed by measurement}
 \label{sec:res-scope}
 
+An unseen drug can only be predicted through a property it \emph{shares} with drugs seen in
+training, so the question is answerable by enumerating the channels and measuring each in the same
+frame. For each channel we predict a drug's residual from the mean residual of the \emph{other}
+drugs in the same cell line that share the property --- the construction of \texttt{moa\_lookup},
+generalised. Each arm is paired with a \textbf{count-matched random null} drawing the same
+\emph{number} of partners at random, without which a channel scoring above chance cannot be
+distinguished from the fact that averaging $k$ residuals denoises.
+
 \begin{table}[h]
 \centering
-\begin{tabular}{llr l}
+\begin{tabular}{lrrrrl}
 \toprule
-Channel & Measurement & Value & Verdict \\
+Channel & Coverage & $n$ & $\NIR$ & vs.\ count-matched null & Verdict \\
 \midrule
-chemical structure $\rightarrow$ response & Morgan / MolFormer retrieval & 0.500 / 0.474 & closed (ceiling 0.805) \\
-mechanism $\rightarrow$ response & \texttt{moa\_lookup} & 0.529 & closed \\
-mechanism $\rightarrow$ response & within/between MoA distance & ratio 0.977 & closed \\
-\textbf{protein target $\rightarrow$ response} & --- & --- & \textbf{untested} \\
+\textbf{protein target} & 54\% & 894 & \textbf{0.586} & \ci{+0.0844}{+0.0592}{+0.1095} & \textbf{live} \\
+\textbf{mechanism (MoA)} & 32\% & 1053 & \textbf{0.573} & \ci{+0.0780}{+0.0555}{+0.1027} & \textbf{live} \\
+chemical structure & 100\% & 4084 & 0.484 & \ci{+0.0137}{-0.0013}{+0.0278} & closed \\
 \bottomrule
 \end{tabular}
-\caption{An unseen drug can only be predicted through a property it shares with drugs seen in
-training. Two such channels are closed by measurement; one has never been tested.}
+\caption{Coverage is stated first: a channel annotated on few drugs cannot be \emph{closed} by a
+null result, because it was never tested. Chemistry reproduces the structure gate in this frame;
+both knowledge channels clear their nulls.}
 \label{tab:channels}
 \end{table}
 
-Molecular structure does not predict response here, which \emph{scopes} the whole project: the
-positive results of Sections~\ref{sec:res-encoding} and~\ref{sec:res-generalisation} are seen-drug
-results. Note carefully what is \emph{not} established: the structure gate tested chemical
-fingerprints only, and mechanism was tested at the coarse \texttt{moa-fine} granularity. Protein
-target --- a finer relation, and the one a knowledge-based approach would exploit --- remains
-untested. \todo{\texttt{channel\_gate.py}}
+\paragraph{This overturns a pre-registration made in this project.} Two design documents concluded
+that unseen-drug generalisation was out of reach, and both inferred it from the structure gate ---
+that is, from Morgan fingerprints and a molecular language model. But the drug-knowledge
+specification written earlier in the same project ranks raw structure the \emph{lowest}-value
+channel and protein targets ``the key feature'', on the reasoning that transcriptional response is
+driven by which protein a compound hits, something structure encodes only indirectly. The
+pre-registration generalised from the weakest channel to the strongest, and it was wrong. Tahoe's
+own metadata carries protein-target annotations for $264$ drugs --- $280$ distinct symbols, $550$
+edges --- which no analysis in this project had read.
+
+The correct statement is therefore narrower and more useful than the one we started with:
+\emph{chemical structure does not predict response, measured twice in two frames; protein target and
+mechanism do.} Unseen-drug generalisation is reachable through drug-side \emph{knowledge}, and not
+through chemistry.
+
+Three caveats bound it. Coverage is $54\%$ and $32\%$, so this is measured on the annotated subset.
+The absolute $\NIR$ of roughly $0.58$ is far below the $0.963$ a lookup achieves for a \emph{seen}
+drug, so the reachable ceiling in this regime is much lower. And target and MoA overlap, so whether
+target adds anything \emph{over} MoA is a further question this measurement does not settle.
+\todo{leave-one-MoA-out arm}

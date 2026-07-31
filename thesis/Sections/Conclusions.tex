@@ -89,12 +89,30 @@ between-drug variance, and a token-level scramble ablation independently. That c
 recording: the controls a critical benchmark demands are the same controls a single negative result
 needs in order to mean anything.
 
-\paragraph{What would change the conclusion.} A drug$\times$cell-line interaction large enough to be
-resolvable would restore a conditional target that no lookup can reach. A working drug-side
-information channel --- most plausibly protein target rather than chemical structure, which is closed
-by measurement, or mechanism at the granularity tested, which is also closed --- would reopen the
-unseen-drug question that the present work scopes itself out of. Both are single measurements, both
-require no GPU time, and both are specified in Section~\ref{sec:limitations}.
+\paragraph{Where the opportunity actually is.} Two further measurements locate it precisely, and
+between them they redirect what follows from this work.
+
+The drug$\times$cell-line interaction is large --- roughly $45\%$ of the drug-specific variance ---
+but it has \emph{no learnable structure}: no cell line modulates different drugs in a consistent
+direction, with an excess within-line consistency of $-0.007$ and an interval excluding anything
+above $+0.002$. So the interaction behaves as irreducible noise for any predictor, and a lookup
+scoring $0.963$ against a $0.968$ ceiling is not evidence that the target has vanished but that the
+lookup is already at the \emph{achievable} ceiling. On seen drugs, nothing beats retrieval, and that
+is a statement about the data rather than about any model.
+
+But a lookup requires the drug to have been seen. For drugs that have not been, protein-target and
+mechanism annotations carry real signal against count-matched nulls
+(\ci{+0.084}{+0.059}{+0.110} and \ci{+0.078}{+0.056}{+0.103}), while chemical structure does not.
+This overturns a pre-registration made earlier in this project, which inferred that unseen drugs
+were unreachable from a gate that tested chemical \emph{structure} --- the channel our own
+drug-knowledge specification ranked lowest --- and never read the target annotations sitting in the
+atlas's own metadata.
+
+So the thesis does not end in closure. It ends with the opportunity located: on seen drugs a
+generative model has nothing to add over retrieval, because the residual part is unpredictable; on
+unseen drugs, where retrieval is impossible by construction, drug-side knowledge works and a model
+can do something a dictionary cannot. That is also the setting the benchmark literature calls
+Leave-Drugs-Out, and the one that matters for drug design.
 
 \paragraph{A note on method.} The substantive results here rest on controls that were added in
 response to specific objections: plate-matched comparison sets after a zero-information baseline
