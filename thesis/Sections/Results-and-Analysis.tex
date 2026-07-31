@@ -84,6 +84,10 @@ drug populations separates them essentially perfectly at pseudobulk ($\paneltau 
 \subsection{The model is drug-blind}
 \label{sec:res-blind}
 
+Having established which instrument can be trusted, we can finally ask the question the thesis
+exists to answer. The answer is uniform across four instruments that fail in different ways, which
+is the only reason to report all four.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lrl}
@@ -139,6 +143,12 @@ response is maximally different still does not change the output.
 \subsection{Where the blindness lives}
 \label{sec:res-mechanism}
 
+A null result invites two readings, and they call for opposite responses: either the model cannot do
+the task, or the task cannot be done. The previous section closed the second --- the ceiling rises
+with aggregation, a third of conditions are identifiable in principle, and the model is at chance
+even on those. So the failure is the model's, and the useful question becomes \emph{where} in the
+model it happens. That question cannot be answered behaviourally; it needs the weights.
+
 Drug identity \emph{is} in the representation: linear probes recover it at $82\%$ (layer 9) and
 $76\%$ (layer 16) against a chance rate of $\approx 8\%$. With cell line, plate and dose projected
 out, decodability \emph{rises} with depth, from $0.354$ at layer 2 to $0.883$ at layer 16. Yet the
@@ -192,6 +202,14 @@ ignoring direction, no change to the target can touch it.
 \subsection{The $\varepsilon$-ladder: no target-side fix works}
 \label{sec:res-epsilon}
 
+The mechanism makes a falsifiable prediction, and this section is its test. If the defect is a
+readout that feels the magnitude of activity in the drug region but not its direction, then improving
+what sits \emph{in} that region cannot help --- and improving the training target is exactly that
+kind of intervention. The obvious objection is that one failed target construction proves nothing, so
+rather than try another we swept the family: entropic regularisation gives a one-parameter path whose
+two endpoints are the two constructions already tested independently, which turns a sequence of
+attempts into a controlled sweep.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{llrl}
@@ -219,6 +237,11 @@ while the defect is the readout ignoring direction within it.
 \subsection{The repair: it was the tokenisation}
 \label{sec:res-encoding}
 
+Every target-side intervention changed \emph{what the target was} and none changed \emph{what its
+tokens encode}. That distinction turns out to be the whole story, and it is measurable rather than
+rhetorical: the question is not how good the target is but what fraction of its tokens carries drug
+identity at all.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lrr}
@@ -227,12 +250,14 @@ Representation & Inter-drug top-200 tokens differing & Replicate retrieval ceili
 \midrule
 full profile (the standard target) & \textbf{34.6 / 200 (17\%)} & 0.742 \\
 shift (treated $-$ control) & 111.4 (56\%) & 0.742 \\
-\textbf{residual (drug-specific)} & \textbf{120.3 / 200 (60\%)} & 0.747 \\
+\textbf{residual (drug-specific)} & \textbf{118.2 / 200 (59\%)} & 0.7432 \\
 \bottomrule
 \end{tabular}
 \caption{$83\%$ of the standard target's tokens are identical between any two drugs in the same
-context. Note the ceiling is \emph{unchanged}: the information was always present, and the
-tokenisation discarded it.}
+context. The residual row is quoted at \textbf{cell-line} scope, which is how the training targets
+were actually built; at plate scope it reads $120.3$ and $0.7467$. Note the retrieval ceiling is
+\emph{unchanged} across all three rows: the information was always present, and the tokenisation
+discarded it.}
 \label{tab:divergence}
 \end{table}
 
@@ -292,6 +317,11 @@ $\varepsilon$-ladder conclusion stands, but ``OT achieved nothing'' is withdrawn
 \subsection{The drug use generalises}
 \label{sec:res-generalisation}
 
+A model that reads the drug token has cleared a low bar, because memorisation requires reading it
+too. Everything scored above came from conditions the model trained on, so the result so far shows
+that the token is consulted --- not that anything transferable was learned. Separating those two
+requires withholding data, and it requires withholding it at the right granularity.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lrrrl}
@@ -325,6 +355,12 @@ $0.500$, \texttt{control\_copy} $0.478$, \texttt{random} $0.502$. The residual f
 
 \subsection{But a lookup table wins}
 \label{sec:res-lookup}
+
+Transfer without memorisation is a real property, but it says nothing about quality: a model can
+apply a learned signature in a new context and still apply it badly. The pre-registered bar was
+therefore never ``beats chance'' --- residual targets are plausibly memorisable, and a predictor that
+simply looks up what this drug did elsewhere needs no model at all. That predictor is the comparison
+that matters.
 
 \begin{table}[h]
 \centering

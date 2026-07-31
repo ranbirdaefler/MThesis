@@ -114,11 +114,17 @@ mechanism, and a quantitative bound on how much the repair can ever recover.
 
   \item[But a lookup table wins.] A per-drug mean residual measured in \emph{other} cell lines
         scores $\NIR = 0.963$ against a replicate ceiling of $0.968$; the $1$B-parameter model
-        reaches $0.639$. If a drug's response is largely a per-drug constant, then a conditional
-        generative model has almost nothing to condition on --- which would make the failure of
-        every conditional arm structural rather than an engineering shortfall.
-        \pending{the transfer coefficient $\Tcoef$ quantifies ``largely''; see
-        Section~\ref{sec:res-transfer}}
+        reaches $0.639$. The model does not merely fail to capture the drug's context-dependence ---
+        it fails to capture the \emph{main effect} that a lookup table obtains for free.
+
+  \item[And yet the lookup is not the ceiling either.] Because $\NIR$ compresses near the top of its
+        range, $\texttt{drug\_lookup} \approx \textrm{ceiling}$ does not mean the modelling target
+        has vanished. Measured in cosine space with measurement noise divided out, the transfer
+        coefficient is $\Tcoef = \ci{0.557}{0.513}{0.601}$ against a simulated $\kappa = 0$ null of
+        $1.001$, with a structure-matched negative control at $+0.000$: \textbf{roughly $45\%$ of
+        the drug-specific signal is a drug$\times$cell-line interaction that no lookup can reach and
+        that the model does not reach either.} The thesis therefore ends not in closure but in a
+        quantified, unclaimed target.
 \end{description}
 
 \subsection{Contributions}
@@ -134,7 +140,8 @@ mechanism, and a quantitative bound on how much the repair can ever recover.
   \item A \textbf{repair} --- residual target encoding --- that produces drug use which generalises
         to unseen (drug, cell line) pairings with no memorisation premium.
   \item A \textbf{quantitative bound} on the remaining headroom, separating the per-drug main effect
-        from the drug$\times$cell-line interaction. \pending{$\Tcoef$}
+        from the drug$\times$cell-line interaction, and showing that the latter --- worth about half
+        the drug-specific variance --- is reached by nothing in the literature or in this thesis.
 \end{enumerate}
 
 \subsection{Outline}

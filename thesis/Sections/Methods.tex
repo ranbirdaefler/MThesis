@@ -130,6 +130,8 @@ does not imply ``different response''. Two remedies are used:
         \emph{grows} across the strata; a flat profile is a red flag.
 \end{enumerate}
 
+\input{figs/fig-instrument}
+
 \paragraph{Uncertainty.} All confidence intervals are clustered bootstraps resampling \emph{cell
 lines}, not conditions. Conditions within a cell line are pseudoreplicates in Hurlbert's
 sense~\cite{hurlbert} --- multiple measurements of one unit treated as independent --- and an
@@ -206,9 +208,25 @@ The control subtraction removes the cell's own state; the mean-over-drugs subtra
 Section~\ref{sec:res-metrics} shows accounts for essentially all of the model's apparent skill. What
 remains is what makes \emph{this} drug different.
 
-\paragraph{Scope.} The generic is estimated per \emph{cell line}, not per plate: reproducibility is
-$62\%$ at cell-line scope versus $19\%$ at plate scope, because a plate holds too few drugs to
-estimate the mean and subtracting a noisy mean injects noise.
+\paragraph{Scope, and a justification that did not survive.} The generic is estimated per
+\emph{cell line} rather than per plate. The original argument was reproducibility --- $62\%$ of
+conditions reproduce across a half-split at cell-line scope against $19\%$ at plate scope --- on the
+reasoning that a plate holds too few drugs to estimate a mean, so subtracting a noisy one injects
+noise.
+
+That comparison does not hold up, and Section~\ref{sec:res-transfer} retracts it. Both figures were
+computed with a \emph{shared} control pseudobulk subtracted from both halves, which makes the halves
+correlate through their common control error --- and it inflates cell-line reproducibility far more
+than plate reproducibility, because the cell-line generic is itself less noisy. Measured honestly,
+with disjoint control halves, the two are comparable: $20\%$ at plate scope against $16\%$ at
+cell-line scope. The reproducibility argument therefore favours neither, and three other diagnostics
+favour plate scope outright.
+
+The targets used throughout this thesis were nonetheless built at cell-line scope, because that
+decision was made before the diagnostics existed. The consequence is stated rather than hidden: the
+residual targets retain plate-level batch structure. This does not touch $\gap$, which is a paired
+contrast in which any component shared by both arms cancels, but it does mean a plate-scoped rebuild
+is the obvious next construction.
 
 \paragraph{Reliability filter.} A condition is kept only if its residual reproduces across a
 half-split, $\cos(\resid_A, \resid_B) > 0.2$. This retains $4{,}091$ of $6{,}617$ conditions
@@ -217,6 +235,8 @@ half-split, $\cos(\resid_A, \resid_B) > 0.2$. This retains $4{,}091$ of $6{,}617
 \paragraph{Encoding.} \texttt{<up genes> \DOWN{} <down genes> \ENDCELL}, $100$ genes per block,
 ordered by signed residual magnitude. Sign is biology, so it is given a symbol rather than being
 folded into a magnitude ranking.
+
+\input{figs/fig-frame}
 
 \paragraph{Scoring.} Predicted and true residuals are both mapped to a signed rank vector (top-$k$
 up positive, top-$k$ down negative, weight $1/\log_2(\textrm{rank}+1)$) so a generated sentence and
@@ -343,4 +363,4 @@ $0.005$, and the different-drug negative control returns $-0.001$.
 
 Finally, $\lVert \resid \rVert / \lVert \shift \rVert$ reports what fraction of the total
 perturbation response the drug-specific frame covers --- the number that scopes every claim in this
-thesis. \pending{both quantities}
+thesis, and one that has not previously been computed for this task.

@@ -27,11 +27,12 @@ arms share the same control cell, but the absolute $\NIR$ values in that frame a
 comparable to the within-plate tables elsewhere. \todo{rescore the generation-free arms within plate
 --- this costs no GPU time}
 
-\paragraph{Frame coverage.} What fraction of the total perturbation response the drug-specific
-residual represents is \pending{$\lVert\resid\rVert/\lVert\shift\rVert$}. Until it is known, the
-correct reading of every positive and negative result in this thesis is bounded: closing the
-drug-specific component means one thing if it is most of the response and another if it is a tenth
-of it.
+\paragraph{Frame coverage.} The drug-specific residual is $\lVert\resid\rVert/\lVert\shift\rVert =
+0.786$ of the response, against $0.620$ for the generic program and batch, and the two are
+essentially orthogonal ($0.786^2 + 0.620^2 = 1.002$). So this frame covers $62\%$ of the response
+\emph{variance} and every result here should be read within that bound --- a real but not total
+share. The remaining $38\%$ is precisely the component the field's absolute-accuracy metrics are
+dominated by, which is why a drug-agnostic predictor scores so well on them.
 
 \subsection{Limitations of the unseen-drug evaluation}
 

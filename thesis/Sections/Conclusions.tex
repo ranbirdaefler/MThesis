@@ -49,13 +49,26 @@ conditions. There is no memorisation premium: the model learned a drug represent
 to contexts in which it never observed that drug. Held-out \emph{drugs} remain null, the control
 firing as designed.
 
-\paragraph{But a lookup table wins, and that is the finding.} A per-drug mean residual measured in
-other cell lines scores $0.963$ against a $0.968$ replicate ceiling; the model reaches $0.639$. If a
-drug's transcriptional response is largely a per-drug constant, then a conditional generative model
-has almost nothing to condition on, and the uniform failure of the conditional arms is structural
-rather than an engineering shortfall --- the correct formulation of this task would be retrieval, not
-generation. \pending{the transfer coefficient quantifies ``largely''; the claim is qualitative until
-it lands}
+\paragraph{But a lookup table wins --- and it is not the ceiling either.} A per-drug mean residual
+measured in other cell lines scores $0.963$ against a $0.968$ replicate ceiling; the model reaches
+$0.639$. The natural reading of those three numbers is that the drug's response is essentially a
+per-drug constant, that a conditional model therefore has almost nothing to condition on, and that
+the correct formulation of the task is retrieval rather than generation. We initially drew exactly
+that conclusion, and it is wrong.
+
+It is wrong because $\NIR$ compresses near the top of its range --- the same class of failure this
+thesis opens by documenting, arriving a second time in our own preferred instrument, at the ceiling
+instead of the floor. Measured in cosine space with measurement noise divided out, the transfer
+coefficient is $\Tcoef = \ci{0.557}{0.513}{0.601}$ against a simulated no-interaction null of
+$1.001$, with a structure-matched negative control at $+0.000$. Roughly $45\%$ of the drug-specific
+signal is a drug$\times$cell-line interaction. The per-drug constant is what the lookup captures and
+what the model gropes toward; the interaction is reached by neither, and by nothing else in the
+literature we are aware of.
+
+So the honest statement of what the model does is sharper, and less flattering, than ``it misses the
+interaction''. It fails to recover the \emph{main effect} that a numpy dictionary obtains for free,
+and the interaction is a further prize that no method here --- ours least of all --- comes near. Two
+different failures, and collapsing them undersells both.
 
 That conclusion connects this work to an assumption the field has carried since the Connectivity
 Map: that a compound induces a characteristic signature stable enough across cellular contexts for

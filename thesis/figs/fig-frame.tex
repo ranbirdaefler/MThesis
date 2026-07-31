@@ -1,0 +1,94 @@
+% fig-frame.tex -- the residual frame and the encoding fork.
+% Rank 1 schematic. No data dependency; annotations from RESULTS/target_divergence.json
+% (cellline scope: full 34.59 / shift 111.42 / residual 118.25; ceilings 0.7420 / 0.7420 / 0.7432).
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  bar/.style={fill=black!55, draw=none},
+  sharedbar/.style={fill=black!18, draw=none},
+  gene/.style={draw=black!35, rounded corners=1pt, inner sep=1.6pt, font=\ttfamily\scriptsize},
+  shared/.style={gene, fill=black!6, text=black!45},
+  differs/.style={gene, fill=black!18, text=black, very thick, draw=black!70},
+  lbl/.style={font=\scriptsize, text=black!70},
+  op/.style={font=\large},
+]
+
+% ---------------------------------------------------------------- LEFT: construction
+% a small bar profile: #1 anchor x, #2 y, #3 list of heights, #4 style
+\newcommand{\prof}[4]{%
+  \foreach \h [count=\i from 0] in {#3} {
+    \fill[#4] ($(#1,#2)+(\i*2.2pt,0)$) rectangle ++(1.7pt,\h pt);
+  }%
+}
+
+\node[lbl] at (0.55,1.28) {treated};
+\prof{0}{0.55}{16,11,8,13,6,9,4,7}{bar}
+\node[op] at (1.05,0.75) {$-$};
+\node[lbl] at (1.95,1.28) {control};
+\prof{1.4}{0.55}{9,7,5,10,3,6,2,5}{bar}
+\node[op] at (2.45,0.75) {$=$};
+\node[lbl] at (3.35,1.28) {shift $\shift(d,c)$};
+\prof{2.8}{0.55}{7,4,3,3,3,3,2,2}{bar}
+
+\node[op] at (1.05,-0.55) {$-$};
+\node[lbl, align=center] at (2.0,0.05) {mean over the other drugs\\in this cell line};
+\node[lbl] at (1.95,-0.08) {};
+\node[lbl] at (0.6,-1.02) {generic$(c)$};
+\prof{0}{-0.75}{6,4,3,2,3,2,2,2}{sharedbar}
+\node[op] at (2.45,-0.55) {$=$};
+\node[lbl] at (3.5,-1.02) {residual $\resid(d,c)$};
+\prof{2.8}{-0.75}{1,0,0,1,0,1,0,0}{bar}
+
+\draw[black!25] (4.35,-1.35) -- (4.35,1.55);
+
+% ---------------------------------------------------------------- RIGHT: the encoding fork
+\node[lbl, align=left] at (7.35,1.45) {the \emph{same} measurement, written two ways};
+
+% (a) expression-ranked cell sentence -- the standard target
+\node[lbl, anchor=west] at (4.7,1.05) {\textbf{(a)} genes ranked by \emph{expression}};
+\node[anchor=west] at (4.7,0.66) {%
+  \begin{tabular}{@{}l@{}}
+  \tikz[baseline]{\node[shared]{ACTB};} \tikz[baseline]{\node[shared]{GAPDH};}
+  \tikz[baseline]{\node[shared]{EEF1A1};} \tikz[baseline]{\node[differs]{CDKN1A};}
+  \tikz[baseline]{\node[shared]{TPT1};} $\cdots$
+  \end{tabular}};
+\node[anchor=west] at (4.7,0.28) {%
+  \begin{tabular}{@{}l@{}}
+  \tikz[baseline]{\node[shared]{ACTB};} \tikz[baseline]{\node[shared]{GAPDH};}
+  \tikz[baseline]{\node[shared]{EEF1A1};} \tikz[baseline]{\node[differs]{HMOX1};}
+  \tikz[baseline]{\node[shared]{TPT1};} $\cdots$
+  \end{tabular}};
+\node[lbl, anchor=west, text=black!85] at (4.7,-0.06)
+  {only \textbf{34.6 / 200} tokens differ between the two drugs \;(\textbf{17\%})};
+
+% (b) signed residual signature -- the repair
+\node[lbl, anchor=west] at (4.7,-0.52) {\textbf{(b)} genes ranked by \emph{signed residual}};
+\node[anchor=west] at (4.7,-0.90) {%
+  \begin{tabular}{@{}l@{}}
+  \tikz[baseline]{\node[differs]{CDKN1A};} \tikz[baseline]{\node[differs]{MDM2};}
+  \tikz[baseline]{\node[gene, fill=black!4]{[DOWN]};}
+  \tikz[baseline]{\node[differs]{CCNB1};} $\cdots$
+  \end{tabular}};
+\node[lbl, anchor=west, text=black!85] at (4.7,-1.26)
+  {\textbf{118.2 / 200} differ \;(\textbf{59\%})};
+
+% the invariant that carries the argument
+\draw[decorate, decoration={brace, amplitude=4pt}, black!55]
+  (4.65,-1.52) -- (10.5,-1.52);
+\node[lbl, anchor=north, text=black!85, align=center] at (7.6,-1.66)
+  {replicate-retrieval ceiling is \textbf{unchanged}: $0.742 \rightarrow 0.743$};
+
+\end{tikzpicture}
+\caption[The residual frame and the encoding fork]{\textbf{The information was always present; the
+tokenisation discarded it.} Left: the drug-specific residual is built by two subtractions --- the
+control removes the cell's own state, and the mean over the other drugs in the same cell line removes
+the \emph{generic} program that every compound triggers. Right: the same measurement written two
+ways. Ranking genes by expression (a) puts housekeeping genes first, so only $34.6$ of the top $200$
+tokens differ between two drugs in the same context; ranking by signed residual (b) raises that to
+$118.2$. The bracket is the point of the figure: the replicate-retrieval ceiling is essentially
+identical under both encodings ($0.742$ against $0.743$), so no information has been added --- what
+changed is how much of it the token sequence exposes to a cross-entropy loss. Conditions are kept
+only if their residual reproduces across a half-split ($\cos > 0.2$; $4{,}091$ of $6{,}617$).}
+\label{fig:frame}
+\end{figure}
