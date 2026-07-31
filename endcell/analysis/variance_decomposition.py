@@ -305,6 +305,127 @@ def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, 
     return rows
 
 
+def kappa_structure(kept, seed=0, min_rel=0.05, min_lines=3, n_boot=2000, rng_ci=None):
+    """Is the drug x cell-line interaction STRUCTURED, or idiosyncratic?
+
+    T says kappa is ~45% of the residual variance. It does NOT say that 45% is learnable. If each
+    cell line modulates drug response in a CONSISTENT direction -- a characteristic way that line
+    bends whatever you give it -- then that direction is estimable from the line's own cells, and a
+    conditional model has a concrete thing to learn. If instead kappa is specific to each
+    drug-and-line pairing, the variance is real but there is nothing to generalise from, and the
+    honest claim changes from "an unclaimed target" to "an unlearnable one".
+
+    The test:
+        kappa(d,c) = residual(d,c) - beta_hat(d)      with beta_hat(d) = mean over OTHER lines
+        signal : cos(kappa(d,c), kappa(d',c))   d != d', SAME cell line
+        null   : cos(kappa(d,c), kappa(d',c'))  d != d', DIFFERENT cell lines
+
+    beta_hat is leave-one-line-out so that kappa(d,c) is not contaminated by its own residual --
+    without that, subtracting a mean containing r(d,c) induces a -1/(m-1) correlation and the
+    signal arm is biased downward by construction.
+
+    Both arms are disattenuated by kappa's own split-half reliability, since kappa is a difference
+    of two noisy quantities and is therefore noisier than the residual it comes from.
+    """
+    rng = np.random.RandomState(seed + 4242)
+    by_drug = defaultdict(list)
+    for k in kept:
+        by_drug[k[0]].append(k)
+
+    # kappa, and its half-split counterpart, per condition
+    kap, kap_rel = {}, {}
+    for d, keys in by_drug.items():
+        lines = {k[1] for k in keys}
+        if len(lines) < min_lines:
+            continue
+        for k in keys:
+            oth = [k2 for k2 in keys if k2[1] != k[1]]
+            if not oth:
+                continue
+            beta = np.mean(np.stack([kept[k2]["residual"] for k2 in oth]), 0)
+            kap[k] = kept[k]["residual"] - beta
+            a = kept[k]["residual_A"] - beta
+            b = kept[k]["residual_B"] - beta
+            kap_rel[k] = spearman_brown(cos(a, b))
+    if len(kap) < 20:
+        logger.warning("  kappa-structure: only %d conditions with >=%d cell lines -- not testable"
+                       % (len(kap), min_lines))
+        return None
+
+    by_cl = defaultdict(list)
+    for k in kap:
+        by_cl[k[1]].append(k)
+
+    def collect(same_line, n_target=4000):
+        rows = []
+        if same_line:
+            for c, ks in by_cl.items():
+                for i in range(len(ks)):
+                    for j in range(i + 1, len(ks)):
+                        if ks[i][0] == ks[j][0]:
+                            continue
+                        rows.append((ks[i], ks[j]))
+        else:
+            allk = list(kap)
+            for _ in range(n_target * 4):
+                if len(rows) >= n_target:
+                    break
+                a, b = allk[rng.randint(len(allk))], allk[rng.randint(len(allk))]
+                if a[0] == b[0] or a[1] == b[1]:
+                    continue
+                rows.append((a, b))
+        out = []
+        for a, b in rows:
+            ra, rb = kap_rel.get(a, 0.0), kap_rel.get(b, 0.0)
+            if ra < min_rel or rb < min_rel:
+                continue
+            r = cos(kap[a], kap[b])
+            out.append({"cluster": a[1], "raw": r, "dis": float(r / np.sqrt(ra * rb))})
+        if same_line and len(out) > n_target:
+            sel = rng.choice(len(out), n_target, replace=False)
+            out = [out[i] for i in sel]
+        return out
+
+    sig, nul = collect(True), collect(False)
+    rng_ci = rng_ci if rng_ci is not None else np.random.RandomState(seed)
+    res = {}
+    for name, rows in (("same_cell_line", sig), ("different_cell_lines", nul)):
+        if not rows:
+            continue
+        ci = clustered_ci([r["dis"] for r in rows], [r["cluster"] for r in rows], rng_ci, n_boot)
+        m, lo, hi, n, ncl = ci
+        res[name] = {"disattenuated": m, "ci": [lo, hi], "n_pairs": n, "n_clusters": ncl,
+                     "raw_cos": float(np.mean([r["raw"] for r in rows]))}
+    res["n_conditions"] = len(kap)
+    res["mean_kappa_reliability"] = float(np.mean(list(kap_rel.values())))
+
+    logger.info("-" * 100)
+    logger.info("  KAPPA STRUCTURE -- is the interaction consistent WITHIN a cell line?")
+    logger.info(f"       kappa built on {len(kap)} conditions (drugs seen in >= {min_lines} lines); "
+                f"mean kappa reliability {res['mean_kappa_reliability']:.3f}")
+    for name in ("same_cell_line", "different_cell_lines"):
+        if name in res:
+            v = res[name]
+            logger.info(f"       {name:22s} raw cos {v['raw_cos']:+.3f} -> disattenuated "
+                        f"{v['disattenuated']:+.3f} [{v['ci'][0]:+.3f}, {v['ci'][1]:+.3f}]  "
+                        f"({v['n_pairs']} pairs)")
+    if "same_cell_line" in res and "different_cell_lines" in res:
+        d = res["same_cell_line"]["disattenuated"] - res["different_cell_lines"]["disattenuated"]
+        res["excess_within_line"] = d
+        logger.info(f"       EXCESS within-line consistency = {d:+.3f}")
+        if d > 0.10 and res["same_cell_line"]["ci"][0] > res["different_cell_lines"]["disattenuated"]:
+            logger.info("       => the interaction is STRUCTURED: a cell line bends different drugs "
+                        "in a consistent direction, so that direction is estimable from the line's "
+                        "own cells and a conditional model has something concrete to learn. The 45% "
+                        "is a CLAIMABLE target.")
+        else:
+            logger.info("       => the interaction is IDIOSYNCRATIC: it is specific to each "
+                        "(drug, cell line) pairing, with no consistent per-line direction to "
+                        "generalise from. The 45% is real but there is nothing to learn it FROM at "
+                        "this sample size -- a different and equally publishable claim.")
+    return res
+
+
 def cross_line_diff_drug_pairs(kept, n_pairs=4000, seed=0, min_rel=0.05):
     """STRUCTURE-MATCHED negative control: DIFFERENT drug, DIFFERENT cell line.
 
@@ -473,6 +594,12 @@ def report(kept, args, rng):
     out["simulated_null"] = sims
     t_null = sims["kappa_frac=0.0"]["T_hat"]
 
+    # ---- is the interaction learnable, or merely present? ----
+    if args.kappa_structure:
+        ks = kappa_structure(kept_f, seed=args.seed, n_boot=args.n_boot, rng_ci=rng)
+        if ks:
+            out["kappa_structure"] = ks
+
     # ---- verdict -- GATED ON THE NEGATIVE CONTROL ----
     # An earlier version of this function compared T to the simulated null and printed a verdict
     # WITHOUT consulting the negative control. On the first real run that produced a confident
@@ -604,6 +731,9 @@ def main():
                          "control. Run both.")
     ap.add_argument("--project_generic", action="store_true",
                     help="remove the generic DIRECTION per condition (orthogonal rejection) instead of subtracting the mean vector. Kills potency leakage: the mean subtraction leaves (a_d - mean(a))*g(c) in every residual, which makes unrelated drugs correlate.")
+    ap.add_argument("--kappa_structure", action="store_true",
+                    help="also ask whether the drug x cell-line interaction is CONSISTENT within a "
+                         "cell line. T says how big kappa is; this says whether it is learnable.")
     ap.add_argument("--min_neg_margin", type=float, default=0.15,
                     help="T must exceed the structure-matched negative control by at least this "
                          "much, or the verdict is VOID. Guards the failure mode where every arm "
