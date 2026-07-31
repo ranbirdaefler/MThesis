@@ -24,16 +24,22 @@ Predictor & Information & $\DEdr$ (K50) & partial-$\DEdr$ \\
 \texttt{revert\_mean} (predict mean control) & none, no fit & 0.961 & 0.25 \\
 ridge linear (control $\rightarrow$ shift) & control & 0.947 & 0.28 \\
 noise ceiling (two real cells) & --- & 0.76 & --- \\
-model (1B LLM) & control + drug & 0.73 & $\approx 0.26$ \\
+model (1B LLM) & control + drug & 0.73 & not measured \\
 \bottomrule
 \end{tabular}
-\caption{$\DEdr$ is saturated by a control artifact. Regressing out the control leaves
-$\approx0.26$ of real but \emph{drug-agnostic} skill, matched by a no-fit baseline.}
+\caption{$\DEdr$ is saturated by a control artifact. Regressing the control out of the two fitted
+baselines leaves $\approx 0.26$ of real but \emph{drug-agnostic} skill, and a baseline that performs
+no fitting at all reaches the same figure. The model's own partial-$\DEdr$ was never computed --- it
+requires a GPU pass that was not run --- so the cell is marked rather than filled with the expected
+value; the model's $\paneltau$, which \emph{is} measured, carries the same conclusion below.}
 \label{tab:de-artifact}
 \end{table}
 
-Removing the control (partial-$\DEdr$) collapses the raw $0.95$ to $\approx 0.26$ --- and that
-residue is matched by a baseline that performs no fitting at all. The response decomposes into
+Removing the control (partial-$\DEdr$) collapses the raw $0.95$ to $\approx 0.26$ for the two
+baselines that were scored --- and that residue is matched by a baseline that performs no fitting at
+all. The model's own partial-$\DEdr$ is not measured, so the comparison is anchored instead to
+$\paneltau$, which is measured for every arm and tells the same story: \texttt{revert\_mean} $0.268$,
+ridge $0.265$, model $0.257$ (tier 2, \texttt{worst} convention). The response decomposes into
 control reversion (an artifact), a generic drug program ($\approx 0.26$, drug-agnostic, trivially
 matched), and a drug-specific component that no predictor captures.
 
@@ -294,7 +300,13 @@ consensus (global mean) & $\rightarrow\infty$ & \ci{-0.010}{-0.022}{+0.003} & nu
 \bottomrule
 \end{tabular}
 \caption{The regularisation parameter interpolates between the two target constructions tested
-independently. Every point on the ladder is drug-blind.}
+independently, and no point on the ladder lifts the model out of the near-null regime. These figures
+come from a \emph{random-partner} scramble; Section~\ref{sec:res-encoding} introduces a sharper
+stratified test under which the optimal-transport arm does show a weak effect
+(\ci{+0.0263}{+0.0069}{+0.0476}), an order of magnitude below what re-encoding the target achieves.
+The consensus endpoint is additionally the ladder's weakest-evidenced point: that arm was stopped at
+roughly $60\%$ of an epoch and its tier-1 NIR was unscoreable, so the negative rests on the
+single-cell and optimal-transport endpoints.}
 \label{tab:epsilon}
 \end{table}
 
@@ -344,9 +356,9 @@ $60\%$ and produces the first non-null result in the project:
 \toprule
 Swap stratum & Residual model & Single-cell (control) & OT/T2 (control) \\
 \midrule
-\texttt{near} ($\cos = +0.41$) & \ci{+0.0351}{+0.0061}{+0.0656} & $-0.0140$ & $+0.0073$ \\
-\texttt{orth} ($\cos \approx 0$) & \ci{+0.0716}{+0.0371}{+0.1059} & $-0.0206$ & $+0.0144$ \\
-\textbf{\texttt{opposite}} ($\cos = -0.33$) & \ci{+0.1429}{+0.1112}{+0.1787} & $-0.0204$ & \ci{+0.0263}{+0.0069}{+0.0476} \\
+\texttt{near} ($\cos = +0.41$) & \ci{+0.0351}{+0.0061}{+0.0656} & $-0.0014$ & $-0.0072$ \\
+\texttt{orth} ($\cos \approx 0$) & \ci{+0.0716}{+0.0371}{+0.1059} & $-0.0006$ & $+0.0158$ \\
+\textbf{\texttt{opposite}} ($\cos = -0.33$) & \ci{+0.1429}{+0.1112}{+0.1787} & \ci{-0.0084}{-0.0394}{+0.0234} & \ci{+0.0248}{+0.0079}{+0.0415} \\
 \midrule
 Gradient with dissimilarity & \textbf{yes (all three clear zero)} & no (flat) & yes \\
 \bottomrule

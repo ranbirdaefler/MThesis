@@ -95,9 +95,11 @@ mechanism, and a quantitative bound on how much the repair can ever recover.
         every depth tested. The generation readout is sensitive to the \emph{magnitude} of activity
         in the drug region and blind to its \emph{direction}.
 
-  \item[No target-side fix works.] Entropic optimal-transport regularisation gives a one-parameter
-        family whose endpoints are exactly the two target-side repairs we tried. Sweeping it leaves
-        the model drug-blind at every point.
+  \item[No target-side fix is sufficient.] Entropic optimal-transport regularisation gives a
+        one-parameter family whose endpoints are exactly the two target-side repairs we tried.
+        Sweeping it leaves the model in the near-null regime throughout: one arm shows a weak effect
+        under a sharper test introduced later, and even that sits an order of magnitude below what
+        changing the \emph{encoding} achieves.
 
   \item[The bottleneck is the tokenisation.] Because a cell sentence ranks genes by expression,
         $83\%$ of the target tokens are identical between any two drugs in the same context.

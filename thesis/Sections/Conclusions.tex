@@ -37,8 +37,11 @@ flexible composition and never enters the causally active subspace.
 genes by expression, $83\%$ of the target tokens are identical between any two drugs in the same
 context, so cross-entropy allocates roughly $1\%$ of its gradient to drug identity. This explains a
 uniform pattern of failure: an entire $\varepsilon$-ladder of target constructions, from a single
-state-matched treated cell to a full pseudobulk collapse, is drug-blind at every point, because all
-of them change \emph{what the target is} and none change \emph{what the tokens encode}. Re-encoding
+state-matched treated cell to a full pseudobulk collapse, stays in the near-null regime, because all
+of them change \emph{what the target is} and none change \emph{what the tokens encode}. (One arm,
+the optimal-transport target, does show a weak effect once a sharper stratified test is applied ---
+\ci{+0.0263}{+0.0069}{+0.0476} --- but an order of magnitude below what re-encoding achieves, which
+is the distinction that matters.) Re-encoding
 the target as the drug-specific residual raises the differing fraction to $60\%$ and produces the
 first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
 matched control that stays null.
