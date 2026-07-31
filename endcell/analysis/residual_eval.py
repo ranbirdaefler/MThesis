@@ -123,17 +123,41 @@ def nir_from_sims(own, others):
 
 
 # ----------------------------------------------------------------- prompts
-def scramble_prompt(prompt, orig_drug, new_drug, new_moa):
-    i = prompt.find(CTRL_MARKER)
-    if i == -1:
+INSTR_MARKER = "Predict the response of"
+
+
+def scramble_prompt(prompt, orig_drug, new_drug, new_moa, fields="both"):
+    """Replace the drug name and/or the mechanism, leaving every other byte identical.
+
+    Operates on the INSTRUCTION LINE wherever it sits, rather than on everything preceding the
+    control marker. Under `--prompt_order drug_last` the instruction comes AFTER the control
+    sentence, and the old pre/rest split on "Control cell:" would have found no drug name to
+    replace and silently returned None -- dropping the arm without saying so.
+
+    fields:
+      "drug" -- swap the identity token only, keep the mechanism. Isolates whether the model reads
+                the drug NAME.
+      "moa"  -- swap the mechanism only, keep the name. Isolates whether the model reads the
+                KNOWLEDGE CHANNEL it is already being given. This is the question the channel gate
+                raises (mechanism carries real signal) and that the unseen-drug arm, being
+                underpowered, cannot answer.
+      "both" -- the original manipulation, retained for continuity.
+    """
+    lines = prompt.split("\n")
+    idx = next((i for i, l in enumerate(lines) if l.startswith(INSTR_MARKER)), None)
+    if idx is None:
         return None
-    pre, rest = prompt[:i], prompt[i:]
-    if orig_drug not in pre:
-        return None
-    pre = pre.replace(orig_drug, new_drug, 1)
-    if new_moa:
-        pre = re.sub(r"(Mechanism:\s*)([^\n]*)", r"\1" + new_moa.replace("\\", "\\\\"), pre, count=1)
-    return pre + rest
+    line = lines[idx]
+    if fields in ("drug", "both"):
+        if orig_drug not in line:
+            return None
+        line = line.replace(orig_drug, new_drug, 1)
+    if fields in ("moa", "both") and new_moa:
+        # lambda replacement: a plain string would re-interpret backslashes in the MoA text
+        line = re.sub(r"(Mechanism:\s*).*$", lambda m: m.group(1) + new_moa + ".", line)
+    lines[idx] = line
+    out = "\n".join(lines)
+    return out if out != prompt else None
 
 
 def main():
@@ -150,6 +174,14 @@ def main():
                          "a handful of points can exclude zero by chance)")
     ap.add_argument("--min_split_cell_lines", type=int, default=10)
     ap.add_argument("--n_conditions", type=int, default=200)
+    ap.add_argument("--prompt_order", choices=["drug_first", "drug_last"], default="drug_first",
+                    help="MUST match the order the checkpoint was trained on. drug_last places the "
+                         "instruction immediately before generation instead of several hundred "
+                         "tokens upstream behind the control cell sentence.")
+    ap.add_argument("--field_decomp", action="store_true",
+                    help="add drug-only and mechanism-only scramble arms on the opposite stratum, "
+                         "to separate 'reads the identity token' from 'reads the knowledge channel "
+                         "it is already given'. Costs ~1.5x generation.")
     ap.add_argument("--split_quota", default=None,
                     help="stratified sampling by holdout split, e.g. "
                          "'train=200,unseen_combo=250,unseen_drug=150'. Overrides --n_conditions. A "
@@ -403,7 +435,8 @@ def main():
             continue
         ctrl_vec = np.asarray(X[rows[rng.randint(len(rows))]].todense()).ravel()
         prompt = brt.format_prompt(cvcl.get(c, c), d, brt.parse_dose(conc_of.get(ds, "unknown")),
-                                   moa_of.get(d, "unclear"), brt.expr_to_sentence(ctrl_vec, panel))
+                                   moa_of.get(d, "unclear"), brt.expr_to_sentence(ctrl_vec, panel),
+                                   order=args.prompt_order)
         # scramble arms across SIMILARITY STRATA (see partners{} above)
         if key not in partners:
             continue
@@ -414,6 +447,14 @@ def main():
             sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"))
             if sp:
                 arms[f"scramble_{strat}"] = generate([sp] * args.k_samples)
+        # FIELD DECOMPOSITION: which part of the prompt is actually read? Run on the OPPOSITE
+        # partner only -- the sharpest stratum -- to keep the generation cost to 1.5x.
+        if args.field_decomp:
+            bkey = pinfo["opposite"]
+            for fld in ("drug", "moa"):
+                sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"), fields=fld)
+                if sp:                       # None when the swap would not change the prompt,
+                    arms[f"scramble_{fld}only"] = generate([sp] * args.k_samples)
         for g in arms.values():
             track(g)
         row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained,
@@ -497,6 +538,7 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
 
     means = {}
     for a in ("ceiling", "model", "scramble_near", "scramble_orth", "scramble_opposite",
+              "scramble_drugonly", "scramble_moaonly",
               "drug_lookup", "drug_lookup_1", "moa_lookup", "control_copy", "generic", "random"):
         v = [r[a] for r in recs if r.get(a) is not None]
         if v:
@@ -541,6 +583,35 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
             logger.info(f"    model - {b:14s} {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  n={n}  "
                         f"{'model WINS' if lo > 0 else ('model LOSES' if hi < 0 else 'tie')}")
     means["vs_baselines"] = base_out
+
+    # --- (0b) FIELD DECOMPOSITION: which part of the prompt does the model actually read? ---
+    if any(r.get("scramble_drugonly") is not None for r in recs):
+        logger.info("-" * 100)
+        logger.info("  WHICH FIELD IS READ? Each arm swaps ONE part of the instruction to the "
+                    "opposite-signature drug and leaves the rest byte-identical.")
+        fd = {}
+        for a, what in (("scramble_drugonly", "drug NAME only (mechanism kept)"),
+                        ("scramble_moaonly", "MECHANISM only (name kept)"),
+                        ("scramble_opposite", "both (the standard arm)")):
+            r = _clustered_ci(recs, "model", a, rng, args.n_boot)
+            if r:
+                m, lo, hi, n, _ = r
+                fd[a] = {"gap": m, "ci": [lo, hi], "n": n}
+                logger.info(f"    swap {what:34s} gap = {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  n={n}  "
+                            f"{'READ' if lo > 0 else 'not detected'}")
+        means["field_decomposition"] = fd
+        dm = fd.get("scramble_moaonly")
+        if dm is not None:
+            if dm["ci"][0] > 0:
+                logger.info("    >>> the model DOES read the mechanism string it is given. A "
+                            "channel-conditioned prompt (adding protein targets) is therefore "
+                            "well motivated.")
+            else:
+                logger.info("    >>> the model does NOT measurably read the mechanism string it is "
+                            "already given -- and the channel gate shows that field carries real "
+                            "signal. The bottleneck for unseen drugs is the READOUT, not the "
+                            "information, so adding a target field to the prompt would likely "
+                            "change nothing.")
 
     # --- (1) STRATIFIED model - scramble: the gap should GROW near -> orth -> opposite ---
     logger.info("-" * 100)

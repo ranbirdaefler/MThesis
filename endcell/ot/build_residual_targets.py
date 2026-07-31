@@ -74,11 +74,29 @@ def parse_dose(conc_str):
     return "unknown"
 
 
-def format_prompt(cell_line_name, drug, dose_str, moa, control_sentence):
+def format_prompt(cell_line_name, drug, dose_str, moa, control_sentence, order="drug_first"):
+    """Build the prompt. `order` decides where the drug sits relative to generation.
+
+    drug_first (the original): the instruction leads, then the control cell sentence, then the
+      generation point. The control sentence is ~123 gene symbols, i.e. several hundred BPE tokens,
+      so the drug name ends up buried that far upstream of the first generated token.
+
+    drug_last: the control cell leads and the instruction is moved to sit immediately before
+      generation. Nothing about the CONTENT changes -- identical fields, identical values, identical
+      target -- only the distance between the drug token and the token that has to condition on it.
+
+    This is a genuinely separate hypothesis from the two already tested. Q13 says the readout is
+    direction-blind; Q15 says the target's tokens are diluted. Neither addresses the possibility that
+    the drug is simply too far away for attention to carry it to the generation point, and that
+    possibility is cheap to falsify.
+    """
     if not moa or moa in ("unknown", "nan", "None"):
         moa = "unclear"
-    return (f"Predict the response of {cell_line_name} to {drug} at {dose_str}. Mechanism: {moa}."
-            f"\nControl cell: {control_sentence}\n\nResponse cell:")
+    instr = f"Predict the response of {cell_line_name} to {drug} at {dose_str}. Mechanism: {moa}."
+    ctrl = f"Control cell: {control_sentence}"
+    if order == "drug_last":
+        return f"{ctrl}\n{instr}\n\nResponse cell:"
+    return f"{instr}\n{ctrl}\n\nResponse cell:"
 
 
 def load_meta_maps(repo=TAHOE_REPO):
@@ -313,7 +331,8 @@ def run(args):
             moa = moa_of.get(d, "unclear")
             for ri in take:
                 ctrl_vec = np.asarray(X[ri].todense()).ravel()
-                prompt = format_prompt(cname, d, dstr, moa, expr_to_sentence(ctrl_vec, panel_genes))
+                prompt = format_prompt(cname, d, dstr, moa, expr_to_sentence(ctrl_vec, panel_genes),
+                                       order=args.prompt_order)
                 out.write(json.dumps({
                     "prompt": prompt, "response": resp,
                     "metadata": {"drug": d, "cell_line_id": c, "plate": p, "dose_float": ds,
@@ -403,6 +422,11 @@ def main():
     ap.add_argument("--holdout_drugs", type=float, default=0.0,
                     help="fraction of DRUGS withheld entirely -> unseen-drug control (expected to fail "
                          "given the SAR gate; proves transfer requires having seen the drug)")
+    ap.add_argument("--prompt_order", choices=["drug_first", "drug_last"], default="drug_first",
+                    help="drug_last moves the instruction to sit immediately before generation, "
+                         "instead of leaving it several hundred tokens upstream behind the control "
+                         "cell sentence. Content is identical; only the distance changes. The eval "
+                         "MUST be run with the same value.")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out_dir", default="RESULTS/residual_targets")
     ap.add_argument("--selftest", action="store_true")
