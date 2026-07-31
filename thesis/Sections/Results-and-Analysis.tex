@@ -77,6 +77,25 @@ discrepancy --- genetic versus drug perturbation, and a discriminative regressio
 autoregressive generative one --- and Section~\ref{sec:res-lookup} supplies a third and more
 structural possibility.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig-calibration}
+\caption[The standard metric is exploitable]{\textbf{Under the standard metric, less information
+yields a higher score.} (a) A predictor that places every gene at the middle rank --- carrying
+nothing about drug, cell or biology --- scores $\DEdr = 0.9999$, above the two-real-cell noise
+ceiling and above both the model and its own scramble. The inverted ordering is the signature of an
+artifact rather than of skill, and its cause is control regression-to-the-mean. Tier 2, $n=400$
+conditions. No intervals are drawn: the stored ones are normal approximations rather than the
+cell-line-clustered bootstraps used everywhere else in this thesis, and mixing the two conventions
+on one axis would misrepresent both. (b) Grading the \emph{metrics} rather than the models. The
+displacement drawn is the Dynamic Range Fraction, on a scale where $0$ is the drug-agnostic baseline
+and $1$ a perfect predictor, so a negative value means the metric ranks an uninformative baseline
+\emph{above} the noise ceiling. Only $\NIR$ points forward. $655$ drugs over $61$ cell-line$\times$plate
+groups, within plate. \texttt{weighted\_r2} carries no directional claim --- its sign tracks cell
+count, and it is approximately neutral.}
+\label{fig:calibration}
+\end{figure}
+
 \paragraph{The metric can discriminate; the model cannot.} A spike-in forced choice between two real
 drug populations separates them essentially perfectly at pseudobulk ($\paneltau = 1.000$, $\DEdr =
 0.995$, top-$n$ $\tau = 0.987$, plate held constant). The instrument is not the bottleneck.
@@ -135,6 +154,23 @@ leak-immune $\gap$ remains null. The model is drug-blind \emph{even where the ta
 winnable}. The ceiling itself rises with aggregation ($0.61$ at 10 cells, $0.76$ at 40, $0.85$ at
 120), so the signal is real and noise-limited.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig-difficulty}
+\caption[Difficulty structure and the stratum ladder]{\textbf{The task is winnable where the noise
+ceiling is high --- and precisely there, a predictor containing no drug information matches the
+model.} (a) The ceiling rises steadily with the number of cells per condition, cross-plate and
+within plate, so identifiability is noise-limited rather than absent: the drug signal is real and
+emerges under aggregation. (b) Conditions binned by their own ceiling, with five arms in every
+stratum. On the identifiable stratum ($n=204$) the model reaches $0.768$ --- and a control-copy
+baseline that simply reproduces the untreated cell, and therefore knows nothing whatever about the
+drug, reaches $0.766$. The paired contrast beneath each stratum is
+\ci{+0.002}{-0.026}{+0.028} there, clustered over cell lines. Showing the model alone across these
+strata would make the visual claim that it does better on winnable drugs; the control arm is what
+shows that it does not.}
+\label{fig:difficulty}
+\end{figure}
+
 Second, \emph{does the scramble swap in similar drugs?} The swap-distance sweep resolves this:
 $\gap$ is null in every distance bin including the far tail ($-0.019$), across a $2.3\times$ spread
 in swap distance, with a trend correlation of $+0.051$. Telling the model it is a drug whose true
@@ -180,6 +216,24 @@ held-out half --- and it is null at every depth. Swap values carry no dispersion
 the per-prompt distributions to two means before storing them.}
 \label{tab:workspace}
 \end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig-mechanism}
+\caption[The drug is encoded more with depth and never read for identity]{\textbf{The model computes
+an increasingly explicit drug representation and sets it aside.} (a) With cell line, plate and dose
+projected out, drug decodability rises monotonically with depth, from $0.354$ at layer 2 to $0.883$
+at layer 16, against a chance rate of $0.083$; the causal variance share of that same purified
+subspace stays flat near $0.03$, against roughly $0.6$ for cell line. The raw probe is drawn too and
+behaves differently --- it peaks at layer 9 and declines --- because the two series are easily
+conflated and the dissociation rests on the context-removed one. (b) The identity test, on a log
+axis because late-layer divergences are small for everything. Overwriting drug A's code with drug
+B's, inside the purified subspace, perturbs the output \emph{less} than injecting a random vector of
+identical norm --- at all seven depths. $n=60$ prompts, drug means estimated on a held-out half. No
+dispersion is drawn on the swap: the probe reduces the per-prompt distributions to two means before
+storing them, so none exists, and the evidence is that seven independent depths fall the same way.}
+\label{fig:mechanism}
+\end{figure}
 
 \paragraph{The headline is the swap.} Overwriting drug A's code with drug B's, inside the purified
 subspace, perturbs the output \emph{less} than matched-norm noise, at all seven depths. The readout
@@ -297,6 +351,24 @@ completion rates were logged but not persisted, so this cannot be verified from 
 \todo{re-run both controls at 1400} Two things are unaffected: the residual model's own gradient
 across strata, every point of which clears zero within a single matched run, and all of
 Section~\ref{sec:res-generalisation}, where every arm ran at $1400$ inside one job.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig-repair}
+\caption[The gap grows with swap dissimilarity]{\textbf{The residual model's advantage over its own
+scramble grows with how dissimilar the swapped-in drug's response is; a control scored through the
+identical pipeline stays flat and null.} The evidence is the gradient, not any single point --- a
+metric artifact would not order itself by swap dissimilarity. The horizontal axis is the measured
+mean residual cosine between the real and swapped-in drug, which is byte-identical across all four
+runs, so the positions are exact. \textbf{The three solid series are at a matched $600$-token
+generation budget}: plotting the residual model's $1400$-token run against $600$-token controls would
+compare a treatment arm at more than twice its controls' budget, since the budget alone doubles the
+effect. That run is drawn separately as the dotted overlay. Intervals are $95\%$ bootstrap clustered
+over cell lines, $n=250$ conditions per point. The \texttt{near} stratum is the weakest test by
+construction: where the swapped-in drug's true response is similar, an unchanged output is correct
+rather than blind.}
+\label{fig:repair}
+\end{figure}
 
 Three further checks agree, and only the residual model passes all three: the correlation between
 condition reproducibility and model $\NIR$ is $+0.144$ (positive: the model does better where the

@@ -1,0 +1,48 @@
+{
+  "tier": "tier2_unseen_drugs",
+  "convention": "worst",
+  "panel_a": {
+    "ceiling_cell_vs_cell": 0.7576869197136747,
+    "values": {
+      "mid-rank baseline\n(zero information)": 0.9999134349203441,
+      "mean-control baseline\n(no fit)": 0.9606336481700066,
+      "ridge linear\n(control only)": 0.9456693725987632,
+      "model\n(control + drug)": 0.73277157548975,
+      "scramble\n(wrong drug)": 0.7291356111963492
+    }
+  },
+  "panel_b": {
+    "nir": {
+      "drf": 0.4458605154054407,
+      "m_neg": 0.2735804409777569,
+      "m_pos": 0.5974622399640072,
+      "m_perfect": 1.0
+    },
+    "weighted_r2": {
+      "drf": -0.08061995633992122,
+      "m_neg": 0.7930598114283031,
+      "m_pos": 0.7763763024606778,
+      "m_perfect": 1.0
+    },
+    "panel_tau": {
+      "drf": -0.2305596442002268,
+      "m_neg": 0.6939188146539672,
+      "m_pos": 0.6233488454642022,
+      "m_perfect": 1.0
+    },
+    "spearman_expr": {
+      "drf": -0.41469887158245916,
+      "m_neg": 0.8513564547017061,
+      "m_pos": 0.7897141441984875,
+      "m_perfect": 0.9999999999999998
+    },
+    "de_delta": {
+      "drf": -0.4481486068458704,
+      "m_neg": 0.8856095955522005,
+      "m_pos": 0.8343456951623835,
+      "m_perfect": 1.0
+    }
+  },
+  "drf_n_drugs": 655,
+  "drf_n_celllines": 61
+}
