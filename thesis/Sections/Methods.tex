@@ -105,10 +105,37 @@ interpretable. Each of the following was added in response to a specific objecti
 \paragraph{Plate confounding.} Drug and plate are partially confounded by Tahoe's design: each drug
 is assayed on its own plate(s), with roughly 4--12 drugs per plate and plate-matched controls.
 Discrimination grouped by cell line alone therefore lets the \emph{batch} signature stand in for
-drug identity --- demonstrated directly, in that a zero-drug-information control-copy baseline
-scores $\NIR = 0.766$ cross-plate. Every discrimination instrument gained a
-\texttt{--same\_plate\_only} mode and all discrimination results were re-run within plate.
-Conclusions are unchanged; some magnitudes shrink.
+drug identity. Measured directly, by scoring the same tier-2 conditions with and without the plate
+held constant:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Predictor (drug-agnostic) & cross-plate & within plate \\
+\midrule
+mean baseline & 0.399 & \textbf{0.161} \\
+control-copy & 0.551 & 0.510 \\
+\midrule
+noise ceiling & 0.625 & 0.575 \\
+fraction of drugs at chance & 43\% & 49\% \\
+\bottomrule
+\end{tabular}
+\caption{Expression-frame $\NIR$. A drug-agnostic mean baseline more than doubles its score when the
+plate is free to vary, which is what plate leakage looks like. The ceiling falls once the plate is
+held constant because the batch signature was inflating it too.}
+\label{tab:plateleak}
+\end{table}
+
+The mean baseline is the clearest demonstration: it contains no drug information whatsoever, and it
+scores $0.399$ when the comparison set may span plates against $0.161$ when it may not. Every
+discrimination instrument therefore gained a \texttt{--same\_plate\_only} mode and all discrimination
+results in this thesis were re-run within plate. Conclusions are unchanged; some magnitudes shrink.
+
+A separate and stronger observation, which belongs to the drug-blindness argument rather than to this
+one, is that \emph{within} plate and on the identifiable stratum a control-copy baseline reaches
+$0.766$ against the model's $0.768$ (Section~\ref{sec:res-blind}). That is not a statement about
+plate leakage --- it is a statement about the model.
 
 \paragraph{The scramble ablation.} The central manipulation. The prompt is left byte-identical
 except that the drug name and mechanism are replaced by another drug's, while the control cell and
@@ -350,8 +377,7 @@ Five controls accompany the estimate, each capable of changing the conclusion:
         from both halves, so control-estimation error is common to $\resid_A$ and $\resid_B$; this
         inflates the reliability and biases $\Tcoef$ \emph{downward}, manufacturing apparent
         interaction. Both builds are run and the bias reported.
-  \item \textbf{Negative control.} Different drugs sharing a plate. Must be $\approx 0$; if not,
-        the apparent transfer is incomplete generic removal or batch structure.
+  \item \textbf{Negative control, structure-matched.} A different drug in a \emph{different} cell line, breaking only the drug match while preserving the cross-line structure of the estimand. Must be $\approx 0$. A same-plate/different-drug control was tried first and is \emph{not} adequate: it differs from the estimand in two ways at once, and plate structure surviving a cell-line-scoped generic inflates it to $+0.478$ while leaving the estimand untouched --- which produced a false-alarm rejection before the matched control was built.
   \item \textbf{Simulated null.} At $\kappa = 0$ the estimator does not return $1.0$. A simulation
         calibrated to the measured noise level fixes the reference. In validation the raw cross-line
         cosine at $\kappa = 0$ is $0.734$, which read naively reports $27\%$ interaction where the

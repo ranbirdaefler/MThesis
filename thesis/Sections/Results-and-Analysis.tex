@@ -53,7 +53,7 @@ matched), and a drug-specific component that no predictor captures.
 Metric & \DRF{} (within-plate) & $m$(neg) & $m$(pos) & Verdict \\
 \midrule
 $\NIR$          & \textbf{+0.446} & 0.274 & 0.597 & only calibrated metric \\
-\texttt{weighted\_r2} & $-0.081$ & 0.793 & 0.776 & inverted \\
+\texttt{weighted\_r2} & $-0.081$ & 0.793 & 0.776 & $\approx$ neutral \\
 $\paneltau$     & $-0.231$ & 0.694 & 0.623 & inverted \\
 \texttt{spearman\_expr} & $-0.415$ & 0.851 & 0.790 & inverted \\
 $\DEdr$         & $-0.448$ & 0.886 & 0.834 & inverted \\
@@ -247,8 +247,9 @@ until it lands} The injected drug-B component lies entirely \emph{within} the pu
 at most ten dimensions --- while the matched-norm random vector was drawn from the \emph{full}
 $2048$-dimensional residual stream, and the hook ablates that subspace \emph{before} adding. Roughly
 $99.5\%$ of the random vector's energy therefore landed in directions that were never ablated,
-including the cell-line directions this same experiment measures at $\approx 0.6$ variance share and
-15--20$\times$ the KL. ``The swap moves the output less than matched noise'' is precisely what that
+including the cell-line directions this same experiment measures at $\approx 0.6$ variance share
+against the drug subspace's $0.03$, and up to $11\times$ its ablation KL. ``The swap moves the output
+less than matched noise'' is precisely what that
 arrangement predicts, whatever the readout actually does: the control matched the norm but not the
 subspace.
 
@@ -263,11 +264,16 @@ affected is the direction-blindness claim specifically, which rests on the swap 
 subspace, perturbs the output \emph{less} than matched-norm noise, at all seven depths. The readout
 responds to the \emph{magnitude} of activity in the drug region, not to \emph{which} drug it
 encodes. Held-out mean estimation reproduces this exactly (layer 2: $0.104$ vs $0.106$; layer 9:
-$0.334$ vs $0.334$; layer 16: $0.031$ vs $0.031$), ruling out estimation noise as the cause.
+$0.333$ vs $0.334$; layer 16: $0.031$ vs $0.031$), ruling out estimation noise as the cause.
 
-\paragraph{Validity of the null.} Three pillars: the removal gate passes at every layer, so the
-nulls are not broken hooks; the cell-line positive control fires at 15--20$\times$ the drug's
-effect, so the instrument works; and the swap is translation-clean by matched norm.
+\paragraph{Validity of the null, and how much of it survives.} Two pillars stand and one does not.
+The removal gate passes at every layer, so the nulls are not broken hooks. The cell-line positive
+control carries $\approx 20\times$ the purified drug subspace's variance share ($0.6$ against
+$0.03$) and up to $11\times$ its ablation KL, so the instrument does register a strong effect where
+one exists --- but that KL ratio is not uniform, and at layer 12 it falls to $1.02\times$, meaning
+the instrument has essentially no headroom at that depth and no claim should rest on it. The third
+pillar, that the swap is translation-clean by matched norm, does not survive: as described above,
+the norm was matched but the subspace was not.
 
 \paragraph{Reading.} The clean claim is not that the drug lives in a dead subspace. It is that
 \textbf{the generation readout is drug-agnostic within an increasingly explicit drug
@@ -303,7 +309,7 @@ consensus (global mean) & $\rightarrow\infty$ & \ci{-0.010}{-0.022}{+0.003} & nu
 independently, and no point on the ladder lifts the model out of the near-null regime. These figures
 come from a \emph{random-partner} scramble; Section~\ref{sec:res-encoding} introduces a sharper
 stratified test under which the optimal-transport arm does show a weak effect
-(\ci{+0.0263}{+0.0069}{+0.0476}), an order of magnitude below what re-encoding the target achieves.
+(\ci{+0.0263}{+0.0069}{+0.0476}), roughly five-fold below what re-encoding the target achieves.
 The consensus endpoint is additionally the ladder's weakest-evidenced point: that arm was stopped at
 roughly $60\%$ of an epoch and its tier-1 NIR was unscoreable, so the negative rests on the
 single-cell and optimal-transport endpoints.}
@@ -405,8 +411,7 @@ rather than blind.}
 Three further checks agree, and only the residual model passes all three: the correlation between
 condition reproducibility and model $\NIR$ is $+0.144$ (positive: the model does better where the
 drug effect is real) against $-0.117$ and $-0.216$ for the controls; prediction diversity is highest
-for the residual model; and $\cos$(prediction, own truth) exceeds $\cos$(prediction, other drugs)
-only for it.
+for the residual model; and while $\cos$(prediction, own truth) exceeds $\cos$(prediction, other drugs) for all three arms, the residual model's margin ($+0.084$) is roughly twice the optimal-transport arm's ($+0.049$) and three times the single-cell arm's ($+0.026$).
 
 \paragraph{A methodological note.} The effect was first measured at a $600$-token generation cap,
 which silently truncated $26\%$ of generations --- a signature is $\approx201$ gene symbols at 2--4
@@ -531,7 +536,7 @@ $\Tcoef$ in \textbf{two} ways at once --- different drug \emph{and} same cell li
 surviving a cell-line-scoped generic inflates \emph{same-plate} comparisons while leaving
 \emph{cross-line} comparisons untouched, so it destroyed the control's usefulness without ever
 touching $\Tcoef$. A \emph{structure-matched} control --- different drug, \textbf{different cell
-line}, breaking only the drug match --- resolves it, and reads $+0.000$ in every configuration. The
+line}, breaking only the drug match --- resolves it, reading $+0.000$ at both plate and cell-line scope and $+0.010$ with the generic projected out. The
 episode is worth reporting rather than hiding: a negative control that differs from the estimand in
 more than one way cannot bound it.
 
@@ -586,8 +591,7 @@ cell-line-scoped & \ci{-0.003}{-0.021}{+0.015} & $+0.002$ & $\mathbf{-0.005}$ \\
 \bottomrule
 \end{tabular}
 \caption{No cell line bends different drugs in a consistent direction. $4{,}000$ pairs per arm; the
-signal interval excludes anything above $+0.002$, so this is a real null rather than an underpowered
-one.}
+signal interval at plate scope excludes anything above $+0.002$, so this is a real null rather than an underpowered one. The cell-line-scoped row is wider ($[-0.021, +0.015]$) and carries the claim less strongly.}
 \label{tab:kappa}
 \end{table}
 

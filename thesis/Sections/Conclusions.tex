@@ -9,8 +9,7 @@ repair.
 \paragraph{The evaluation had to be fixed first.} The metric the field standardises on is exploitable:
 a zero-information baseline placing every gene at the middle rank scores $\DEdr = 1.000$, above both
 the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed within plate, only
-$\NIR$ --- a discrimination metric, in which the generic response cancels --- is calibrated. Every
-rank- and correlation-based prediction metric tested is inverted. This is the most portable result
+$\NIR$ --- a discrimination metric, in which the generic response cancels --- is calibrated. Of the four prediction metrics tested, three are clearly inverted and the fourth is approximately neutral. This is the most portable result
 here, since it applies to any work scored on $\DEdr$-family metrics.
 
 This also settles how the thesis enters the dispute of Section~\ref{sec:lit-dispute}. Miller et
@@ -40,9 +39,9 @@ uniform pattern of failure: an entire $\varepsilon$-ladder of target constructio
 state-matched treated cell to a full pseudobulk collapse, stays in the near-null regime, because all
 of them change \emph{what the target is} and none change \emph{what the tokens encode}. (One arm,
 the optimal-transport target, does show a weak effect once a sharper stratified test is applied ---
-\ci{+0.0263}{+0.0069}{+0.0476} --- but an order of magnitude below what re-encoding achieves, which
+\ci{+0.0263}{+0.0069}{+0.0476} --- but roughly five-fold below what re-encoding achieves, which
 is the distinction that matters.) Re-encoding
-the target as the drug-specific residual raises the differing fraction to $60\%$ and produces the
+the target as the drug-specific residual raises the differing fraction to $59\%$ and produces the
 first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
 matched control that stays null.
 
@@ -97,8 +96,7 @@ between them they redirect what follows from this work.
 
 The drug$\times$cell-line interaction is large --- roughly $45\%$ of the drug-specific variance ---
 but it has \emph{no learnable structure}: no cell line modulates different drugs in a consistent
-direction, with an excess within-line consistency of $-0.007$ and an interval excluding anything
-above $+0.002$. So the interaction behaves as irreducible noise for any predictor, and a lookup
+direction, with an excess within-line consistency of $-0.007$ and, at plate scope, an interval excluding anything above $+0.002$. So the interaction behaves as irreducible noise for any predictor, and a lookup
 scoring $0.963$ against a $0.968$ ceiling is not evidence that the target has vanished but that the
 lookup is already at the \emph{achievable} ceiling. On seen drugs, nothing beats retrieval, and that
 is a statement about the data rather than about any model.
@@ -119,7 +117,8 @@ Leave-Drugs-Out, and the one that matters for drug design.
 
 \paragraph{A note on method.} The substantive results here rest on controls that were added in
 response to specific objections: plate-matched comparison sets after a zero-information baseline
-scored $0.766$ cross-plate; a swap-distance sweep after it was pointed out that scrambling to a
+more than doubled its score when the plate was free to vary; a swap-distance sweep after it was
+pointed out that scrambling to a
 similar drug is a weak test; a removal gate before trusting any ablation null; matched-norm
 injection before reading a swap; clustered bootstraps over cell lines rather than conditions; and a
 pre-registered interpretation written before the decisive result, whose middle branch is the one

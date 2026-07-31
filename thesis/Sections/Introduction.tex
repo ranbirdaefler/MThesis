@@ -79,8 +79,7 @@ mechanism, and a quantitative bound on how much the repair can ever recover.
         $\DEdr = 1.000$ --- above the noise ceiling ($0.76$) and above the model ($0.73$). The
         ordering is inverted: less information yields a higher score. Under a Dynamic Range Fraction
         analysis~\cite{miller} computed within plate, $\NIR$ is the only calibrated metric
-        ($\DRF = +0.446$); every rank- and correlation-based prediction metric we tested has a
-        negative $\DRF$, meaning it rewards the generic gene ordering rather than the drug.
+        ($\DRF = +0.446$); of the four prediction metrics we tested, three are clearly inverted --- they reward the generic gene ordering rather than the drug --- and the fourth is approximately neutral.
 
   \item[The model is drug-blind.] On every instrument that isolates the drug --- forced-choice
         grading, output invariance, the scramble ablation, and $\NIR$ --- the model is at chance and
@@ -98,14 +97,14 @@ mechanism, and a quantitative bound on how much the repair can ever recover.
   \item[No target-side fix is sufficient.] Entropic optimal-transport regularisation gives a
         one-parameter family whose endpoints are exactly the two target-side repairs we tried.
         Sweeping it leaves the model in the near-null regime throughout: one arm shows a weak effect
-        under a sharper test introduced later, and even that sits an order of magnitude below what
+        under a sharper test introduced later, and even that sits roughly five-fold below what
         changing the \emph{encoding} achieves.
 
   \item[The bottleneck is the tokenisation.] Because a cell sentence ranks genes by expression,
         $83\%$ of the target tokens are identical between any two drugs in the same context.
         Cross-entropy therefore allocates roughly $1\%$ of its gradient to drug identity.
         Re-encoding the target as the \emph{drug-specific residual} raises the differing fraction to
-        $60\%$ and produces the first non-null drug effect in this project:
+        $59\%$ and produces the first non-null drug effect in this project:
         $\gap = \ci{+0.143}{+0.111}{+0.179}$.
 
   \item[And it generalises.] On a holdout keyed at the (drug, cell line) level, conditions whose

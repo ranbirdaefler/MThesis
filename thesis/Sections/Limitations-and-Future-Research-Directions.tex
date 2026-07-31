@@ -12,9 +12,7 @@ read against the broader characterisation, which used $6{,}628$ conditions.
 \paragraph{Only reproducible conditions.} The residual arm retains the $62\%$ of conditions whose
 residual reproduces across a half-split ($\cos > 0.2$). This is the right choice --- training on
 irreproducible residuals is training on noise --- but it means results describe the winnable
-fraction of the task, not all of it. The filter may additionally select \emph{toward}
-context-independent conditions, which would bias the transfer coefficient upward; the analysis in
-Section~\ref{sec:methods-vardecomp} therefore reports both filtered and unfiltered estimates.
+fraction of the task, not all of it. The filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.598$ against the filtered $0.557$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes.
 
 \paragraph{Pseudobulk resolution.} Residuals are condition-level pseudobulks over $\geq 40$ treated
 cells. The single-cell heterogeneity of the response is not modelled in this frame, and the
@@ -58,8 +56,7 @@ a per-drug constant to measurement precision, the modelling question is closed a
 formulation of this task is retrieval, not conditional generation.
 
 \paragraph{The one untested channel.} An unseen drug can only be predicted through a property it
-shares with drugs seen in training. Chemical structure is closed and mechanism-at-MoA-granularity is
-closed, but \emph{protein target} has never been tested --- and it is the channel a knowledge-based
+shares with drugs seen in training. Chemical structure is closed by measurement, but both mechanism and \emph{protein target} are live (Section~\ref{sec:res-scope}), and the open question is now whether target adds anything \emph{over} mechanism --- and it is the channel a knowledge-based
 approach would exploit, since two structurally unrelated molecules inhibiting the same protein
 should produce related transcriptional responses. Tahoe's own metadata carries target annotations
 that no analysis in this work has read. The measurement is a lookup baseline exactly parallel to
@@ -81,7 +78,7 @@ cell line reduces to recalling the drug's signature and ignoring the context.
 \begin{itemize}
   \item \textbf{Reinforcement learning with a contrastive reward.} Its mechanism --- a per-sequence
         reward, so the token-dilution ratio never enters the gradient --- attacks a bottleneck that
-        the residual encoding has already lifted ($34.6 \rightarrow 120.3$ differing tokens); and its
+        the residual encoding has already lifted ($34.6 \rightarrow 118.2$ differing tokens); and its
         reward optimises similarity to the true residual, which is precisely what
         \texttt{drug\_lookup} already achieves at $0.963$. Its best case is convergence to the
         lookup.

@@ -55,8 +55,9 @@ nothing else.} Both arms are conditioned on the same control cell and scored aga
 so any leakage through the control cell or the plate enters both arms in equal measure and cancels in
 the difference $\gap$. This is why $\gap$, rather than a comparison against a drug-agnostic
 predictor, is the quantity every drug-use claim in this thesis is anchored to: the drug-agnostic
-comparison is not leak-immune, and a zero-drug-information control-copy baseline scores $\NIR =
-0.766$ cross-plate precisely because it inherits that leakage. A refinement matters here and is
+comparison is not leak-immune, and a drug-agnostic mean baseline scores $\NIR = 0.399$ when the
+comparison set may span plates against $0.161$ when it may not, precisely because it inherits that
+leakage. A refinement matters here and is
 developed in Section~\ref{sec:methods-controls}: if the swapped-in drug happens to have a
 \emph{similar} true response then an unchanged output is correct rather than blind, so the swap
 partner is chosen from three defined similarity strata and the evidence is the \emph{gradient} across
