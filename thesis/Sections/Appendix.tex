@@ -1,0 +1,123 @@
+\appendix
+\section{Appendix}
+\label{sec:appendix}
+
+\subsection{Estimator validation against planted ground truth}
+\label{sec:app-planted}
+
+Three of the measurements in this thesis rest on estimators built for the purpose rather than taken
+off the shelf. Each was validated by planting a known answer and checking recovery --- in both
+directions, since an estimator that only ever returns the answer one hopes for is not evidence.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+Estimator & Planted truth & Recovered & \\
+\midrule
+transfer coefficient $\Tcoef$ & $\Tcoef = 1.00$ (no interaction) & 0.999 & \\
+ & $\Tcoef = 0.70$ & 0.703 & \\
+ & $\Tcoef = 0.40$ & 0.404 & \\
+\midrule
+channel gate & a channel that genuinely predicts & $+0.397$ (sd 0.029) & over 24 worlds \\
+ & a channel carrying nothing & $-0.016$ (sd 0.091) & over 24 worlds \\
+\midrule
+$\kappa$-structure & a consistent per-line modulation & excess $+1.085$ & \\
+ & an idiosyncratic interaction & excess $+0.001$ & \\
+\bottomrule
+\end{tabular}
+\caption{All three recover planted answers in both directions.}
+\label{tab:planted}
+\end{table}
+
+Two of these validations changed the estimators rather than merely endorsing them. The channel
+gate's count-matched null originally drew its random partners from a pool \emph{excluding} the
+channel's own selections, which depletes the null of exactly the partners the channel chose and
+anti-correlates the two arms. And the useless-channel gap has a standard deviation of roughly $0.09$
+on a single small world, so the original validation --- asserting that one draw fell within $0.10$ ---
+tested luck rather than correctness; it now averages 24 independent worlds. That variance is also why
+the reported channel results are gated on a clustered interval rather than on a point estimate.
+
+\subsection{Absent-gene convention}
+\label{sec:app-convention}
+
+A predicted cell sentence lists only expressed genes, so some panel genes are unranked and a
+convention is required. Two were carried throughout: \texttt{worst} assigns absent genes the last
+rank $P$, \texttt{francesca} a fixed middle rank $P/2$. The choice does not matter --- spike-in
+$\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no ceiling or baseline in
+this thesis moves by more than $0.01$ between them. All figures in the body are quoted under
+\texttt{worst}.
+
+\subsection{Swap-distance sweep}
+\label{sec:app-sweep}
+
+The stratified scramble of Section~\ref{sec:methods-controls} was preceded by a continuous version:
+$\gap$ measured as a function of the response distance between the real and the swapped-in drug,
+binned into quintiles.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Bin (swap distance) & single-cell model & optimal-transport model \\
+\midrule
+0 --- nearest (2.75--4.03) & $-0.046$ & $-0.001$ \\
+1 (4.03--4.60) & $+0.060$ & $+0.031$ \\
+2 (4.60--4.93) & $-0.006$ & $+0.017$ \\
+3 (4.93--5.32) & $-0.004$ & $+0.043$ \\
+4 --- farthest (5.32--6.25) & $-0.019$ & $-0.005$ \\
+\midrule
+trend, corr(distance, $\gap$) & $+0.051$ & $+0.012$ \\
+\bottomrule
+\end{tabular}
+\caption{No bin in either model has an interval excluding zero, and the trend correlations are
+$\approx 0$. 200 (drug, swap) pairs over 20 cell lines, $n=40$ per bin.}
+\label{tab:sweep}
+\end{table}
+
+Two features make this an argument rather than five nulls. The single borderline value sits in a
+\emph{middle} bin, whereas a genuine dissimilarity effect would be monotone and peak in the far bin.
+And the comparison is paired: the model's own $\NIR$ drifts across bins from $0.497$ to $0.326$,
+because drugs that are far from everything populate the far bins, but $\gap$ uses the same drug on
+both arms so that drift cancels.
+
+The intervals are wide --- $n=40$ per bin gives half-widths of $0.06$--$0.10$ --- so this sweep
+excludes a large effect rather than establishing a null, which is why the stratified scramble
+replaced it in the body.
+
+\subsection{Training configuration}
+\label{sec:app-training}
+
+Every arm was cold-started from the same base checkpoint with identical hyperparameters, so that the
+target or objective is the only variable. One exception is material and is stated wherever the arm
+is quoted.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llll}
+\toprule
+Arm & Target & Training & Note \\
+\midrule
+single cell & the observed treated cell & 1 epoch & \\
+consensus & group pseudobulk & \textbf{$\approx 60\%$ of an epoch} & tier-1 $\NIR$ unscoreable \\
+optimal transport (T2) & barycentric, $\varepsilon = 0.5$ & 1 epoch, 23{,}842 steps & \\
+residual & signed residual signature & 1 epoch, 15{,}340 steps & \\
+residual (holdout) & as above, 738 conditions withheld & 1 epoch & \\
+\bottomrule
+\end{tabular}
+\caption{Learning rate $10^{-5}$, batch size 1, gradient accumulation 16, maximum length 8192, bf16,
+weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early on a flat loss;
+since it is one endpoint of the $\varepsilon$-ladder, the ladder's negative rests on the other two.}
+\label{tab:trainconfig}
+\end{table}
+
+\subsection{Calibration self-test}
+\label{sec:app-selftest}
+
+The calibration framework of Section~\ref{sec:methods-metrics} is itself checked, since a metric
+audit whose instrument is untested proves nothing. Beyond deterministic unit checks --- a perfect
+prediction must reach the metric's maximum, a zero shift and a flat truth must return no score ---
+the self-test asserts the exploit under a \emph{second, independent} zero-information baseline: a
+leave-one-out mean scores $\DEdr = 1.000$ while scoring $\NIR = 0.000$. Two unrelated constructions
+both saturating the standard metric, and both scoring zero on the discrimination metric, establishes
+the exploit as a property of the metric rather than of any one baseline.

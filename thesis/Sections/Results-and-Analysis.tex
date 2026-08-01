@@ -131,6 +131,36 @@ with a wrong-mechanism drug, so the score is drug-independent.}
 \label{tab:blind}
 \end{table}
 
+\paragraph{Which groupings carry information at all.} Before asking what the model knows, it is worth
+asking what there is to know. A ladder of mean-shift baselines --- each predicting the average
+response of a progressively narrower group --- answers that directly.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Grouping & global & cell line & MoA & MoA $\times$ cell line \\
+\midrule
+tier 1 (seen conditions) & 0.098 & \textbf{0.161} & 0.098 & 0.164 \\
+tier 2 (unseen drugs) & 0.056 & \textbf{0.142} & 0.052 & 0.120 \\
+tier 3 (unseen combinations) & 0.051 & \textbf{0.107} & 0.063 & 0.097 \\
+\bottomrule
+\end{tabular}
+\caption{$\DEdr$ of a predictor that emits the mean response of the stated group. Cell line is the
+only grouping that improves on a global mean; mechanism adds nothing over it, and conditioning on
+both is no better than cell line alone.}
+\label{tab:baselineladder}
+\end{table}
+
+Cell line roughly triples the global mean's score; mechanism does not move it at any tier, and
+MoA$\times$cell line does not improve on cell line alone. So the informative conditioning variable in
+this data is the cellular context, not the compound class --- which is worth holding onto, because
+Section~\ref{sec:res-mechanism} finds precisely that asymmetry inside the model's activations, and
+Section~\ref{sec:res-scope} finds that mechanism does carry signal once the generic program is
+subtracted. The apparent tension is a frame difference rather than a contradiction: in full-profile
+space the generic response dominates and swamps a mechanism effect that becomes visible only in the
+residual frame.
+
 On the calibrated metric the model sits at chance and is matched by predictors that know nothing
 about the drug:
 
@@ -176,6 +206,45 @@ strata would make the visual claim that it does better on winnable drugs; the co
 shows that it does not.}
 \label{fig:difficulty}
 \end{figure}
+
+\paragraph{A third objection, and the one that most needs closing.} Cell sentences keep only the
+rank order of genes and discard expression magnitude. It is natural to suspect that this is the whole
+story --- that the drug lives in the magnitudes and the representation throws it away --- and if that
+were so, the diagnosis in Section~\ref{sec:res-encoding} would be attacking the wrong thing. The
+objection is testable without any model, by asking whether \emph{true} expression discriminates drugs
+any better than rank does.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Similarity on true normalised expression & single cell & pseudobulk of 15 \\
+\midrule
+cosine on expression & 0.529 [0.515, 0.542] & 0.723 [0.705, 0.741] \\
+Pearson on expression & 0.530 [0.517, 0.543] & 0.729 [0.710, 0.746] \\
+Spearman on expression & 0.531 [0.518, 0.543] & 0.627 [0.609, 0.645] \\
+cosine on the control-referenced shift & 0.542 [0.527, 0.556] & \textbf{0.793 [0.775, 0.809]} \\
+\bottomrule
+\end{tabular}
+\caption{Same-drug versus different-drug forced-choice discrimination on true expression, 30 cell
+lines, chance $0.50$. At single-cell resolution every similarity function sits within $0.04$ of
+chance --- the same near-chance regime as rank. Aggregation, not representation, is what recovers the
+signal.}
+\label{tab:exprspace}
+\end{table}
+
+\textbf{The representation is exonerated.} At single-cell resolution true expression discriminates
+drugs at $0.53$, which is where rank sits too; the drug is not hiding in the magnitudes. What
+recovers it is aggregation --- $0.79$ at fifteen cells under the control-referenced shift --- and that
+is a property of the noise level rather than of the encoding. This matters twice over. It rules out
+the simplest alternative explanation for everything that follows, and it means the repair in
+Section~\ref{sec:res-encoding} cannot be read as ``restoring the magnitudes'': that repair keeps rank
+throughout and changes only \emph{what is being ranked}.
+
+The same measurement bounds the task from below. At single-cell resolution the same-drug versus
+different-drug gap is $+0.002$ --- different-drug agreement already sits at the replicate ceiling ---
+and a mechanism-of-action positive control fails to separate. Whatever a model can learn here, it
+cannot be learned from a single cell.
 
 Second, \emph{does the scramble swap in similar drugs?} The swap-distance sweep resolves this:
 $\gap$ is null in every distance bin including the far tail ($-0.019$), across a $2.3\times$ spread

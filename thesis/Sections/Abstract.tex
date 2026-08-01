@@ -1,0 +1,46 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+Single-cell foundation models promise \emph{in silico} screening of drug perturbations, and the
+Cell2Sentence family makes the promise concrete by serialising a cell's transcriptome as a sentence
+of gene symbols and modelling it with a pretrained language model. This thesis fine-tunes
+\texttt{C2S-Scale-Pythia-1b} on Tahoe-100M, the largest available drug-perturbation atlas, and asks
+whether the resulting model captures drug-specific biology.
+
+The evaluation turns out to be the first result. A zero-information baseline that assigns every gene
+the middle rank scores $0.9999$ on the field's standard differential-expression correlation --- above
+the two-replicate noise ceiling and above the model. Grading the metrics rather than the models under
+a Dynamic Range Fraction analysis, only a discrimination metric survives calibration; three of four
+prediction metrics rank an uninformative baseline above the noise ceiling.
+
+On that calibrated metric the model is drug-blind: four independent instruments place it at chance
+and statistically indistinguishable from a prompt carrying the wrong drug, even on the third of
+conditions that are identifiable in principle. The failure is not the representation --- true
+expression discriminates drugs no better than rank at single-cell resolution --- and it is not the
+training target, since an optimal-transport family whose endpoints are two independently tested
+target constructions leaves the model in the near-null regime throughout. Probing localises it
+instead to the readout: drug identity becomes \emph{more} linearly decodable with depth, reaching
+$0.88$ by layer 16 once cellular context is projected out, while the causal variance share of that
+same subspace stays flat near $3\%$.
+
+The bottleneck is the tokenisation. Because a cell sentence ranks genes by expression, $83\%$ of the
+target tokens are identical between any two drugs in the same context, so cross-entropy receives
+roughly $1\%$ of its gradient from drug identity. Re-encoding the target as the drug-specific
+residual raises that fraction to $59\%$ and produces the first non-null drug effect in this work,
+which transfers to (drug, cell line) pairings never seen in training with no memorisation premium.
+
+It is nonetheless beaten by a lookup table --- a per-drug mean residual measured in other cell lines
+scores $0.963$ against a $0.968$ ceiling, where the model reaches $0.639$. A noise-corrected variance
+decomposition explains why: the response is a per-drug constant plus a drug$\times$cell-line
+interaction worth roughly $45\%$ of the drug-specific variance, and that interaction has no
+consistent per-cell-line structure. Being unpredictable, it acts as irreducible noise for any
+predictor, so the lookup is already at the \emph{achievable} ceiling and nothing can beat retrieval
+on drugs it has seen. For drugs it has not, protein-target and mechanism annotations do carry
+transferable signal where chemical structure does not --- overturning a pre-registration made in this
+work. But decomposing the prompt ablation by field shows the model reads the drug \emph{name} and
+does not measurably read the \emph{mechanism} it is already given, so the constraint there is the
+readout rather than the information.
+
+\vspace{0.6em}
+\noindent\textbf{Keywords:} single-cell transcriptomics, perturbation prediction, drug response,
+language models, benchmark calibration, mechanistic interpretability.
