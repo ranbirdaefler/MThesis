@@ -289,13 +289,55 @@ def stratified_take(rows, n, key, rng):
 
 
 def bin_dose(vals, n_bins=4):
-    """Quantile-bin a continuous field so its class means are estimated from real groups."""
-    v = np.array([np.nan if x is None else float(x) for x in vals], dtype=float)
+    """Quantile-bin a continuous field, or pass it through as categorical if it is not numeric.
+
+    The residual and OT builders write metadata["dose_float"] = the SAMPLE ID (they use it as a key
+    into a concentration lookup, and the parsed dose goes into the prompt text instead), so this
+    field holds strings like 'smp_1841' for those arms. float() on that raised and killed three arms
+    mid-run. A metadata field whose contents do not match its name is a data problem, not a reason to
+    abort: coerce what is numeric, treat the rest as a categorical label, and let the drug-proxy
+    screen below decide whether it belongs in the context subspace at all.
+    """
+    out, num = [], []
+    for x in vals:
+        if x is None:
+            out.append(None); num.append(np.nan); continue
+        try:
+            f = float(x); num.append(f); out.append(None)
+        except (TypeError, ValueError):
+            num.append(np.nan); out.append(str(x))
+    v = np.array(num, dtype=float)
     good = ~np.isnan(v)
-    if good.sum() < n_bins:
-        return ["NA"] * len(v)
+    if good.sum() < max(n_bins, 0.5 * len(vals)):
+        # mostly non-numeric -> it is a categorical field wearing a numeric name
+        return [o if o is not None else "NA" for o in out]
     edges = np.unique(np.quantile(v[good], np.linspace(0, 1, n_bins + 1)[1:-1]))
-    return ["NA" if np.isnan(x) else f"q{int(np.searchsorted(edges, x))}" for x in v]
+    return [(out[i] if out[i] is not None else
+             ("NA" if np.isnan(v[i]) else f"q{int(np.searchsorted(edges, v[i]))}"))
+            for i in range(len(vals))]
+
+
+def drug_proxy_purity(label, drug_lab, min_class=5):
+    """How completely does knowing `label` determine the drug?
+
+    A context label that is a near-bijection with the drug is fatal: V_conf is built from its class
+    means, orthogonalize() subtracts that span from the drug axis, and the drug is removed BY
+    CONSTRUCTION -- yielding d_pure = 0 or a slab of pure noise, and a null that says nothing about
+    the model. Sample IDs are exactly this: one sample is one drug in one cell line on one plate.
+    Returns the mean, over classes with at least min_class members, of the fraction of that class
+    belonging to its most common drug. 1.0 means a perfect proxy.
+    """
+    by = defaultdict(list)
+    for l, d in zip(label, drug_lab):
+        by[l].append(d)
+    pur, n = 0.0, 0
+    for l, ds in by.items():
+        if len(ds) >= min_class:
+            c = defaultdict(int)
+            for d in ds:
+                c[d] += 1
+            pur += max(c.values()) / len(ds); n += 1
+    return (pur / n) if n else 1.0
 
 
 # ----------------------------------------------------------------- model plumbing (torch)
@@ -912,6 +954,21 @@ def main():
                     f"part of it")
         args.n_dims = need
 
+    # Screen every candidate context label for drug collinearity BEFORE it can define V_conf.
+    ctx_labels, ctx_names = [], []
+    for nm, lab in (("cell_line", cl_lab), ("plate", plate_lab), ("dose", dose_lab)):
+        pur = drug_proxy_purity(lab, drug_lab)
+        card = len(set(lab))
+        if pur > 0.9:
+            logger.info(f"  CONTEXT LABEL '{nm}' DROPPED: {card} classes, drug purity {pur:.3f} -- "
+                        f"it is a proxy for the drug, so orthogonalising against it would delete "
+                        f"the drug axis by construction and any null would be an artifact")
+        else:
+            ctx_labels.append(lab); ctx_names.append(nm)
+            logger.info(f"  context label '{nm}': {card} classes, drug purity {pur:.3f} [KEPT]")
+    if not ctx_labels:
+        ap.error("every context label is a drug proxy -- nothing to decorrelate against")
+
     logger.info("Extracting activations (last prompt position) ...")
     acts = extract_activations(model, tok, [r["prompt"] for r in rows], device, layers, args.bf16)
 
@@ -950,6 +1007,7 @@ def main():
                 f"{len(set(r['drug'] for r in kl_prompts))} drugs")
 
     result = {"layers": {}, "config": {k: v for k, v in vars(args).items()},
+              "context_labels_used": ctx_names,
               "n_drug_classes": n_drug_classes, "chance": chance,
               "layer_set_preregistered": args.layers,
               "design": "v3 displacement swap; out-of-sample subspaces; cluster bootstrap over drugs",
@@ -969,7 +1027,7 @@ def main():
         # (1) subspaces — fit on est ONLY
         V_drug = build_subspace(X, drug_lab, args.n_dims, idx=mean_idx)
         V_cl = build_subspace(X, cl_lab, args.n_dims, idx=mean_idx)
-        V_conf, n_dropped = build_union_subspace(X, [cl_lab, plate_lab, dose_lab],
+        V_conf, n_dropped = build_union_subspace(X, ctx_labels,
                                                  args.n_dims * args.ctx_mult, idx=mean_idx)
         V_pure, resid = orthogonalize(V_drug, V_conf)
         V_shared = shared_component(V_drug, V_conf)
