@@ -21,8 +21,66 @@ error surfaces only as an out-of-bounds index at the tail. All expression constr
 Validation: a PCA cell-line probe on the resulting panel reaches $0.864$ against a chance rate of
 $0.02$.
 
-\paragraph{Splits.} Three evaluation tiers: \emph{tier 1} seen conditions, \emph{tier 2} unseen
-drugs, \emph{tier 3} unseen (drug, cell line) combinations.
+\paragraph{Unit of analysis.} A \emph{condition} is a (drug, cell line, plate, dose) tuple. Plates
+are numbered within cell line rather than globally, so the batch unit is the pair (cell line, plate)
+and never the plate label alone --- a distinction that matters for every within-plate comparison
+below.
+
+\paragraph{Scale.} Table~\ref{tab:scale} states the quantities every $n$ in this thesis should be
+located against. Two populations are used and they are not interchangeable. The broad
+characterisation of the task (Section~\ref{sec:res-blind}) streams a wide sample of the atlas; the
+residual arm (Sections~\ref{sec:res-encoding} onward) works from a smaller cached subset built once
+and reused, so that every arm sees identical cells.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\toprule
+\multicolumn{2}{l}{\textbf{Task characterisation} (streamed sample)} \\
+\midrule
+conditions characterised & 6,628 \\
+\quad of which statistically active against DMSO & 3,647 / 5,014 tested (72.7\%) \\
+\quad identifiable in principle (ceiling $\geq 0.8$) & 3,064 (46.2\%) \\
+\quad with a plate-mate closer than their own replicate & 78.7\% \\
+median cells per condition & 44 \\
+median \#DEGs per condition (BH $q<0.05$) & 0 \\
+median SNR (effect $\div$ replicate noise) & 0.75 \\
+drugs with a real dose series & 218 / 351 (62.1\%) \\
+drugs seen in $\geq 3$ cell lines & 227 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Residual-frame cache}} \\
+\midrule
+cells & 620,564 (600,000 treated, 20,564 control) \\
+(cell line, plate) groups & 198 \\
+drugs / cell lines & 106 / 50 \\
+conditions with $\geq40$ treated and $\geq20$ control cells & 6,617 \\
+\quad surviving the reliability filter ($\cos(r_A,r_B) > 0.2$) & 4,091 (61.8\%) \\
+training examples (60 control cells per condition) & 245,444 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Evaluation sets}} \\
+\midrule
+tier 1 (seen conditions) / tier 2 (unseen drugs) / tier 3 (unseen combinations) & 4,325 / 2,188 / 99 \\
+conditions scored per tier in the generation evaluations & 400 \\
+tier-2 drugs in the expression-frame $\NIR$ benchmark (within plate) & 606 \\
+conditions scored in the residual-frame evaluation & 570 (41 cell lines, 90 drugs) \\
+\bottomrule
+\end{tabular}
+\caption{The populations behind every $n$ quoted in this thesis. Sources:
+\texttt{drug\_biology\_atlas.json}, \texttt{eval\_endcell\_cpu.json},
+\texttt{nir\_sameplate.json}, \texttt{re\_holdout2\_stratified.json},
+\texttt{target\_divergence.json}. Note that the 72.7\% active figure is over the 5,014 conditions
+with enough cells for the permutation test, not over all 6,628.}
+\label{tab:scale}
+\end{table}
+
+\paragraph{Splits.} Three evaluation tiers, defined by what the training set contained.
+\emph{Tier 1} holds conditions whose (drug, cell line) pairing was seen in training, so it measures
+fit rather than generalisation. \emph{Tier 2} holds conditions whose \emph{drug} never appeared,
+which is Leave-Drugs-Out in the vocabulary of Section~\ref{sec:lit-dreval}. \emph{Tier 3} holds
+pairings whose drug and cell line were each seen but never together --- Leave-Pairs-Out. Tier 3 is
+small ($99$ conditions) and is reported only where it is adequately powered; the residual arm builds
+its own, larger, (drug, cell line)-keyed holdout for the same purpose
+(Section~\ref{sec:methods-holdout}).
 
 \subsection{Model and representation}
 
@@ -42,9 +100,41 @@ ceases to be a clean symbol.
 \subsection{Metrics}
 \label{sec:methods-metrics}
 
-\paragraph{The standard metric.} $\DEdr$ correlates predicted and true differential expression
-against control over the top-$K$ differential genes. $\paneltau$ is Kendall's $\tau$ over the full
-panel.
+\paragraph{The standard metric.} The field's default is a correlation between predicted and true
+\emph{change from control}, restricted to the genes that actually move. Writing $x$ for the control
+profile, $y$ for the treated truth and $\hat{y}$ for the prediction, let
+\begin{equation}
+  S_K \;=\; \operatorname*{arg\,top-}K_{\,g} \; \lvert y_g - x_g \rvert
+\end{equation}
+be the $K$ genes with the largest true change. Then
+\begin{equation}
+  \DEdr \;=\; \operatorname{corr}\!\big( \left(\hat{y} - x\right)\big|_{S_K}, \;
+                                          \left(y - x\right)\big|_{S_K} \big).
+\end{equation}
+We report $K=50$ with Pearson correlation throughout; $K \in \{20, 100, 200\}$ and the Spearman
+variant were computed and move the numbers by less than $0.02$ except at $K=200$, where the
+top-$K$ set starts to include genes that do not move.
+
+Three details are load-bearing rather than incidental, because Section~\ref{sec:res-metrics} turns
+on them.
+
+First, $S_K$ is selected using the \emph{truth}, so every predictor is scored on the genes that
+condition actually moved. Second, and consequently, $\DEdr$ rewards agreement with $y - x$ and a
+prediction that simply reverts toward the population centre correlates with $y - x$ by construction
+--- which is the artifact the results chapter exhibits. Third, \textbf{partial-}$\DEdr$ is the same
+quantity with the control profile regressed out of both arguments before correlating, which removes
+that route and is therefore the honest version.
+
+\paragraph{Absent genes.} A cell sentence lists only expressed genes, so a predicted profile leaves
+some panel genes unranked. Two conventions were used throughout and reported side by side:
+\texttt{worst} assigns every absent gene the last rank $P$, and \texttt{francesca} assigns them a
+fixed middle rank $P/2$. The choice is immaterial --- spike-in $\DEdr$ reads $0.952$ against $0.954$
+under the two, and no baseline or ceiling in this thesis moves by more than $0.01$ --- so all figures
+below are quoted under \texttt{worst} and the convention is not mentioned again.
+
+\paragraph{$\paneltau$.} Kendall's $\tau$ between predicted and true rank over the full $946$-gene
+panel. Unlike $\DEdr$ it selects no gene subset and is invariant to the absent-gene convention by
+construction.
 
 \paragraph{Normalised Inverse Rank.} Introduced by Wu et al.\ in
 PerturBench~\cite{perturbench} (there called the ``transposed-rank'' metric) and identified by
@@ -144,6 +234,32 @@ batch-derived leakage cancels in the \emph{difference} $\gap = \NIR_{\textrm{mod
 \NIR_{\textrm{scramble}}$. This is the only manipulation that isolates drug use, and every drug-use
 claim in this thesis is anchored to it rather than to a comparison against a drug-agnostic
 predictor.
+
+\paragraph{Two further drug-isolating instruments.} The drug-blindness claim rests on four
+instruments rather than one, because they fail in different ways and agreement across them is worth
+more than any single number. Two are defined above ($\NIR$ and the scramble); the other two are:
+
+\emph{Forced-choice grading.} A prediction is scored against its own condition's truth and against
+another drug's truth from the same comparison set, and the instrument records how often the own
+truth wins. Chance is $0.50$ by construction. The ceiling is the same forced choice with a real
+held-out replicate substituted for the prediction, which bounds what any predictor could achieve at
+this noise level; it lands between $0.67$ and $0.83$ depending on cells per condition.
+
+\emph{Output invariance.} This asks whether the drug token changes the generated text at all,
+without reference to any truth. For a fixed control cell, the model generates twice from the
+\emph{same} prompt and once from each of several prompts differing only in the drug, and the
+instrument compares
+\begin{equation}
+  \textrm{gap} \;=\; \underbrace{\overline{\textrm{sim}}(\textrm{same prompt, resampled})}_{\textrm{sampling noise alone}}
+  \;-\; \underbrace{\overline{\textrm{sim}}(\textrm{prompts differing in the drug})}_{\textrm{noise plus any drug effect}},
+\end{equation}
+with similarity measured as top-$100$ Kendall $\tau$ and as Jaccard overlap. A positive gap means two
+generations for the same drug resemble each other more than generations for different drugs do,
+i.e.\ the drug token moves the output. A gap of zero means swapping the drug perturbs the output no
+more than resampling at the same temperature does. Reported over $8$ contexts $\times$ $12$ drugs at
+temperature $0.8$. This instrument is the weakest of the four --- it can only detect whether the
+output moves, not whether it moves \emph{correctly} --- but it is also the one least able to be
+confounded, since it needs no ground truth at all.
 
 \paragraph{Swap similarity --- stratified scramble.} A scramble that swaps in a drug with a
 \emph{similar} true response is a weak test: an unchanged output would then be correct, not blind.
