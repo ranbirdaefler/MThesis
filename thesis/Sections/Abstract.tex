@@ -1,46 +1,42 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-Single-cell foundation models promise \emph{in silico} screening of drug perturbations, and the
-Cell2Sentence family makes the promise concrete by serialising a cell's transcriptome as a sentence
-of gene symbols and modelling it with a pretrained language model. This thesis fine-tunes
-\texttt{C2S-Scale-Pythia-1b} on Tahoe-100M, the largest available drug-perturbation atlas, and asks
-whether the resulting model captures drug-specific biology.
+If a computer could predict how a cell's genes will respond to a drug, compounds could be screened
+without running the experiment. Recent work makes this look within reach: a cell can be written down
+as a sentence --- the names of its active genes, listed from most active to least --- which lets a
+language model of the kind used for text be trained to write the ``sentence'' of a treated cell given
+an untreated one and the name of a drug. This thesis trains such a model on the largest available
+atlas of drug-treated single cells and asks a simple question: does it learn anything about the
+drugs?
 
-The evaluation turns out to be the first result. A zero-information baseline that assigns every gene
-the middle rank scores $0.9999$ on the field's standard differential-expression correlation --- above
-the two-replicate noise ceiling and above the model. Grading the metrics rather than the models under
-a Dynamic Range Fraction analysis, only a discrimination metric survives calibration; three of four
-prediction metrics rank an uninformative baseline above the noise ceiling.
+It does not, and establishing that first required fixing the way such models are graded. The standard
+score compares predicted against observed gene changes. A predictor that ignores its inputs entirely,
+guessing that every gene sits in the middle of the pack, scores $0.9999$ on it --- higher than two
+repeats of the same real experiment score against each other. Less information earns a better grade,
+which is the signature of a broken measurement. Only one metric examined here survives a formal
+calibration test.
 
-On that calibrated metric the model is drug-blind: four independent instruments place it at chance
-and statistically indistinguishable from a prompt carrying the wrong drug, even on the third of
-conditions that are identifiable in principle. The failure is not the representation --- true
-expression discriminates drugs no better than rank at single-cell resolution --- and it is not the
-training target, since an optimal-transport family whose endpoints are two independently tested
-target constructions leaves the model in the near-null regime throughout. Probing localises it
-instead to the readout: drug identity becomes \emph{more} linearly decodable with depth, reaching
-$0.88$ by layer 16 once cellular context is projected out, while the causal variance share of that
-same subspace stays flat near $3\%$.
+Graded on that one, the model does no better than chance, and no better than when the drug in its
+prompt is swapped for another at random. The information is not missing: the model's internal
+activity identifies the drug ever more clearly through its layers, while the part of the network that
+produces the output attends to it almost not at all. The cause lies in how the target is written.
+Genes are listed by activity, the most active genes are largely the same whatever drug is applied,
+and so $83\%$ of the words in the target sentence are identical for any two drugs --- leaving almost
+no training signal about the drug. Listing genes instead by \emph{how much the drug changed them}
+raises that to $59\%$ and produces the first measurable drug effect in this work, one that carries
+over to drug--cell-line combinations never seen in training.
 
-The bottleneck is the tokenisation. Because a cell sentence ranks genes by expression, $83\%$ of the
-target tokens are identical between any two drugs in the same context, so cross-entropy receives
-roughly $1\%$ of its gradient from drug identity. Re-encoding the target as the drug-specific
-residual raises that fraction to $59\%$ and produces the first non-null drug effect in this work,
-which transfers to (drug, cell line) pairings never seen in training with no memorisation premium.
-
-It is nonetheless beaten by a lookup table --- a per-drug mean residual measured in other cell lines
-scores $0.963$ against a $0.968$ ceiling, where the model reaches $0.639$. A noise-corrected variance
-decomposition explains why: the response is a per-drug constant plus a drug$\times$cell-line
-interaction worth roughly $45\%$ of the drug-specific variance, and that interaction has no
-consistent per-cell-line structure. Being unpredictable, it acts as irreducible noise for any
-predictor, so the lookup is already at the \emph{achievable} ceiling and nothing can beat retrieval
-on drugs it has seen. For drugs it has not, protein-target and mechanism annotations do carry
-transferable signal where chemical structure does not --- overturning a pre-registration made in this
-work. But decomposing the prompt ablation by field shows the model reads the drug \emph{name} and
-does not measurably read the \emph{mechanism} it is already given, so the constraint there is the
-readout rather than the information.
+The model is nonetheless beaten by a lookup table that simply recalls what the same drug did in other
+cell lines, and decomposing the response explains why. About half of a drug's effect is a fixed
+signature it carries everywhere, which the lookup reproduces almost perfectly. The other half depends
+on the particular cell line --- and that half has no consistent structure, in that no cell line bends
+different drugs in a consistent direction. Being unpredictable, it limits every method equally, so
+for a drug already seen the lookup is as good as anything can be. The opening is drugs that have
+\emph{not} been seen, where a lookup is impossible by construction: there a drug's protein targets
+and mechanism carry usable information, while its chemical structure does not. But the model ignores
+the mechanism it is already told, so the obstacle there is again what the network attends to rather
+than what it is given.
 
 \vspace{0.6em}
-\noindent\textbf{Keywords:} single-cell transcriptomics, perturbation prediction, drug response,
-language models, benchmark calibration, mechanistic interpretability.
+\noindent\textbf{Keywords:} single-cell transcriptomics, drug perturbation prediction, language
+models, benchmark calibration, mechanistic interpretability.
