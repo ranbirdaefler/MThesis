@@ -557,6 +557,9 @@ def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000,
     # reads "the injection closes less than equiv_frac of the A-vs-B gap".
     scale = float(np.mean(np.abs(base_gap)))
     margin = equiv_frac * scale if scale > 0 else None
+    # ACROSS ARMS the raw nats are not comparable -- each arm emits a different target format, so
+    # logP lives on a different scale. Dividing by that model's own clean A-vs-B preference gap gives
+    # a unit-free "fraction of the existing preference gap that the injection closes", which is.
     out = {"n": len(sw), "n_pair_clusters": len(set(clusters)),
            "n_drug_clusters": len(set(a for a, _ in clusters)),
            "effect_swap": float(sw.mean()), "effect_perm": float(perm.mean()),
@@ -567,6 +570,8 @@ def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000,
     for name, ctrl in (("perm", perm), ("iso", iso)):
         m, lo, hi, p, nc = cluster_bootstrap(sw - ctrl, clusters, n_boot, rng)
         out[f"diff_{name}"] = m
+        out[f"diff_{name}_norm"] = (m / scale) if scale > 0 else float("nan")
+        out[f"ci_{name}_norm"] = [lo / scale, hi / scale] if scale > 0 else [float("nan")] * 2
         out[f"ci_{name}"] = [lo, hi]
         out[f"p_{name}"] = p
         out[f"verdict_{name}"] = _verdict(lo, hi, margin)
@@ -624,8 +629,12 @@ def _verdict(lo, hi, margin):
 
 
 # ----------------------------------------------------------------- data
-def load_prompts(eval_dir, tier, n_drugs, n_per_drug, rng):
-    path = os.path.join(eval_dir, f"eval_{tier}.jsonl")
+def load_prompts(eval_dir, tier, n_drugs, n_per_drug, rng, eval_file=None):
+    # Each training arm emits a DIFFERENT target format (raw cell sentence, consensus pseudobulk,
+    # OT barycentre, signed residual signature), and resp_logprob scores logP(response) -- so an
+    # arm must be probed on responses in the format it was trained to emit. --eval_file points at
+    # that arm's own file directly; --eval_dir/--tier keeps the original naming convention.
+    path = eval_file or os.path.join(eval_dir, f"eval_{tier}.jsonl")
     ex = [json.loads(l) for l in open(path)]
     by_drug = defaultdict(list)
     for e in ex:
@@ -830,6 +839,8 @@ def selftest(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--eval_dir")
+    ap.add_argument("--eval_file", help="direct path to a prompt/response jsonl, "
+                                       "overriding --eval_dir/--tier")
     ap.add_argument("--model_path")
     ap.add_argument("--tier", default="tier2_unseen_drugs")
     ap.add_argument("--layers", default="2,4,6,8,9,12,16")
@@ -853,13 +864,14 @@ def main():
     ap.add_argument("--out", default="RESULTS/workspace_probe.json")
     ap.add_argument("--bf16", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--arm", default="", help="label for this training arm, recorded in the JSON")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
     if args.selftest:
         selftest(args); return
-    if not (args.eval_dir and args.model_path):
-        ap.error("--eval_dir and --model_path required (unless --selftest)")
+    if not (args.model_path and (args.eval_dir or args.eval_file)):
+        ap.error("--model_path and one of --eval_dir / --eval_file required (unless --selftest)")
 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -875,7 +887,8 @@ def main():
     layers_mod = get_layers(model)
     logger.info(f"Model {args.model_path}: {len(layers_mod)} layers; testing hidden_states {layers}")
 
-    rows = load_prompts(args.eval_dir, args.tier, args.n_drugs, args.n_per_drug, rng)
+    rows = load_prompts(args.eval_dir, args.tier, args.n_drugs, args.n_per_drug, rng,
+                        eval_file=args.eval_file)
     drug_lab = [r["drug"] for r in rows]
     cl_lab = [r["cell_line"] for r in rows]
     plate_lab = [str(r["plate"]) for r in rows]
@@ -932,7 +945,8 @@ def main():
     result = {"layers": {}, "config": {k: v for k, v in vars(args).items()},
               "n_drug_classes": n_drug_classes, "chance": chance,
               "layer_set_preregistered": args.layers,
-              "design": "v3 displacement swap; out-of-sample subspaces; cluster bootstrap over drugs"}
+              "design": "v3 displacement swap; out-of-sample subspaces; cluster bootstrap over drugs",
+              "arm": args.arm, "eval_source": args.eval_file or args.eval_dir}
 
     for L in layers:
         X = acts[L]
@@ -1149,6 +1163,9 @@ def main():
                             f"iso/swap {sw['delivered_norm_ratio_iso']:.6f} (both must be 1.000000)")
                 logger.info(f"     margin {sw['equiv_margin']:.4f} = {args.equiv_frac:g} x the clean "
                             f"A-vs-B preference gap {sw['clean_ab_gap']:.4f}")
+                logger.info(f"     NORMALISED (comparable across arms): {sw['diff_perm_norm']:+.4f} "
+                            f"[{sw['ci_perm_norm'][0]:+.4f},{sw['ci_perm_norm'][1]:+.4f}] "
+                            f"of the clean gap  <<< CROSS-ARM")
                 if "injected_norm_vs_slab_component" in sw:
                     logger.info(f"     SCALE: ||injected|| / ||cell's own slab component|| = "
                                 f"{sw['injected_norm_vs_slab_component']:.3f}  (if this is tiny, a "

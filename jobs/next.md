@@ -304,6 +304,115 @@ context-shared directions*, which is a materially weaker statement than *the dru
 
 ---
 
+## 4. `probearms.sbatch` — run the identity probe across every training arm  (GPU, ~2.5 h)
+
+Everything measured so far is on **one** checkpoint: `pythia_sft_endcell`, the single-cell
+`[END_CELL]` model --- the arm we already know is drug-blind. So the null we obtained is a null in
+the one place we most expected one, which is the weakest position a null can occupy.
+
+**The residual arm is a positive control on real data, and it is worth more than any synthetic
+world.** We know behaviourally that it uses the drug: $+0.1429$ on the opposite stratum, $+0.1002$
+on unseen combinations with no memorisation premium. If the probe is sound it *must* return
+`identity IS read` there. The decision rule, fixed before the run:
+
+| single cell | residual | reading |
+|---|---|---|
+| not read | **IS read** | The instrument works on a model known to use the drug, and the dissociation is the chapter's headline. This is the outcome that makes the null on the single-cell arm mean something. |
+| not read | not read | **The probe is insensitive and our null is uninformative.** Report the probing and behavioural results only, and drop the causal claim. This falsifies the instrument, which is exactly what a positive control is for. |
+| IS read | IS read | The readout does read identity everywhere and the single-cell failure lives further downstream than this probe reaches. |
+
+The $\varepsilon$-ladder arms (consensus, optimal transport) come along for free and locate where on
+the target-construction sweep drug-direction sensitivity appears, if it appears at all.
+
+**Each arm is probed on the target format it was trained to emit.** `resp_logprob` scores
+$\log P(\text{response})$, so feeding a residual-trained model a raw cell sentence would score a
+format it was never trained to produce and the number would be meaningless. That is what
+`--eval_file` is for. It also means every arm here is measured **in-distribution**, which is the
+fair setting for "does this readout read drug identity" --- and it differs from the earlier
+single-cell run, which used the unseen-drug tier, so expect that number to move.
+
+Raw effect sizes are **not** comparable across arms, because each target format puts $\log P$ on a
+different scale. The `<<< CROSS-ARM` line is: the effect divided by that model's own clean
+A-vs-B preference gap, which is unit-free.
+
+```bash
+scp endcell/analysis/workspace_probe.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > probearms.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=probearms
+#SBATCH --account=3180408
+#SBATCH --partition=gpuh200
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=08:00:00
+#SBATCH --output=logs/probearms_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+DATA=$D/data_diverse2_endcell_big
+
+$PY workspace_probe.py --selftest
+
+# arm|checkpoint|eval file in THAT arm's target format
+ARMS=(
+  "single_cell|$D/checkpoints/pythia_sft_endcell/final|$DATA/train.jsonl"
+  "consensus|$D/checkpoints/pythia_sft_endcell_consensus/checkpoint-25500|$DATA/train_consensus.jsonl"
+  "ot_T2|$D/checkpoints/pythia_sft_ot_T2/final|$D/ot_targets/T2.jsonl"
+  "residual|$D/checkpoints/pythia_sft_residual/final|$D/residual_targets/residual.jsonl"
+  "residual_holdout|$D/checkpoints/pythia_sft_residual_holdout2/final|$D/residual_targets_holdout2/residual.jsonl"
+)
+
+for entry in "${ARMS[@]}"; do
+  ARM="${entry%%|*}"; rest="${entry#*|}"
+  CKPT="${rest%%|*}"; EVAL="${rest#*|}"
+  echo ""
+  echo "############ ARM: $ARM ############"
+  if [ ! -d "$CKPT" ]; then echo "SKIP $ARM: no checkpoint at $CKPT"; continue; fi
+  if [ ! -f "$EVAL" ]; then echo "SKIP $ARM: no eval file at $EVAL"; continue; fi
+  $PY workspace_probe.py \
+      --arm "$ARM" --model_path "$CKPT" --eval_file "$EVAL" \
+      --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 23 \
+      --n_kl_prompts 60 --do_swap --alphas 0.5,1,2,5,10 --bf16 --seed 42 \
+      --out "RESULTS/probe_arm_${ARM}.json" || echo "ARM $ARM FAILED (continuing)"
+done
+echo ""
+echo "done -> RESULTS/probe_arm_*.json"
+EOF
+sbatch probearms.sbatch
+```
+
+Missing checkpoints and missing target files are skipped rather than aborting the job, and a failing
+arm does not take the others down with it --- so a wrong path costs one arm, not the run.
+
+```bash
+LOG=$(ls -t logs/probearms_*.out | head -1); grep -nE "ARM:|SKIP |FAILED|drugs x|===== hidden|HEADROOM|SCALE|CROSS-ARM|LADDER|<<< HEADLINE|NOT MEASURED" $LOG
+```
+
+Then bring the results back and let the comparison be assembled rather than eyeballed:
+
+```bash
+scp '3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/probe_arm_*.json' ./RESULTS/
+```
+
+**Read the `<<< CROSS-ARM` line for each arm, at layer 9** (deepest layer with both a live instrument
+and high drug decodability across every arm so far). The single-cell arm currently sits at
+$-0.0005$ to $+0.0008$ raw, roughly $0.005$ of its clean gap. If the residual arm returns a
+normalised effect an order of magnitude larger with an interval clear of zero, the instrument is
+validated and the dissociation is real.
+
+---
+
 ## Validated locally before sending
 
 | check | result |
