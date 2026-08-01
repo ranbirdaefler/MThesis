@@ -235,7 +235,7 @@ CKPT=/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final
 $PY workspace_probe.py --selftest
 $PY workspace_probe.py \
     --eval_dir "$DATA" --model_path "$CKPT" --tier tier2_unseen_drugs \
-    --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 10 \
+    --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 23 \
     --n_kl_prompts 60 --do_swap --bf16 --seed 42 \
     --out RESULTS/workspace_probe_v3.json
 echo "done -> RESULTS/workspace_probe_v3.json"
@@ -250,11 +250,14 @@ so the cluster count sets the interval width, and at 12 the selftest lands on "u
 than "equivalent".
 
 ```bash
-LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|testing hidden_states|drugs x|Extracting activations|===== hidden_states|GATE|LEAKAGE|CONFOUND|CAUSAL KL|HEADROOM|VARIANCE SHARE|SWAP|delta logP|vs isotropic|vs permuted|norm match|READ \(narrative|-> RESULTS" $LOG
+LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|raising --n_dims|testing hidden_states|drugs x|split:|===== hidden_states|GATE|LEAKAGE|CONFOUND|PURE drug|random @|DELETED|cell_line  |context \(|raw drug|HEADROOM|VARIANCE SHARE|SWAP|delta\[|vs A->C|vs isotropic|norm ratio|margin|NOT MEASURED|-> RESULTS" $LOG
 ```
 
 **Read in this order. The first three are gates --- if any fails, nothing below it is readable.**
 
+0. **`raising --n_dims`**, if present. The class-mean subspace of $C$ drugs spans up to $C-1$
+   directions; the first probe3 run capped it at 10 with 24 drugs and therefore ablated fewer than
+   half of them. It now scales automatically.
 1. `SELFTEST PASSED` **and** the `SEPARATION` line. The separation is the real assertion: the
    estimator must return a near-zero difference in the planted inert world and a large positive one
    in the planted drug-reading world. A pass with no separation line means the swap never ran.
@@ -263,7 +266,17 @@ LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|tes
    tautology printed to three decimals and quoted as proof the confound was fixed.
 3. `HEADROOM` per layer. Any layer marked `SATURATED` is excluded automatically and reports no swap;
    at layer 12 the v2 instrument's cell-line/random ratio was 1.02x, meaning no dynamic range at all,
-   and it still carried a `<<< HEADLINE` label.
+   and it still carried a `<<< HEADLINE` label. The first probe3 run put layer 12 at 2.83x and
+   everything else between 9.9x and 133x.
+
+**The `GATE` lines no longer gate the identity test, and this is deliberate.** The removal gate
+exists to stop an unfalsifiable *ablation* null. It does not transfer to an *injection*: the hook
+demonstrably moves the output, and swap-vs-permuted is internally controlled. It also cannot be
+required --- a swept synthetic check shows that with the drug planted as exactly a 23-dim subspace
+and all 23 dims ablated, out-of-sample removal still reaches only 22%, because a subspace fit on
+held-out rows is slightly misaligned and the surviving fraction stays decodable. v2 cleared 0.8 only
+because it fit the subspace **in-sample on the rows it then probed**. The identity test is now gated
+on what it actually needs: a slab that carries drug identity, a live instrument, and no leakage.
 
 Then the **headline**, `vs A->C`, read as a verdict rather than a sign. Both arms inject a real
 drug displacement from A, of identical norm, differing only in which drug they point at:

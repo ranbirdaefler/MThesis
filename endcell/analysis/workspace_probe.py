@@ -843,6 +843,15 @@ def main():
     n_drug_classes = len(set(drug_lab))
     chance = 1.0 / n_drug_classes
 
+    # The class-mean subspace of C classes can span C-1 directions. Capping it below that ablates
+    # only part of the drug axis and the rest survives -- which is what --n_dims 10 did at 24 drugs.
+    need = n_drug_classes - 1
+    if args.n_dims < need:
+        logger.info(f"  raising --n_dims {args.n_dims} -> {need}: with {n_drug_classes} drugs the "
+                    f"class-mean subspace spans up to {need} dims, and a lower cap ablates only "
+                    f"part of it")
+        args.n_dims = need
+
     logger.info("Extracting activations (last prompt position) ...")
     acts = extract_activations(model, tok, [r["prompt"] for r in rows], device, layers, args.bf16)
 
@@ -914,11 +923,16 @@ def main():
         # (1b) LEAKAGE on the subspace the causal claims actually use. v2 ran every confound check on
         # the RAW slab, which is the one no causal statement is made about.
         Xp_ev = Xv @ V_pure if d_pure else None
-        leak = {}
+        leak, leak_chance = {}, {}
         if d_pure:
             for nm, lab in (("cell_line", ev_cl), ("plate", ev_plate), ("dose", ev_dose)):
                 a, _ = probe_acc(Xp_ev, lab, np.random.RandomState(1))
                 leak[nm] = a
+                # each label has its OWN chance level, and for an imbalanced label the majority-class
+                # rate is the floor, not 1/n_classes. Judging dose against the DRUG chance (1/24)
+                # made a 90% majority-class baseline look like catastrophic leakage.
+                cnt = np.bincount(np.array([sorted(set(lab)).index(x) for x in lab]))
+                leak_chance[nm] = float(cnt.max() / cnt.sum())
         cross = {}
         for nm, lab in (("cell_line", ev_cl), ("plate", ev_plate), ("dose", ev_dose)):
             a, _ = probe_acc(Xv @ V_drug, lab, np.random.RandomState(1))
@@ -946,6 +960,10 @@ def main():
         frac_removed_pure = _frac(a_pureonly, a_pure_abl)
         two_sided = lambda f: (f is not None and 0.8 < f <= 1.05)
         gate_ok = two_sided(frac_removed) and two_sided(frac_removed_pure)
+        # preconditions for the IDENTITY test, computed here so the results entry can record them
+        leak_ok = all(v is None or v < leak_chance.get(k, 1.0) + 0.15
+                      for k, v in leak.items()) if leak else False
+        slab_informative = (a_pureonly is not None and a_pureonly > chance + 0.10)
 
         logger.info(f"  GATE (pure slab, the one the causal claims use): {_f(a_pureonly)} -> "
                     f"{_f(a_pure_abl)} | removed {100*(frac_removed_pure or 0):.0f}% "
@@ -955,9 +973,10 @@ def main():
                     f"[{'PASS' if two_sided(frac_removed) else 'FAIL'}]")
         logger.info(f"  GATE (intervention state): ablating pure slab from the FULL stream leaves "
                     f"drug at {_f(a_full_pure_abl)}")
-        logger.info(f"  LEAKAGE in the purified slab: cell_line={_f(leak.get('cell_line'))} "
-                    f"plate={_f(leak.get('plate'))} dose={_f(leak.get('dose'))} (chance-level "
-                    f"expected) | overlap(pure, context)={overlaps['pure_vs_context']:.4f}")
+        logger.info("  LEAKAGE in the purified slab (accuracy vs majority-class floor): "
+                    + "  ".join(f"{k}={_f(leak.get(k))}/{leak_chance.get(k, float('nan')):.3f}"
+                                for k in ("cell_line", "plate", "dose"))
+                    + f" | overlap(pure, context)={overlaps['pure_vs_context']:.4f}")
         logger.info(f"  CONFOUND (raw slab): cell_line={_f(cross['cell_line'])} "
                     f"plate={_f(cross['plate'])} dose={_f(cross['dose'])}")
         logger.info(f"    overlap(drug, context)={overlaps['drug_vs_context']:.3f} | pure slab = "
@@ -1012,12 +1031,15 @@ def main():
         logger.info(f"  VARIANCE SHARE: pure-drug={vs['drug_pure']:.3f} shared={vs['shared']:.3f} "
                     f"cell_line={vs['cell_line']:.3f} context={vs['context']:.3f}")
 
-        entry = {"gate_pass": bool(gate_ok), "instrument_live": bool(live), "headroom": headroom,
+        entry = {"gate_pass": bool(gate_ok), "instrument_live": bool(live),
+                 "slab_informative": bool(slab_informative),
+                 "ablation_gate_blocks_ablation_claims_only": True, "headroom": headroom,
                  "frac_signal_removed": frac_removed, "frac_signal_removed_pure": frac_removed_pure,
                  "drug_decode": a_drug, "drug_decode_ablated": a_abl,
                  "drug_decode_context_removed": a_pureonly, "drug_decode_pure_ablated": a_pure_abl,
                  "drug_decode_full_pure_ablated": a_full_pure_abl, "chance": chance,
-                 "leakage_pure_slab": leak, "confound_crossdecode_raw": cross, "overlaps": overlaps,
+                 "leakage_pure_slab": leak,
+                 "leakage_majority_floor": leak_chance, "confound_crossdecode_raw": cross, "overlaps": overlaps,
                  "pure_drug_dims": int(d_pure), "raw_drug_dims": int(V_drug.shape[1]),
                  "shared_dims": int(V_shared.shape[1]),
                  "orthogonalize_residuals": [float(x) for x in resid],
@@ -1029,8 +1051,24 @@ def main():
                  "variance_share": vs}
 
         # (4) THE IDENTITY TEST — only where the instrument is live and the gates passed.
-        leak_ok = all(v is None or v < chance + 0.15 for v in leak.values()) if leak else False
-        if args.do_swap and d_pure and gate_ok and live and leak_ok:
+        # THE IDENTITY TEST IS NOT GATED ON THE ABLATION GATE, and that is deliberate.
+        #
+        # The removal gate exists to stop an unfalsifiable ABLATION null: if projecting the slab out
+        # did not remove the drug, a null KL says nothing. That logic does not transfer to an
+        # INJECTION. We add a displacement; the hook demonstrably moves the output; the question is
+        # only whether the movement is identity-specific, and swap-vs-permuted answers that with an
+        # internal control. Whether ablation also erases decodability is a separate property.
+        #
+        # It also cannot be required. A swept synthetic check shows that even when the drug is
+        # planted as EXACTLY a 23-dim subspace and all 23 dims are ablated, out-of-sample removal
+        # reaches only 22%: a subspace fit on held-out rows is slightly misaligned, and with classes
+        # separated at 3 sigma the surviving fraction stays linearly decodable. The 0.8 threshold is
+        # unreachable out of sample. v2 passed it only because it fit the subspace IN-SAMPLE on the
+        # very rows it then probed, which makes removal near-perfect by construction.
+        #
+        # What the injection DOES require is that the slab carry drug identity at all -- otherwise we
+        # are injecting noise. That is the precondition gated here.
+        if args.do_swap and d_pure and live and leak_ok and slab_informative:
             drug_mean = {}
             for d, idxs in by_drug_idx.items():
                 sel = [i for i in idxs if i in set(mean_idx.tolist())]
@@ -1069,9 +1107,10 @@ def main():
                             f"A-vs-B preference gap {sw['clean_ab_gap']:.4f}")
                 entry["swap"] = sw
         if args.do_swap and "swap" not in entry:
-            why = ("no pure slab" if not d_pure else "gate failed" if not gate_ok
+            why = ("no pure slab" if not d_pure
                    else "instrument saturated" if not live
                    else "purified slab leaks context" if not leak_ok
+                   else "slab carries no drug identity" if not slab_informative
                    else "run_swap returned nothing (no usable rows)")
             logger.info(f"  SWAP SKIPPED at this layer: {why}")
             entry["swap_skipped"] = why
