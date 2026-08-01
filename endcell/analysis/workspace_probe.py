@@ -435,7 +435,8 @@ def resp_logprob(model, tok, layers_mod, target_layer, prompt, response, device,
 
 
 # ----------------------------------------------------------------- THE IDENTITY TEST
-def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000, equiv_frac=0.1):
+def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000, equiv_frac=0.1,
+             alphas=(1.0,), slab_of=None):
     """Directional drug-identity test. Shared verbatim by the selftest and by main(), so the selftest
     exercises THE ACTUAL HEADLINE CODE PATH — in v2 the entire swap block lived inside main() and
     `SELFTEST PASSED` said nothing whatever about it.
@@ -485,6 +486,8 @@ def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000,
     P = lambda v: V_pure @ (V_pure.T @ v)
     drugs = sorted(drug_mean)
     sw, iso, perm, base_gap, clusters, norms = [], [], [], [], [], []
+    ladder, rel = [], []
+    alphas = tuple(alphas)
     for r in eval_rows:
         a = r["drug"]
         others = [d for d in drugs if d != a]
@@ -518,11 +521,26 @@ def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000,
         base = contrast(None)
         if base is None:
             continue
-        vals = [contrast(dv.astype(np.float32)) for dv in (d_swap, d_perm, d_iso)]
-        if any(v is None for v in vals):
+        row_vals = {}
+        bad = False
+        for al in alphas:
+            v = [contrast((dv * al).astype(np.float32)) for dv in (d_swap, d_perm, d_iso)]
+            if any(x is None for x in v):
+                bad = True
+                break
+            row_vals[al] = [x - base for x in v]
+        if bad:
             continue
-        sw.append(vals[0] - base); perm.append(vals[1] - base); iso.append(vals[2] - base)
+        sw.append(row_vals[alphas[0]][0]); perm.append(row_vals[alphas[0]][1])
+        iso.append(row_vals[alphas[0]][2])
+        ladder.append(row_vals)
         base_gap.append(base)
+        if slab_of is not None:
+            sc = slab_of(r)
+            if sc is not None:
+                rel.append([nrm / (np.linalg.norm(sc) + 1e-12), nrm / (np.linalg.norm(sc[1]) + 1e-12)]
+                           if isinstance(sc, tuple) else
+                           [nrm / (np.linalg.norm(sc) + 1e-12), float("nan")])
         # cluster on the ORDERED PAIR: rows sharing (A,B) share both the injected vector and the
         # scored response, which is the dependence the bootstrap has to respect
         clusters.append((a, b))
@@ -552,6 +570,26 @@ def run_swap(score_fn, eval_rows, drug_mean, V_pure, rng, resp_for, n_boot=4000,
         out[f"ci_{name}"] = [lo, hi]
         out[f"p_{name}"] = p
         out[f"verdict_{name}"] = _verdict(lo, hi, margin)
+    if rel:
+        rr = np.array(rel, dtype=float)
+        out["injected_norm_vs_slab_component"] = float(np.nanmean(rr[:, 0]))
+    if len(alphas) > 1:
+        rung = []
+        for al in alphas:
+            a_sw = np.array([rv[al][0] for rv in ladder])
+            a_pm = np.array([rv[al][1] for rv in ladder])
+            a_is = np.array([rv[al][2] for rv in ladder])
+            m, lo, hi, p, _ = cluster_bootstrap(a_sw - a_pm, clusters, n_boot, rng)
+            # A rung asks only "is there an identity-specific effect AT ALL at this magnitude?".
+            # The TOST margin is a statement about what size of effect matters at the NATURAL scale,
+            # so applying it to a 10x-amplified rung reports "below resolution" for an effect that is
+            # cleanly detected. Rungs get a detection call; the margin verdict stays at alpha = 1.
+            det = ("DETECTED" if lo > 0 else "DETECTED (negative)" if hi < 0
+                   else "not detected (CI spans zero)")
+            rung.append({"alpha": float(al), "effect_swap": float(a_sw.mean()),
+                         "effect_perm": float(a_pm.mean()), "effect_iso": float(a_is.mean()),
+                         "diff_perm": m, "ci_perm": [lo, hi], "p_perm": p, "detection": det})
+        out["ladder"] = rung
     return out
 
 
@@ -809,6 +847,8 @@ def main():
     ap.add_argument("--equiv_frac", type=float, default=0.1,
                     help="equivalence margin as a fraction of the model's own clean A-vs-B "
                          "response-preference gap")
+    ap.add_argument("--alphas", default="1",
+                    help="magnitude ladder for the injected displacement, e.g. 1,2,5,10")
     ap.add_argument("--do_swap", action="store_true")
     ap.add_argument("--out", default="RESULTS/workspace_probe.json")
     ap.add_argument("--bf16", action="store_true")
@@ -1086,8 +1126,12 @@ def main():
 
             score_fn = lambda r, delta, resp: resp_logprob(
                 model, tok, layers_mod, L, r["prompt"], resp, device, delta_np=delta)
+            row_slab = {id(r): X[i] for i, r in zip(ev_idx, ev_rows)}
+            slab_of = lambda r: (V_pure @ (V_pure.T @ row_slab[id(r)])
+                                 if id(r) in row_slab else None)
+            alphas = tuple(float(x) for x in args.alphas.split(",") if x.strip())
             sw = run_swap(score_fn, swap_prompts, drug_mean, V_pure, rng, resp_for=resp_for,
-                          equiv_frac=args.equiv_frac)
+                          equiv_frac=args.equiv_frac, alphas=alphas, slab_of=slab_of)
             if sw:
                 logger.info(f"  SWAP (displacement from drug A -> preference for B's response over "
                             f"A's own, n={sw['n']} over {sw['n_pair_clusters']} (A,B) pairs / "
@@ -1105,6 +1149,15 @@ def main():
                             f"iso/swap {sw['delivered_norm_ratio_iso']:.6f} (both must be 1.000000)")
                 logger.info(f"     margin {sw['equiv_margin']:.4f} = {args.equiv_frac:g} x the clean "
                             f"A-vs-B preference gap {sw['clean_ab_gap']:.4f}")
+                if "injected_norm_vs_slab_component" in sw:
+                    logger.info(f"     SCALE: ||injected|| / ||cell's own slab component|| = "
+                                f"{sw['injected_norm_vs_slab_component']:.3f}  (if this is tiny, a "
+                                f"null means 'too small to matter', not 'not read')")
+                for rg in sw.get("ladder", []):
+                    logger.info(f"     LADDER a={rg['alpha']:>5.1f}: swap {rg['effect_swap']:+.4f} "
+                                f"perm {rg['effect_perm']:+.4f} | diff {rg['diff_perm']:+.4f} "
+                                f"[{rg['ci_perm'][0]:+.4f},{rg['ci_perm'][1]:+.4f}] "
+                                f"p={rg['p_perm']:.4f} -> {rg['detection']}")
                 entry["swap"] = sw
         if args.do_swap and "swap" not in entry:
             why = ("no pure slab" if not d_pure

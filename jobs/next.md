@@ -236,7 +236,7 @@ $PY workspace_probe.py --selftest
 $PY workspace_probe.py \
     --eval_dir "$DATA" --model_path "$CKPT" --tier tier2_unseen_drugs \
     --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 23 \
-    --n_kl_prompts 60 --do_swap --bf16 --seed 42 \
+    --n_kl_prompts 60 --do_swap --alphas 0.5,1,2,5,10 --bf16 --seed 42 \
     --out RESULTS/workspace_probe_v3.json
 echo "done -> RESULTS/workspace_probe_v3.json"
 EOF
@@ -250,7 +250,7 @@ so the cluster count sets the interval width, and at 12 the selftest lands on "u
 than "equivalent".
 
 ```bash
-LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|raising --n_dims|testing hidden_states|drugs x|split:|===== hidden_states|GATE|LEAKAGE|CONFOUND|PURE drug|random @|DELETED|cell_line  |context \(|raw drug|HEADROOM|VARIANCE SHARE|SWAP|delta\[|vs A->C|vs isotropic|norm ratio|margin|NOT MEASURED|-> RESULTS" $LOG
+LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|raising --n_dims|testing hidden_states|drugs x|split:|===== hidden_states|GATE|LEAKAGE|CONFOUND|PURE drug|random @|DELETED|cell_line  |context \(|raw drug|HEADROOM|VARIANCE SHARE|SWAP|delta\[|vs A->C|vs isotropic|norm ratio|margin|SCALE|LADDER|NOT MEASURED|-> RESULTS" $LOG
 ```
 
 **Read in this order. The first three are gates --- if any fails, nothing below it is readable.**
