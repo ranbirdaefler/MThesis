@@ -588,6 +588,57 @@ against a \emph{half-sample} truth while every baseline is scored against the \e
 truth; \texttt{drug\_lookup} averages $\approx38$ conditions against the ceiling's single noisy half;
 and $\NIR$ near $0.96$ is compressive, collapsing a wide range of cosines into a few thousandths.
 
+\subsection{Every arm in one place}
+\label{sec:res-summary}
+
+The results so far are distributed across two measurement frames and a dozen tables, and a reader
+assembling them has to keep track of which numbers may be compared with which. Table~\ref{tab:allarms}
+collects them.
+
+The two frames are \emph{not} interchangeable and are separated deliberately. The expression frame
+scores a predicted cell profile against other drugs on the same plate; the residual frame scores a
+predicted drug-specific signature against other drugs in the same cell line, after the generic
+program has been subtracted. Both have chance at $0.50$ by construction, and that coincidence is the
+trap: the residual frame's ceiling is $0.968$ where the expression frame's is $0.576$, so a model
+scoring $0.639$ in one and $0.498$ in the other has not improved --- it is being measured against a
+different question.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrl}
+\toprule
+Frame & Arm & $\NIR$ & What it knows \\
+\midrule
+\multirow{5}{*}{\shortstack[l]{expression\\(within plate,\\tier 2, $n=606$)}}
+ & noise ceiling & 0.576 & a real replicate of this condition \\
+ & control-copy & 0.504 & nothing --- it reproduces the untreated cell \\
+ & linear map & 0.500 & the control cell, no drug \\
+ & \textbf{model} & \textbf{0.498} & control cell $+$ drug \\
+ & global mean & 0.180 & nothing \\
+\midrule
+\multirow{8}{*}{\shortstack[l]{residual\\(cell-line sets,\\$n=570$)}}
+ & noise ceiling & 0.968 & a real replicate of this condition \\
+ & drug lookup & 0.963 & this drug's signature from other cell lines \\
+ & drug lookup, one line & 0.832 & the same, from a single other cell line \\
+ & \textbf{model} & \textbf{0.639} & control cell $+$ drug \\
+ & scramble (opposite) & 0.559 & control cell $+$ the \emph{wrong} drug \\
+ & mechanism lookup & 0.529 & other drugs sharing this drug's mechanism \\
+ & random signature & 0.502 & nothing \\
+ & generic response & 0.500 & nothing (the zero vector, by construction) \\
+\bottomrule
+\end{tabular}
+\caption{Every arm on the calibrated metric, by frame. Chance is $0.50$ in both. The residual-frame
+figures come from a single evaluation run; a replication at further seeds is in progress, and
+Section~\ref{sec:limitations} records that the intervals accompanying these point estimates capture
+between-cell-line variance but not generation variance.}
+\label{tab:allarms}
+\end{table}
+
+Read down the residual block and the thesis's shape is visible in one object. A replicate of the
+experiment reaches $0.968$; a lookup table reaches $0.963$; the model reaches $0.639$; the same model
+told the wrong drug reaches $0.559$. The distance between the last two is the drug effect this work
+recovered, and the distance between the model and the lookup is what it did not.
+
 \subsection{How much is left? The transfer coefficient}
 \label{sec:res-transfer}
 
@@ -735,8 +786,10 @@ through chemistry.
 Three caveats bound it. Coverage is $54\%$ and $32\%$, so this is measured on the annotated subset.
 The absolute $\NIR$ of roughly $0.58$ is far below the $0.963$ a lookup achieves for a \emph{seen}
 drug, so the reachable ceiling in this regime is much lower. And target and MoA overlap, so whether
-target adds anything \emph{over} MoA is a further question this measurement does not settle.
-\todo{leave-one-MoA-out arm}
+target adds anything \emph{over} MoA is a further question this measurement does not settle. Settling
+it would need a leave-one-mechanism-out split rather than the leave-one-drug-out split used here,
+since a held-out drug's mechanism class is generally still represented in training --- and, as the
+next section shows, there is a prior reason to expect the answer not to matter much.
 
 \subsection{But the model does not read the channel it already has}
 \label{sec:res-field}
