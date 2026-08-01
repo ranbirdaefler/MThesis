@@ -177,44 +177,50 @@ readout account standing alone.
 
 ---
 
-## 3. `probe2.sbatch` — RERUN the mechanistic probe with a corrected control  (GPU, ~2 h)
+## 3. `probe3.sbatch` — RERUN the mechanistic probe, v3 estimator  (GPU)
 
-**This one is not optional.** A structural audit found that the headline swap in Q13 --- the
-thesis's most novel result --- was compared against a control that is not matched in the way the
-claim requires.
+**This one is not optional.** Q13 --- the thesis's most novel result --- has now been retracted
+twice for the same species of defect, and the v2 "fix" was never actually run: the `probe2` sbatch
+passed `--data_dir` and `--cells_per_drug`, neither of which exists in the argparse, so it exited 2
+under `set -euo pipefail` and only the selftest ever ran.
 
-`comp_b` is drug B's projection **into** the purified slab, at most 10 dimensions. The old control
-drew `rng.randn(H)` in the **full 2048-dimensional** residual space and matched only the L2 norm.
-The hook ablates `V_drug_pure` before adding, so the swap arm perturbs only inside the ablated slab
-while roughly **99.5\% of the random vector's energy lands in directions that were never ablated**
---- including the cell-line directions this same experiment measures at ~0.6 variance share and
-15--20$\times$ the KL. "The swap moves the output less than matched noise" is exactly what that
-confound predicts, whatever the readout actually does.
+That failure was lucky, because the v2 control was still confounded. The hook did **ablate-then-add**,
+so the delivered perturbation was `(added - removed)` while only `added` was norm-matched. Since
+`drug_mean` was the **raw, uncentered** class mean, the injected vector and the removed component
+shared the global-mean term: the swap arm put back roughly what it removed (a near-restore) while
+the random arm put back something orthogonal (a real displacement). Simulated with no model in the
+loop, the random arm delivers **5.3x** the perturbation and is larger in **100%** of draws. "Swap
+moves the output less than matched noise" was forced by geometry before the model was loaded.
 
-Three fixes, all local:
+v3 abandons ablate-and-replace for the identity test. It injects a **displacement**
+`P(mu_B - mu_A)` --- the global mean cancels exactly --- and asks whether that moves the output
+**toward drug B's own held-out response**, measured as $\Delta \log P(r_B)$, against two controls of
+identical norm (isotropic-in-slab, and a permuted real drug-pair displacement). KL-against-clean was
+abandoned because norm-matching equalises distance-moved by construction: the selftest showed it had
+**no power** in the one world where power matters --- a world where the readout genuinely reads the
+drug subspace.
 
-1. the random vector is now drawn **inside** `V_drug_pure` (`V_drug_pure @ randn(d_pure)`, norm-matched),
-   randomising direction while holding subspace and norm fixed;
-2. a **paired** bootstrap difference with a CI replaces two bare means --- the arms share prompts and
-   drug means, so the pairing is real, and the previous version stored no dispersion at all;
-3. the removal gate now also runs on `V_drug_pure`, the subspace the causal claims actually use. The
-   old gate ran on the **raw** slab, certifying something other than what needed certifying.
+The selftest now plants **both** truths and runs the real `run_swap()` code path, so `SELFTEST
+PASSED` finally means something. It separates the worlds at $-0.18$ (inert) vs $+5.42$ (drug read).
+Also fixed: subspaces fit out-of-sample, leakage measured on the purified slab, the deleted
+context-shared drug component measured, cluster bootstrap over drugs, TOST equivalence margin,
+per-layer headroom gate, BH across depths, stratified prompt sampling.
 
 ```bash
 scp endcell/analysis/workspace_probe.py 3180408@login.hpc.unibocconi.it:~/tahoe/
 ```
 
 ```bash
-cd ~/tahoe && cat > probe2.sbatch <<'EOF'
+cd ~/tahoe && cat > probe3.sbatch <<'EOF'
 #!/bin/bash
-#SBATCH --job-name=probe2
+#SBATCH --job-name=probe3
 #SBATCH --account=3180408
 #SBATCH --partition=gpuh200
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96G
-#SBATCH --time=08:00:00
-#SBATCH --output=logs/probe2_%j.out
+#SBATCH --time=16:00:00
+#SBATCH --output=logs/probe3_%j.out
 set -euo pipefail
 export PYTHONUNBUFFERED=1
 export PYTHONNOUSERSITE=1
@@ -224,36 +230,64 @@ export HF_HUB_DISABLE_XET=1
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
 cd ~/tahoe
 mkdir -p RESULTS logs
-D=/data/BuffaF-Projetcs/florian_c2s
+DATA=/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big
+CKPT=/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final
 $PY workspace_probe.py --selftest
 $PY workspace_probe.py \
-    --model_path "$D/checkpoints/pythia_sft_endcell/final" \
-    --data_dir "$D/data_diverse2_endcell_big" \
-    --layers 2,4,6,8,9,12,16 --n_drugs 12 --cells_per_drug 40 --do_swap \
+    --eval_dir "$DATA" --model_path "$CKPT" --tier tier2_unseen_drugs \
+    --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 10 \
+    --n_kl_prompts 60 --do_swap --bf16 --seed 42 \
     --out RESULTS/workspace_probe_v3.json
-echo done
+echo "done -> RESULTS/workspace_probe_v3.json"
 EOF
-sbatch probe2.sbatch
+sbatch probe3.sbatch
 ```
+
+Flag names are taken verbatim from the last invocation that actually ran
+(`endcell/jobs/workspace_probe.sbatch:39-43`). `--bf16` matters: without it the model loads in fp32
+and the run is 2--3x slower. `--n_drugs 24` (up from 12) because the bootstrap resamples **drugs**,
+so the cluster count sets the interval width, and at 12 the selftest lands on "underpowered" rather
+than "equivalent".
 
 ```bash
-LOG=$(ls -t logs/probe2_*.out | head -1); grep -E "SELFTEST|GATE|CONFOUND|pure-drug subspace|causal KL|SWAP|paired difference|control sanity|HEADLINE" $LOG
+LOG=$(ls -t logs/probe3_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|testing hidden_states|drugs x|Extracting activations|===== hidden_states|GATE|LEAKAGE|CONFOUND|CAUSAL KL|HEADROOM|VARIANCE SHARE|SWAP|delta logP|vs isotropic|vs permuted|norm match|READ \(narrative|-> RESULTS" $LOG
 ```
 
-**Read `control sanity` first** --- it reports what fraction of the random vector's energy lies inside
-the purified subspace, and it must be ~100\%. If it is not, the control has drifted out of the slab
-again and nothing below it is readable.
+**Read in this order. The first three are gates --- if any fails, nothing below it is readable.**
 
-Then the **paired difference and its CI**, which is now the headline rather than two bare means:
+1. `SELFTEST PASSED` **and** the `SEPARATION` line. The separation is the real assertion: the
+   estimator must return a near-zero difference in the planted inert world and a large positive one
+   in the planted drug-reading world. A pass with no separation line means the swap never ran.
+2. `norm match` must read exactly `1.000000`. Unlike v2's `control sanity`, this one *can* fail ---
+   that number was `||V^T V z||^2 / ||V z||^2`, which is identically 1 for an orthonormal basis, a
+   tautology printed to three decimals and quoted as proof the confound was fixed.
+3. `HEADROOM` per layer. Any layer marked `SATURATED` is excluded automatically and reports no swap;
+   at layer 12 the v2 instrument's cell-line/random ratio was 1.02x, meaning no dynamic range at all,
+   and it still carried a `<<< HEADLINE` label.
 
-- **CI excludes zero, positive** --- injecting the right drug moves the output MORE than a random
-  direction of the same norm in the same slab. The readout *is* drug-direction sensitive, and Q13's
-  conclusion **inverts**: the failure is a routing problem, not direction-blindness.
-- **CI spans zero** --- the original conclusion survives, now on a control that supports it.
-- **CI excludes zero, negative** --- the strangest outcome and worth reporting as such.
+Then the **headline**, `vs A->C`, read as a verdict rather than a sign. Both arms inject a real
+drug displacement from A, of identical norm, differing only in which drug they point at:
 
-Any of the three is publishable. The current number is not, because its control cannot distinguish
-them.
+- **`identity IS read`** --- injecting drug B's displacement raises B's response relative to A's own
+  more than pointing at some third drug C does. Q13 **inverts**: the failure is a routing problem,
+  not direction-blindness.
+- **`EQUIVALENT to control within margin`** --- the original conclusion survives, and for the first
+  time on a control that can support it. This is *earned*: the whole CI must sit inside the margin
+  **and** contain zero. v2 read any interval containing zero as an affirmative null.
+- **`INCONCLUSIVE / underpowered`** --- the honest third outcome, and a likely one.
+- **`NO VERDICT --- margin below resolution`** --- the experiment cannot resolve its own margin.
+  Report as such; do not reach for the nearer of the two directional readings.
+
+`vs isotropic` is a **damage diagnostic, not the headline**. An isotropic direction is off the
+class-mean manifold, so it disrupts the model in ways an on-manifold displacement does not --- that
+asymmetry is exactly what sank the previous design, where it inflated the apparent effect by 36%
+with the identity information removed. Read it only to confirm the swap arm is not simply doing more
+damage than the controls.
+
+Also read `LEAKAGE in the purified slab` --- cell line, plate and dose should all sit near chance. If
+they do not, "pure" is a misnomer at that layer. And `DELETED drug component`: if the part
+purification threw away carries the causal effect, the correct claim is *the drug is read only via
+context-shared directions*, which is a materially weaker statement than *the drug is inert*.
 
 ---
 
