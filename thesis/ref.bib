@@ -1,127 +1,131 @@
 % ===========================================================================
-% ref.bib
-%
-% ⚠ EVERY ENTRY IS FLAGGED. The SUBSTANCE of each work is characterised
-% correctly in the text (what the paper shows, why it matters here), but the
-% bibliographic DETAILS -- year, venue, volume, author order, DOI -- were
-% written from memory and MUST be checked against the actual source before
-% submission. Replace each "% [VERIFY]" with "% [OK <date>]" once confirmed.
-%
-% Fastest route: look each up on Google Scholar / PubMed / bioRxiv and paste
-% the exported BibTeX over the entry, keeping the citation key unchanged so
-% the .tex files do not need editing.
+% ref.bib -- corrected pass
 % ===========================================================================
 
 % --------------------------------------------------------------- data & models
 
-% [VERIFY] Vevo Therapeutics / Arc Institute. Check author list and whether the
-% 2025 preprint has since appeared in a journal.
 @article{tahoe100m,
-  title   = {Tahoe-100M: A giga-scale single-cell perturbation atlas},
-  author  = {{Vevo Therapeutics}},
+  title   = {{Tahoe-100M}: A Giga-Scale Single-Cell Perturbation Atlas for Context-Dependent Gene Function and Cellular Modeling},
+  author  = {Zhang, Jesse and Ubas, Airol A. and de Borja, Richard and Svensson, Valentine and Thomas, Nicole and Thakar, Neha and Lai, Ian and Winters, Aidan and Khan, Umair and Jones, Matthew G. and Thompson, John D. and Tran, Vuong and Pangallo, Joseph and Papalexi, Efthymia and Sapre, Ajay and Nguyen, Hoai and Sanderson, Oliver and Nigos, Maria and Kaplan, Olivia and Schroeder, Sarah and Hariadi, Bryan and Marrujo, Simone and Curca, Crina and Salvino, Alec and Gallareta Olivares, Guillermo and Koehler, Ryan and Geiss, Gary and Rosenberg, Alexander and Roco, Charles and Merico, Daniele and Alidoust, Nima and Goodarzi, Hani and Yu, Johnny},
   journal = {bioRxiv},
   year    = {2025},
-  note    = {Dataset: \url{https://huggingface.co/datasets/tahoebio/Tahoe-100M}}
+  doi     = {10.1101/2025.02.20.639398},
+  note    = {Preprint, posted February 2025 (v3, 10 May 2025); not peer reviewed. Tahoe Therapeutics, formerly Vevo Therapeutics. Dataset: \url{https://huggingface.co/datasets/tahoebio/Tahoe-100M}}
 }
 
-% [OK] Verified from the PDF. THE BACKBONE OF THIS THESIS. Proceedings of the
-% 41st ICML (2024); preprint bioRxiv 2023.09.11.557287, v4 posted 29 Oct 2024.
-% Code: github.com/vandijklab/cell2sentence
-% Key technical claim we build on AND complicate: expression is recoverable
-% from rank via a fitted log-linear model e_i = a_d*log(r_i) + b_d, with
-% R^2 = 0.815 on PBMC -- i.e. cell sentences preserve expression. Our finding
-% is that expression rank is nonetheless the wrong thing to preserve for DRUG
-% discrimination, since 83% of the ranked tokens are shared across drugs.
 @inproceedings{c2s,
   title     = {Cell2Sentence: Teaching Large Language Models the Language of Biology},
   author    = {Levine, Daniel and Rizvi, Syed Asad and L{\'e}vy, Sacha and Pallikkavaliyaveetil, Nazreen and Zhang, David and Chen, Xingyu and Ghadermarzi, Sina and Wu, Ruiming and Zheng, Zihe and Vrkic, Ivan and Zhong, Anna and Raskin, Daphne and Han, Insu and de Oliveira Fonseca, Antonio Henrique and Ortega Caro, Josue and Karbasi, Amin and Dhodapkar, Rahul M. and van Dijk, David},
   booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {235},
+  pages     = {27299--27325},
+  publisher = {PMLR},
   year      = {2024},
   note      = {Preprint: bioRxiv 2023.09.11.557287}
 }
 
-% [VERIFY] C2S-Scale. The project has been using bioRxiv 2025.04.14.648850v4 --
-% confirm the DOI and the final author list.
 @article{c2sscale,
   title   = {Scaling Large Language Models for Next-Generation Single-Cell Analysis},
-  author  = {{C2S-Scale authors}},
+  author  = {Rizvi, Syed Asad and Levine, Daniel and Patel, Aakash and Zhang, Shiyang and Wang, Eric and Perry, Curtis Jamison and Vrkic, Ivan and Constante, Nicole Mayerli and Fu, Zirui and He, Sizhuang and Zhang, David and Tang, Cerise and Lyu, Zhuoyang and Darji, Rayyan and Li, Chang and Sun, Emily and Jeong, David and Zhao, Lawrence and Kwan, Jennifer and Braun, David and Hafler, Brian and Chung, Hattie and Dhodapkar, Rahul M. and Jaeger, Paul and Perozzi, Bryan and Ishizuka, Jeffrey and Azizi, Shekoofeh and van Dijk, David},
   journal = {bioRxiv},
   year    = {2025},
-  note    = {2025.04.14.648850}
+  doi     = {10.1101/2025.04.14.648850},
+  note    = {Preprint, v1 posted 17 April 2025; author list above is v4, posted 1 January 2026. Not peer reviewed}
 }
 
-% [VERIFY] Cui et al., scGPT, Nature Methods 2024.
 @article{scgpt,
-  title   = {scGPT: toward building a foundation model for single-cell multi-omics using generative AI},
-  author  = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Wang, Bo},
+  title   = {{scGPT}: toward building a foundation model for single-cell multi-omics using generative {AI}},
+  author  = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Duan, Nan and Wang, Bo},
   journal = {Nature Methods},
-  year    = {2024}
+  volume  = {21},
+  number  = {8},
+  pages   = {1470--1480},
+  year    = {2024},
+  doi     = {10.1038/s41592-024-02201-0}
 }
 
-% [VERIFY] Theodoris et al., Geneformer, Nature 2023, vol 618.
 @article{geneformer,
   title   = {Transfer learning enables predictions in network biology},
-  author  = {Theodoris, Christina V. and others},
+  author  = {Theodoris, Christina V. and Xiao, Ling and Chopra, Anant and Chaffin, Mark D. and Al Sayed, Zeina R. and Hill, Matthew C. and Mantineo, Helene and Brydon, Elizabeth M. and Zeng, Zexian and Liu, X. Shirley and Ellinor, Patrick T.},
   journal = {Nature},
-  year    = {2023}
+  volume  = {618},
+  number  = {7965},
+  pages   = {616--624},
+  year    = {2023},
+  doi     = {10.1038/s41586-023-06139-9}
 }
 
 % --------------------------------------------------- perturbation prediction
 
-% [VERIFY] Roohani, Huang, Leskovec. Nature Biotechnology 2023.
 @article{gears,
-  title   = {Predicting transcriptional outcomes of novel multigene perturbations with GEARS},
+  title   = {Predicting transcriptional outcomes of novel multigene perturbations with {GEARS}},
   author  = {Roohani, Yusuf and Huang, Kexin and Leskovec, Jure},
   journal = {Nature Biotechnology},
-  year    = {2023}
+  volume  = {42},
+  number  = {6},
+  pages   = {927--935},
+  year    = {2024},
+  doi     = {10.1038/s41587-023-01905-6}
 }
 
-% [VERIFY] Lotfollahi et al., CPA. Molecular Systems Biology 2023.
 @article{cpa,
   title   = {Predicting cellular responses to complex perturbations in high-throughput screens},
-  author  = {Lotfollahi, Mohammad and others},
+  author  = {Lotfollahi, Mohammad and Klimovskaia Susmelj, Anna and De Donno, Carlo and Hetzel, Leon and Ji, Yuge and Ibarra, Ignacio L. and Srivatsan, Sanjay R. and Naghipourfar, Mohsen and Daza, Riza M. and Martin, Beth and Shendure, Jay and McFaline-Figueroa, Jose L. and Boyeau, Pierre and Wolf, F. Alexander and Yakubova, Nafissa and G{\"u}nnemann, Stephan and Trapnell, Cole and Lopez-Paz, David and Theis, Fabian J.},
   journal = {Molecular Systems Biology},
-  year    = {2023}
+  volume  = {19},
+  number  = {6},
+  pages   = {e11517},
+  year    = {2023},
+  doi     = {10.15252/msb.202211517}
 }
 
-% [VERIFY] Lotfollahi, Wolf, Theis. scGen. Nature Methods 2019.
 @article{scgen,
-  title   = {scGen predicts single-cell perturbation responses},
+  title   = {{scGen} predicts single-cell perturbation responses},
   author  = {Lotfollahi, Mohammad and Wolf, F. Alexander and Theis, Fabian J.},
   journal = {Nature Methods},
-  year    = {2019}
+  volume  = {16},
+  number  = {8},
+  pages   = {715--721},
+  year    = {2019},
+  doi     = {10.1038/s41592-019-0494-8}
 }
 
-% [VERIFY] Replogle et al., genome-scale Perturb-seq. Cell 2022.
 @article{replogle,
-  title   = {Mapping information-rich genotype-phenotype landscapes with genome-scale Perturb-seq},
-  author  = {Replogle, Joseph M. and others},
+  title   = {Mapping information-rich genotype-phenotype landscapes with genome-scale {Perturb-seq}},
+  author  = {Replogle, Joseph M. and Saunders, Reuben A. and Pogson, Angela N. and Hussmann, Jeffrey A. and Lenail, Alexander and Guna, Alina and Mascibroda, Lauren and Wagner, Eric J. and Adelman, Karen and Lithwick-Yanai, Gila and Iremadze, Nika and Oberstrass, Florian and Lipson, Doron and Bonnar, Jessica L. and Jost, Marco and Norman, Thomas M. and Weissman, Jonathan S.},
   journal = {Cell},
-  year    = {2022}
+  volume  = {185},
+  number  = {14},
+  pages   = {2559--2575.e28},
+  year    = {2022},
+  doi     = {10.1016/j.cell.2022.05.013}
 }
 
-% [VERIFY] Norman et al., Science 2019.
 @article{norman,
   title   = {Exploring genetic interaction manifolds constructed from rich single-cell phenotypes},
-  author  = {Norman, Thomas M. and others},
+  author  = {Norman, Thomas M. and Horlbeck, Max A. and Replogle, Joseph M. and Ge, Alex Y. and Xu, Albert and Jost, Marco and Gilbert, Luke A. and Weissman, Jonathan S.},
   journal = {Science},
-  year    = {2019}
+  volume  = {365},
+  number  = {6455},
+  pages   = {786--793},
+  year    = {2019},
+  doi     = {10.1126/science.aax4438}
 }
 
-% [VERIFY] Peidli et al., scPerturb. Nature Methods 2024.
 @article{scperturb,
-  title   = {scPerturb: harmonized single-cell perturbation data},
-  author  = {Peidli, Stefan and others},
+  title   = {{scPerturb}: harmonized single-cell perturbation data},
+  author  = {Peidli, Stefan and Green, Tessa D. and Shen, Ciyue and Gross, Torsten and Min, Joseph and Garda, Samuele and Yuan, Bo and Schumacher, Linus J. and Taylor-King, Jake P. and Marks, Debora S. and Luna, Augustin and Bl{\"u}thgen, Nils and Sander, Chris},
   journal = {Nature Methods},
-  year    = {2024}
+  volume  = {21},
+  number  = {3},
+  pages   = {531--540},
+  year    = {2024},
+  doi     = {10.1038/s41592-023-02144-y}
 }
 
 % ------------------------------------------------- the baseline critique
 
-% [OK] Verified from Miller et al.'s bibliography (their ref 2). NOTE: my
-% earlier title was WRONG -- it is "gene perturbation effect prediction",
-% singular, not "predictions of gene perturbation effects". Journal version.
-% The SKEPTIC side of the dispute, on GENETIC perturbation.
 @article{ahlmanneltze,
   title   = {Deep-learning-based gene perturbation effect prediction does not yet outperform simple linear baselines},
   author  = {Ahlmann-Eltze, Constantin and Huber, Wolfgang and Anders, Simon},
@@ -133,14 +137,7 @@
   doi     = {10.1038/s41592-025-02772-6}
 }
 
-% [OK] Verified from the PDF. THE PROPONENT side of the dispute. Introduces the
-% interpolated duplicate (positive control) and the Dynamic Range Fraction
-% (DRF). 14 Perturb-seq datasets, 13 metrics, 8 deep learning models. Finds
-% MSE and Pearson(delta_ctrl) poorly calibrated; WMSE, weighted R2 delta and
-% NIR consistently calibrated; and that under calibrated metrics deep models
-% DO beat mean/control/linear baselines. Scope: GENETIC perturbation.
-% This thesis ports their DRF framework and reaches the opposite conclusion on
-% DRUG perturbation -- using their own instrument.
+% [OK] Previously verified against the PDF; not re-checked in this pass.
 @article{miller,
   title   = {Deep Learning-Based Genetic Perturbation Models Do Outperform Uninformative Baselines on Well-Calibrated Metrics},
   author  = {Miller, Henry E. and Mejia, Gabriel M. and Leblanc, Francis J. A. and Wang, Bo and Swain, Brendan and de Lima Camillo, Lucas Paulo},
@@ -150,27 +147,20 @@
   note    = {Preprint, posted 21 October 2025. Shift Bioscience Ltd.}
 }
 
-% [OK] Verified from Miller et al.'s bibliography (their ref 10). THE SOURCE OF
-% NIR -- Miller ADOPTS it, calling it the metric "introduced by Wu et al.,
-% described as the 'transposed-rank' metric in that work". Cite this for NIR
-% itself and Miller for its calibration.
 @article{perturbench,
   title   = {PerturBench: Benchmarking Machine Learning Models for Cellular Perturbation Analysis},
-  author  = {Wu, Yan and Wershof, Esther and Schmon, Sebastian M. and Nassar, Marcel and Osi{\'n}ski, B{\l}a{\.z}ej and Eksi, Ridvan and Zhang, Kun and Graepel, Thore},
+  author  = {Wu, Yan and Wershof, Esther and Schmon, Sebastian M. and Nassar, Marcel and Osi{\'n}ski, B{\l}a{\.z}ej and Eksi, Ridvan and Yan, Zichao and Stark, Rory and Zhang, Kun and Graepel, Thore},
   journal = {arXiv preprint arXiv:2408.10609},
   year    = {2024}
 }
 
-% [OK] Verified from Miller et al.'s bibliography (their ref 9). Source of the
-% weighted metrics (WMSE, weighted R2 delta) that DRF also finds calibrated.
 @article{mejia,
-  title   = {Diversity by design: Addressing mode collapse improves scRNA-seq perturbation modeling on well-calibrated metrics},
+  title   = {Diversity by Design: Addressing Mode Collapse Improves scRNA-seq Perturbation Modeling on Well-Calibrated Metrics},
   author  = {Mejia, Gabriel M. and Miller, Henry E. and Leblanc, Francis J. A. and Wang, Bo and Swain, Brendan and de Lima Camillo, Lucas Paulo},
+  journal = {arXiv preprint arXiv:2506.22641},
   year    = {2025}
 }
 
-% [OK] Verified from Miller et al.'s bibliography. Further skeptic-side
-% benchmarks, useful for establishing that the negative reports are numerous.
 @article{csendes,
   title   = {Benchmarking foundation cell models for post-perturbation {RNA-seq} prediction},
   author  = {Csendes, Gerold and Sanz, Gema and Szalay, Krist{\'o}f Z. and Szalai, Bence},
@@ -178,7 +168,8 @@
   volume  = {26},
   number  = {1},
   pages   = {393},
-  year    = {2025}
+  year    = {2025},
+  doi     = {10.1186/s12864-025-11600-2}
 }
 
 @article{bendidi,
@@ -190,23 +181,16 @@
 
 @article{bunne,
   title   = {How to build the virtual cell with artificial intelligence: Priorities and opportunities},
-  author  = {Bunne, Charlotte and Roohani, Yusuf and Rosen, Yanay and Gupta, Ankit and Zhang, Xikun and Roed, Marcel and Alexandrov, Theo and AlQuraishi, Mohammed and Brennan, Patricia and Burkhardt, Daniel B.},
+  author  = {Bunne, Charlotte and Roohani, Yusuf and Rosen, Yanay and Gupta, Ankit and Zhang, Xikun and Roed, Marcel and Alexandrov, Theo and AlQuraishi, Mohammed and Brennan, Patricia and Burkhardt, Daniel B. and others},
   journal = {Cell},
   volume  = {187},
   number  = {25},
   pages   = {7045--7063},
-  year    = {2024}
+  year    = {2024},
+  doi     = {10.1016/j.cell.2024.11.015}
 }
 
-% [OK] DrEval. Verified against the PDF: bioRxiv 2025.05.26.655288, posted
-% 29 May 2025. Shared first authors Bernett & Iversen; shared last Baum & List.
-% THE framing paper for this thesis. Six obstacles to clinical translation:
-% non-reproducible models, data leakage, pseudoreplication, biased evaluation,
-% missing ablation studies, inconsistent viability data. Key finding: deep
-% learning models barely outperform a naive predictor of mean drug and cell
-% line effects. NOTE the task differs from ours -- DrEval evaluates drug
-% SENSITIVITY (IC50/AUC scalars) from cell-line omics, whereas we predict the
-% full transcriptomic response. The pathologies are shared; the task is not.
+% [OK] Previously verified against the PDF; not re-checked in this pass.
 @article{dreval,
   title   = {From Hype to Health Check: Critical Evaluation of Drug Response Prediction Models with {DrEval}},
   author  = {Bernett, Judith and Iversen, Pascal and Picciani, Mario and Wilhelm, Mathias and Baum, Katharina and List, Markus},
@@ -216,9 +200,7 @@
   note    = {Preprint, posted 29 May 2025}
 }
 
-% [OK] Verified from DrEval's bibliography. The origin of the term
-% pseudoreplication, and the justification for clustering our bootstrap over
-% cell lines rather than over conditions.
+% [OK] Previously verified; not re-checked in this pass.
 @article{hurlbert,
   title   = {Pseudoreplication and the Design of Ecological Field Experiments},
   author  = {Hurlbert, Stuart H.},
@@ -230,7 +212,7 @@
   doi     = {10.2307/1942661}
 }
 
-% [OK] Verified from DrEval's bibliography.
+% [OK] Previously verified; not re-checked in this pass.
 @article{partin,
   title   = {Deep learning methods for drug response prediction in cancer: Predominant and emerging trends},
   author  = {Partin, Alexander and Brettin, Thomas S. and Zhu, Yitan and Narykov, Oleksandr and Clyde, Austin and Overbeek, Jamie and Stevens, Rick L.},
@@ -240,7 +222,7 @@
   doi     = {10.3389/fmed.2023.1086097}
 }
 
-% [OK] Verified from DrEval's bibliography.
+% [OK] Previously verified; not re-checked in this pass.
 @article{hauptmann,
   title   = {A fair experimental comparison of neural network architectures for latent representations of multi-omics for drug response prediction},
   author  = {Hauptmann, Tony and Kramer, Stefan},
@@ -252,86 +234,117 @@
   doi     = {10.1186/s12859-023-05166-7}
 }
 
-% [VERIFY] Kernfeld et al. -- systematic comparison of expression forecasting
-% methods. Confirm title, year and venue.
 @article{kernfeld,
-  title   = {A systematic comparison of computational methods for expression forecasting},
-  author  = {Kernfeld, Eric and others},
-  journal = {bioRxiv},
-  year    = {2023}
+  title   = {A comparison of computational methods for expression forecasting},
+  author  = {Kernfeld, Eric and Yang, Yunxiao and Weinstock, Joshua S. and Battle, Alexis and Cahan, Patrick},
+  journal = {Genome Biology},
+  volume  = {26},
+  number  = {1},
+  pages   = {388},
+  year    = {2025},
+  doi     = {10.1186/s13059-025-03840-y},
+  note    = {Preprint: bioRxiv 2023.07.28.551039, titled ``A systematic comparison of computational methods for expression forecasting''}
 }
-
-
 
 % ----------------------------------------------- connectivity mapping / L1000
 
-% [VERIFY] Lamb et al., Science 2006, vol 313, pp 1929--1935.
 @article{cmap,
-  title   = {The Connectivity Map: using gene-expression signatures to connect small molecules, genes, and disease},
-  author  = {Lamb, Justin and others},
+  title   = {The {Connectivity} {Map}: using gene-expression signatures to connect small molecules, genes, and disease},
+  author  = {Lamb, Justin and Crawford, Emily D. and Peck, David and Modell, Joshua W. and Blat, Irene C. and Wrobel, Matthew J. and Lerner, Jim and Brunet, Jean-Philippe and Subramanian, Aravind and Ross, Kenneth N. and Reich, Michael and Hieronymus, Haley and Wei, Guo and Armstrong, Scott A. and Haggarty, Stephen J. and Clemons, Paul A. and Wei, Ru and Carr, Steven A. and Lander, Eric S. and Golub, Todd R.},
   journal = {Science},
-  year    = {2006}
+  volume  = {313},
+  number  = {5795},
+  pages   = {1929--1935},
+  year    = {2006},
+  doi     = {10.1126/science.1132939}
 }
 
-% [VERIFY] Subramanian et al., Cell 2017, vol 171. Source of the 978-gene L1000
-% landmark set that defines this thesis's gene panel.
 @article{l1000,
-  title   = {A Next Generation Connectivity Map: L1000 Platform and the First 1,000,000 Profiles},
-  author  = {Subramanian, Aravind and others},
+  title   = {A Next Generation {Connectivity} {Map}: {L1000} Platform and the First 1,000,000 Profiles},
+  author  = {Subramanian, Aravind and Narayan, Rajiv and Corsello, Steven M. and Peck, David D. and Natoli, Ted E. and Lu, Xiaodong and Gould, Joshua and Davis, John F. and Tubelli, Andrew A. and Asiedu, Jacob K. and Lahr, David L. and Hirschman, Jodi E. and Liu, Zihan and Donahue, Melanie and Julian, Bina and Khan, Mariya and Wadden, David and Smith, Ian C. and Lam, Daniel and Liberzon, Arthur and Toder, Courtney and Bagul, Mukta and Orzechowski, Marek and Enache, Oana M. and Piccioni, Federica and Johnson, Sarah A. and Lyons, Nicholas J. and Berger, Alice H. and Shamji, Alykhan F. and Brooks, Angela N. and Vrcic, Anita and Flynn, Corey and Rosains, Jacqueline and Takeda, David Y. and Hu, Roger and Davison, Desiree and Lamb, Justin and Ardlie, Kristin and Hogstrom, Larson and Greenside, Peyton and Gray, Nathanael S. and Clemons, Paul A. and Silver, Serena and Wu, Xiaoyun and Zhao, Wen-Ning and Read-Button, Willis and Wu, Xiaohua and Haggarty, Stephen J. and Ronco, Lucienne V. and Boehm, Jesse S. and Schreiber, Stuart L. and Doench, John G. and Bittker, Joshua A. and Root, David E. and Wong, Bang and Golub, Todd R.},
   journal = {Cell},
-  year    = {2017}
+  volume  = {171},
+  number  = {6},
+  pages   = {1437--1452.e17},
+  year    = {2017},
+  doi     = {10.1016/j.cell.2017.10.049}
 }
 
 % ------------------------------------------------------------ interpretability
 
-% [VERIFY] Gurnee et al. -- the representational-selectivity / privileged-subspace
-% framing. CHECK WHICH PAPER: the project has cited "Gurnee et al." for
-% selectivity, but Gurnee has several relevant works ("Finding Neurons in a
-% Haystack", "Language Models Represent Space and Time", "Universal Neurons").
-% Pick the one that actually supports the claim made in Section 4, or replace.
+% REPLACEMENT for the former "Finding Neurons in a Haystack" entry, which does
+% not support the claim it was cited for. KEY IS UNCHANGED (`gurnee`), so
+% \cite{gurnee} in the .tex still resolves -- but the surrounding prose must be
+% reworded (see the unresolved list).
+% Canonical source for "decodable is not used": removes a property from the
+% representation by iterative nullspace projection and measures the behavioural
+% consequence.
 @article{gurnee,
-  title   = {Finding Neurons in a Haystack: Case Studies with Sparse Probing},
-  author  = {Gurnee, Wes and others},
-  journal = {Transactions on Machine Learning Research},
-  year    = {2023}
+  title   = {Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals},
+  author  = {Elazar, Yanai and Ravfogel, Shauli and Jacovi, Alon and Goldberg, Yoav},
+  journal = {Transactions of the Association for Computational Linguistics},
+  volume  = {9},
+  pages   = {160--175},
+  year    = {2021},
+  doi     = {10.1162/tacl_a_00359}
+}
+
+% NEW KEY. Source of "privileged basis" and of capacity allocation. Only needed
+% if the "allocate their causally active subspace" clause is kept.
+@article{superposition,
+  title   = {Toy Models of Superposition},
+  author  = {Elhage, Nelson and Hume, Tristan and Olsson, Catherine and Schiefer, Nicholas and Henighan, Tom and Kravec, Shauna and Hatfield-Dodds, Zac and Lasenby, Robert and Drain, Dawn and Chen, Carol and Grosse, Roger and McCandlish, Sam and Kaplan, Jared and Amodei, Dario and Wattenberg, Martin and Olah, Christopher},
+  journal = {Transformer Circuits Thread},
+  year    = {2022},
+  note    = {arXiv:2209.10652}
 }
 
 % ------------------------------------------------------------ optimal transport
 
-% [VERIFY] Cuturi, NeurIPS 2013. This one is safe.
 @inproceedings{cuturi,
   title     = {Sinkhorn Distances: Lightspeed Computation of Optimal Transport},
   author    = {Cuturi, Marco},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  year      = {2013}
+  booktitle = {Advances in Neural Information Processing Systems 26 (NIPS 2013)},
+  editor    = {C.J. Burges and L. Bottou and M. Welling and Z. Ghahramani and K. Weinberger},
+  volume    = {26},
+  pages     = {2292--2300},
+  publisher = {Curran Associates, Inc.},
+  year      = {2013},
+  url       = {https://proceedings.neurips.cc/paper_files/paper/2013/file/af21d0c97db2e27e13572cbf59eb343d-Paper.pdf}
 }
 
-% [VERIFY] Schiebinger et al., Waddington-OT. Cell 2019, vol 176.
 @article{schiebinger,
   title   = {Optimal-Transport Analysis of Single-Cell Gene Expression Identifies Developmental Trajectories in Reprogramming},
-  author  = {Schiebinger, Geoffrey and others},
+  author  = {Schiebinger, Geoffrey and Shu, Jian and Tabaka, Marcin and Cleary, Brian and Subramanian, Vidya and Solomon, Aryeh and Gould, Joshua and Liu, Siyan and Lin, Stacie and Berube, Peter and Lee, Lia and Chen, Jenny and Brumbaugh, Justin and Rigollet, Philippe and Hochedlinger, Konrad and Jaenisch, Rudolf and Regev, Aviv and Lander, Eric S.},
   journal = {Cell},
-  year    = {2019}
+  volume  = {176},
+  number  = {4},
+  pages   = {928--943.e22},
+  year    = {2019},
+  doi     = {10.1016/j.cell.2019.01.006}
 }
 
-% [VERIFY] Lopez et al., scVI. Nature Methods 2018.
 @article{scvi,
   title   = {Deep generative modeling for single-cell transcriptomics},
   author  = {Lopez, Romain and Regier, Jeffrey and Cole, Michael B. and Jordan, Michael I. and Yosef, Nir},
   journal = {Nature Methods},
-  year    = {2018}
+  volume  = {15},
+  number  = {12},
+  pages   = {1053--1058},
+  year    = {2018},
+  doi     = {10.1038/s41592-018-0229-2}
 }
 
-% ===========================================================================
-% STILL TO ADD
-%   - Li et al. 2023 -- DrEval cites this (alongside Partin) for "seemingly
-%     good performance for LPO and LCO can be reached by predicting the average
-%     response of each drug". Pull the full entry from DrEval's bibliography;
-%     it is NOT the BMC Bioinformatics 24(1):45 entry, which is Hauptmann.
-%   - MolFormer, for the SAR gate's chemical embedding
-%   - RDKit / Morgan fingerprints (Rogers & Hahn 2010, "Extended-Connectivity
-%     Fingerprints", JCIM)
-%   - Pythia (Biderman et al. 2023) for the backbone
-%   - Benjamini-Hochberg for the FDR procedure
-%   - a Cellosaurus reference for cell-line identifiers
-% ===========================================================================
+% ------------------------------------------------------------ backbone
+
+@inproceedings{pythia,
+  title     = {{Pythia}: A Suite for Analyzing {L}arge {L}anguage {M}odels Across Training and Scaling},
+  author    = {Biderman, Stella and Schoelkopf, Hailey and Anthony, Quentin Gregory and Bradley, Herbie and O'Brien, Kyle and Hallahan, Eric and Khan, Mohammad Aflah and Purohit, Shivanshu and Prashanth, Usvsn Sai and Raff, Edward and Skowron, Aviya and Sutawika, Lintang and Van Der Wal, Oskar},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {202},
+  pages     = {2397--2430},
+  publisher = {PMLR},
+  year      = {2023},
+  url       = {https://proceedings.mlr.press/v202/biderman23a.html}
+}

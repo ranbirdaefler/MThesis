@@ -88,7 +88,8 @@ its own, larger, (drug, cell line)-keyed holdout for the same purpose
 expression, terminated by \ENDCELL. The prompt supplies cell line, drug, dose, mechanism, and the
 untreated control cell's own sentence; the response is the treated cell's sentence.
 
-\paragraph{Backbone.} \texttt{C2S-Scale-Pythia-1b}~\cite{c2sscale}, cold-started for every arm from
+\paragraph{Backbone.} \texttt{C2S-Scale-Pythia-1b}~\cite{c2sscale}, a C2S-Scale checkpoint built on
+the Pythia-1b decoder~\cite{pythia}, cold-started for every arm from
 the same base checkpoint with identical hyperparameters (1 epoch, learning rate $10^{-5}$,
 gradient accumulation 16, maximum length 8192, bf16), so that in each experiment the training
 target or objective is the only variable.

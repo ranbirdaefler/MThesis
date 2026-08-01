@@ -1,9 +1,6 @@
 \section{Literature review}
 \label{sec:litreview}
 
-\todo{entries still marked [VERIFY] in \texttt{ref.bib} need checking against source. The ten marked
-[OK] were transcribed directly from the papers themselves.}
-
 \subsection{Single-cell foundation models}
 
 Transformer models pretrained on large single-cell corpora --- scGPT~\cite{scgpt},
@@ -57,7 +54,10 @@ beat trivial predictors. Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} rep
 deep-learning-based gene perturbation effect prediction does not yet outperform simple linear
 baselines. Csendes et al.~\cite{csendes} reach a similar conclusion for foundation cell models on
 post-perturbation RNA-seq. Bendidi et al.~\cite{bendidi} put it most bluntly in a title: one PCA
-still rules them all. Kernfeld et al.~\cite{kernfeld} concur in a systematic comparison. And
+still rules them all. Kernfeld et al.~\cite{kernfeld} concur in a broad comparison of
+expression-forecasting methods. The pattern is not confined to transcriptomic readouts: on scalar
+drug sensitivity, Hauptmann and Kramer~\cite{hauptmann} hold the experimental protocol fixed across
+architectures and find that the measured differences between them largely dissolve. And
 DrEval~\cite{dreval}, reviewed in detail below, finds that deep models barely outperform a naive
 predictor of mean drug and cell-line effects. The recurring result across all of them is that a
 \emph{per-perturbation mean} is remarkably hard to beat.
@@ -156,14 +156,26 @@ Section~\ref{sec:lit-dispute}: if the per-drug constant is nearly the whole sign
 per-perturbation mean being hard to beat is not a benchmarking artifact at all.
 
 \subsection{Interpretability: decodable versus used}
+\label{sec:lit-interp}
 
 Linear probing establishes that information is \emph{present}, not that it is \emph{used}. The
 distinction is central here, since we find both: the drug is decodable at $82\%$ and simultaneously
-ignored by generation. Resolving this requires causal intervention and a matched-norm control, since
-an intervention that fails to move the output proves nothing unless a matched random intervention
-does. The framing we adopt is representational selectivity~\cite{gurnee}: models allocate their
-causally active subspace to computations that are always required, while information needed only for
-flexible, context-dependent composition may be represented without entering it.
+ignored by generation. Elazar et al.~\cite{gurnee} make the methodological case for treating these
+as separate questions: probe accuracy licenses no conclusion about behaviour, and the way to ask
+whether a property is used is to remove it from the representation and measure what the model then
+does. Their amnesic-probing design is the one Section~\ref{sec:res-mechanism} adopts, with one
+addition --- a matched-norm control, since an intervention that fails to move the output proves
+nothing unless a matched random intervention does.
+
+What such an intervention can find is shaped by how a network spends its representational capacity.
+Elhage et al.~\cite{superposition} show that models reserve dedicated directions for features the
+computation needs on every forward pass and push the remainder into superposition, where a feature
+stays linearly recoverable without occupying an axis of its own. We take from this a prediction
+rather than a finding. If drug identity is needed only for occasional, context-dependent
+composition, it may be represented richly and still sit outside whatever subspace the generation
+readout actually consults --- while cell-line identity, which any plausible emitted profile
+requires, should not. That asymmetry is testable, and testing it is the subject of
+Section~\ref{sec:res-mechanism}.
 
 \subsection{Optimal transport for state matching}
 
