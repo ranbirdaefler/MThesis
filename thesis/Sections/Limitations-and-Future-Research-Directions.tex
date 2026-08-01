@@ -14,6 +14,19 @@ residual reproduces across a half-split ($\cos > 0.2$). This is the right choice
 irreproducible residuals is training on noise --- but it means results describe the winnable
 fraction of the task, not all of it. The filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.598$ against the filtered $0.557$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes.
 
+\paragraph{The intervals omit generation variance.} Every confidence interval in this thesis is a
+clustered bootstrap that resamples \emph{cell lines} while treating each condition's score as fixed.
+It therefore captures between-cell-line variance and not the variance introduced by sampling the
+model's output. With four generations per arm at temperature $0.8$ the second source is not
+negligible: two evaluations of the same checkpoint on the same conditions, differing only in that
+one carried two additional scramble arms and so consumed the sampling stream differently, returned
+$\gap$ on the held-out-drug split as \ci{+0.0195}{-0.045}{+0.086} and \ci{+0.1114}{+0.051}{+0.173}
+respectively. The headline arms were stable across the pair, and the held-out-drug arm --- the
+smallest, at $n=120$ --- was not. \todo{seed replication in flight; report the across-seed spread
+beside the within-seed interval and state which sources each captures} Until that lands the
+held-out-drug arm should be read as underdetermined rather than as a null, which weakens its use as
+the control licensing the transfer result.
+
 \paragraph{Pseudobulk resolution.} Residuals are condition-level pseudobulks over $\geq 40$ treated
 cells. The single-cell heterogeneity of the response is not modelled in this frame, and the
 project's own earlier results show why: at single-cell resolution the drug moves a cell less than
@@ -50,29 +63,36 @@ reported as such.
 
 \subsection{Directions}
 
-\paragraph{Finish the bound.} The transfer coefficient (Section~\ref{sec:res-transfer}) is the
-single measurement that determines whether anything further is worth attempting. If the residual is
-a per-drug constant to measurement precision, the modelling question is closed and the correct
-formulation of this task is retrieval, not conditional generation.
+\paragraph{The arm this work closed rather than opened.} The obvious continuation of
+Section~\ref{sec:res-scope} is a channel-conditioned prompt: append protein targets to the
+instruction, retrain, and evaluate on a leave-one-mechanism-out split. We do not recommend it, and
+the reason is measured rather than argued. Section~\ref{sec:res-field} shows the model reads the drug
+\emph{name} (\ci{+0.081}{+0.059}{+0.101}) and does not measurably read the \emph{mechanism} field it
+is already given (\ci{+0.009}{-0.017}{+0.038}), in an arm powered to detect an effect the size of the
+name's. Adding a target field to a prompt whose mechanism field is ignored addresses information
+availability, and the binding constraint is the readout.
 
-\paragraph{The one untested channel.} An unseen drug can only be predicted through a property it
-shares with drugs seen in training. Chemical structure is closed by measurement, but both mechanism and \emph{protein target} are live (Section~\ref{sec:res-scope}), and the open question is now whether target adds anything \emph{over} mechanism --- and it is the channel a knowledge-based
-approach would exploit, since two structurally unrelated molecules inhibiting the same protein
-should produce related transcriptional responses. Tahoe's own metadata carries target annotations
-that no analysis in this work has read. The measurement is a lookup baseline exactly parallel to
-\texttt{moa\_lookup}, plus a count-matched null and a leave-drug-out multi-channel regression to
-close the ``a model would combine channels'' objection. It requires no GPU time.
+What would be worth building instead is an intervention that makes the drug \emph{causal} rather than
+merely present --- a learned per-drug modulation of the transformation from control to treated, so
+that the drug parameterises the computation instead of sitting in the residual stream as an input the
+readout can round away. That is a research architecture rather than a prompt change, and it is
+outside the scope of what remained here.
 
-Two distinct mechanisms would be worth separating there: \emph{similarity transfer} (an unseen drug
-resembles a seen drug with the same target) and a \emph{compositional rule} (the named target's
-pathway moves, which applies to any drug whose target is named, including one with no similar drug
-in training). The second is the stronger result and does not reduce to a lookup.
+\paragraph{Two channel questions that do remain open.} Target and mechanism overlap, so whether
+target adds anything \emph{over} mechanism is unresolved --- and it matters, because the prompt
+already exposes mechanism and the model already ignores it. Separately, the channel gate measures
+\emph{similarity transfer}: an unseen drug resembling a seen drug with the same target. It does not
+test a \emph{compositional rule} --- that a named target's own pathway moves, which would apply to
+any drug whose target is named, including one with no similar drug in training. The second is the
+stronger claim, it does not reduce to a lookup, and it is untested.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
 axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks
-whether the control cell's state is used \emph{compositionally} with the drug. Its interest is
-contingent on the transfer coefficient --- if the residual is context-independent, predicting a new
-cell line reduces to recalling the drug's signature and ignoring the context.
+whether the control cell's state is used \emph{compositionally} with the drug. The transfer
+coefficient now scopes it: with the interaction both substantial ($\approx45\%$) and idiosyncratic,
+a new cell line offers no consistent direction to exploit, so the achievable target there reduces to
+recalling the drug's per-drug constant --- which a lookup already does at $0.963$. The axis is
+therefore less promising than it appeared before Section~\ref{sec:res-transfer} was measured.
 
 \paragraph{Objectives that were considered and rejected.} Recorded so they are not re-litigated:
 \begin{itemize}

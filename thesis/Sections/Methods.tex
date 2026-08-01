@@ -277,6 +277,55 @@ does not imply ``different response''. Two remedies are used:
 
 \input{figs/fig-scramble}
 
+\paragraph{Field decomposition of the scramble.} The scramble above replaces the drug name
+\emph{and} its mechanism together, so a null tells us the instruction was not read without saying
+which part of it was ignored. Decomposing it costs one extra pair of generation arms and answers a
+question the whole unseen-drug argument turns on. Each arm swaps exactly one span of the instruction
+line to the opposite-signature partner and leaves every other byte identical: the drug name with the
+mechanism kept, the mechanism with the name kept, and --- for continuity with earlier results --- both.
+
+One guard is essential rather than tidy. If the swap partner happens to share the original's
+mechanism, then swapping only the mechanism produces a prompt \emph{identical} to the model's own,
+and the arm scores a gap of exactly zero \emph{by construction}. Read naively that is
+indistinguishable from ``the model ignores the mechanism'', which is the very claim under test. Such
+conditions are therefore dropped rather than scored, which is why the mechanism arm carries fewer
+conditions than the others.
+
+\paragraph{Channel gate.} For an unseen drug, prediction is only possible through a property the drug
+\emph{shares} with drugs seen in training, so the reachable channels can be enumerated and each one
+measured in the same frame. For a channel $X$, a drug's residual is predicted as the mean residual of
+the \emph{other} drugs in the same cell line that share property $X$ with it --- the construction of
+the mechanism baseline, generalised. Because it uses only drugs that were in training, it is a fair
+contest in every split, unlike a same-drug lookup, which on an unseen drug is an oracle.
+
+Two disciplines make the result readable. Every channel is paired with a \textbf{count-matched random
+null}: the same \emph{number} of partner drugs, drawn at random from the same cell line and averaged
+identically. Without it, a channel scoring above chance cannot be distinguished from the fact that
+averaging $k$ residuals denoises, which is true for any $k$ and says nothing about the channel. And
+\textbf{coverage is reported before any verdict}, because a channel annotated on few drugs cannot be
+\emph{closed} by a null result --- it was never tested.
+
+The bound this establishes is on \emph{similarity transfer} through each channel, not on any model.
+A model could in principle combine channels or learn a non-smooth structure-to-response map that a
+nearest-neighbour average cannot express. A leave-one-drug-out regression over all channels jointly
+addresses the first. The second is bounded by sample size rather than by argument: at a few hundred
+drugs, learning a non-smooth map is not feasible, so at this $n$ the lookup is effectively the bound.
+
+\paragraph{Is the interaction learnable?} The transfer coefficient says how \emph{large} the
+drug$\times$cell-line interaction is; it says nothing about whether anything could learn it. If a cell
+line modulated drug responses in a consistent direction, that direction would be estimable from the
+line's own cells and a conditional model would have a concrete target. Writing
+$\kappa(d,c) = \resid(d,c) - \hat{\beta}(d)$, the test compares $\cos(\kappa(d,c), \kappa(d',c))$ for
+different drugs in the \emph{same} cell line against the same quantity across \emph{different} cell
+lines.
+
+$\hat{\beta}$ must be estimated \textbf{leave-one-cell-line-out}. Estimated over all lines it would
+contain $\resid(d,c)$ itself, and subtracting a mean containing its own term induces a $-1/(m-1)$
+correlation that biases the signal arm downward \emph{by construction} --- which would make a
+structured interaction look idiosyncratic, the exact error the test exists to avoid. Both arms are
+disattenuated by $\kappa$'s own split-half reliability, since $\kappa$ is a difference of two noisy
+quantities and is therefore noisier than the residual it comes from.
+
 \paragraph{Uncertainty.} All confidence intervals are clustered bootstraps resampling \emph{cell
 lines}, not conditions. Conditions within a cell line are pseudoreplicates in Hurlbert's
 sense~\cite{hurlbert} --- multiple measurements of one unit treated as independent --- and an

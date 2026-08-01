@@ -570,6 +570,37 @@ uses the *same* A on both arms, so that drift cancels.
 - **Caveats:** κ reliability is 0.33, so κ is noisy; the disattenuation corrects this in expectation and the CI is tight, but a *weakly* structured interaction below the resolution of 4,000 pairs at that reliability would not be detected. The claim is that no per-cell-line direction exists **at this sample size**, not that none exists in principle.
 - **Status:** ✅ **the interaction is real but has no learnable structure.** Artifacts: `RESULTS/kappa_{plate,cellline}.json`; log `logs/kappa_*.out`.
 
+### Q20. WHICH FIELD of the prompt does the model actually read? (the field decomposition)
+- **Why:** three facts sat uneasily together after Q18. The channel gate showed **mechanism carries real signal** (+0.0780 over its count-matched null). The prompt has *always* contained `Mechanism: {moa}`. And the model's unseen-drug gap was null. The only thing reconciling them was "that arm was underpowered" — true, but a dodge. The question decides whether the obvious next arm (append `Targets: EGFR, ERBB2` to the prompt and retrain) is worth building: that arm assumes the bottleneck is **information availability**, whereas Q13 says it is the **readout**.
+- **How (`residual_eval.py --field_decomp`):** the standard scramble replaces the drug name *and* the mechanism together. This decomposes it. Each arm swaps **one** span of the instruction line to the opposite-signature partner and leaves every other byte identical:
+  - `scramble_drugonly` — the drug name, mechanism kept → does it read the identity token?
+  - `scramble_moaonly` — the mechanism, drug name kept → **does it read the knowledge channel it already has?**
+  - `scramble_opposite` — both, retained for continuity.
+  Run on the **opposite** stratum only (the sharpest test), so generation cost is 1.5× rather than 2×.
+  - **No-op guard:** if the swap partner happens to share the original's mechanism, a mechanism-only swap would produce a prompt *identical* to the model's own — a gap of exactly zero **by construction**, which would read as "the model ignores mechanism". Such conditions return `None` and are dropped rather than silently scored at zero. This is why the mechanism arm has n=325 against the others' 570.
+  - `scramble_prompt` was also rewritten to operate on the instruction line **wherever it sits**, rather than on everything preceding `Control cell:` — otherwise the reordered-prompt arm would have found no drug name, returned `None`, and dropped every scramble arm without a word.
+- **Answer — the model reads the NAME and does not measurably read the MECHANISM.**
+
+  | swap | gap (opposite stratum) | n | verdict |
+  |---|---|---|---|
+  | **drug name only** (mechanism kept) | **+0.0809 [+0.0592, +0.1010]** | 570 | **READ** |
+  | **mechanism only** (name kept) | **+0.0091 [−0.0174, +0.0383]** | 325 | **not detected** |
+  | both (standard arm) | +0.1024 [+0.0827, +0.1236] | 570 | read |
+
+  Roughly additive: the name carries about 79% of the combined effect. **The mechanism arm is powered to detect an effect the size of the name's** — a +0.081 effect would clear an interval of half-width 0.028 with room to spare — and it sees +0.009.
+- **The reading, and what it rules out.** The model is handed a field that demonstrably carries drug-transferable signal (Q18: +0.0780) and does not use it. So for unseen drugs the bottleneck is **not information availability** — it is the same readout failure Q13 localises, appearing in the place where it matters most. ➡️ **This closes the channel-conditioning arm before it was built.** Appending protein targets to a prompt whose `Mechanism:` field is already being ignored would change nothing; the ~2 GPU-weeks that arm would have cost were saved by a single 5-hour eval.
+- ⚠️ **Seed instability discovered in the same run — read this before quoting any interval in this file.** This run differs from the previous one *only* by the two added arms, which shift the sampling stream. Same checkpoint, same conditions, same seed. Yet:
+
+  | | previous run | this run |
+  |---|---|---|
+  | model NIR | 0.639 | 0.645 |
+  | `scramble_opposite` | 0.589 | **0.542** |
+  | `drug_lookup_1` | 0.832 | **0.880** |
+  | **`unseen_drug` gap** | **+0.0195 [−0.045, +0.086]** | **+0.1114 [+0.051, +0.173]** |
+
+  The `unseen_drug` arm moved from a clean null to a CI excluding zero, and the two intervals barely overlap. **Cause: the clustered bootstrap resamples cell lines but treats each condition's score as FIXED**, so it captures between-cell-line variance and *not* generation variance — and at `k_samples=4`, temperature 0.8, the latter is evidently large. Every interval in this file is conditional on one draw of generations. `train`, `unseen_combo` and the strata gradient are stable across both runs; **the `unseen_drug` null is not, and must not be quoted as a null until the seed replication lands** (`jobs/seeds.md`, three seeds).
+- **Status:** ✅ **the readout, not the information, is the unseen-drug bottleneck.** Artifacts: `RESULTS/field_decomp.json`; log `logs/fielddecomp_*.out`.
+
 ---
 
 ## Synthesis — the unifying principle (evaluate by discrimination, not absolute prediction)

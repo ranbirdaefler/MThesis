@@ -668,3 +668,48 @@ The absolute $\NIR$ of roughly $0.58$ is far below the $0.963$ a lookup achieves
 drug, so the reachable ceiling in this regime is much lower. And target and MoA overlap, so whether
 target adds anything \emph{over} MoA is a further question this measurement does not settle.
 \todo{leave-one-MoA-out arm}
+
+\subsection{But the model does not read the channel it already has}
+\label{sec:res-field}
+
+The natural next step from the preceding section writes itself: append the protein targets to the
+prompt, retrain, and see whether unseen-drug performance rises. That arm assumes the bottleneck is
+\emph{information availability}. Section~\ref{sec:res-mechanism} says it is the readout. Before
+spending two GPU-weeks discovering which, note that three facts already sit uneasily together --- the
+mechanism channel carries real signal, the prompt has always contained a \texttt{Mechanism:} field,
+and the model's unseen-drug gap is null --- and that the only thing currently reconciling them is
+that the unseen-drug arm is underpowered. That is true, and it is a dodge.
+
+The scramble can settle it directly, because it has until now replaced the drug name \emph{and} the
+mechanism together. Decomposing it into single-span swaps costs one extra pair of generation arms:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrl}
+\toprule
+Swap (opposite-signature partner) & $\gap$ & $n$ & \\
+\midrule
+\textbf{drug name only} (mechanism kept) & \ci{+0.0809}{+0.0592}{+0.1010} & 570 & \textbf{read} \\
+\textbf{mechanism only} (name kept) & \ci{+0.0091}{-0.0174}{+0.0383} & 325 & \textbf{not detected} \\
+both (the standard arm) & \ci{+0.1024}{+0.0827}{+0.1236} & 570 & read \\
+\bottomrule
+\end{tabular}
+\caption{Each arm swaps exactly one span of the instruction and leaves every other byte identical.
+The mechanism arm carries fewer conditions because a partner sharing the original's mechanism would
+produce a prompt identical to the model's own --- a gap of zero by construction --- and those
+conditions are dropped rather than scored.}
+\label{tab:fielddecomp}
+\end{table}
+
+\textbf{The model reads the name and does not measurably read the mechanism.} The two are roughly
+additive, with the name carrying about $79\%$ of the combined effect. This is not an underpowered
+null: an effect the size of the name's would clear an interval of half-width $0.028$ with room to
+spare, and what is observed is $+0.009$.
+
+So the model is handed a field that demonstrably carries drug-transferable signal and does not use
+it. For unseen drugs the bottleneck is not what the model is told --- it is the same readout failure
+Section~\ref{sec:res-mechanism} localises, surfacing in the one place where it costs the most. And
+the arm that would have followed from the previous section is thereby closed before being built:
+appending protein targets to a prompt whose mechanism field is already ignored would change nothing.
+A single five-hour evaluation retired roughly two GPU-weeks of work, which is an argument for
+decomposing an ablation before scaling one.
