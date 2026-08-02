@@ -901,6 +901,12 @@ def main():
     ap.add_argument("--n_dims", type=int, default=10, help="max subspace dimension")
     ap.add_argument("--ctx_mult", type=int, default=3, help="context subspace dim budget = n_dims*this")
     ap.add_argument("--n_kl_prompts", type=int, default=60, help="prompts for the KL causal test")
+    # The swap is ~40x cheaper per prompt than the ablation sweep (one clean pass plus three
+    # hooked passes, against eight subspaces x two passes), so the identity test can be given far
+    # more prompts than the ablation without materially changing the runtime. Separating them is
+    # what makes a powered replication affordable.
+    ap.add_argument("--n_swap_prompts", type=int, default=0,
+                    help="prompts for the identity test; 0 means use --n_kl_prompts")
     ap.add_argument("--n_rand_draws", type=int, default=3, help="random null subspaces to average")
     ap.add_argument("--headroom", type=float, default=5.0,
                     help="require cell-line KL >= this x random KL before quoting a layer")
@@ -1000,11 +1006,13 @@ def main():
     resp_idx = np.array([i for i in est_idx if resp_only[i]])       # supplies r_B only
     ev_rows = [rows[i] for i in ev_idx]
     # stratified across drugs, not the head of a drug-major list
+    n_swap = args.n_swap_prompts or args.n_kl_prompts
     kl_prompts = stratified_take(ev_rows, args.n_kl_prompts, lambda r: r["drug"], rng)
-    swap_prompts = stratified_take(ev_rows, args.n_kl_prompts, lambda r: r["drug"], rng)
+    swap_prompts = stratified_take(ev_rows, n_swap, lambda r: r["drug"], rng)
     logger.info(f"  split: {len(mean_idx)} mean-est / {len(resp_idx)} response-pool / "
-                f"{len(ev_idx)} eval | KL prompts span "
-                f"{len(set(r['drug'] for r in kl_prompts))} drugs")
+                f"{len(ev_idx)} eval | KL {len(kl_prompts)} prompts over "
+                f"{len(set(r['drug'] for r in kl_prompts))} drugs | SWAP {len(swap_prompts)} "
+                f"prompts over {len(set(r['drug'] for r in swap_prompts))} drugs")
 
     result = {"layers": {}, "config": {k: v for k, v in vars(args).items()},
               "context_labels_used": ctx_names,

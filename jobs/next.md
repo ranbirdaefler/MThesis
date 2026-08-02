@@ -413,6 +413,111 @@ validated and the dissociation is real.
 
 ---
 
+## 5. `probereplicate.sbatch` — does the residual layer-12 effect survive a reseed?  (GPU, ~5 h)
+
+The multi-arm run produced exactly one result that survives BH correction across all 26 headline
+tests: the **residual** arm at **layer 12**, $+0.0197$ of that model's own clean A-vs-B preference
+gap, $[+0.0063, +0.0335]$, $p = 0.0010$, $q = 0.026$. It carries a monotone dose-response across the
+ladder --- detected at $\alpha = 0.5, 1, 2$ ($+0.0013$, $+0.0017$, $+0.0044$) --- which noise does
+not produce. The `single_cell` arm shows nothing at any of six layers.
+
+That is the dissociation the probe was built to find, and it is exactly one layer in exactly one
+arm. Three things stop it carrying a chapter as it stands:
+
+1. **`residual_holdout` does not reproduce it.** Same encoding, 738 conditions withheld, and at
+   layer 12 it gives $+0.0028$, $p = 0.62$. Its largest effect is at layer 16 ($+0.0160$,
+   $p = 0.106$) --- same sign, not significant.
+2. **`single_cell` has no layer-12 measurement.** It was excluded there for instrument saturation
+   ($3.88\times$, under the $5\times$ gate), so the cleanest comparison --- same layer, two arms ---
+   does not exist.
+3. **One seed.** The seed governs which 24 drugs are drawn, the three-way split, the response pool
+   and every (A,B) pairing, so a reseed is a genuine replication rather than a rerun.
+
+This job reseeds the two residual arms. `--n_swap_prompts 240` gives the identity test four times
+the prompts without touching the ablation sweep, which is where the runtime actually goes.
+
+\medskip
+\noindent\textbf{Pre-registered, before the numbers are seen.} The layer-12 effect is
+\emph{replicated} if it is positive with an interval excluding zero in at least two of the three new
+seeds on the \texttt{residual} arm. Anything else is one of:
+
+- \emph{not replicated} --- layer 12 fails in two or more seeds. The mechanistic claim is dropped and
+  the chapter reports the probing and behavioural results only.
+- \emph{relocated} --- layer 12 fails but some other layer is positive in all three seeds. Reportable,
+  but as a weaker, exploratory finding, and explicitly labelled as one.
+- \emph{unmeasurable} --- layer 12 is excluded for saturation in two or more seeds. Then the
+  instrument, not the model, is the limit, and that is what gets written down.
+
+Do not lower `--headroom` to keep layer 12 in. If the instrument has no dynamic range there under a
+new seed, that is a result about the instrument and belongs in the write-up.
+
+```bash
+scp endcell/analysis/workspace_probe.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > probereplicate.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=probrep
+#SBATCH --account=3180408
+#SBATCH --partition=gpuh200
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=12:00:00
+#SBATCH --output=logs/probereplicate_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+
+$PY workspace_probe.py --selftest
+
+ARMS=(
+  "residual|$D/checkpoints/pythia_sft_residual/final|$D/residual_targets/residual.jsonl"
+  "residual_holdout|$D/checkpoints/pythia_sft_residual_holdout2/final|$D/residual_targets_holdout2/residual.jsonl"
+)
+
+for SEED in 43 44 45; do
+  for entry in "${ARMS[@]}"; do
+    ARM="${entry%%|*}"; rest="${entry#*|}"
+    CKPT="${rest%%|*}"; EVAL="${rest#*|}"
+    echo ""
+    echo "############ ARM: $ARM  SEED: $SEED ############"
+    if [ ! -d "$CKPT" ] || [ ! -f "$EVAL" ]; then echo "SKIP $ARM: missing inputs"; continue; fi
+    $PY workspace_probe.py \
+        --arm "${ARM}_s${SEED}" --model_path "$CKPT" --eval_file "$EVAL" \
+        --layers 2,4,6,8,9,12,16 --n_drugs 24 --n_per_drug 60 --n_dims 23 \
+        --n_kl_prompts 60 --n_swap_prompts 240 \
+        --do_swap --alphas 0.5,1,2,5,10 --bf16 --seed $SEED \
+        --out "RESULTS/probe_rep_${ARM}_s${SEED}.json" || echo "ARM $ARM SEED $SEED FAILED (continuing)"
+  done
+done
+echo ""
+echo "done -> RESULTS/probe_rep_*.json"
+EOF
+sbatch probereplicate.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/probereplicate_*.out | head -1); grep -nE "ARM:|SEED|SKIP |FAILED|===== hidden|HEADROOM|CROSS-ARM|<<< HEADLINE|SATURATED" $LOG
+```
+
+Layer 12 is the line to read, on the three `residual` seeds. Bring the JSON back so the three seeds
+can be pooled rather than eyeballed:
+
+```bash
+scp '3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/probe_rep_*.json' ./RESULTS/
+```
+
+---
+
 ## Validated locally before sending
 
 | check | result |
