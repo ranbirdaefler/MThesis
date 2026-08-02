@@ -518,6 +518,104 @@ scp '3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/probe_rep_*.json' ./RESULTS
 
 ---
 
+## 6. `kappachannel.sbatch` — is the interaction a property of the mechanism, or of the molecule?  (CPU, ~1 h)
+
+The transfer coefficient says roughly $45\%$ of the drug-specific residual is drug$\times$cell-line
+interaction, reached by neither the per-drug lookup nor the model. The thesis calls that a
+*quantified, unclaimed target* without knowing which of two things it is, and they lead to different
+closing claims:
+
+- **structured** — two drugs sharing a mechanism interact with a given cell line in similar ways.
+  The $45\%$ is then reachable, the feature that reaches it is named, and the Limitations paragraph
+  currently advising *against* a mechanism-conditioned model becomes wrong and gets rewritten.
+- **idiosyncratic** — the interaction belongs to the individual molecule and no annotation we hold
+  predicts it. The closing claim then sharpens from "unclaimed" to "real, and unreachable from
+  available covariates", which is a stronger negative than the one we currently have.
+
+The channel gate does not answer this. It predicted the whole residual, which is $\approx 55\%$
+per-drug main effect, so its $+0.078$ for mechanism is consistent with two EGFR inhibitors merely
+having similar *average* effects. This runs the same logic on $\kappa$ alone.
+
+No GPU. It reads the residual cache and fetches Tahoe's `drug_metadata.parquet` for the `moa-fine`
+and `targets` columns.
+
+```bash
+scp endcell/analysis/kappa_channel.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > kappachannel.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=kapchan
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/kappachannel_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+
+$PY kappa_channel.py --selftest
+
+$PY kappa_channel.py --cache_dir "$D/ot_cache" \
+    --min_rel 0.05 --plate_policy different --n_perm 200 --n_boot 2000 --seed 42 \
+    --out RESULTS/kappa_channel.json
+
+echo "=== sensitivity: a stricter reliability floor, same everything else ==="
+$PY kappa_channel.py --cache_dir "$D/ot_cache" \
+    --min_rel 0.20 --plate_policy different --n_perm 200 --n_boot 2000 --seed 42 \
+    --out RESULTS/kappa_channel_rel20.json
+
+echo done
+EOF
+sbatch kappachannel.sbatch
+```
+
+The second run is not a fishing expedition. Disattenuation divides by $\sqrt{\text{rel}_1
+\text{rel}_2}$, so at `min_rel 0.05` a pair can be amplified up to $20\times$; an audit established
+that this costs variance rather than bias, but if the two floors disagree the answer is being
+carried by badly-estimated pairs and neither number should be quoted.
+
+```bash
+LOG=$(ls -t logs/kappachannel_*.out | head -1); grep -nE "SELFTEST|SEPARATION|FAIL|CEILING|CONTINUITY|analytic null|CHANNEL:|plate=|permutation|VERDICT|sensitivity|coverage" $LOG
+```
+
+**Read in this order.**
+
+1. `SELFTEST PASSED` and the `SEPARATION` line. The estimator must recover a planted
+   mechanism-structured world and a planted idiosyncratic one; without that a null means nothing.
+2. `CEILING` — $\kappa$'s own split-half reliability. Every cross-drug cosine is disattenuated by it,
+   so the scale is one where $1.0$ means "as similar as $\kappa$ is to its own replicate". If the
+   ceiling is very low, $\kappa$ is barely estimable and no arm below it is interpretable.
+3. `CONTINUITY` — read the **excess** over the analytic null, never the raw value. Centring a drug's
+   $\kappa$s on their own mean makes any two of them correlate at $\approx -1/(m-1)$ before biology
+   enters; the selftest reproduces this to three decimals ($-0.0907$ observed against $-0.0909$
+   predicted).
+4. `plate=different` — the headline. If the script prints that this policy retains too little to
+   support a headline, read `plate=any` and treat plate structure as uncontrolled.
+5. `VERDICT`, which is decided by the **permutation p-value**, not by the bootstrap interval. The
+   interval is reported as a spread only, because its width runs $\approx 0.92$ of the true sampling
+   spread and testing it against zero over-rejects.
+
+A `CONTROL FAILURE` verdict — the mechanism-matched arm significantly *less* similar than the
+mismatched arm — means the comparison is broken, not that the interaction is idiosyncratic. It is not
+quotable either way.
+
+```bash
+scp '3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/kappa_channel*.json' ./RESULTS/
+```
+
+---
+
 ## Validated locally before sending
 
 | check | result |
