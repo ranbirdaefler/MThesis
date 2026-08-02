@@ -98,6 +98,7 @@ def _args(cache_dir, meta_dir, out_dir, **over):
         cache_dir=cache_dir, meta_dir=meta_dir, out_dir=out_dir, repo=brt.TAHOE_REPO,
         min_treated=N_CELLS, min_control=N_CELLS, repro_thr=-1.0, k_up=5, k_down=5, max_ctrl=3,
         generic_scope="plate", shrink_k=0.0, scope_sensitivity=False,
+        shared_control_reliability=False,
         keep_combinations=False, no_require_sample_id=False, no_eval_repro_filter=False,
         tier2_file=None, tier3_file=None, holdout_combos=0.2, min_combo_conditions=1,
         holdout_drugs=0.15, split_unit="condition", prompt_order="drug_first",
@@ -208,12 +209,100 @@ def test_held_out_drugs_are_absent_from_the_fitted_generic(tmp_path):
     _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
     conds, ctrl_rows, X, _, _ = brt.inventory(cache, N_CELLS, N_CELLS, conc)
     split, ho_drugs, _ = brt.make_holdout(conds, 0.2, 0.15, 42)
-    shifts, _ = brt.compute_shifts(conds, ctrl_rows, X, 42)
+    shifts, _, _ = brt.compute_shifts(conds, ctrl_rows, X, 42)
     gen = brt.Generic(shifts, conds, [k for k in conds if split[k] == "train"])
     assert ho_drugs, "no drug was held out, so this asserts nothing"
     for store in (gen.fine, gen.coarse):
         for g, s in store.items():
             assert not (set(s["drug_mean"]) & set(ho_drugs)), f"held-out drug in the generic for {g}"
+
+
+CONSUMERS = ["endcell/analysis/residual_eval.py", "endcell/analysis/channel_gate.py",
+             "endcell/analysis/reconstructed_eval.py", "endcell/analysis/reward_calibration.py",
+             "endcell/train/build_de_weights.py"]
+
+
+def test_the_five_evaluation_consumers_still_have_their_api(tmp_path):
+    """Restructuring run() into stages deleted `build_residuals`, and five scripts call it.
+
+    Nothing caught that: the poison test exercises run(), and none of the five has a test. They are
+    the entire evaluation stack, so the breakage would have surfaced on the cluster, after the queue
+    wait, at the eval step of a job whose training had already finished.
+    """
+    missing = [f for f in CONSUMERS
+               if "brt.build_residuals(" in open(os.path.join(ROOT, f), encoding="utf-8").read()
+               and not hasattr(brt, "build_residuals")]
+    assert not missing, f"these scripts call an API that no longer exists: {missing}"
+
+    cache = os.path.join(str(tmp_path), "cache_shim")
+    meta_dir = os.path.join(str(tmp_path), "meta_shim")
+    _write_cache(cache, meta_dir)
+    # the exact positional signature all five use
+    kept, generic, ctrl_rows, X, meta = brt.build_residuals(
+        cache, N_CELLS, N_CELLS, -1.0, seed=42, meta_dir=meta_dir)
+    assert kept and len(next(iter(kept))) == 4, "condition keys must stay 4-tuples"
+    for field in ("residual", "residual_A", "residual_B", "group", "n_cells", "repro_cos"):
+        assert field in next(iter(kept.values())), f"consumers read kept[k]['{field}']"
+    assert generic and all(isinstance(k, str) for k in generic), (
+        "consumers index `generic` by cell line, so plate-scoped groups must be collapsed")
+    assert len(ctrl_rows) > 0 and X.shape[0] == len(meta)
+
+
+def test_the_shim_reproduces_the_published_semantics_by_default(tmp_path):
+    """The published numbers came from the cell-line-scoped, non-LOO, shared-control build. The shim
+    must default to exactly that, or previously quoted results become unreproducible."""
+    cache = os.path.join(str(tmp_path), "cache_sem")
+    meta_dir = os.path.join(str(tmp_path), "meta_sem")
+    _write_cache(cache, meta_dir)
+    old, _, _, _, _ = brt.build_residuals(cache, N_CELLS, N_CELLS, -1.0, seed=42, meta_dir=meta_dir)
+    new, _, _, _, _ = brt.build_residuals(cache, N_CELLS, N_CELLS, -1.0, seed=42, meta_dir=meta_dir,
+                                          generic_scope="plate", loo=True, split_controls=True)
+    k = next(iter(old))
+    assert not np.allclose(old[k]["residual"], new[k]["residual"]), (
+        "the repaired frame must give different targets, else no flag is reaching the construction")
+    assert old[k]["repro_cos"] != new[k]["repro_cos"]
+
+
+def test_reliability_halves_do_not_share_a_control(tmp_path):
+    """`repro_cos` is meant to be the correlation of two independent measurements of one condition.
+
+    Subtracting the same control pseudobulk from both halves makes them share the whole control-noise
+    term, which correlates them for a reason unrelated to the drug. FINDINGS.md:532 retracts a scope
+    comparison made that way -- and the inflation is not neutral between scopes, so reproducing it
+    here would bias the very sensitivity table that decides the rebuild.
+    """
+    cache = os.path.join(str(tmp_path), "cache_rel")
+    meta_dir = os.path.join(str(tmp_path), "meta_rel")
+    _write_cache(cache, meta_dir)
+    _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
+    conds, ctrl_rows, X, _, _ = brt.inventory(cache, N_CELLS, N_CELLS, conc)
+
+    split_shifts, _, prov = brt.compute_shifts(conds, ctrl_rows, X, 42)
+    shared_shifts, _, prov_shared = brt.compute_shifts(conds, ctrl_rows, X, 42, shared_control=True)
+
+    assert prov["shared_control_reliability"] is False
+    assert prov_shared["shared_control_reliability"] is True
+    assert prov["n_conditions_with_shared_control"] == 0, "every group here is large enough to halve"
+
+    # the full shift is the training target and must be unaffected by how reliability is measured
+    for k in conds:
+        assert np.allclose(split_shifts[k]["full"], shared_shifts[k]["full"])
+
+    # the halves must differ, i.e. the split control actually reached them
+    assert any(not np.allclose(split_shifts[k]["A"], shared_shifts[k]["A"]) for k in conds)
+
+    # and the shared-control version must report higher reliability on this noise-only fixture,
+    # which is the inflation the retraction is about
+    def mean_cos(sh):
+        cs = []
+        for k in conds:
+            a, b = sh[k]["A"], sh[k]["B"]
+            cs.append(float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9)))
+        return float(np.mean(cs))
+
+    assert mean_cos(shared_shifts) > mean_cos(split_shifts), (
+        "sharing a control across both halves should inflate repro_cos; if it does not, the fixture "
+        "is not exercising the control-noise term and this test proves nothing")
 
 
 # --------------------------------------------------------------------------- the other two defects

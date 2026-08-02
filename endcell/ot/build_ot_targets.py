@@ -154,6 +154,7 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
         raise SystemExit("no treatment/well identifier in the cache -- rebuild it with a "
                          "`sample_id` column (see build_embeddings.py)")
     logger.info(f"treatment identifier: column '{scol}' ({how})")
+    sample_id_source = how          # recorded in step0_gates.json so the branch is auditable
     sample = meta[scol].astype(str).values
     ok = found & np.array([np.isfinite(E[i]).all() for i in range(len(E))])
 
@@ -177,8 +178,12 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
         return
 
     os.makedirs(out_dir, exist_ok=True)
-    writers = {t: open(os.path.join(out_dir, f"{t}.jsonl"), "w") for t in targets}
-    gates = {"n_conditions": len(conds), "signal_shift": [], "target_sanity": [], "target_contrast": []}
+    # each arm is written to a .partial path and renamed only once the dose check below passes,
+    # so a refusal leaves nothing behind that could be mistaken for a finished build
+    writer_paths = {t: os.path.join(out_dir, f"{t}.jsonl") for t in targets}
+    writers = {t: open(p + ".partial", "w") for t, p in writer_paths.items()}
+    gates = {"n_conditions": len(conds), "sample_id_source": sample_id_source,
+             "signal_shift": [], "target_sanity": [], "target_contrast": []}
     n_emit = 0
     emitted_doses = []
     rng = np.random.RandomState(0)
@@ -266,7 +271,12 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
     # the defect tahoe_design exists to stop: never ship a dose field that is actually holding
     # sample identifiers
     if td.looks_like_sample_id(emitted_doses):
+        for p in writer_paths.values():
+            if os.path.exists(p + ".partial"):
+                os.remove(p + ".partial")
         raise SystemExit("REFUSING TO WRITE: the emitted dose field holds sample identifiers.")
+    for p in writer_paths.values():
+        os.replace(p + ".partial", p)
     json.dump(gates, open(os.path.join(out_dir, "step0_gates.json"), "w"), indent=2, default=float)
     _report_gates(gates)
     logger.info(f"emitted {n_emit} prompts x {len(targets)} target arms -> {out_dir}")

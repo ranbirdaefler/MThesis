@@ -35,10 +35,15 @@ THREE DEFECTS FIXED IN THE SAME PASS
   1. LEAKAGE      generic + reliability filter now fitted on train only (above).
   2. PLATE SCOPE  the generic defaults to (cell_line, plate) scope. Cell-line scope leaves same-plate
                   structure at +0.478 against -0.018 at plate scope, and the shipped targets were
-                  built the contaminated way. Plate scope is noisier because a plate holds fewer
-                  drugs, so `--shrink_k` blends the plate generic toward the cell-line generic with
-                  weight n_drugs/(n_drugs+k) — the standard hierarchical compromise. The report
-                  prints the reliability retention at every setting so the choice is made on numbers.
+                  built the contaminated way; FINDINGS.md:532 concludes plate scope is the better
+                  build. The old counter-argument -- a plate holds too few drugs, so plate scope
+                  loses most of the data -- rested on a SHARED-control reliability measurement and is
+                  retracted with it: under split controls retention is comparable, 20% at plate scope
+                  against 16% at cell-line scope. Both are low in absolute terms, so `--shrink_k`
+                  still blends the plate generic toward the cell-line one with weight n/(n+k), where
+                  n is the number of OTHER training drugs in the plate group (leave-one-drug-out
+                  applies here too) — the standard hierarchical compromise. The report prints the
+                  reliability retention at every setting so the choice is made on numbers.
   3. DRUG WEIGHT  the generic is a mean over DRUGS: each drug's doses and plates are averaged first.
                   Previously it was a mean over conditions, so a five-dose drug carried five times
                   the weight of a single-dose drug.
@@ -60,6 +65,10 @@ SENTENCE ENCODING (sign is biology, so we keep it)
 
 RELIABILITY FILTER (decided: filter, not weight)
   Keep a condition only if its residual reproduces across a half-split: cos(res_A, res_B) > --repro_thr.
+  The halves are measured against SPLIT controls, so res_A and res_B share nothing. Sharing one
+  control pseudobulk across both halves correlates them for a reason unrelated to the drug, and
+  FINDINGS.md:532 retracts an earlier scope comparison for exactly that (62%/19% shared vs
+  20%/16% split). See `compute_shifts`.
   This is a MEASUREMENT-QUALITY criterion, not a performance one, and it is applied to held-out
   conditions too — but through the train-fitted generic, and the per-split retention rates are
   reported so the selection is visible.
@@ -382,23 +391,61 @@ def _stable_rng(seed, key):
     return np.random.RandomState((seed * 1000003 + zlib.crc32("|".join(map(str, key)).encode())) % (2 ** 32))
 
 
-def compute_shifts(conds, ctrl_rows, X, seed):
+def compute_shifts(conds, ctrl_rows, X, seed, shared_control=False):
     """Per-condition treated pseudobulk minus its group control, full and on two disjoint halves.
 
     Uses each condition's OWN cells only, so running it over held-out conditions leaks nothing --
     what must not happen is a held-out condition entering the generic, and that is enforced in
-    `fit_generic`, which is handed the train keys explicitly."""
-    ctrl_pb = {g: np.asarray(np.log1p(X[idx].todense()).mean(0)).ravel().astype(np.float32)
-               for g, idx in ctrl_rows.items()}
-    shifts = {}
+    `Generic.__init__`, which is handed the train keys explicitly.
+
+    SPLIT CONTROLS, and why this is not a detail. `repro_cos` is cos(res_A, res_B), and the two
+    halves are supposed to be independent measurements of the same condition. Subtracting the SAME
+    control pseudobulk from both makes them share the whole control-noise term, which correlates
+    them for a reason that has nothing to do with the drug. FINDINGS.md:532 retracts an earlier
+    scope comparison for exactly this: measured with shared controls, reliability read 62%
+    (cell line) against 19% (plate); measured with SPLIT controls the two are comparable, 20%
+    against 16%. The inflation is not neutral between the scopes -- it favours cell-line scope,
+    which is the choice this rebuild exists to abandon. Reproducing it here would have biased
+    `--scope_sensitivity`, the gate deciding the rebuild, against the rebuild.
+
+    So half A is measured against control half A and half B against control half B, and the two
+    residuals then share nothing. The FULL shift still uses every control cell, because that is the
+    training target rather than a reliability estimate and there is no reason to halve its precision.
+    `--shared_control_reliability` restores the old behaviour for a side-by-side.
+    """
+    L = lambda ix: np.asarray(np.log1p(X[ix].todense()).mean(0)).ravel().astype(np.float32)
+    ctrl_pb, ctrl_half = {}, {}
+    for g, idx in ctrl_rows.items():
+        ctrl_pb[g] = L(idx)
+        ci = list(idx)
+        _stable_rng(seed + 2, g).shuffle(ci)
+        m = len(ci) // 2
+        # a group too small to halve falls back to the shared control, and says so in the report
+        ctrl_half[g] = (L(ci[:m]), L(ci[m:])) if m >= 1 and len(ci) >= 2 else (ctrl_pb[g], ctrl_pb[g])
+
+    shifts, n_shared = {}, 0
     for k, info in conds.items():
         idxs = list(info["rows"])
         _stable_rng(seed, k).shuffle(idxs)
         h = len(idxs) // 2
-        L = lambda ix: np.asarray(np.log1p(X[ix].todense()).mean(0)).ravel().astype(np.float32)
-        cpb = ctrl_pb[info["group"]]
-        shifts[k] = {"full": L(idxs) - cpb, "A": L(idxs[:h]) - cpb, "B": L(idxs[h:]) - cpb}
-    return shifts, ctrl_pb
+        g = info["group"]
+        cpb = ctrl_pb[g]
+        if shared_control:
+            cA = cB = cpb
+        else:
+            cA, cB = ctrl_half[g]
+            if cA is cpb:
+                n_shared += 1
+        shifts[k] = {"full": L(idxs) - cpb, "A": L(idxs[:h]) - cA, "B": L(idxs[h:]) - cB}
+    if shared_control:
+        logger.warning("reliability measured with SHARED controls: res_A and res_B share the whole "
+                       "control-noise term, which inflates repro_cos and does so unevenly across "
+                       "scopes. Use for comparison only.")
+    elif n_shared:
+        logger.warning(f"{n_shared} conditions sit in a control group too small to halve; their "
+                       f"reliability is shared-control and therefore optimistic")
+    return shifts, ctrl_pb, {"n_conditions_with_shared_control": n_shared,
+                             "shared_control_reliability": bool(shared_control)}
 
 
 class Generic:
@@ -412,8 +459,9 @@ class Generic:
     not, and the two splits would be scored against differently defined targets.
     """
 
-    def __init__(self, shifts, conds, train_keys, shrink_k=0.0):
+    def __init__(self, shifts, conds, train_keys, shrink_k=0.0, loo=True):
         self.shrink_k = float(shrink_k)
+        self.loo = bool(loo)
         self.fine, self.coarse = {}, {}      # (cell_line, plate) and cell_line
         for level, keyfn in (("fine", lambda k: (conds[k]["cell_line"], conds[k]["plate"])),
                              ("coarse", lambda k: conds[k]["cell_line"])):
@@ -432,13 +480,12 @@ class Generic:
                 store[g] = {"drug_mean": dm, "total": tot, "n_drugs": len(dm)}
             setattr(self, level, store)
 
-    @staticmethod
-    def _loo(store, g, drug, h):
+    def _loo(self, store, g, drug, h):
         s = store.get(g)
         if s is None:
             return None
         n, tot = s["n_drugs"], s["total"][h]
-        if drug in s["drug_mean"]:
+        if self.loo and drug in s["drug_mean"]:
             tot = tot - s["drug_mean"][drug][h]
             n -= 1
         return None if n <= 0 else tot / n
@@ -453,7 +500,8 @@ class Generic:
             return coarse
         if self.shrink_k <= 0 or coarse is None:
             return fine
-        n = self.fine[(cell_line, plate)]["n_drugs"] - (drug in self.fine[(cell_line, plate)]["drug_mean"])
+        n = self.fine[(cell_line, plate)]["n_drugs"] - (
+            self.loo and drug in self.fine[(cell_line, plate)]["drug_mean"])
         w = n / (n + self.shrink_k)
         return w * fine + (1.0 - w) * coarse
 
@@ -515,6 +563,66 @@ def transform(conds, shifts, gen, split, scope, repro_thr, eval_filter=True):
         logger.info(f"reliability [{s}]: mean cos(A,B)={out[s]['mean_repro_cos']:+.3f}; "
                     f"KEPT {v['n_kept']}/{v['n']} ({out[s]['retention']:.0%}) at cos > {repro_thr}")
     return kept, out
+
+
+def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
+                    generic_scope="cell_line", shrink_k=0.0, loo=False, split_controls=False,
+                    train_keys=None, holdout=None, meta_dir=None, repo=TAHOE_REPO,
+                    drop_combinations=False):
+    """COMPATIBILITY SHIM for the five analysis scripts that consume residual truth.
+
+    `residual_eval.py`, `channel_gate.py`, `reconstructed_eval.py`, `reward_calibration.py` and
+    `build_de_weights.py` all call this with the same positional signature and unpack
+    `(kept, generic, ctrl_rows, X, meta)`. Restructuring `run()` into inventory/split/fit/transform
+    removed the function they were calling; this restores it on top of the new stages.
+
+    THE DEFAULTS REPRODUCE THE OLD, DEFECTIVE SEMANTICS ON PURPOSE. An audit asked for every number
+    quoted in the thesis to be regenerable from the repository, and those numbers were produced by
+    the cell-line-scoped, non-leave-one-out, shared-control build. Silently "fixing" them here would
+    make the published figures unreproducible and hide the size of each repair. So:
+
+        generic_scope="cell_line"   as published; pass "plate" for the repaired frame
+        loo=False                   as published; the generic contains the condition's own drug
+        split_controls=False        as published; res_A and res_B share one control pseudobulk,
+                                    which inflates repro_cos (variance_decomposition.py:55 already
+                                    documented this, and FINDINGS.md:532 retracts a scope comparison
+                                    made this way)
+
+    Pass `train_keys` (or `holdout`, a path to a holdout.json) to fit the generic on training
+    conditions only. WITHOUT ONE OF THOSE THE GENERIC IS FITTED OVER EVERY CONDITION, so a caller
+    scoring a held-out split against this truth is scoring against targets partly defined by the
+    holdout. That is the transductive defect, on the evaluation side rather than the training side,
+    and closing it in `residual_eval` is Step 6.
+    """
+    _, _, conc_of = load_meta_maps(repo, meta_dir)
+    conds, ctrl_rows, X, meta, notes = inventory(
+        cache_dir, min_treated, min_control, conc_of,
+        drop_combinations=drop_combinations, require_sample_id=False)
+    shifts, _, _ = compute_shifts(conds, ctrl_rows, X, seed, shared_control=not split_controls)
+
+    if train_keys is None and holdout and os.path.exists(holdout):
+        hm = json.load(open(holdout))
+        want = {k for k, v in hm.get("split", {}).items() if v == "train"}
+        train_keys = [k for k in conds if "|".join(map(str, k)) in want]
+        logger.info(f"generic fitted on {len(train_keys)} training conditions from {holdout}")
+    if train_keys is None:
+        train_keys = list(conds)
+        logger.warning("build_residuals: the generic is being fitted over EVERY condition. Any "
+                       "held-out split scored against this truth is transductive. Pass holdout= or "
+                       "train_keys= to close that.")
+
+    gen = Generic(shifts, conds, train_keys, shrink_k=shrink_k, loo=loo)
+    split = {k: "train" for k in conds}
+    kept, _ = transform(conds, shifts, gen, split, generic_scope, repro_thr, eval_filter=True)
+    gexp = gen.export(conds, generic_scope)
+    if generic_scope == "cell_line":
+        generic = gexp
+    else:                       # collapse (cell_line, plate) -> cell_line so old callers still index
+        acc = defaultdict(list)
+        for g, v in gexp.items():
+            acc[g[0]].append(v)
+        generic = {c: np.mean(np.stack(v), axis=0) for c, v in acc.items()}
+    return kept, generic, ctrl_rows, X, meta
 
 
 def scope_sensitivity(conds, shifts, train_keys, repro_thr):
@@ -602,7 +710,8 @@ def run(args):
                 f"({len({conds[k]['drug'] for k in train_keys})} drugs)")
 
     logger.info("=== [3/4] fit (train conditions only) ===")
-    shifts, _ = compute_shifts(conds, ctrl_rows, X, args.seed)
+    shifts, _, relprov = compute_shifts(conds, ctrl_rows, X, args.seed,
+                                        shared_control=args.shared_control_reliability)
     sens = scope_sensitivity(conds, shifts, train_keys, args.repro_thr) if args.scope_sensitivity else []
     gen = Generic(shifts, conds, train_keys, shrink_k=args.shrink_k)
     fit_digest = gen.digest()
@@ -617,8 +726,11 @@ def run(args):
 
     os.makedirs(args.out_dir, exist_ok=True)
     out_path = os.path.join(args.out_dir, "residual.jsonl")
+    # written to a temp path and renamed only once the dose check passes, so "REFUSING TO WRITE"
+    # is literally true and a failed run cannot leave a usable-looking training file behind
+    tmp_path = out_path + ".partial"
     n_ex, n_cond, n_skipped_holdout, emitted_doses = 0, 0, 0, []
-    with open(out_path, "w") as out:
+    with open(tmp_path, "w") as out:
         for k, v in kept.items():
             d, c, p, sid = k
             info = conds[k]
@@ -654,8 +766,10 @@ def run(args):
 
     # the defect this builder exists to prevent: never ship a dose field holding sample identifiers
     if td.looks_like_sample_id(emitted_doses):
+        os.remove(tmp_path)
         raise SystemExit("REFUSING TO WRITE: the emitted dose field holds sample identifiers. "
                          "This is the exact defect shared/tahoe_design.py was written to stop.")
+    os.replace(tmp_path, out_path)
 
     # reconstruction assets: predicted_treated = control + generic_shift(group) + predicted_residual
     gexp = gen.export(conds, args.generic_scope)
@@ -674,6 +788,7 @@ def run(args):
               "repro_thr": args.repro_thr, "scope": args.generic_scope, "shrink_k": args.shrink_k,
               "leave_one_drug_out": True, "drug_weighted_generic": True,
               "split_before_fit": True, "split_unit": args.split_unit,
+              "reliability_controls": relprov,
               "eval_repro_filter": not args.no_eval_repro_filter,
               "fit_digest": fit_digest, "reliability_by_split": relstats,
               "scope_sensitivity": sens, "well_crossing": crossing,
@@ -787,7 +902,12 @@ def main():
                          "cell-line scope leaves in the target (+0.478 vs -0.018)")
     ap.add_argument("--shrink_k", type=float, default=0.0,
                     help="blend the plate generic toward the cell-line generic with weight "
-                         "n_drugs/(n_drugs+k). 0 = pure plate scope. Use --scope_sensitivity first.")
+                         "n/(n+k), n = OTHER training drugs in the plate group. 0 = pure plate "
+                         "scope. Use --scope_sensitivity first.")
+    ap.add_argument("--shared_control_reliability", action="store_true",
+                    help="measure repro_cos with ONE control pseudobulk shared by both halves. "
+                         "Inflates reliability, and unevenly across scopes -- FINDINGS.md:532 "
+                         "retracts a scope comparison made this way. For side-by-side only.")
     ap.add_argument("--scope_sensitivity", action="store_true",
                     help="report reliability retention under every scope setting (train conditions "
                          "only) before choosing one")
