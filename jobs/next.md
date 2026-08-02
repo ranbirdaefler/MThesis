@@ -616,6 +616,81 @@ scp '3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/kappa_channel*.json' ./RESU
 
 ---
 
+## 7. `leakmag.sbatch` — how bad is the transductive holdout, really?  (CPU, ~20 min)
+
+An external audit found `build_residual_targets.build_residuals` to be **transductive**: it computes
+the generic shift as a mean over *all* drugs in a cell line, applies the reliability filter
+$\cos(r_A, r_B) > 0.2$ to *all* conditions, and only then assigns the split. Held-out outcomes
+therefore entered both the **centring** of the training targets and the **selection** of which
+conditions exist. The audit's recommendation is to rebuild train-only, retrain, and only then make a
+generalisation claim.
+
+That is the right fix and it costs about a day. This measures the contamination first, because the
+two halves of it have different consequences and only one of them is plausibly fatal:
+
+- **Centring.** Each held-out drug supplies $1/m$ of its cell line's generic, and cell lines carry
+  20--204 drugs, so the held-out set contributes roughly 10--15\%. But the generalisation claim is a
+  \gap{} --- model minus scramble --- and both arms are scored against the *same* target, so a shared
+  additive perturbation of that target cancels to first order.
+- **Selection.** The reliability filter decided which conditions exist to be scored at all, and that
+  does **not** cancel in a difference. If the retained set changes materially when the generic is
+  built train-only, the evaluation population itself was chosen using held-out information.
+
+```bash
+scp endcell/analysis/leak_magnitude.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > leakmag.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=leakmag
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/leakmag_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+
+$PY leak_magnitude.py --cache_dir "$D/ot_cache" \
+    --holdout "$D/residual_targets_holdout2/holdout.json" \
+    --repro_thr 0.2 --seed 42 \
+    --out RESULTS/leak_magnitude.json
+echo done
+EOF
+sbatch leakmag.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/leakmag_*.out | head -1); grep -nE "conditions with enough|holdout manifest|of .* conditions in the cache|cos\(r_all|retained|Jaccard|kept under|READ" $LOG
+```
+
+**The decision rule, fixed before the numbers.**
+
+| observation | reading | action |
+|---|---|---|
+| target cosine $\geq 0.999$ **and** retained-set Jaccard $\geq 0.99$ | the contamination is real but immaterial | report it as a measured limitation, keep the generalisation claim, no retrain |
+| target cosine $\geq 0.999$ but Jaccard $< 0.99$ | the training signal is clean, the evaluation **population** is not | rebuild train-only and retrain; the current number is not quotable |
+| target cosine $< 0.999$ | the training targets themselves carry held-out information | rebuild train-only and retrain |
+
+Note the asymmetry deliberately built into that table: two of the three outcomes lead to a retrain.
+The cheap measurement exists to find out whether we are in the one case that does not, not to look
+for an excuse to skip it. If the answer is ambiguous, retrain.
+
+**If the retrain is needed** it is one build plus one train plus one eval, using the existing
+`reorder.sbatch` recipe with `--prompt_order drug_first` and a `build_residual_targets` patched so
+that the generic and the reliability filter see training conditions only. That patch is the real
+deliverable of this section, and it should be written whether or not this measurement excuses the
+current run --- a transductive builder is a defect regardless of how large its effect turns out to be.
+
+---
+
 ## Validated locally before sending
 
 | check | result |
