@@ -228,8 +228,13 @@ def load(eval_dir, sources, pidx, P, lm):
         for line in open(path):
             ex = json.loads(line)
             m = ex.get("metadata", {})
-            cl, plate, drug, dose = (m.get("cell_line_id"), m.get("plate"),
-                                     m.get("drug"), m.get("dose_float"))
+            cl, plate, drug = m.get("cell_line_id"), m.get("plate"), m.get("drug")
+            # `dose_molar` is a real concentration on a common scale. Files built before the fix
+            # carry `dose_float`, which for the residual and OT arms held the SAMPLE IDENTIFIER --
+            # so a dose-response curve read from one of those was ordering wells, not doses.
+            dose = m.get("dose_molar")
+            if dose is None and not isinstance(m.get("dose_float"), str):
+                dose = m.get("dose_float")
             if cl is None or plate is None or drug is None or dose is None:
                 continue
             g = (cl, plate)

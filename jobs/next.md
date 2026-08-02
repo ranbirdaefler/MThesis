@@ -711,7 +711,10 @@ Six questions, each of which changes what happens next:
    analysis becomes available.
 4. **How many samples are combinations?** The shipped parser takes the first component, so any
    multi-drug sample has been analysed as single-drug.
-5. **What fraction of conditions yield a molar dose** once parsed properly?
+5. **What fraction of conditions yield a molar dose** once parsed properly? And does the
+   ORIGINAL preprocessing's `dose_float = float(dose_str.split()[0])` corrupt anything --
+   it discards the unit, so 1 uM and 1 nM collide at 1.0 while 0.05 uM and 50 nM split into
+   two. The tier-4 held-out-dose test is decided by exactly that comparison.
 6. **Does any sample cross the existing holdout?** If one physical treatment has conditions on both
    sides, the split is broken at the assignment level and careful fitting cannot repair it --- the new
    split must be assigned by sample.
@@ -754,7 +757,7 @@ sbatch unitaudit.sbatch
 ```
 
 ```bash
-LOG=$(ls -t logs/unitaudit_*.out | head -1); grep -nE "SELFTEST|verdict|cell lines per sample|treatment samples|spanning|distinct \(drug|replicated in|samples per treatment|combination|carrying|usable molar|unusable|CROSSING|WHAT THIS DECIDES|->" $LOG
+LOG=$(ls -t logs/unitaudit_*.out | head -1); grep -nE "SELFTEST|verdict|cell lines per sample|treatment samples|spanning|distinct \(drug|replicated in|samples per treatment|combination|carrying|usable molar|unusable|COLLISION|SPLITS|CROSSING|WHAT THIS DECIDES|->" $LOG
 ```
 
 **What each answer changes.**
@@ -767,9 +770,178 @@ LOG=$(ls -t logs/unitaudit_*.out | head -1); grep -nE "SELFTEST|verdict|cell lin
 | none exist | rename `repro_cos` to split-half precision everywhere and drop Workstream H's replicate arm |
 | combination samples present | exclude them explicitly before the retrain, and say so |
 | any sample crosses the split | the new split manifest must be keyed by **sample**, not condition |
+| `dose_float` collisions | tier 4 held out a dose it also trained on; every tier-4 number needs a caveat |
+| `dose_float` splits | one concentration counted as two, deflating per-dose sample sizes |
 
 Nothing in this job changes a thesis number. It decides which version of Steps 3 and 4 gets written,
 and it supplies the pseudoreplication factor that every corrected confidence interval needs.
+
+---
+
+## 9. `rebuild.sbatch` — repaired residual targets, and the decision gate  (CPU, ~1 h)  **[Steps 3–4]**
+
+Build only. No GPU, no training. This exists to produce the numbers that decide whether the retrain
+is worth a 20-hour slot, and it is deliberately separated from it for that reason.
+
+Three defects are repaired in one pass, plus the experimental unit:
+
+| defect | before | now |
+|---|---|---|
+| leakage | generic and reliability filter fitted over **every** condition, split assigned afterwards | inventory → split → fit → transform; the fit sees train keys only |
+| plate scope | generic per cell line, leaving same-plate structure at +0.478 in the target | generic per (cell line, plate), with `--shrink_k` available if plate scope proves too thin |
+| drug weighting | mean over **conditions**, so a five-dose drug counted five times | mean over **drugs**, each drug's doses and plates averaged first |
+| — | a condition's own drug sat inside its own generic | leave-one-drug-out, so train and held-out targets are defined identically |
+| unit | `(drug, cell_line, plate, dose)`, where `dose` held `smp_1841` | `sample_id` recovered, real molar dose resolved, combination samples dropped |
+
+```bash
+scp shared/tahoe_design.py endcell/ot/build_residual_targets.py \
+    endcell/ot/build_ot_targets.py endcell/ot/build_embeddings.py \
+    endcell/analysis/residual_eval.py endcell/train/train_c2s_tahoe_endcell.py \
+    3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > rebuild.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=rebuild
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/rebuild_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+DATA=$D/data_diverse2_endcell_big
+TGT=$D/residual_targets_repaired
+
+$PY tahoe_design.py --selftest
+$PY build_residual_targets.py --selftest
+
+$PY build_residual_targets.py --cache_dir "$D/ot_cache" --out_dir "$TGT" \
+    --generic_scope plate --shrink_k 0 --scope_sensitivity \
+    --tier2_file "$DATA/eval_tier2_unseen_drugs.jsonl" \
+    --tier3_file "$DATA/eval_tier3_unseen_combos.jsonl" \
+    --holdout_combos 0.15 --holdout_drugs 0.10 --min_combo_conditions 250 --seed 42 \
+    --emit_fit_digest "$TGT/fit.sha"
+
+$PY -c "import json;r=json.load(open('$TGT/report.json'));print(json.dumps(r,indent=2)[:4000])"
+echo done
+EOF
+sbatch rebuild.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/rebuild_*.out | head -1); grep -nE "SELFTEST|treatment identifier|inventory:|scope |reliability |well crossing|holdout|fit_digest|wrote |REFUSING" $LOG
+```
+
+**The gate.** Three numbers decide whether Step 5 runs:
+
+1. **`scope plate` retention.** Cell-line scope kept ~62% of conditions and plate scope ~19% in the
+   old measurement. If plate scope now retains enough to train on, take it — it is the scope that
+   removes the plate confound. If it does not, rerun with `--shrink_k 5` (the line above it in the
+   table shows what that buys) rather than falling back to cell-line scope, which is the
+   contaminated choice we are here to stop using.
+2. **`n_train` after the repair.** The generic is now leave-one-drug-out and train-only, so some
+   conditions lose their generic entirely (a plate with no other training drug). If the training set
+   collapses, the retrain is not worth a slot.
+3. **`well crossing`.** The fraction of held-out conditions that share a treated well with training
+   data. This cannot be driven to zero under a (drug, cell\_line) holdout — one Tahoe well carries
+   many cell lines — so the number goes in the Methods chapter as a stated property of the design.
+   `--split_unit sample` drives it to zero but changes the estimand to dose/replicate
+   generalisation, which is a different claim.
+
+`fit.sha` is the hash of every fitted quantity. `tests/test_split_before_fit.py` poisons every
+held-out expression vector, rebuilds, and requires both this hash and the training JSONL to be
+byte-identical; with the fit restored to all conditions the hash moves and the test fails. That test
+is the release gate for the generalisation chapter.
+
+---
+
+## 10. `retrain.sbatch` — one clean arm on the repaired targets  (GPU, ~20 h)  **[Steps 5–6]**
+
+**Only submit this once section 9's gate has been read.** One arm, one seed, same recipe as
+`holdout2` so the comparison is to a checkpoint that differs in the targets and nothing else. Not
+three arms and not a seed sweep — the claim is checkpoint-specific and will be worded that way.
+
+```bash
+cd ~/tahoe && cat > retrain.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=retrain
+#SBATCH --account=3180408
+#SBATCH --partition=gpuh200
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=24:00:00
+#SBATCH --output=logs/retrain_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+DATA=$D/data_diverse2_endcell_big
+TGT=$D/residual_targets_repaired
+CKPT=$D/checkpoints/pythia_sft_residual_repaired
+
+test -s "$TGT/residual.jsonl" || { echo "run rebuild.sbatch first"; exit 1; }
+
+echo "=== [1] retrain -- same recipe as holdout2, repaired targets, seeded ==="
+$PY train_c2s_tahoe_endcell.py --mode full \
+    --model_name vandijklab/C2S-Scale-Pythia-1b-pt \
+    --train_file "$TGT/residual.jsonl" \
+    --eval_file "$DATA/eval_tier1_seen_conditions.jsonl" \
+    --output_dir "$CKPT" \
+    --num_epochs 1 --batch_size 1 --grad_accum 16 \
+    --bf16 --gradient_checkpointing --max_length 8192 \
+    --learning_rate 1e-5 --weight_decay 0.01 --warmup_ratio 0.03 \
+    --log_every 50 --save_every 1000 --keep_checkpoints 3 --seed 42
+
+echo "=== [2] eval on the repaired holdout ==="
+$PY residual_eval.py --cache_dir "$D/ot_cache" \
+    --model_path "$CKPT/final" --model_kind residual \
+    --holdout "$TGT/holdout.json" --train_file "$TGT/residual.jsonl" \
+    --split_quota "train=200,unseen_combo=250,unseen_drug=120" \
+    --k_samples 4 --max_new_tokens 1400 --bf16 --seed 42 \
+    --out RESULTS/re_repaired.json
+echo done
+EOF
+sbatch retrain.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/retrain_*.out | head -1); grep -nE "===|Seed:|ceiling|model |scramble_|drug_lookup|train |unseen_combo|unseen_drug|>>>" $LOG
+```
+
+**The comparison** is against `holdout2`, which is the same recipe on the leaked, cell-line-scoped,
+condition-weighted targets:
+
+| | holdout2 (as shipped) | repaired |
+|---|---|---|
+| model NIR, `train` | 0.657 | ? |
+| model NIR, `unseen_combo` | 0.650 | ? |
+| opposite-swap gap, `unseen_combo` | +0.1002 [+0.0661, +0.1368] | ? |
+
+The corrected numbers may move in either direction, and no wording should be drafted before they
+land. The leak and the plate structure inflate the shipped result; the oracle `drug_lookup` and the
+same-drug scramble partners deflate it. "Everything shrinks" is not the safe prediction.
+
+Note that `drug_lookup` in this eval is still fitted from the full cache and is therefore an oracle.
+Step 6 restricts it to training conditions, and until that lands the lookup baseline should be read
+as an upper bound rather than as a competitor.
 
 ---
 

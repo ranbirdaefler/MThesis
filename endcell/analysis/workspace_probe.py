@@ -699,7 +699,10 @@ def load_prompts(eval_dir, tier, n_drugs, n_per_drug, rng, eval_file=None):
             e = cells[i]; m = e["metadata"]
             rows.append({"prompt": e["prompt"], "response": e["response"], "drug": d,
                          "cell_line": m.get("cell_line_id"), "plate": m.get("plate"),
-                         "dose": m.get("dose_float")})
+                         # a real concentration if the file was built after the sample/dose fix;
+                         # otherwise the sample identifier, which bin_dose treats as categorical
+                         "dose": m.get("dose_molar", m.get("dose_float")),
+                         "sample_id": m.get("sample_id", m.get("dose_float"))})
     logger.info(f"  {len(drugs)} drugs x {n_per_drug} = {len(rows)} prompts")
     return rows
 

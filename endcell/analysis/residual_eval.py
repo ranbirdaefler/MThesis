@@ -251,7 +251,10 @@ def main():
     if args.train_file and os.path.exists(args.train_file):
         for line in open(args.train_file):
             m = json.loads(line).get("metadata", {})
-            trained.add((m.get("drug"), m.get("cell_line_id"), m.get("plate"), m.get("dose_float")))
+            # the fourth element is the treated WELL. Builds before the sample/dose fix wrote it
+            # under the name `dose_float`, so accept either -- but never mix them into one key.
+            trained.add((m.get("drug"), m.get("cell_line_id"), m.get("plate"),
+                         m.get("sample_id", m.get("dose_float"))))
         logger.info(f"training file lists {len(trained)} conditions")
 
     by_cl = defaultdict(list)

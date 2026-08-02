@@ -9,13 +9,49 @@ drug. Under a drug-specific RESIDUAL the same data yields **120.3 of 200 tokens 
 information was never missing (replicate retrieval ceiling ~0.742 under every representation) — the
 TOKENIZATION discarded it. This builder changes what the tokens encode.
 
+  NOTE ON THE TOKEN COUNTS ABOVE. `target_divergence.py` compares gene SETS, not orders. A rank
+  sentence can share every gene with another and still differ in every position, so the direction of
+  that error is not established. The rebuild does not depend on the number; it is retained here for
+  provenance only.
+
 TARGET
-  residual = (treated_pseudobulk - control_pseudobulk) - mean_over_drugs(treated - control)
+  residual = (treated_pseudobulk - control_pseudobulk) - generic(scope, excluding this drug)
     * the control subtraction removes the cell's own state;
-    * the mean-over-drugs subtraction removes the GENERIC drug program (Q8: ~0.26 of "skill" that is
-      drug-AGNOSTIC and matched by trivial baselines). What remains is what makes THIS drug different.
-  SCOPE = cell line (measured: 62% of conditions reproducible vs 19% at plate scope — a plate has too
-  few drugs to estimate the mean, so subtracting a noisy mean injects noise).
+    * the generic subtraction removes the drug-AGNOSTIC program (Q8: ~0.26 of "skill" matched by
+      trivial baselines). What remains is what makes THIS drug different.
+
+ORDER OF OPERATIONS — this is the part that was wrong and is the reason for the rebuild
+  inventory  -> split -> fit -> transform
+  Every step reads only what the step before it is allowed to expose:
+    inventory   metadata and cell COUNTS only. No expression is aggregated.
+    split       assigned from metadata only, before a single pseudobulk is computed.
+    fit         the generic and its drug inventory come from TRAIN conditions only.
+    transform   held-out conditions are projected through the fitted generic; they never enter it.
+  The previous build fitted the generic over every condition and assigned the split afterwards, so
+  each held-out target was defined partly by the other held-out conditions. `--emit_fit_digest`
+  writes a hash of everything fitted, which `tests/test_split_before_fit.py` uses as its gate.
+
+THREE DEFECTS FIXED IN THE SAME PASS
+  1. LEAKAGE      generic + reliability filter now fitted on train only (above).
+  2. PLATE SCOPE  the generic defaults to (cell_line, plate) scope. Cell-line scope leaves same-plate
+                  structure at +0.478 against -0.018 at plate scope, and the shipped targets were
+                  built the contaminated way. Plate scope is noisier because a plate holds fewer
+                  drugs, so `--shrink_k` blends the plate generic toward the cell-line generic with
+                  weight n_drugs/(n_drugs+k) — the standard hierarchical compromise. The report
+                  prints the reliability retention at every setting so the choice is made on numbers.
+  3. DRUG WEIGHT  the generic is a mean over DRUGS: each drug's doses and plates are averaged first.
+                  Previously it was a mean over conditions, so a five-dose drug carried five times
+                  the weight of a single-dose drug.
+  Plus LEAVE-ONE-DRUG-OUT: a condition's own drug is excluded from its own generic. Without it a
+  train condition is centred on a mean containing itself while a held-out condition is not, and the
+  two splits would be scored against differently-defined targets.
+
+EXPERIMENTAL UNIT (see shared/tahoe_design.py)
+  Tahoe assigns a treatment to a SAMPLE/well holding a mixture of cell lines. The caches stored the
+  sample identifier in a column named `dose`, so nothing downstream ever held a concentration. This
+  builder resolves the sample identifier explicitly, recovers a real molar dose from
+  `drugname_drugconc`, refuses to emit a dose field that is actually a sample identifier, and drops
+  combination samples instead of silently analysing them as their first component.
 
 SENTENCE ENCODING (sign is biology, so we keep it)
   "<up genes, most up-regulated first> [DOWN] <down genes, most down-regulated first> [END_CELL]"
@@ -24,21 +60,31 @@ SENTENCE ENCODING (sign is biology, so we keep it)
 
 RELIABILITY FILTER (decided: filter, not weight)
   Keep a condition only if its residual reproduces across a half-split: cos(res_A, res_B) > --repro_thr.
-  ~38% of conditions have an irreproducible residual; training on those is training on noise.
+  This is a MEASUREMENT-QUALITY criterion, not a performance one, and it is applied to held-out
+  conditions too — but through the train-fitted generic, and the per-split retention rates are
+  reported so the selection is visible.
 
-Also writes `reconstruction.npz` (per-cell-line generic shift + panel order) so evaluation can rebuild
-full profiles:  predicted_treated = control_cell + generic_shift(cell_line) + predicted_residual.
+Also writes `reconstruction.npz` (generic shift per scope group + panel order) so evaluation can
+rebuild full profiles:  predicted_treated = control_cell + generic_shift(group) + predicted_residual.
 
 USAGE
   python build_residual_targets.py --selftest
   python build_residual_targets.py --cache_dir /data/.../ot_cache --out_dir /data/.../residual_targets
 """
-import argparse, json, os, sys, ast, logging
+import argparse, hashlib, json, os, sys, zlib, logging
 from collections import defaultdict
 import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+# shared/ locally; flat alongside the script on the cluster
+for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        "shared"),
+           os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import tahoe_design as td
 
 TAHOE_REPO = "tahoebio/Tahoe-100M"
 END = "[END_CELL]"
@@ -64,14 +110,12 @@ def residual_to_sentence(res, panel_genes, k_up, k_down):
 
 
 def parse_dose(conc_str):
-    try:
-        parsed = ast.literal_eval(conc_str)
-        if parsed and isinstance(parsed, (list, tuple)):
-            _, val, unit = parsed[0]
-            return f"{val} {unit}"
-    except Exception:
-        pass
-    return "unknown"
+    """Display string for the prompt. Retained under its original name because residual_eval imports
+    it; the numeric concentration now comes from `tahoe_design.parse_treatment` instead."""
+    st = td.parse_treatment(conc_str)
+    if st.primary is None:
+        return "unknown"
+    return st.primary.dose.display()
 
 
 def format_prompt(cell_line_name, drug, dose_str, moa, control_sentence, order="drug_first"):
@@ -99,11 +143,17 @@ def format_prompt(cell_line_name, drug, dose_str, moa, control_sentence, order="
     return f"{instr}\n{ctrl}\n\nResponse cell:"
 
 
-def load_meta_maps(repo=TAHOE_REPO):
-    """Exact columns as the preprocessor, so prompts match the model's training/eval prompts."""
+def load_meta_maps(repo=TAHOE_REPO, meta_dir=None):
+    """Exact columns as the preprocessor, so prompts match the model's training/eval prompts.
+
+    `meta_dir` reads the three parquets from disk instead of the Hub, which is what makes this
+    builder runnable offline and therefore testable."""
     import pandas as pd
-    from huggingface_hub import hf_hub_download
-    L = lambda n: pd.read_parquet(hf_hub_download(repo, f"metadata/{n}", repo_type="dataset"))
+    if meta_dir:
+        L = lambda n: pd.read_parquet(os.path.join(meta_dir, n))
+    else:
+        from huggingface_hub import hf_hub_download
+        L = lambda n: pd.read_parquet(hf_hub_download(repo, f"metadata/{n}", repo_type="dataset"))
     cl, dr, sm = L("cell_line_metadata.parquet"), L("drug_metadata.parquet"), L("sample_metadata.parquet")
     cvcl = {}
     for _, r in cl.iterrows():
@@ -120,75 +170,91 @@ def load_meta_maps(repo=TAHOE_REPO):
     return cvcl, moa, conc
 
 
-# ----------------------------------------------------------------- residual construction
-def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0):
-    """-> conditions {(drug, cl, plate): {...}}, generic shift per cell line, control cell indices."""
+# ----------------------------------------------------------------- stage 1: INVENTORY
+def inventory(cache_dir, min_treated, min_control, conc_of, drop_combinations=True,
+              require_sample_id=True):
+    """Metadata and cell COUNTS only -- no expression is aggregated here.
+
+    Returns (conds, ctrl_rows, X, meta, notes). `conds[key]` describes a condition well enough to
+    split on it, and nothing in it depends on an outcome."""
     import pandas as pd
     from scipy import sparse
-    rng = np.random.RandomState(seed)
     meta = pd.read_parquet(os.path.join(cache_dir, "meta.parquet"))
     X = sparse.load_npz(os.path.join(cache_dir, "panel_expr.npz")).tocsr()
     is_ctrl = meta["is_control"].values.astype(bool)
     cl = meta["cell_line_id"].astype(str).values
     plate = meta["plate"].astype(str).values
     drug = meta["drug"].astype(str).values
-    dose = meta["dose"].astype(str).values
 
-    # control pseudobulk per (cell_line, plate) + the control cell row indices (prompts come from these)
-    ctrl_pb, ctrl_rows = {}, {}
+    scol, how = td.sample_column(meta)
+    if scol is None:
+        msg = ("no treatment/well identifier in the cache -- conditions cannot be keyed to a physical "
+               "experiment. Rebuild the cache with a `sample_id` column, or pass "
+               "--no_require_sample_id to key on the opaque `dose` column and accept that neither "
+               "the dose nor the assignment unit is recoverable.")
+        if require_sample_id:
+            raise SystemExit(msg)
+        logger.warning(msg)
+        scol = "dose"
+    logger.info(f"treatment identifier: column '{scol}' ({how})")
+    sample = meta[scol].astype(str).values
+
+    # resolve every sample once: real molar dose, display string, combination flag
+    treat = {}
+    for sid in set(sample.tolist()):
+        treat[sid] = td.parse_treatment(conc_of.get(sid, "unknown"), sid)
+
+    # control pseudobulk groups + the control cell row indices (prompts come from these)
+    ctrl_rows = {}
     for g in set(zip(cl[is_ctrl], plate[is_ctrl])):
         idx = np.where(is_ctrl & (cl == g[0]) & (plate == g[1]))[0]
         if len(idx) >= min_control:
-            ctrl_pb[g] = np.asarray(np.log1p(X[idx].todense()).mean(0)).ravel().astype(np.float32)
             ctrl_rows[g] = idx
+
     by = defaultdict(list)
     for i in range(len(meta)):
         if not is_ctrl[i]:
-            by[(drug[i], cl[i], plate[i], dose[i])].append(i)
+            by[(drug[i], cl[i], plate[i], sample[i])].append(i)
 
-    # per-condition treated pseudobulks (full + half split) and raw shifts
-    cond = {}
-    for (d, c, p, ds), idxs in by.items():
-        g = (c, p)
-        if len(idxs) < min_treated or g not in ctrl_pb:
+    conds, n_combo, n_nodose, n_small, n_noctrl = {}, 0, 0, 0, 0
+    for (d, c, p, sid), idxs in by.items():
+        st = treat.get(sid)
+        if drop_combinations and st is not None and st.is_combination:
+            n_combo += 1
             continue
-        idxs = list(idxs); rng.shuffle(idxs); h = len(idxs) // 2
-        L = lambda ix: np.asarray(np.log1p(X[ix].todense()).mean(0)).ravel().astype(np.float32)
-        cond[(d, c, p, ds)] = {"shift_full": L(idxs) - ctrl_pb[g], "shift_A": L(idxs[:h]) - ctrl_pb[g],
-                               "shift_B": L(idxs[h:]) - ctrl_pb[g], "group": g, "n_cells": len(idxs)}
-    logger.info(f"conditions with enough cells: {len(cond)}")
-
-    # GENERIC shift = mean over drugs, per CELL LINE (measured: cell-line scope >> plate scope)
-    by_cl = defaultdict(list)
-    for k in cond:
-        by_cl[k[1]].append(k)
-    generic = {}
-    for c, keys in by_cl.items():
-        generic[c] = {h: np.mean(np.stack([cond[k][f"shift_{h}"] for k in keys]), axis=0)
-                      for h in ("full", "A", "B")}
-
-    # residuals + reliability filter
-    kept, cosines = {}, []
-    for k, v in cond.items():
-        c = k[1]
-        rA = v["shift_A"] - generic[c]["A"]
-        rB = v["shift_B"] - generic[c]["B"]
-        cs = float(rA @ rB / (np.linalg.norm(rA) * np.linalg.norm(rB) + 1e-9))
-        cosines.append(cs)
-        if cs > repro_thr:
-            kept[k] = {"residual": (v["shift_full"] - generic[c]["full"]).astype(np.float32),
-                       # half-split residuals kept so evaluation can compute the achievable CEILING
-                       # (a real replicate scoring against the other half's truths)
-                       "residual_A": rA.astype(np.float32), "residual_B": rB.astype(np.float32),
-                       "group": v["group"], "n_cells": v["n_cells"], "repro_cos": cs}
-    cosines = np.array(cosines)
-    logger.info(f"reliability: mean cos(A,B)={cosines.mean():+.3f}; "
-                f"KEPT {len(kept)}/{len(cond)} conditions ({100*len(kept)/max(1,len(cond)):.0f}%) "
-                f"at cos > {repro_thr}")
-    return kept, {c: generic[c]["full"] for c in generic}, ctrl_rows, X, meta
+        if len(idxs) < min_treated:
+            n_small += 1
+            continue
+        if (c, p) not in ctrl_rows:
+            n_noctrl += 1
+            continue
+        dose = st.primary.dose if (st is not None and st.primary is not None) else None
+        if dose is None or dose.molar is None:
+            n_nodose += 1
+        conds[(d, c, p, sid)] = {
+            "rows": idxs, "group": (c, p), "drug": d, "cell_line": c, "plate": p,
+            "sample_id": sid, "n_cells": len(idxs),
+            "dose_molar": (dose.molar if dose is not None else None),
+            "dose_raw": (dose.raw if dose is not None else "unknown"),
+            "dose_display": (dose.display() if dose is not None else "unknown"),
+            "is_combination": bool(st.is_combination) if st is not None else False,
+        }
+    notes = {"sample_id_source": how, "sample_column": scol,
+             "n_conditions": len(conds), "n_dropped_combination": n_combo,
+             "n_dropped_too_few_cells": n_small, "n_dropped_no_control_group": n_noctrl,
+             "n_without_molar_dose": n_nodose,
+             "n_samples": len({k[3] for k in conds}),
+             "cell_lines_per_sample_max": max([len({k[1] for k in conds if k[3] == s})
+                                               for s in {k[3] for k in conds}] or [0])}
+    logger.info(f"inventory: {len(conds)} conditions over {notes['n_samples']} treatment samples "
+                f"(max {notes['cell_lines_per_sample_max']} cell lines nested in one sample); "
+                f"dropped {n_combo} combination, {n_small} too-few-cells, {n_noctrl} no-control-group; "
+                f"{n_nodose} conditions have no recoverable molar dose")
+    return conds, ctrl_rows, X, meta, notes
 
 
-def holdout_from_tiers(kept, tier2_file, tier3_file):
+# ----------------------------------------------------------------- stage 2: SPLIT
+def holdout_from_tiers(conds, tier2_file, tier3_file):
     """Use the ORIGINAL preprocessing's held-out sets so our numbers are directly comparable to every
     prior tier-2 / tier-3 result in the thesis, instead of a private random split.
       tier2_unseen_drugs.jsonl  -> that drug set becomes `unseen_drug`
@@ -205,8 +271,8 @@ def holdout_from_tiers(kept, tier2_file, tier3_file):
                 out.add((str(d), str(c)) if combo else str(d))
         return out
     t2_drugs, t3_combos = read(tier2_file), read(tier3_file, combo=True)
-    cache_drugs = {k[0] for k in kept}
-    cache_combos = {(k[0], k[1]) for k in kept}
+    cache_drugs = {k[0] for k in conds}
+    cache_combos = {(k[0], k[1]) for k in conds}
     ho_drugs = t2_drugs & cache_drugs
     ho_combos = (t3_combos & cache_combos) - {(d, c) for (d, c) in cache_combos if d in ho_drugs}
     logger.info(f"tier-aligned holdout: tier2 file lists {len(t2_drugs)} drugs -> {len(ho_drugs)} present "
@@ -216,7 +282,7 @@ def holdout_from_tiers(kept, tier2_file, tier3_file):
         logger.warning("tier overlap with the cache is too small to test -> falling back to a random split")
         return None
     split = {}
-    for k in kept:
+    for k in conds:
         d, c = k[0], k[1]
         split[k] = "unseen_drug" if d in ho_drugs else ("unseen_combo" if (d, c) in ho_combos else "train")
     n = defaultdict(int)
@@ -227,7 +293,7 @@ def holdout_from_tiers(kept, tier2_file, tier3_file):
     return split, sorted(ho_drugs), sorted(ho_combos)
 
 
-def make_holdout(kept, frac_combos, frac_drugs, seed):
+def make_holdout(conds, frac_combos, frac_drugs, seed):
     """Three-way split for the generalization test.
       * unseen_drug  : every condition of a held-out DRUG -> the model never sees the token. Given the
                        SAR gate (structure does not predict response) this SHOULD fail; it is the
@@ -236,10 +302,13 @@ def make_holdout(kept, frac_combos, frac_drugs, seed):
                        CROSS-CONTEXT TRANSFER, the scientifically meaningful test (Q11 found
                        identifiability swings by 0.83 across cell lines, so this is genuinely open).
       * train        : everything else.
-    Held out at the (drug, cell_line) level, so no plate/dose of a held-out combo leaks into training."""
+    Held out at the (drug, cell_line) level, so no plate or sample of a held-out combo leaks into
+    training as the same (drug, cell_line) pair. It does NOT prevent a held-out condition sharing a
+    treated well with a training condition of a different cell line -- see `sample_crossing_report`,
+    which counts exactly that and puts the number in the manifest rather than leaving it implicit."""
     rng = np.random.RandomState(seed)
-    drugs = sorted({k[0] for k in kept})
-    combos = sorted({(k[0], k[1]) for k in kept})
+    drugs = sorted({k[0] for k in conds})
+    combos = sorted({(k[0], k[1]) for k in conds})
     n_d = int(round(frac_drugs * len(drugs)))
     ho_drugs = set(rng.choice(drugs, n_d, replace=False).tolist()) if n_d else set()
     # candidate combos: drug not already fully held out, and the drug must survive in >=2 other lines
@@ -251,7 +320,7 @@ def make_holdout(kept, frac_combos, frac_drugs, seed):
     idx = rng.choice(len(cand), min(n_c, len(cand)), replace=False) if cand else []
     ho_combos = {cand[i] for i in np.atleast_1d(idx).tolist()} if len(cand) else set()
     split = {}
-    for k in kept:
+    for k in conds:
         d, c = k[0], k[1]
         split[k] = "unseen_drug" if d in ho_drugs else ("unseen_combo" if (d, c) in ho_combos else "train")
     n = defaultdict(int)
@@ -263,44 +332,259 @@ def make_holdout(kept, frac_combos, frac_drugs, seed):
     return split, sorted(ho_drugs), sorted(ho_combos)
 
 
-def run(args):
-    from scipy import sparse
-    panel_genes = json.load(open(os.path.join(args.cache_dir, "panel_genes.json")))
-    kept, generic, ctrl_rows, X, meta = build_residuals(
-        args.cache_dir, args.min_treated, args.min_control, args.repro_thr, args.seed)
-    if not kept:
-        logger.error("no conditions survived the reliability filter"); return
-    cvcl, moa_of, conc_of = load_meta_maps(args.repo)
-    rng = np.random.RandomState(args.seed)
+def make_holdout_by_sample(conds, frac_combos, frac_drugs, seed):
+    """Hold out whole treated WELLS. Cleaner -- no held-out condition shares a physical assignment
+    with a training one -- but it answers a different question: an unseen well of a seen drug is a
+    dose/replicate generalisation test, not cross-context transfer. Offered so the estimand is a
+    choice rather than an accident."""
+    rng = np.random.RandomState(seed)
+    drugs = sorted({k[0] for k in conds})
+    n_d = int(round(frac_drugs * len(drugs)))
+    ho_drugs = set(rng.choice(drugs, n_d, replace=False).tolist()) if n_d else set()
+    samples = sorted({k[3] for k in conds if k[0] not in ho_drugs})
+    n_s = int(round(frac_combos * len(samples)))
+    ho_samples = set(rng.choice(samples, min(n_s, len(samples)), replace=False).tolist()) if n_s else set()
+    split = {}
+    for k in conds:
+        split[k] = ("unseen_drug" if k[0] in ho_drugs else
+                    ("unseen_combo" if k[3] in ho_samples else "train"))
+    n = defaultdict(int)
+    for v in split.values():
+        n[v] += 1
+    logger.info(f"holdout (by sample): {n['train']} train | {n['unseen_combo']} unseen_combo "
+                f"({len(ho_samples)} wells) | {n['unseen_drug']} unseen_drug ({len(ho_drugs)} drugs)")
+    return split, sorted(ho_drugs), sorted({(k[0], k[1]) for k, v in split.items() if v == "unseen_combo"})
 
-    split = None
+
+def sample_crossing_report(conds, split):
+    """How many held-out conditions sit in a well that also contributes training conditions.
+
+    This is unavoidable under a (drug, cell_line) holdout, because one Tahoe well carries many cell
+    lines. It is not a bug, but it does mean a held-out condition shares its well's technical
+    context with training data, and that belongs in the thesis as a number rather than a hedge."""
+    by_sample = defaultdict(set)
+    for k, v in split.items():
+        by_sample[k[3]].add(v)
+    crossing = {s for s, vs in by_sample.items() if len(vs) > 1}
+    n_cond = sum(1 for k, v in split.items() if v != "train" and k[3] in crossing)
+    rep = {"n_samples": len(by_sample), "n_samples_crossing_split": len(crossing),
+           "n_heldout_conditions_sharing_a_well_with_train": n_cond,
+           "frac_heldout_conditions_sharing_a_well_with_train":
+               round(n_cond / max(1, sum(1 for v in split.values() if v != "train")), 4)}
+    logger.info(f"well crossing: {len(crossing)}/{len(by_sample)} wells contribute to both sides; "
+                f"{rep['frac_heldout_conditions_sharing_a_well_with_train']:.1%} of held-out "
+                f"conditions share a well with training data")
+    return rep
+
+
+# ----------------------------------------------------------------- stage 3: FIT
+def _stable_rng(seed, key):
+    return np.random.RandomState((seed * 1000003 + zlib.crc32("|".join(map(str, key)).encode())) % (2 ** 32))
+
+
+def compute_shifts(conds, ctrl_rows, X, seed):
+    """Per-condition treated pseudobulk minus its group control, full and on two disjoint halves.
+
+    Uses each condition's OWN cells only, so running it over held-out conditions leaks nothing --
+    what must not happen is a held-out condition entering the generic, and that is enforced in
+    `fit_generic`, which is handed the train keys explicitly."""
+    ctrl_pb = {g: np.asarray(np.log1p(X[idx].todense()).mean(0)).ravel().astype(np.float32)
+               for g, idx in ctrl_rows.items()}
+    shifts = {}
+    for k, info in conds.items():
+        idxs = list(info["rows"])
+        _stable_rng(seed, k).shuffle(idxs)
+        h = len(idxs) // 2
+        L = lambda ix: np.asarray(np.log1p(X[ix].todense()).mean(0)).ravel().astype(np.float32)
+        cpb = ctrl_pb[info["group"]]
+        shifts[k] = {"full": L(idxs) - cpb, "A": L(idxs[:h]) - cpb, "B": L(idxs[h:]) - cpb}
+    return shifts, ctrl_pb
+
+
+class Generic:
+    """The drug-agnostic program, fitted on TRAIN conditions only.
+
+    Drug-weighted: each drug's conditions inside a scope group are averaged before drugs are averaged
+    together, so a drug measured at five doses does not count five times.
+
+    Leave-one-drug-out: `value(group, drug, half)` excludes `drug` from its own generic. Without that,
+    a train condition would be centred on a mean containing itself while a held-out condition would
+    not, and the two splits would be scored against differently defined targets.
+    """
+
+    def __init__(self, shifts, conds, train_keys, shrink_k=0.0):
+        self.shrink_k = float(shrink_k)
+        self.fine, self.coarse = {}, {}      # (cell_line, plate) and cell_line
+        for level, keyfn in (("fine", lambda k: (conds[k]["cell_line"], conds[k]["plate"])),
+                             ("coarse", lambda k: conds[k]["cell_line"])):
+            acc = defaultdict(lambda: defaultdict(lambda: {h: None for h in "fAB"}))
+            cnt = defaultdict(lambda: defaultdict(int))
+            for k in train_keys:
+                g, d = keyfn(k), conds[k]["drug"]
+                cnt[g][d] += 1
+                for h, name in (("f", "full"), ("A", "A"), ("B", "B")):
+                    v = shifts[k][name]
+                    acc[g][d][h] = v.copy() if acc[g][d][h] is None else acc[g][d][h] + v
+            store = {}
+            for g, drugs in acc.items():
+                dm = {d: {h: drugs[d][h] / cnt[g][d] for h in "fAB"} for d in drugs}
+                tot = {h: np.sum(np.stack([dm[d][h] for d in dm]), axis=0) for h in "fAB"}
+                store[g] = {"drug_mean": dm, "total": tot, "n_drugs": len(dm)}
+            setattr(self, level, store)
+
+    @staticmethod
+    def _loo(store, g, drug, h):
+        s = store.get(g)
+        if s is None:
+            return None
+        n, tot = s["n_drugs"], s["total"][h]
+        if drug in s["drug_mean"]:
+            tot = tot - s["drug_mean"][drug][h]
+            n -= 1
+        return None if n <= 0 else tot / n
+
+    def value(self, cell_line, plate, drug, half, scope="plate"):
+        h = {"full": "f", "A": "A", "B": "B"}[half]
+        coarse = self._loo(self.coarse, cell_line, drug, h)
+        if scope == "cell_line":
+            return coarse
+        fine = self._loo(self.fine, (cell_line, plate), drug, h)
+        if fine is None:
+            return coarse
+        if self.shrink_k <= 0 or coarse is None:
+            return fine
+        n = self.fine[(cell_line, plate)]["n_drugs"] - (drug in self.fine[(cell_line, plate)]["drug_mean"])
+        w = n / (n + self.shrink_k)
+        return w * fine + (1.0 - w) * coarse
+
+    def digest(self):
+        """Hash of everything that was fitted. The poison test asserts this is unchanged when
+        held-out expression is corrupted."""
+        hsh = hashlib.sha256()
+        for level in ("coarse", "fine"):
+            for g in sorted(getattr(self, level), key=lambda x: str(x)):
+                s = getattr(self, level)[g]
+                hsh.update(str(g).encode()); hsh.update(str(s["n_drugs"]).encode())
+                for d in sorted(s["drug_mean"]):
+                    hsh.update(d.encode())
+                    for h in "fAB":
+                        hsh.update(np.ascontiguousarray(s["drug_mean"][d][h]).tobytes())
+        return hsh.hexdigest()
+
+    def export(self, conds, scope):
+        """Group -> generic shift, for reconstruction. Averaged over drugs WITHOUT leave-one-out,
+        because evaluation reconstructs a profile for a condition whose drug it does not know."""
+        out = {}
+        store = self.coarse if scope == "cell_line" else self.fine
+        for g, s in store.items():
+            out[g] = s["total"]["f"] / s["n_drugs"]
+        return out
+
+
+# ----------------------------------------------------------------- stage 4: TRANSFORM
+def transform(conds, shifts, gen, split, scope, repro_thr, eval_filter=True):
+    """Project every condition through the fitted generic and apply the reliability filter."""
+    kept, stats = {}, defaultdict(lambda: {"n": 0, "n_kept": 0, "cos": []})
+    for k, info in conds.items():
+        c, p, d = info["cell_line"], info["plate"], info["drug"]
+        gf = gen.value(c, p, d, "full", scope)
+        gA = gen.value(c, p, d, "A", scope)
+        gB = gen.value(c, p, d, "B", scope)
+        s = split.get(k, "train")
+        st = stats[s]
+        st["n"] += 1
+        if gf is None or gA is None or gB is None:
+            continue                     # no other training drug in scope: the residual is undefined
+        rA, rB = shifts[k]["A"] - gA, shifts[k]["B"] - gB
+        cs = float(rA @ rB / (np.linalg.norm(rA) * np.linalg.norm(rB) + 1e-9))
+        st["cos"].append(cs)
+        if cs <= repro_thr and (s == "train" or eval_filter):
+            continue
+        st["n_kept"] += 1
+        kept[k] = {"residual": (shifts[k]["full"] - gf).astype(np.float32),
+                   # half-split residuals kept so evaluation can compute the achievable CEILING
+                   # (a real replicate scoring against the other half's truths)
+                   "residual_A": rA.astype(np.float32), "residual_B": rB.astype(np.float32),
+                   "group": info["group"], "n_cells": info["n_cells"], "repro_cos": cs}
+    out = {}
+    for s, v in stats.items():
+        cos = np.array(v["cos"]) if v["cos"] else np.array([np.nan])
+        out[s] = {"n": v["n"], "n_kept": v["n_kept"],
+                  "retention": round(v["n_kept"] / max(1, v["n"]), 4),
+                  "mean_repro_cos": round(float(np.nanmean(cos)), 4)}
+        logger.info(f"reliability [{s}]: mean cos(A,B)={out[s]['mean_repro_cos']:+.3f}; "
+                    f"KEPT {v['n_kept']}/{v['n']} ({out[s]['retention']:.0%}) at cos > {repro_thr}")
+    return kept, out
+
+
+def scope_sensitivity(conds, shifts, train_keys, repro_thr):
+    """What each scope choice costs, measured on TRAIN conditions only.
+
+    Cell-line scope was chosen originally because it retains far more conditions; plate scope is
+    required because cell-line scope leaves same-plate structure in the target. This prints the
+    trade-off so the configuration is decided on numbers rather than on either argument alone."""
+    rows = []
+    for label, scope, k_shrink in (("cell_line", "cell_line", 0.0), ("plate", "plate", 0.0),
+                                   ("plate+shrink5", "plate", 5.0), ("plate+shrink20", "plate", 20.0)):
+        g = Generic(shifts, conds, train_keys, shrink_k=k_shrink)
+        cos = []
+        for k in train_keys:
+            info = conds[k]
+            gA = g.value(info["cell_line"], info["plate"], info["drug"], "A", scope)
+            gB = g.value(info["cell_line"], info["plate"], info["drug"], "B", scope)
+            if gA is None or gB is None:
+                continue
+            rA, rB = shifts[k]["A"] - gA, shifts[k]["B"] - gB
+            cos.append(float(rA @ rB / (np.linalg.norm(rA) * np.linalg.norm(rB) + 1e-9)))
+        cos = np.array(cos) if cos else np.array([np.nan])
+        rows.append({"scope": label, "n": len(cos), "mean_repro_cos": round(float(np.nanmean(cos)), 4),
+                     "retention": round(float(np.nanmean(cos > repro_thr)), 4)})
+        logger.info(f"  scope {label:15s} mean cos={rows[-1]['mean_repro_cos']:+.3f}  "
+                    f"retained {rows[-1]['retention']:.0%} of {len(cos)} train conditions")
+    return rows
+
+
+# ----------------------------------------------------------------- driver
+def run(args):
+    panel_genes = json.load(open(os.path.join(args.cache_dir, "panel_genes.json")))
+    cvcl, moa_of, conc_of = load_meta_maps(args.repo, args.meta_dir)
+
+    logger.info("=== [1/4] inventory (metadata and cell counts only) ===")
+    conds, ctrl_rows, X, meta, notes = inventory(
+        args.cache_dir, args.min_treated, args.min_control, conc_of,
+        drop_combinations=not args.keep_combinations, require_sample_id=not args.no_require_sample_id)
+    if not conds:
+        logger.error("no conditions survived the inventory filters"); return
+
+    logger.info("=== [2/4] split (assigned from metadata, before anything is fitted) ===")
+    split, ho_drugs, ho_combos = None, [], []
     if args.tier2_file or args.tier3_file:      # preferred: reuse the ORIGINAL held-out tiers
-        res = holdout_from_tiers(kept, args.tier2_file, args.tier3_file)
+        res = holdout_from_tiers(conds, args.tier2_file, args.tier3_file)
         if res:
             split, ho_drugs, ho_combos = res
     if split is None and (args.holdout_combos > 0 or args.holdout_drugs > 0):
-        split, ho_drugs, ho_combos = make_holdout(kept, args.holdout_combos, args.holdout_drugs, args.seed)
+        mk = make_holdout_by_sample if args.split_unit == "sample" else make_holdout
+        split, ho_drugs, ho_combos = mk(conds, args.holdout_combos, args.holdout_drugs, args.seed)
     # TOP-UP: the original tier-3 set overlaps our cache on only ~17 combos, far too few to test
     # cross-context transfer (a clustered CI over a handful of points is meaningless). Add RANDOM
     # (drug, cell_line) combos on top of the tier-aligned ones until the split is powered. The
     # tier-aligned subset stays identifiable in the manifest for comparability.
-    if split is not None and args.holdout_combos > 0:
+    if split is not None and args.holdout_combos > 0 and args.split_unit == "condition":
         n_combo = sum(1 for v in split.values() if v == "unseen_combo")
         cur_combos = {(k[0], k[1]) for k, v in split.items() if v == "unseen_combo"}
         if n_combo < args.min_combo_conditions:
             rng2 = np.random.RandomState(args.seed + 7)
             per_drug = defaultdict(set)
-            for k in kept:
+            for k in conds:
                 per_drug[k[0]].add(k[1])
             cand = sorted({(k[0], k[1]) for k, v in split.items()
                            if v == "train" and len(per_drug[k[0]]) >= 2} - cur_combos)
             need = args.min_combo_conditions - n_combo
             add, i = set(), 0
             order = rng2.permutation(len(cand))
-            while i < len(order) and sum(1 for k in kept
-                                         if (k[0], k[1]) in add) < need:
+            while i < len(order) and sum(1 for k in conds if (k[0], k[1]) in add) < need:
                 add.add(cand[order[i]]); i += 1
-            for k in kept:
+            for k in conds:
                 if split[k] == "train" and (k[0], k[1]) in add:
                     split[k] = "unseen_combo"
             ho_combos = sorted(cur_combos | add)
@@ -308,70 +592,118 @@ def run(args):
             logger.info(f"combo top-up: {n_combo} tier-aligned -> {n2} conditions "
                         f"({len(cur_combos)} tier-aligned + {len(add)} random pairs) so the "
                         f"cross-context transfer test is powered")
+    if split is None:
+        logger.warning("NO HOLDOUT REQUESTED: the generic will be fitted on every condition, which "
+                       "is only valid when nothing downstream is scored as held out")
+        split = {k: "train" for k in conds}
+    crossing = sample_crossing_report(conds, split)
+    train_keys = [k for k in conds if split[k] == "train"]
+    logger.info(f"fitting on {len(train_keys)} train conditions "
+                f"({len({conds[k]['drug'] for k in train_keys})} drugs)")
+
+    logger.info("=== [3/4] fit (train conditions only) ===")
+    shifts, _ = compute_shifts(conds, ctrl_rows, X, args.seed)
+    sens = scope_sensitivity(conds, shifts, train_keys, args.repro_thr) if args.scope_sensitivity else []
+    gen = Generic(shifts, conds, train_keys, shrink_k=args.shrink_k)
+    fit_digest = gen.digest()
+    logger.info(f"generic scope={args.generic_scope} shrink_k={args.shrink_k} "
+                f"leave-one-drug-out=on  fit_digest={fit_digest[:16]}")
+
+    logger.info("=== [4/4] transform ===")
+    kept, relstats = transform(conds, shifts, gen, split, args.generic_scope, args.repro_thr,
+                               eval_filter=not args.no_eval_repro_filter)
+    if not kept:
+        logger.error("no conditions survived the reliability filter"); return
 
     os.makedirs(args.out_dir, exist_ok=True)
     out_path = os.path.join(args.out_dir, "residual.jsonl")
-    n_ex, n_cond = 0, 0
-    n_skipped_holdout = 0
+    n_ex, n_cond, n_skipped_holdout, emitted_doses = 0, 0, 0, []
     with open(out_path, "w") as out:
-        for (d, c, p, ds), v in kept.items():
+        for k, v in kept.items():
+            d, c, p, sid = k
+            info = conds[k]
             # held-out conditions are NEVER written to the training file (the manifest records them
             # so evaluation can score each split separately)
-            if split is not None and split[(d, c, p, ds)] != "train":
+            if split[k] != "train":
                 n_skipped_holdout += 1
                 continue
             rows = ctrl_rows.get(v["group"])
             if rows is None or len(rows) == 0:
                 continue
-            take = rows if len(rows) <= args.max_ctrl else rows[rng.choice(len(rows), args.max_ctrl,
-                                                                          replace=False)]
+            r = _stable_rng(args.seed + 1, k)
+            take = rows if len(rows) <= args.max_ctrl else rows[r.choice(len(rows), args.max_ctrl,
+                                                                         replace=False)]
             resp = residual_to_sentence(v["residual"], panel_genes, args.k_up, args.k_down)
             cname = cvcl.get(c, c)
-            dstr = parse_dose(conc_of.get(ds, "unknown"))
             moa = moa_of.get(d, "unclear")
+            emitted_doses.append(info["dose_molar"] if info["dose_molar"] is not None else info["dose_raw"])
             for ri in take:
                 ctrl_vec = np.asarray(X[ri].todense()).ravel()
-                prompt = format_prompt(cname, d, dstr, moa, expr_to_sentence(ctrl_vec, panel_genes),
-                                       order=args.prompt_order)
+                prompt = format_prompt(cname, d, info["dose_display"], moa,
+                                       expr_to_sentence(ctrl_vec, panel_genes), order=args.prompt_order)
                 out.write(json.dumps({
                     "prompt": prompt, "response": resp,
-                    "metadata": {"drug": d, "cell_line_id": c, "plate": p, "dose_float": ds,
+                    "metadata": {"drug": d, "cell_line_id": c, "plate": p,
+                                 "sample_id": sid, "dose_molar": info["dose_molar"],
+                                 "dose_raw": info["dose_raw"],
                                  "target": "residual", "repro_cos": v["repro_cos"]}}) + "\n")
                 n_ex += 1
             n_cond += 1
             if n_cond % 200 == 0:
-                logger.info(f"  {n_cond}/{len(kept)} conditions, {n_ex} examples")
+                logger.info(f"  {n_cond} conditions, {n_ex} examples")
 
-    # reconstruction assets: predicted_treated = control + generic_shift(cell_line) + predicted_residual
-    np.savez_compressed(os.path.join(args.out_dir, "reconstruction.npz"),
-                        cell_lines=np.array(list(generic.keys()), dtype=object),
-                        generic_shift=np.stack([generic[c] for c in generic]),
-                        panel_genes=np.array(panel_genes, dtype=object))
-    report = {"n_conditions_kept": len(kept), "n_examples": n_ex, "k_up": args.k_up,
-              "k_down": args.k_down, "repro_thr": args.repro_thr, "scope": "cell_line",
-              "down_token": DOWN, "end_token": END}
-    if split is not None:
-        # manifest: which conditions are train / unseen_combo / unseen_drug, so residual_eval can
-        # score each split separately and we can claim generalization (or not) honestly.
-        json.dump({"split": {"|".join(map(str, k)): v for k, v in split.items()},
-                   "holdout_drugs": ho_drugs,
-                   "holdout_combos": ["|".join(map(str, kk)) for kk in ho_combos]},
-                  open(os.path.join(args.out_dir, "holdout.json"), "w"), indent=2)
-        report["holdout"] = {"n_train": sum(1 for v in split.values() if v == "train"),
-                             "n_unseen_combo": sum(1 for v in split.values() if v == "unseen_combo"),
-                             "n_unseen_drug": sum(1 for v in split.values() if v == "unseen_drug"),
-                             "n_conditions_excluded_from_training": n_skipped_holdout}
-        logger.info(f"holdout manifest -> {args.out_dir}/holdout.json "
-                    f"({n_skipped_holdout} conditions withheld from training)")
+    # the defect this builder exists to prevent: never ship a dose field holding sample identifiers
+    if td.looks_like_sample_id(emitted_doses):
+        raise SystemExit("REFUSING TO WRITE: the emitted dose field holds sample identifiers. "
+                         "This is the exact defect shared/tahoe_design.py was written to stop.")
+
+    # reconstruction assets: predicted_treated = control + generic_shift(group) + predicted_residual
+    gexp = gen.export(conds, args.generic_scope)
+    gkeys = sorted(gexp, key=lambda x: str(x))
+    np.savez_compressed(
+        os.path.join(args.out_dir, "reconstruction.npz"),
+        scope=np.array(args.generic_scope, dtype=object),
+        group_keys=np.array(["|".join(g) if isinstance(g, tuple) else str(g) for g in gkeys], dtype=object),
+        generic_shift=np.stack([gexp[g] for g in gkeys]),
+        # kept under its old name so an unpatched residual_eval still finds a cell-line axis
+        cell_lines=np.array([g[0] if isinstance(g, tuple) else g for g in gkeys], dtype=object),
+        panel_genes=np.array(panel_genes, dtype=object))
+
+    report = {"n_conditions_inventoried": len(conds), "n_conditions_kept": len(kept),
+              "n_examples": n_ex, "k_up": args.k_up, "k_down": args.k_down,
+              "repro_thr": args.repro_thr, "scope": args.generic_scope, "shrink_k": args.shrink_k,
+              "leave_one_drug_out": True, "drug_weighted_generic": True,
+              "split_before_fit": True, "split_unit": args.split_unit,
+              "eval_repro_filter": not args.no_eval_repro_filter,
+              "fit_digest": fit_digest, "reliability_by_split": relstats,
+              "scope_sensitivity": sens, "well_crossing": crossing,
+              "inventory": notes, "down_token": DOWN, "end_token": END}
+    json.dump({"split": {"|".join(map(str, k)): v for k, v in split.items() if k in kept},
+               "holdout_drugs": ho_drugs,
+               "holdout_combos": ["|".join(map(str, kk)) for kk in ho_combos],
+               "key_fields": ["drug", "cell_line_id", "plate", "sample_id"],
+               "well_crossing": crossing},
+              open(os.path.join(args.out_dir, "holdout.json"), "w"), indent=2)
+    report["holdout"] = {"n_train": sum(1 for k, v in split.items() if v == "train" and k in kept),
+                         "n_unseen_combo": sum(1 for k, v in split.items()
+                                               if v == "unseen_combo" and k in kept),
+                         "n_unseen_drug": sum(1 for k, v in split.items()
+                                              if v == "unseen_drug" and k in kept),
+                         "n_conditions_excluded_from_training": n_skipped_holdout}
     json.dump(report, open(os.path.join(args.out_dir, "report.json"), "w"), indent=2)
+    if args.emit_fit_digest:
+        open(args.emit_fit_digest, "w").write(fit_digest + "\n")
+    logger.info(f"holdout manifest -> {args.out_dir}/holdout.json "
+                f"({n_skipped_holdout} conditions withheld from training)")
     logger.info(f"wrote {n_ex} examples from {n_cond} conditions -> {out_path}")
     logger.info(f"reconstruction assets -> {args.out_dir}/reconstruction.npz")
     logger.info(f"NOTE: register '{DOWN}' as a special token in the trainer alongside '{END}'.")
 
 
 def selftest():
-    """Synthetic: known residual -> the sentence must list the planted up genes first, then [DOWN],
-    then the planted down genes; and the reliability filter must drop a noise-only condition."""
+    """Synthetic checks on the pieces that carry the rebuild: the sentence encoding, the reliability
+    contrast, drug-weighting, leave-one-drug-out, and that a held-out condition cannot move the fit."""
+    ok = []
     panel = [f"G{i}" for i in range(20)]
     res = np.zeros(20, dtype=np.float32)
     res[3], res[7] = 5.0, 3.0          # up
@@ -380,21 +712,60 @@ def selftest():
     toks = s.split()
     up_block = toks[:toks.index(DOWN)]
     dn_block = toks[toks.index(DOWN) + 1:toks.index(END)]
-    ok = up_block == ["G3", "G7"] and dn_block == ["G11", "G15"] and s.endswith(END)
-    logger.info(f"  sentence: {s}")
-    logger.info(f"  up={up_block} down={dn_block}  ({'ok' if ok else 'WRONG'})")
-    # reliability: correlated halves pass, independent halves fail
+    ok.append(("sentence lists up genes, [DOWN], then down genes",
+               up_block == ["G3", "G7"] and dn_block == ["G11", "G15"] and s.endswith(END)))
+
     rng = np.random.RandomState(0)
     sig = rng.randn(50)
     good = float((sig + rng.randn(50) * 0.3) @ (sig + rng.randn(50) * 0.3) /
                  (np.linalg.norm(sig + rng.randn(50) * 0.3) ** 2 + 1e-9))
     a, b = rng.randn(50), rng.randn(50)
     bad = float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
-    ok2 = good > 0.2 > bad
-    logger.info(f"  reliability: signal cos~{good:+.2f} (keep) vs noise cos~{bad:+.2f} (drop) "
-                f"({'ok' if ok2 else 'WRONG'})")
-    logger.info(f"SELFTEST {'PASSED' if (ok and ok2) else 'FAILED'}")
-    if not (ok and ok2):
+    ok.append(("reproducible halves are kept and noise-only halves are dropped", good > 0.2 > bad))
+
+    # --- generic: drug weighting, leave-one-out, and train-only fitting -----------------
+    # drug X appears at three doses with shift 3, drug Y once with shift 0. A condition-weighted
+    # mean gives 2.25; a drug-weighted mean gives 1.5, and only the second is the intended estimand.
+    conds, shifts = {}, {}
+    for i, (d, val) in enumerate([("X", 3.0), ("X", 3.0), ("X", 3.0), ("Y", 0.0)]):
+        k = (d, "c1", "p1", f"smp_{i}")
+        conds[k] = {"cell_line": "c1", "plate": "p1", "drug": d, "group": ("c1", "p1"),
+                    "n_cells": 50, "sample_id": f"smp_{i}"}
+        shifts[k] = {h: np.full(4, val, dtype=np.float32) for h in ("full", "A", "B")}
+    g = Generic(shifts, conds, list(conds), shrink_k=0.0)
+    # leave-one-out for drug Y: the generic it sees is drug X's mean alone = 3.0
+    v_y = g.value("c1", "p1", "Y", "full", "plate")[0]
+    # leave-one-out for drug X: only drug Y remains = 0.0
+    v_x = g.value("c1", "p1", "X", "full", "plate")[0]
+    ok.append(("generic is a mean over DRUGS, not conditions (X's 3 doses count once)",
+               abs(v_y - 3.0) < 1e-6))
+    ok.append(("leave-one-drug-out removes the condition's own drug", abs(v_x - 0.0) < 1e-6))
+
+    # a held-out condition must not move the fit, however extreme it is
+    k_ho = ("Z", "c1", "p1", "smp_99")
+    conds[k_ho] = {"cell_line": "c1", "plate": "p1", "drug": "Z", "group": ("c1", "p1"),
+                   "n_cells": 50, "sample_id": "smp_99"}
+    shifts[k_ho] = {h: np.full(4, 1e6, dtype=np.float32) for h in ("full", "A", "B")}
+    train_only = [k for k in conds if k != k_ho]
+    ok.append(("a poisoned held-out condition leaves the fit digest unchanged",
+               Generic(shifts, conds, train_only, shrink_k=0.0).digest() == g.digest()))
+
+    # shrinkage: a plate with one other drug is pulled most of the way to the cell-line generic
+    gs = Generic(shifts, conds, train_only, shrink_k=5.0)
+    blended = gs.value("c1", "p1", "X", "full", "plate")[0]
+    ok.append(("shrink_k pulls a thin plate generic toward the cell-line generic",
+               abs(blended - 0.0) < 1e-6))     # only one scope level here, so fine == coarse
+
+    # the shipped defect: a dose column full of sample identifiers must be refused
+    ok.append(("a dose field holding sample identifiers is detected",
+               td.looks_like_sample_id(["smp_1841", "smp_1882"]) and
+               not td.looks_like_sample_id([5e-8, 1e-6])))
+
+    for name, passed in ok:
+        logger.info(f"  {'ok  ' if passed else 'FAIL'} {name}")
+    allok = all(p for _, p in ok)
+    logger.info(f"SELFTEST {'PASSED' if allok else 'FAILED'}")
+    if not allok:
         sys.exit(1)
 
 
@@ -402,12 +773,33 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache_dir")
     ap.add_argument("--repo", default=TAHOE_REPO)
+    ap.add_argument("--meta_dir", default=None,
+                    help="read cell_line/drug/sample metadata parquets from this directory instead "
+                         "of the Hub (offline runs and tests)")
     ap.add_argument("--min_treated", type=int, default=40)
     ap.add_argument("--min_control", type=int, default=20)
     ap.add_argument("--repro_thr", type=float, default=0.2, help="cos(res_A,res_B) filter")
     ap.add_argument("--k_up", type=int, default=100)
     ap.add_argument("--k_down", type=int, default=100)
     ap.add_argument("--max_ctrl", type=int, default=60, help="control cells (=examples) per condition")
+    ap.add_argument("--generic_scope", choices=["plate", "cell_line"], default="plate",
+                    help="plate = (cell_line, plate), which removes the same-plate structure that "
+                         "cell-line scope leaves in the target (+0.478 vs -0.018)")
+    ap.add_argument("--shrink_k", type=float, default=0.0,
+                    help="blend the plate generic toward the cell-line generic with weight "
+                         "n_drugs/(n_drugs+k). 0 = pure plate scope. Use --scope_sensitivity first.")
+    ap.add_argument("--scope_sensitivity", action="store_true",
+                    help="report reliability retention under every scope setting (train conditions "
+                         "only) before choosing one")
+    ap.add_argument("--keep_combinations", action="store_true",
+                    help="keep multi-drug samples, which the prompt cannot express. Off by default: "
+                         "the old parser took the first component and called it a single-drug condition")
+    ap.add_argument("--no_require_sample_id", action="store_true",
+                    help="proceed even if no treatment identifier can be recovered (the dose and the "
+                         "assignment unit are then both unavailable, and the report says so)")
+    ap.add_argument("--no_eval_repro_filter", action="store_true",
+                    help="apply the reliability filter to training conditions only, leaving held-out "
+                         "conditions unselected on their own outcome")
     ap.add_argument("--tier2_file", default=None,
                     help="eval_tier2_unseen_drugs.jsonl -> hold out THE SAME drugs the original "
                          "preprocessing held out, so tier-2 numbers are comparable to prior results")
@@ -422,11 +814,17 @@ def main():
     ap.add_argument("--holdout_drugs", type=float, default=0.0,
                     help="fraction of DRUGS withheld entirely -> unseen-drug control (expected to fail "
                          "given the SAR gate; proves transfer requires having seen the drug)")
+    ap.add_argument("--split_unit", choices=["condition", "sample"], default="condition",
+                    help="condition = hold out (drug, cell_line) pairs, the cross-context transfer "
+                         "estimand. sample = hold out whole treated wells: no shared-well contact, "
+                         "but it becomes a dose/replicate generalisation test instead.")
     ap.add_argument("--prompt_order", choices=["drug_first", "drug_last"], default="drug_first",
                     help="drug_last moves the instruction to sit immediately before generation, "
                          "instead of leaving it several hundred tokens upstream behind the control "
                          "cell sentence. Content is identical; only the distance changes. The eval "
                          "MUST be run with the same value.")
+    ap.add_argument("--emit_fit_digest", default=None,
+                    help="write the hash of every fitted quantity here (used by the poison test)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out_dir", default="RESULTS/residual_targets")
     ap.add_argument("--selftest", action="store_true")

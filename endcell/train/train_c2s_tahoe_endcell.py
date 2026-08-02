@@ -68,9 +68,15 @@ class C2SDataset(Dataset):
     Loads JSONL examples with {"prompt": ..., "response": ...} and tokenizes them
     for causal LM training with loss only on response tokens.
     """
-    def __init__(self, filepath, tokenizer, max_length=4096):
+    def __init__(self, filepath, tokenizer, max_length=4096, de_weight=1.0):
         self.tokenizer = tokenizer
         self.max_length = max_length
+        # DE-WEIGHTED SFT: up-weight the token loss on the genes this drug moves differently from the
+        # average drug (the "de_genes" field written by build_de_weights.py). Attacks Q15's token-dilution
+        # diagnosis without touching the target or the output format, so every prior tier number stays
+        # comparable. de_weight == 1.0 is a mathematical no-op -- the weighted mean over supervised
+        # tokens with all weights 1 IS the unweighted mean -- which makes it a true control arm.
+        self.de_weight = de_weight
         self.examples = []
 
         logger.info(f"Loading data from {filepath}...")
@@ -117,10 +123,101 @@ class C2SDataset(Dataset):
             f"Length mismatch: {len(input_ids)} vs {len(labels)}"
         )
 
-        return {
+        out = {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
             "labels": torch.tensor(labels, dtype=torch.long),
         }
+        # Weights are indexed as prompt_len + (response token offset), which is only valid when the
+        # prompt was NOT truncated. In the pathological branch above (prompt alone exceeds max_length-50)
+        # prompt_len is set to max_length//2, which is not where the response starts -- weighting there
+        # would land the up-weight on arbitrary tokens. Fall back to uniform instead.
+        if self.de_weight != 1.0 and prompt_len == len(prompt_ids):
+            out["weights"] = torch.tensor(
+                self._token_weights(response, prompt_len, len(input_ids), ex.get("de_genes") or []),
+                dtype=torch.float,
+            )
+        elif self.de_weight != 1.0:
+            out["weights"] = torch.ones(len(input_ids), dtype=torch.float)
+        return out
+
+    def _token_weights(self, response, prompt_len, total_len, de_genes):
+        """Per-token weights aligned to `labels`. Prompt tokens and the trailing EOS get weight 1.
+
+        Uses the fast tokenizer's OFFSET MAPPING rather than tokenizing gene-by-gene: gene symbols are
+        multi-subword under BPE ("TNFAIP3" is several tokens) and every subword of a DE gene must be
+        up-weighted, while re-tokenizing pieces separately is not guaranteed to reproduce the whole-string
+        segmentation. Offsets are exact by construction.
+        """
+        w = [1.0] * total_len
+        if not de_genes:
+            return w
+        text = " " + response
+        try:
+            enc = self.tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
+            offs = enc["offset_mapping"]
+        except (TypeError, KeyError, NotImplementedError):
+            return w                                    # slow tokenizer: degrade to uniform, never crash
+        de = set(de_genes)
+        mark = bytearray(len(text))                      # char-level mask of DE gene spans; O(len(text))
+        pos = 0
+        for tok in text.split(" "):
+            if tok and tok in de:
+                mark[pos:pos + len(tok)] = b"\x01" * len(tok)
+            pos += len(tok) + 1
+        for t, (a, b) in enumerate(offs):
+            i = prompt_len + t
+            if i >= total_len:
+                break                                   # response was truncated to fit max_length
+            # ANY marked char in the span, not just the first: GPT-NeoX BPE folds the leading space into
+            # the token, so " TNFAIP3" spans (space, ..., 3) and testing mark[a] alone would test the
+            # SPACE -- silently skipping the first subword of every gene and leaving the intervention a
+            # partial no-op.
+            if b > a and any(mark[a:b]):
+                w[i] = self.de_weight
+        return w
+
+
+def measure_de_token_share(dataset, n_sample=400, seed=0):
+    """Fraction of SUPERVISED tokens that belong to a DE gene, measured on the real tokenizer and the
+    real data rather than estimated from gene counts. Genes differ in subword length, sentences differ in
+    how many panel genes they contain, and the fraction is what determines whether a given weight is a
+    no-op or a sledgehammer -- so it is measured, on a sample, at startup.
+    """
+    import random
+    prev = dataset.de_weight
+    dataset.de_weight = 2.0                     # any marker > 1; we only count which tokens get it
+    rng = random.Random(seed)
+    idx = rng.sample(range(len(dataset)), min(n_sample, len(dataset)))
+    hi = tot = 0
+    for i in idx:
+        b = dataset[i]
+        w, lab = b.get("weights"), b["labels"]
+        if w is None:
+            continue
+        sup = lab != -100
+        tot += int(sup.sum())
+        hi += int(((w > 1.0) & sup).sum())
+    dataset.de_weight = prev
+    return hi / tot if tot else 0.0
+
+
+def forward_loss(model, input_ids, attention_mask, labels, weights=None):
+    """Causal-LM loss, optionally per-token weighted.
+
+    NORMALISED so the mean weight over supervised tokens is 1. Without that normalisation, raising
+    --de_weight would silently raise the effective learning rate and any observed effect would be
+    uninterpretable -- indistinguishable from "we trained harder". With it, the intervention redistributes
+    a fixed gradient budget toward the drug-discriminative genes and nothing else changes.
+    """
+    if weights is None:
+        return model(input_ids=input_ids, attention_mask=attention_mask, labels=labels).loss
+    import torch.nn.functional as F
+    logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
+    lg, tg, w = logits[:, :-1, :], labels[:, 1:], weights[:, 1:]
+    ce = F.cross_entropy(lg.reshape(-1, lg.size(-1)), tg.reshape(-1),
+                         reduction="none", ignore_index=-100).view(tg.shape)
+    ww = w * (tg != -100)
+    return (ce * ww).sum() / ww.sum().clamp(min=1.0)
 
 
 def collate_fn(batch, pad_token_id):
@@ -146,11 +243,18 @@ def collate_fn(batch, pad_token_id):
                        torch.ones(len(b["input_ids"]), dtype=torch.long)])
         )
 
-    return {
+    out = {
         "input_ids": torch.stack(input_ids),
         "labels": torch.stack(labels),
         "attention_mask": torch.stack(attention_mask),
     }
+    if "weights" in batch[0]:
+        # pad with 0, not 1: padding is masked by labels == -100 anyway, but a 0 keeps the weight sum
+        # honest if the mask and the weights ever disagree.
+        out["weights"] = torch.stack([
+            torch.cat([torch.zeros(max_len - len(b["weights"])), b["weights"]]) for b in batch
+        ])
+    return out
 
 
 # =============================================================================
@@ -158,6 +262,23 @@ def collate_fn(batch, pad_token_id):
 # =============================================================================
 
 def train(args):
+    # --- Reproducibility ---
+    # Without this the shuffle order, the dropout masks and any weight left uninitialised by the
+    # checkpoint all differ between runs, so two runs of "the same" recipe are not comparable and a
+    # difference between arms cannot be separated from run-to-run variation. Seeding does not make
+    # the run bit-exact on GPU (cuBLAS reductions are non-deterministic), but it removes every
+    # source of variation that is ours to control.
+    import random as _random
+    _random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    try:
+        import numpy as _np
+        _np.random.seed(args.seed)
+    except ImportError:
+        pass
+    logger.info(f"Seed: {args.seed}")
+
     # --- Device setup ---
     if args.mode == "test":
         device = torch.device("cpu")
@@ -230,7 +351,24 @@ def train(args):
     logger.info(f"  Parameters: {n_params:,} total, {trainable:,} trainable")
 
     # --- Load data ---
-    train_dataset = C2SDataset(args.train_file, tokenizer, max_length=args.max_length)
+    train_dataset = C2SDataset(args.train_file, tokenizer, max_length=args.max_length,
+                               de_weight=args.de_weight)
+    if args.de_share is not None or args.de_weight != 1.0:
+        n_de = sum(1 for e in train_dataset.examples if e.get("de_genes"))
+        if n_de == 0:
+            raise SystemExit("DE weighting was requested but no example has a non-empty 'de_genes' "
+                             "field. Run build_de_weights.py on the training file first.")
+        if args.de_share is not None:
+            f = measure_de_token_share(train_dataset)
+            if not (0.0 < f < 1.0):
+                raise SystemExit(f"measured DE token share f={f:.4f} is degenerate; cannot derive a "
+                                 f"weight. Check that de_genes actually appear in the responses.")
+            args.de_weight = args.de_share / (1.0 - args.de_share) * (1.0 - f) / f
+            train_dataset.de_weight = args.de_weight
+            logger.info(f"DE token share f = {100*f:.1f}% of supervised tokens -> "
+                        f"--de_weight {args.de_weight:.2f} for a {100*args.de_share:.0f}% gradient share")
+        logger.info(f"DE-weighted SFT: weight {args.de_weight:.2f} on DE gene tokens "
+                    f"({n_de}/{len(train_dataset.examples)} examples carry a DE set)")
     eval_dataset = None
     if args.eval_file and os.path.exists(args.eval_file):
         eval_dataset = C2SDataset(args.eval_file, tokenizer, max_length=args.max_length)
@@ -321,27 +459,20 @@ def train(args):
             labels = batch["labels"].to(device)
             attention_mask = batch["attention_mask"].to(device)
 
+            weights = batch["weights"].to(device) if "weights" in batch else None
+
             if use_amp:
                 with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                    outputs = model(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask,
-                        labels=labels,
-                    )
-                    loss = outputs.loss / args.grad_accum
+                    raw = forward_loss(model, input_ids, attention_mask, labels, weights)
             else:
-                outputs = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    labels=labels,
-                )
-                loss = outputs.loss / args.grad_accum
+                raw = forward_loss(model, input_ids, attention_mask, labels, weights)
+            loss = raw / args.grad_accum
 
             loss.backward()
 
             # Track tokens where loss is computed
             n_tokens = (labels != -100).sum().item()
-            epoch_loss += outputs.loss.item() * n_tokens
+            epoch_loss += raw.item() * n_tokens
             epoch_tokens += n_tokens
 
             if (step + 1) % args.grad_accum == 0:
@@ -442,6 +573,21 @@ def main():
     parser.add_argument("--train_file", type=str, required=True)
     parser.add_argument("--eval_file", type=str, default=None)
     parser.add_argument("--output_dir", type=str, default="./checkpoints")
+    parser.add_argument("--de_share", type=float, default=None,
+                        help="Preferred over --de_weight. Target FRACTION OF THE GRADIENT the DE gene "
+                             "tokens should carry (e.g. 0.5). The weight is then derived from the "
+                             "token-level DE share f measured on this tokenizer and this data: "
+                             "w = share/(1-share) * (1-f)/f. f depends on k_sig, on subword lengths, and "
+                             "on how many panel genes a sentence actually contains, so deriving it beats "
+                             "hardcoding a weight that may be a no-op or may swamp the loss entirely.")
+    parser.add_argument("--de_weight", type=float, default=1.0,
+                        help="DE-WEIGHTED SFT: multiply the token loss on this condition's "
+                             "drug-specific DE genes (the 'de_genes' field from build_de_weights.py) by "
+                             "this factor, then renormalise so the mean supervised-token weight stays 1. "
+                             "1.0 = plain SFT and a mathematically exact control arm. Set it from the "
+                             "measured DE token share f that build_de_weights.py prints, not by guessing. "
+                             "Held-out eval loss is deliberately left UNWEIGHTED so it stays comparable "
+                             "across settings.")
     parser.add_argument("--max_length", type=int, default=8192,
                         help="Max token length. A 946-gene control + 946-gene response is "
                              "~6,200 BPE tokens (~3.25 tok/gene), so keep this >= 8192 or the "
@@ -462,6 +608,11 @@ def main():
     parser.add_argument("--keep_checkpoints", type=int, default=0,
                         help="If >0, keep only the most recent N checkpoint-{step} dirs "
                              "(best/ and final/ are always kept). Protects a shared/full disk.")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Seeds Python, NumPy and Torch, which fixes the shuffle order and the "
+                             "dropout masks. Runs remain non-bit-exact on GPU, but every source of "
+                             "variation under our control is removed, so a difference between two "
+                             "arms is a difference between the arms.")
 
     args = parser.parse_args()
     train(args)

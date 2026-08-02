@@ -4,7 +4,7 @@ build_embeddings.py — panel-expression + PCA cache for the OT pipeline (Arm 1c
 =======================================================================================
 Streams Tahoe (random shards for diversity), and for every treated + plate-matched DMSO cell builds:
   * barcode (BARCODE_SUB_LIB_ID)      -> join key for the shipped scVI latent (join_latent.py)
-  * metadata: drug, cell_line_id, plate, dose (conc string), is_control
+  * metadata: drug, cell_line_id, plate, sample_id (the treated well), is_control
   * PANEL expression (946 L1000 genes), CP10K-normalized (per-cell library-normalized to 1e4)
     -> the source for BOTH the decoder-free OT targets (pi-weighted average of real treated cells)
        AND the PCA embedding (the parallel-to-scVI coupling space).
@@ -12,7 +12,7 @@ Then fits PCA on log1p(panel expr) and projects all cells.
 
 This is the c2s-env, no-scVI half of "both embeddings in parallel". scVI latent is attached later by
 barcode. Output is a cache DIRECTORY:
-  meta.parquet            barcode, drug, cell_line_id, plate, dose, is_control, lib_size
+  meta.parquet            barcode, drug, cell_line_id, plate, sample_id, is_control, lib_size
   panel_expr.npz          scipy CSR (N x 946), CP10K linear (rank/average in this space)
   pca.npz                 coords (N x pca_dim), components, mean, explained_variance_ratio
   panel_genes.json        the 946 panel symbols in column order
@@ -78,7 +78,7 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
                      control_per_group, max_cells, seed, smoke=0, control_shards=80,
                      control_coverage=0.9):
     """TWO PASSES (DMSO controls do NOT co-locate with treated shards, per the preprocessor):
-       (1) treated pass over `num_shards` random shards, capped per (drug,cl,plate,dose);
+       (1) treated pass over `num_shards` random shards, capped per (drug,cl,plate,sample);
        (2) DMSO control pass over `control_shards` random shards (whole-shard), keeping DMSO cells for
            the (cell_line,plate) keys the treated pass needs, capped per group, early-stopping at
            `control_coverage` of needed keys. Returns (CSR expr, meta)."""
@@ -91,11 +91,15 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
     rng = np.random.RandomState(seed)
 
     rows_i, cols_i, vals = [], [], []
-    meta = {"barcode": [], "drug": [], "cell_line_id": [], "plate": [], "dose": [],
+    # `sample_id`, NOT `dose`. This column holds the treatment/well identifier, and naming it
+    # `dose` is the defect that made every downstream "same dose" statistic a statement about
+    # sample identity instead. The concentration lives in `drugname_drugconc` in the sample
+    # metadata and is resolved by shared/tahoe_design.py, not here.
+    meta = {"barcode": [], "drug": [], "cell_line_id": [], "plate": [], "sample_id": [],
             "is_control": [], "lib_size": []}
     state = {"n": 0}
 
-    def add(row, drug, cl, plate, dose, is_ctrl):
+    def add(row, drug, cl, plate, sample_id, is_ctrl):
         g, e = row.get("genes"), row.get("expressions")
         if g is None or e is None:
             return False
@@ -116,7 +120,8 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
             cols_i.append(uniq.astype(np.int64)); vals.append(np.add.reduceat(cv_s, start).astype(np.float32))
         meta["barcode"].append(row.get("BARCODE_SUB_LIB_ID") or row.get("barcode"))
         meta["drug"].append(drug); meta["cell_line_id"].append(cl); meta["plate"].append(plate)
-        meta["dose"].append(dose); meta["is_control"].append(bool(is_ctrl)); meta["lib_size"].append(lib)
+        meta["sample_id"].append(sample_id); meta["is_control"].append(bool(is_ctrl))
+        meta["lib_size"].append(lib)
         state["n"] += 1
         return True
 
@@ -131,14 +136,15 @@ def stream_and_build(repo, tok2panel, n_panel, num_shards, cells_per_condition,
     target = smoke if smoke else max_cells
     for row in load_dataset("parquet", data_files=shard_urls(num_shards, seed),
                             split="train", streaming=True):
-        drug, cl, plate, dose = row.get("drug"), row.get("cell_line_id"), row.get("plate"), row.get("sample")
+        drug, cl, plate = row.get("drug"), row.get("cell_line_id"), row.get("plate")
+        sid = row.get("sample")          # the treated well: one drug-dose, many cell lines nested
         drug_seen[str(drug)] += 1
         if _is_control(drug):
             continue
-        key = (drug, cl, plate, dose)
+        key = (drug, cl, plate, sid)
         if treated_cnt.get(key, 0) >= cells_per_condition:
             continue
-        if add(row, drug, cl, plate, dose, False):
+        if add(row, drug, cl, plate, sid, False):
             treated_cnt[key] = treated_cnt.get(key, 0) + 1
             needed_keys.add((cl, plate))
         if state["n"] % 20000 == 0 and state["n"]:

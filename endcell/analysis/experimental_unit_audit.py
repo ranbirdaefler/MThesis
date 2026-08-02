@@ -212,6 +212,54 @@ def audit(meta, samples, split=None):
     for r, n in reasons.most_common(5):
         logger.info(f"      unusable: {n:>5}  {r}")
 
+    # ---- 5b. does unit-stripping corrupt the ORIGINAL preprocessing's dose? --------------------
+    # tahoe_c2s_preprocess_endcell.py does `dose_float = float(dose_str.split()[0])`, which throws
+    # the unit away. Two failure modes follow, and which one bites is a property of the data:
+    #   COLLISION  1 uM and 1 nM both become 1.0 -> two concentrations treated as one. The tier-4
+    #              held-out-dose test then holds out a dose it also trained on.
+    #   SPLIT      0.05 uM and 50 nM are one concentration but become 0.05 and 50.0 -> one dose
+    #              counted as two, and `--group_keys drug,cell_line_id,dose_float` splits a group.
+    per_drug = defaultdict(set)
+    for st in samples.values():
+        if st and st.primary and st.primary.dose.value is not None:
+            per_drug[st.primary.drug].add((float(st.primary.dose.value), st.primary.dose.unit,
+                                           td.molar_key(st.primary.dose.molar)))
+    collisions, splits = [], []
+    for d, entries in per_drug.items():
+        by_float, by_molar = defaultdict(set), defaultdict(set)
+        for val, unit, mk in entries:
+            by_float[round(val, 6)].add(mk)
+            by_molar[mk].add(round(val, 6))
+        for f, mks in by_float.items():
+            if len(mks) > 1:
+                collisions.append({"drug": d, "dose_float": f, "distinct_molar": len(mks)})
+        for mk, fs in by_molar.items():
+            if len(fs) > 1:
+                splits.append({"drug": d, "molar_key": str(mk), "distinct_dose_float": sorted(fs)})
+    rep["dose_float_collisions"] = len(collisions)
+    rep["dose_float_splits"] = len(splits)
+    rep["dose_float_collision_examples"] = collisions[:5]
+    rep["dose_float_split_examples"] = splits[:5]
+    logger.info("")
+    logger.info("(5b) UNIT-STRIPPED `dose_float` in the ORIGINAL preprocessing")
+    logger.info(f"    drugs with >=1 numeric dose : {len(per_drug)}")
+    logger.info(f"    COLLISIONS (one float, several concentrations): {len(collisions)}")
+    logger.info(f"    SPLITS     (one concentration, several floats): {len(splits)}")
+    for e in collisions[:3]:
+        logger.info(f"      collision: {e['drug']} dose_float={e['dose_float']} covers "
+                    f"{e['distinct_molar']} real concentrations")
+    for e in splits[:3]:
+        logger.info(f"      split: {e['drug']} one concentration appears as {e['distinct_dose_float']}")
+    if collisions:
+        logger.info("    -> tier 4 (held-out dose) is unsound for those drugs: the held-out dose was")
+        logger.info("       also trained on under a different unit. Any tier-4 number needs a caveat.")
+    if splits:
+        logger.info("    -> dose-keyed grouping splits one concentration in two, which deflates every")
+        logger.info("       per-dose sample size it touches.")
+    if not collisions and not splits:
+        logger.info("    -> every drug states its doses in a single unit, so unit-stripping happened")
+        logger.info("       to be harmless here. Worth stating explicitly rather than assuming.")
+
     # ---- 6. does any sample cross the holdout? -------------------------------------------------
     if split:
         cond_split = defaultdict(set)
@@ -268,6 +316,16 @@ def selftest():
     check(r["treatments_with_replicate_samples"] == 1,
           "smp_1 and smp_3 recognised as replicates despite uM vs nM units")
     check(r["samples_with_molar_dose"] == 2, "the two single-drug samples yield a molar dose")
+    # D1 is dosed at 0.05 uM and 50 nM: one concentration, two unit-stripped floats
+    check(r["dose_float_splits"] == 1 and r["dose_float_collisions"] == 0,
+          "unit-stripping splits D1's single concentration into dose_float 0.05 and 50.0")
+
+    # and the mirror-image failure: one float standing for two different concentrations
+    coll = {"smp_a": td.parse_treatment("[('D9', 1.0, 'uM')]", "smp_a"),
+            "smp_b": td.parse_treatment("[('D9', 1.0, 'nM')]", "smp_b")}
+    rc = audit(meta, {**samples, **coll})
+    check(rc["dose_float_collisions"] == 1,
+          "dose_float 1.0 standing for both 1 uM and 1 nM is caught")
 
     # a sample crossing the split must be caught
     split = {("D1", "C0", "p0", "smp_1"): "train", ("D1", "C1", "p0", "smp_1"): "unseen_combo"}

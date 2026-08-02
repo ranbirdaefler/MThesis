@@ -295,6 +295,28 @@ def validate_sample_mapping(rows) -> ValidationReport:
     return rep
 
 
+def sample_column(df):
+    """Which column of a cache's `meta.parquet` actually carries the treatment/well identifier.
+
+    Returns (column_name_or_None, how). `build_embeddings.py` wrote `row["sample"]` into a column it
+    named `dose`, so caches built before that was fixed carry the identifier under the wrong name and
+    carry no concentration at all. Recovering it is preferable to rebuilding, but only if the
+    recovery is explicit -- hence the second return value, which callers should put in their report.
+    """
+    cols = list(getattr(df, "columns", df))
+    for name in ("sample_id", "sample"):
+        if name in cols:
+            return name, "explicit column"
+    if "dose" in cols:
+        try:
+            vals = df["dose"].astype(str).values
+        except (TypeError, KeyError, AttributeError):
+            vals = []
+        if looks_like_sample_id(vals):
+            return "dose", "recovered from the mislabelled `dose` column"
+    return None, "unavailable"
+
+
 def looks_like_sample_id(values) -> bool:
     """True if a column that is supposed to hold doses is actually holding sample identifiers.
 

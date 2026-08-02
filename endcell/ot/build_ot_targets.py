@@ -5,7 +5,7 @@ build_ot_targets.py — OT/meta-cell training targets (Arm 1c, step 6, decoder-f
 From the validated cache (panel CP10K expression + shipped scVI latent + metadata), build the target
 ladder and emit training JSONLs drop-in compatible with the endcell trainer/eval.
 
-For each condition (cell_line, plate, drug, dose) with enough treated cells, and using the plate's DMSO
+For each condition (cell_line, plate, drug, sample) with enough treated cells, and using the plate's DMSO
 CONTROL cells as input prompts:
   * coupling: entropic-Sinkhorn OT pi between control and treated cells IN THE EMBEDDING (scVI latent or
     PCA), cost = squared Euclidean. (The coupling matches control<->treated by cell STATE.)
@@ -29,6 +29,14 @@ USAGE
 import argparse, json, os, sys, logging, ast
 from collections import defaultdict
 import numpy as np
+
+# shared/ locally; flat alongside the script on the cluster
+for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        "shared"),
+           os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import tahoe_design as td
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -70,14 +78,13 @@ def expr_to_sentence(vec, panel_genes, K=None):
 
 
 def parse_dose(conc_str):
-    """'[(\"Drug\", 0.05, \"uM\")]' -> '0.05 uM'."""
-    try:
-        parsed = ast.literal_eval(conc_str)
-        if parsed and isinstance(parsed, (list, tuple)):
-            _, val, unit = parsed[0]
-            return f"{val} {unit}"
-    except Exception:
-        pass
+    """Display string for the prompt only.
+
+    The numeric concentration comes from `tahoe_design.parse_treatment`, which also returns
+    every component of a combination instead of silently taking the first."""
+    st = td.parse_treatment(conc_str)
+    if st.primary is not None:
+        return st.primary.dose.display()
     return "unknown"
 
 
@@ -142,10 +149,16 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
     cl = meta["cell_line_id"].astype(str).values
     plate = meta["plate"].astype(str).values
     drug = meta["drug"].astype(str).values
-    dose = meta["dose"].astype(str).values
+    scol, how = td.sample_column(meta)
+    if scol is None:
+        raise SystemExit("no treatment/well identifier in the cache -- rebuild it with a "
+                         "`sample_id` column (see build_embeddings.py)")
+    logger.info(f"treatment identifier: column '{scol}' ({how})")
+    sample = meta[scol].astype(str).values
     ok = found & np.array([np.isfinite(E[i]).all() for i in range(len(E))])
 
-    # index controls by (cl,plate); treated by (cl,plate,drug,dose)
+    # index controls by (cl,plate); treated by (cl,plate,drug,sample). The fourth element is the
+    # treated WELL -- the physical assignment unit -- and was never a concentration.
     ctrl_by_plate = defaultdict(list)
     treat_by_cond = defaultdict(list)
     for i in range(len(meta)):
@@ -154,7 +167,7 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
         if is_ctrl[i]:
             ctrl_by_plate[(cl[i], plate[i])].append(i)
         else:
-            treat_by_cond[(cl[i], plate[i], drug[i], dose[i])].append(i)
+            treat_by_cond[(cl[i], plate[i], drug[i], sample[i])].append(i)
 
     conds = [k for k, v in treat_by_cond.items()
              if len(v) >= min_treated and len(ctrl_by_plate.get((k[0], k[1]), [])) >= min_control]
@@ -167,6 +180,7 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
     writers = {t: open(os.path.join(out_dir, f"{t}.jsonl"), "w") for t in targets}
     gates = {"n_conditions": len(conds), "signal_shift": [], "target_sanity": [], "target_contrast": []}
     n_emit = 0
+    emitted_doses = []
     rng = np.random.RandomState(0)
 
     for ci, (c, pl, dg, ds) in enumerate(conds):
@@ -220,7 +234,10 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
         # ---- emit training examples ----
         cname = cvcl_to_name.get(c, c)
         moa = drug_to_moa.get(dg, "unclear")
-        dstr = parse_dose(sample_to_conc.get(ds, "unknown"))
+        _st = td.parse_treatment(sample_to_conc.get(ds, "unknown"), ds)
+        _dose = _st.primary.dose if _st.primary is not None else None
+        dstr = _dose.display() if _dose is not None else "unknown"
+        emitted_doses.append(_dose.molar if (_dose is not None and _dose.molar is not None) else ds)
         for j, gi in enumerate(ctrl_idx):
             ctrl_sent = expr_to_sentence(Xexpr[j], panel_genes, K=None)
             prompt = format_prompt(cname, dg, dstr, moa, ctrl_sent)
@@ -235,7 +252,10 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
                 resp = expr_to_sentence(vec, panel_genes, K=K)
                 writers[t].write(json.dumps({
                     "prompt": prompt, "response": resp,
-                    "metadata": {"drug": dg, "cell_line_id": c, "plate": pl, "dose_float": ds,
+                    "metadata": {"drug": dg, "cell_line_id": c, "plate": pl,
+                                 "sample_id": ds,
+                                 "dose_molar": (_dose.molar if _dose is not None else None),
+                                 "dose_raw": (_dose.raw if _dose is not None else "unknown"),
                                  "target": t}}) + "\n")
             n_emit += 1
         if ci % 50 == 0:
@@ -243,6 +263,10 @@ def build(cache_dir, emb, epsilon, min_treated, min_control, targets, max_ctrl_p
 
     for w in writers.values():
         w.close()
+    # the defect tahoe_design exists to stop: never ship a dose field that is actually holding
+    # sample identifiers
+    if td.looks_like_sample_id(emitted_doses):
+        raise SystemExit("REFUSING TO WRITE: the emitted dose field holds sample identifiers.")
     json.dump(gates, open(os.path.join(out_dir, "step0_gates.json"), "w"), indent=2, default=float)
     _report_gates(gates)
     logger.info(f"emitted {n_emit} prompts x {len(targets)} target arms -> {out_dir}")
