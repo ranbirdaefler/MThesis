@@ -1,186 +1,321 @@
 \section{Literature review}
 \label{sec:litreview}
 
-\subsection{Single-cell foundation models}
+\subsection{From text foundation models to single-cell foundation models}
 
-Transformer models pretrained on large single-cell corpora --- scGPT~\cite{scgpt},
-Geneformer~\cite{geneformer} --- treat a cell's expression profile as a sequence and transfer to
-downstream tasks by fine-tuning. The ambition is often stated as building a ``virtual
-cell''~\cite{bunne}: a model whose \emph{in silico} perturbation responses are trustworthy enough to
-substitute for screening.
+The models this thesis builds on descend from a template established in natural language
+processing. A transformer is pretrained on a very large unlabelled text corpus with a single
+objective --- predict the next token --- and the resulting network is then adapted to specific tasks
+by fine-tuning or prompting. The GPT line of models made the case that this recipe scales: capability
+on tasks never explicitly trained for improves steadily with model size, data and compute, so a
+single pretrained backbone can serve as a general substrate rather than a task-specific tool. What
+made the recipe portable is that it assumes almost nothing about language. It requires only that the
+data be expressible as sequences of discrete tokens, and that some tokens be predictable from
+others.
 
-\subsection{Cell2Sentence: the backbone}
+That portability is what invited the transfer into biology. If a cell can be written as a sequence,
+the same machinery applies unchanged. scGPT~\cite{scgpt} and Geneformer~\cite{geneformer} both take
+this route, treating a cell's expression profile as a sequence of gene tokens and pretraining on
+tens of millions of cells before transferring to classification, integration and perturbation tasks.
+The ambition is usually stated as some version of the \emph{virtual cell}~\cite{bunne}: a model
+whose simulated responses to intervention are trustworthy enough to substitute for an experiment.
+
+The interesting variation among these models is not architectural but representational. A cell is a
+vector of expression values over some twenty thousand genes; a transformer consumes a sequence of
+discrete tokens. Something must be discretised or discarded in between, and what gets discarded
+bounds what the model can learn. The approach this thesis uses makes that choice unusually explicit.
+
+\subsection{Cell sentences, and the model this thesis fine-tunes}
 \label{sec:lit-c2s}
 
-Cell2Sentence~\cite{c2s} takes the most literal route to adapting a language model to
-transcriptomics: it serialises a cell as a \emph{cell sentence}, the gene symbols written in
-descending order of expression, and fine-tunes an ordinary pretrained language model on the
-resulting text. C2S-Scale~\cite{c2sscale} extends this to larger backbones and to
-perturbation-prediction tasks, and supplies the \texttt{C2S-Scale-Pythia-1b} checkpoint used
-throughout this thesis.
+Cell2Sentence~\cite{c2s} takes the most literal route available: rank a cell's genes by expression
+and write their symbols out in descending order. The cell becomes a \emph{cell sentence}, which is
+text in the ordinary sense --- a string that a tokeniser will happily consume:
 
-The representation discards expression magnitude and keeps only rank, and C2S justifies this with a
-reconstruction argument: expression is recoverable from rank through a fitted log-linear model
-$e_i = a_d\log(r_i) + b_d$, achieving $R^2 = 0.815$ against original expression on PBMC data. Rank,
-they conclude, ``encodes expression in a consistent, reversible way across datasets''.
+\begin{quote}
+\ttfamily\small
+MALAT1 ACTB TMSB4X B2M EEF1A1 RPL13A FTL TPT1 RPS27 GAPDH \dots
+\end{quote}
 
-That claim is correct, and this thesis does not dispute it. What it shows is that the claim is
-\emph{beside the point} for drug discrimination, in a way that connects directly to the dispute
-reviewed below. Reconstruction fidelity is an \emph{absolute-accuracy} criterion --- how close is
-the recovered profile to the true one --- and Section~\ref{sec:res-metrics} shows that absolute
-accuracy on this task is dominated by the component every condition shares. A representation can
-therefore preserve expression almost perfectly and still discard nearly all of the drug-specific
-signal, because the preserved information is the part that does not distinguish drugs. Measured
-directly (Section~\ref{sec:res-encoding}), $83\%$ of the ranked tokens are identical between any two
-drugs in the same context. The fix that follows is not to abandon cell sentences but to change what
-the rank encodes.
+\noindent Nothing marks this as biological. The information is carried entirely by which symbols
+appear and in what order, and a language model fine-tuned on such strings is doing exactly what it
+does on prose: predicting the next token given the previous ones.
 
-\subsection{Perturbation response prediction}
+The encoding keeps rank and discards magnitude. C2S defends the loss with a reconstruction argument:
+expression can be recovered from rank through a fitted log-linear relationship
+$e_i = a_d\log(r_i) + b_d$, which achieves $R^2 = 0.815$ against the original values on peripheral
+blood data. On that basis they argue rank encodes expression reversibly enough across datasets for
+the discarded magnitude not to matter for downstream use. It is worth noting what kind of criterion
+this is --- reconstruction fidelity is a statement about \emph{absolute} accuracy, how close the
+recovered profile is to the true one, which is not automatically the same as preserving whatever
+distinguishes one experimental condition from another.
 
-Dedicated architectures include scGen~\cite{scgen}, which applies a latent-space arithmetic shift;
-CPA~\cite{cpa}, which disentangles perturbation and covariate factors; and GEARS~\cite{gears}, which
-uses a gene--gene knowledge graph to extrapolate to unseen genetic perturbations. These are largely
-developed on genetic perturbation atlases (Perturb-seq~\cite{replogle},~\cite{norman}), with
-scPerturb~\cite{scperturb} providing harmonised benchmarks.
+Understanding what the model does with such a sentence requires a little of the underlying
+architecture, because several of its properties matter later. C2S-Scale builds on decoder-only
+transformers of the GPT family, and the checkpoint used here is built on Pythia~\cite{pythia}, a
+suite of such models released with open weights and training data. A decoder-only transformer
+factorises the probability of a sequence into a product of next-token predictions,
+\begin{equation}
+  p(x_1, \dots, x_T) \;=\; \prod_{t=1}^{T} p\!\left(x_t \mid x_{<t}\right),
+\end{equation}
+and is trained by minimising the cross-entropy between each predicted distribution and the token
+that actually occurred. Each token is first mapped to a vector by an embedding matrix, and those
+vectors form what is usually called the \emph{residual stream}: a running representation, one vector
+per position, which every layer reads from and writes back into additively. A layer comprises
+multi-head self-attention, which lets each position gather information from earlier positions and is
+\emph{causally masked} so that position $t$ attends only to positions $\leq t$, followed by a
+position-wise feed-forward network. Both are wrapped in normalisation and added back to the stream
+rather than replacing it. After the final layer an unembedding matrix projects the stream to one
+score per vocabulary entry, and a softmax turns those scores into the next-token distribution.
+
+Three properties of that design are worth noting now, since later sections depend on them. The
+residual stream is additive and shared, so a representation can be read at a chosen depth, modified,
+and the remaining computation allowed to proceed on the modified value --- which is what makes
+interpretability interventions of the kind used in Section~\ref{sec:res-mechanism} possible at all.
+The training loss is a sum of per-token cross-entropies that weights every position equally, so a
+target whose tokens are largely shared between conditions gives any individual condition only a
+small share of the gradient. And conditioning is mediated entirely by attention across a causal
+mask, so information supplied early in a prompt must be reached from every later position at which it
+is needed.
+
+C2S-Scale~\cite{c2sscale} develops Cell2Sentence into a family of models on this architecture,
+spanning backbones from Pythia at 410 million and 1 billion parameters up to Gemma-2 at 27 billion.
+Pretraining uses over 50 million human and mouse cells drawn from 825 single-cell datasets in
+CELLxGENE and the Human Cell Atlas. The pretrained models are then fine-tuned across a range of
+tasks: predicting cell type and tissue, generating cells conditioned on a label, captioning clusters,
+answering natural-language questions about a dataset, and predicting perturbation responses.
+
+The perturbation task is the one this thesis extends, and its published scope is worth stating
+precisely. C2S-Scale evaluates it on three benchmarks: cytokine stimulation of peripheral blood
+cells, bulk L1000 profiles, and the SciPlex3 small-molecule panel. In each the model receives an
+untreated profile together with a description of the treatment and produces the treated profile, so
+the setup is conditional rather than label-only generation. Two features of it are relevant to the
+comparison this thesis draws. Pairing is by group rather than by cell --- for the bulk benchmark,
+treated and untreated samples are matched by cell line name --- which is unavoidable given that
+sequencing destroys the cell it reads. And the single-cell results are scored as distributions: for
+each condition the model generates as many cells as were observed, and the generated population is
+compared against the observed one, which asks whether the model produces a plausible population for
+a condition rather than whether it distinguishes that condition from another.
+
+The checkpoint fine-tuned in every experiment below is \texttt{C2S-Scale-Pythia-1b-pt}, the
+pretrained member of that family, whose training corpus is atlas data alone and contains no
+drug-treated cells.
 
 \subsection{The dispute: do these models beat uninformative baselines?}
 \label{sec:lit-dispute}
 
-The field currently contains an unresolved and unusually sharp disagreement, and this thesis is
-best understood as an attempt to adjudicate a corner of it.
+The field contains an unresolved and unusually sharp disagreement about whether any of this works,
+and this thesis is best read as an attempt to settle one corner of it.
 
-\paragraph{The case against.} A series of benchmarks reports that deep perturbation models do not
-beat trivial predictors. Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} report that
-deep-learning-based gene perturbation effect prediction does not yet outperform simple linear
-baselines. Csendes et al.~\cite{csendes} reach a similar conclusion for foundation cell models on
-post-perturbation RNA-seq. Bendidi et al.~\cite{bendidi} put it most bluntly in a title: one PCA
-still rules them all. Kernfeld et al.~\cite{kernfeld} concur in a broad comparison of
+On one side sits a series of benchmarks reporting that deep perturbation models do not beat trivial
+predictors. Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} find that deep-learning prediction of
+genetic perturbation effects does not outperform simple linear baselines. Csendes et
+al.~\cite{csendes} reach the same conclusion for foundation cell models on post-perturbation
+RNA-seq, and Bendidi et al.~\cite{bendidi} put it most bluntly in a title, reporting that a single
+PCA still rules them all. Kernfeld et al.~\cite{kernfeld} concur in a broad comparison of
 expression-forecasting methods. The pattern is not confined to transcriptomic readouts: on scalar
 drug sensitivity, Hauptmann and Kramer~\cite{hauptmann} hold the experimental protocol fixed across
-architectures and find that the measured differences between them largely dissolve. And
-DrEval~\cite{dreval}, reviewed in detail below, finds that deep models barely outperform a naive
-predictor of mean drug and cell-line effects. The recurring result across all of them is that a
-\emph{per-perturbation mean} is remarkably hard to beat.
+architectures and find that the measured differences between them largely dissolve, and
+DrEval~\cite{dreval} finds that deep models barely outperform a naive predictor built from mean drug
+and cell-line effects. The recurring result is that a per-perturbation mean is remarkably hard to
+beat.
 
-\paragraph{The case for.} Miller et al.~\cite{miller} argue that these conclusions ``largely stem
-from limitations of benchmarking metrics, not from the models themselves''. Their argument is
+Against this, Miller et al.~\cite{miller} argue that these conclusions ``largely stem from
+limitations of benchmarking metrics, not from the models themselves'', and the argument is
 methodological rather than rhetorical. They formalise the use of positive and negative controls in
-perturbation benchmarking, introduce a new positive control --- the \emph{interpolated duplicate},
-which interpolates between a technical duplicate and the mean baseline with weights given by
-per-gene differential-expression significance --- and define a quantitative measure of metric
-calibration, the \emph{Dynamic Range Fraction} (\DRF). Applying this across 14 Perturb-seq datasets
-and 13 metrics, they find that widely used metrics such as MSE and control-referenced Pearson
-correlation are often poorly calibrated, whereas weighted and rank-based alternatives --- weighted
-MSE and weighted $R^2\Delta$~\cite{mejia}, and Normalised Inverse Rank~\cite{perturbench} --- are
-consistently calibrated. Under those calibrated metrics, they report, deep learning models
-\emph{do} outperform mean, control and linear baselines, and in some combination-prediction tasks
-even the additive baseline.
+perturbation benchmarking and introduce a new positive control, the \emph{interpolated duplicate},
+which blends a technical duplicate with the mean baseline using weights drawn from per-gene
+differential-expression significance --- giving a reference point of known and tunable quality. They
+then define a quantitative measure of whether a metric can see that quality at all, the
+\emph{Dynamic Range Fraction} (\DRF), and apply it across 14 Perturb-seq datasets and 13 metrics.
+Widely used measures such as MSE and control-referenced Pearson correlation turn out to be poorly
+calibrated, while weighted and rank-based alternatives --- weighted MSE, weighted
+$R^2\Delta$~\cite{mejia}, and Normalised Inverse Rank~\cite{perturbench} --- are consistently
+calibrated. Evaluated on the metrics that survive, they report, deep models \emph{do} beat mean,
+control and linear baselines.
 
-\paragraph{What the disagreement is actually about.} Both sides agree that the standard metrics are
-defective. They disagree about what remains once the defect is corrected: whether calibrated
-evaluation reveals a real signal that miscalibration was hiding, or merely relocates the same null.
-This makes the dispute empirically decidable rather than interpretive --- but only within the
-setting where it is tested.
+What is actually in dispute is narrower than it first appears, because both sides agree the standard
+metrics are defective. The disagreement is about what a corrected evaluation would reveal. One
+reading is that the models were always capturing real biology and the broken metrics were hiding it,
+so better measurement should expose genuine skill. The other is that the models were never capturing
+much, and better measurement will simply show that failure more clearly and more honestly. Put that
+way the question is empirical rather than interpretive --- but it is settled only within the setting
+where it is tested, and the setting of this thesis has been tested by neither camp. Miller et al.\
+and Ahlmann-Eltze et al.\ both study \textbf{genetic} perturbation, where an intervention is a
+designed, near-binary knockout with a named target gene. DrEval studies \textbf{drug sensitivity} as
+a scalar potency such as IC$_{50}$, predicted from cell-line omics. None of them studies a full
+transcriptomic response to a small molecule --- which acts at a dose and typically engages several
+proteins at once --- at single-cell resolution, produced by an autoregressive generative model.
 
-\paragraph{The gap this thesis addresses.} Both Miller et al.\ and Ahlmann-Eltze et al.\ study
-\textbf{genetic} perturbation (Perturb-seq: gene inhibition or activation). DrEval studies
-\textbf{drug sensitivity} --- a scalar potency such as IC$_{50}$ or AUC predicted from cell-line
-omics. None of them studies what this thesis studies: \textbf{drug} perturbation, predicted as a
-full transcriptomic response, at single-cell resolution, by an autoregressive generative language
-model. The tasks differ in ways that plausibly matter --- a genetic knockout is a designed,
-near-binary intervention with a named target gene, whereas a small molecule acts at a dose, hits
-multiple proteins, and (as Section~\ref{sec:res-blind} reports) is statistically inert in $27\%$ of
-conditions.
+The position taken here is to adopt the proponents' instrument rather than argue with it.
+Section~\ref{sec:res-metrics} ports the \DRF{} framework onto drug perturbation and uses it to decide
+which metrics are admissible in this setting before any model is scored, so that the evaluation is
+chosen by the sceptics' opponents rather than by us. Whatever the models then turn out to do, the
+measurement cannot be dismissed by the objection Miller et al.\ themselves raise.
 
-\paragraph{Our position, and why it takes this form.} We adopt the \emph{proponents'} instrument.
-Section~\ref{sec:res-metrics} ports Miller's \DRF{} framework wholesale and evaluates it on drug
-perturbation, and their central methodological claim is confirmed emphatically: metric choice
-dominates, and in our setting only one of five metrics is calibrated at all. We then evaluate the
-model on that metric --- \NIR, the rank-based metric their analysis endorses --- and find it at
-chance.
-
-Siding with the sceptics using the proponents' own instrument is the strongest available form of the
-argument, because it cannot be answered by the proponents' own objection. The conclusion is not that
-Miller et al.\ are wrong; on genetic perturbation their evidence stands, and their framework is what
-made our result quotable. It is that their conclusion does not extend to this task, and
-Section~\ref{sec:res-lookup} offers a structural reason why it might not.
-
-\subsection{DrEval and the six pathologies}
+\subsection{Six ways a drug-response benchmark can mislead}
 \label{sec:lit-dreval}
 
-DrEval~\cite{dreval} audits drug response prediction and identifies six obstacles to clinical
-translation: non-reproducible models, data leakage causing weak generalisation, pseudoreplication,
-biased evaluation metrics, missing ablation studies, and inconsistent response data. Three of them
-structure the methodology of Section~\ref{sec:methods}, and we adopt its vocabulary throughout.
+DrEval~\cite{dreval} deserves separate treatment, because beyond its verdict it supplies a
+diagnostic vocabulary that this thesis adopts throughout. Auditing drug response prediction, it
+identifies six obstacles to clinical translation: non-reproducible models, data leakage producing
+weak generalisation, pseudoreplication, biased evaluation metrics, missing ablation studies, and
+inconsistent response data. Four of them shape the methodology of Section~\ref{sec:methods} directly.
 
-\paragraph{Pseudoreplication.} Following Hurlbert~\cite{hurlbert}, treating multiple measurements of
-one unit as independent. DrEval notes that GDSC2's $395{,}025$ measurements derive from only $969$
-cell lines and $287$ drugs. Our structure is identical: hundreds of thousands of cells resolving to
-a few thousand conditions over $50$ cell lines. All uncertainty here is therefore a clustered
-bootstrap over cell lines.
+Pseudoreplication, in Hurlbert's original sense~\cite{hurlbert}, is treating repeated measurements of
+one unit as independent observations. DrEval observes that GDSC2's $395{,}025$ measurements descend
+from only $969$ cell lines and $287$ drugs, so an interval computed over measurements is badly
+overconfident about how much independent evidence exists. Our data has the same shape --- hundreds of
+thousands of cells resolving to a few thousand conditions across $50$ cell lines --- and every
+confidence interval in this thesis is consequently a clustered bootstrap over cell lines rather than
+over cells.
 
-\paragraph{Biased evaluation.} DrEval frames this as a version of Simpson's paradox: because drugs
-act at vastly different concentrations, most variance is \emph{between}-drug, so a model that
-memorises each drug's mean explains most of it. Their illustration is a global Pearson correlation
-of $0.90$ against an average per-drug Pearson of $0.01$. Section~\ref{sec:res-metrics} reports the
-transcriptomic analogue, and Section~\ref{sec:methods-metrics} explains why a discrimination metric
-evaluated \emph{within} a comparison set is immune by construction.
+Biased evaluation they frame as a version of Simpson's paradox. Because different drugs act at
+vastly different concentrations, most of the variance in a response dataset lies \emph{between}
+drugs, so a model that learns nothing but each drug's mean will explain most of it. Their
+illustration is stark: a global Pearson correlation of $0.90$ alongside an average within-drug
+Pearson of $0.01$. Section~\ref{sec:methods-metrics} explains why a discrimination metric evaluated
+\emph{within} a comparison set is immune to this by construction.
 
-\paragraph{Application-aware splits.} DrEval names four: Leave-Pairs-Out (LPO, missing-value
-imputation), Leave-Cell-Lines-Out (LCO, personalised medicine), Leave-Drugs-Out (LDO, drug design),
-and Leave-Tissue-Out (LTO, drug repurposing). Our holdout maps directly --- \texttt{unseen\_combo}
-is LPO, \texttt{unseen\_drug} is LDO --- and we use their names in
-Section~\ref{sec:methods-holdout}. The mapping carries a warning we take seriously: DrEval reports,
-citing~\cite{partin}, that good LPO and LCO performance is reachable by predicting each drug's
-average response across the training cell lines. Our strongest positive result
-(Section~\ref{sec:res-generalisation}) is an LPO result. Section~\ref{sec:res-lookup} measures that
-baseline rather than assuming it away.
+Their treatment of splits is the part we borrow most directly. DrEval names four, each corresponding
+to a different application: Leave-Pairs-Out for missing-value imputation, Leave-Cell-Lines-Out for
+personalised medicine, Leave-Drugs-Out for drug design, and Leave-Tissue-Out for repurposing. Our
+holdout maps onto two of these --- \texttt{unseen\_combo} is Leave-Pairs-Out and \texttt{unseen\_drug}
+is Leave-Drugs-Out --- and Section~\ref{sec:methods-holdout} uses their names. The mapping carries a
+warning we take seriously. Citing Partin et al.~\cite{partin}, DrEval reports that good
+Leave-Pairs-Out and Leave-Cell-Lines-Out performance is reachable simply by predicting each drug's
+average response across the training cell lines, so a strong result on those splits demands that the
+per-drug average be measured explicitly rather than assumed away.
 
-\paragraph{Missing ablations.} DrEval's remedy is randomisation and robustness testing. The scramble
-ablation of Section~\ref{sec:methods-controls} is exactly such a test, specialised to the drug
-token, and it is the instrument on which every drug-use claim in this thesis rests.
+Their remedy for missing ablations is randomisation and robustness testing. The scramble ablation of
+Section~\ref{sec:methods-controls} is such a test, specialised to the drug: hold every byte of the
+prompt fixed except the compound, and see whether anything downstream notices.
 
 \subsection{Connectivity mapping and signature transfer}
 
-The Connectivity Map programme~\cite{cmap,l1000} built a drug-discovery methodology on a specific
-premise: that a compound induces a characteristic transcriptional signature stable enough across
-cellular contexts that querying a reference database by signature similarity is informative. The
-L1000 platform~\cite{l1000} operationalised this at scale, and its 978-gene landmark set defines the
-gene panel used here (intersected with Tahoe's measured genes, giving $946$).
+The Connectivity Map programme~\cite{cmap,l1000} built an entire drug-discovery methodology on a
+specific premise: that a compound induces a characteristic transcriptional signature stable enough
+across cellular contexts that querying a reference database by signature similarity is informative.
+The L1000 platform~\cite{l1000} operationalised this at scale, and its 978-gene landmark set defines
+the gene panel used here, intersected with Tahoe's measured genes to give $946$.
 
-That premise --- \emph{a drug's signature transfers across cell lines} --- is normally assumed
-rather than measured. Section~\ref{sec:res-transfer} measures it directly, noise-corrected, at
-single-cell resolution. The result determines whether a conditional model has anything left to
-predict once the per-drug constant is accounted for, and therefore bears directly on the dispute in
-Section~\ref{sec:lit-dispute}: if the per-drug constant is nearly the whole signal, then a
-per-perturbation mean being hard to beat is not a benchmarking artifact at all.
+The premise --- that a drug's signature transfers across cell lines --- is normally assumed rather than
+measured, and how much of it holds determines whether a conditional model has anything left to
+predict once a per-drug constant is accounted for. Section~\ref{sec:res-transfer} measures it
+directly, corrected for measurement noise, at single-cell resolution.
 
-\subsection{Interpretability: decodable versus used}
+\subsection{Decodable, used, and the global workspace}
 \label{sec:lit-interp}
 
-Linear probing establishes that information is \emph{present}, not that it is \emph{used}. The
-distinction is central here, since we find both: the drug is decodable at $82\%$ and simultaneously
-ignored by generation. Elazar et al.~\cite{gurnee} make the methodological case for treating these
-as separate questions: probe accuracy licenses no conclusion about behaviour, and the way to ask
+Linear probing establishes that information is \emph{present} in a representation, not that it is
+\emph{used} by the computation, and the distinction is central to the analysis in
+Section~\ref{sec:res-mechanism}. Elazar et al.~\cite{gurnee} make the methodological case for
+keeping the two apart: probe accuracy licenses no conclusion about behaviour, and the way to ask
 whether a property is used is to remove it from the representation and measure what the model then
-does. Their amnesic-probing design is the one Section~\ref{sec:res-mechanism} adopts, with one
-addition --- a matched-norm control, since an intervention that fails to move the output proves
-nothing unless a matched random intervention does.
+does. Their amnesic-probing design is the one adopted here, with the addition of a matched control,
+since an intervention that fails to move the output proves nothing unless a comparable intervention
+does.
 
-What such an intervention can find is shaped by how a network spends its representational capacity.
-Elhage et al.~\cite{superposition} show that models reserve dedicated directions for features the
-computation needs on every forward pass and push the remainder into superposition, where a feature
-stays linearly recoverable without occupying an axis of its own. We take from this a prediction
-rather than a finding. If drug identity is needed only for occasional, context-dependent
-composition, it may be represented richly and still sit outside whatever subspace the generation
-readout actually consults --- while cell-line identity, which any plausible emitted profile
-requires, should not. That asymmetry is testable, and testing it is the subject of
-Section~\ref{sec:res-mechanism}.
+A recent line of work gives that distinction a sharper form. Gurnee et al.~\cite{workspace} report
+that language models maintain a small privileged set of representations --- which they term the
+\emph{J-space}, identified by a Jacobian Lens that measures the average linearised effect of an
+activation on the model's likelihood of producing a particular token --- and argue it functions as a
+global workspace analogous to conscious access. The J-space is strikingly small: roughly ten to
+twenty-five concepts are active at any moment, typically accounting for under $10\%$ of activation
+variance. Its defining property is causal rather than correlational, and they establish it by
+intervention: swapping one active workspace vector for another changes the model's answer to match.
+Content in the J-space drives behaviour; content outside it may be richly represented and still
+inert with respect to what the model actually emits.
+
+That framing matters here because it supplies both a hypothesis and an experimental design. The
+hypothesis is that a property can be decodable from the residual stream at high accuracy while
+sitting outside the workspace the generation readout consults, in which case no amount of encoding
+it more explicitly will change the output. The design is the swap itself: overwrite one candidate
+representation with another and ask whether the model's behaviour follows. Section~\ref{sec:res-mechanism}
+constructs a domain analogue of exactly this test, substituting a drug's learned representation for
+another drug's and measuring whether the emitted profile moves toward the substituted drug.
+
+The related account of why a model might allocate its representations this way comes from
+Elhage et al.~\cite{superposition}, who show that networks reserve dedicated directions for features
+the computation needs on every forward pass and push the remainder into superposition, where a
+feature remains linearly recoverable without occupying an axis of its own. Read together, the two
+suggest an asymmetry worth testing: a property required to emit any plausible output should sit in
+the causally active set, while one needed only for occasional, context-dependent composition need
+not.
 
 \subsection{Optimal transport for state matching}
+\label{sec:lit-ot}
 
-Entropic regularisation with Sinkhorn iterations~\cite{cuturi} makes optimal transport tractable at
-scale, and Waddington-OT~\cite{schiebinger} established the approach for single-cell trajectories.
-We use it in Section~\ref{sec:res-epsilon} not as a proposed method but as a \emph{controlled
-sweep}, since the regularisation parameter interpolates between two target constructions already
-tested independently. Couplings are computed in the released Tahoe scVI latent~\cite{scvi}.
+Predicting a treated cell from an untreated one runs into an obstacle that is not statistical but
+physical: sequencing destroys the cell it measures. No cell is ever observed both before and after
+treatment, so there is no ground-truth correspondence between the control population and the treated
+population --- only two clouds of points in expression space, sampled from the same well at different
+times. Any construction of paired training data must therefore \emph{infer} a correspondence, and
+optimal transport is the standard framework for inferring one.
+
+The problem in its classical form asks for the cheapest way to move one distribution of mass onto
+another. Monge's original formulation seeks a map $T : \mathcal{X} \rightarrow \mathcal{Y}$ pushing a
+source measure $\mu$ onto a target $\nu$, so that $T_{\#}\mu = \nu$, while minimising
+\begin{equation}
+  \int_{\mathcal{X}} c\big(x, T(x)\big)\,\mathrm{d}\mu(x),
+\end{equation}
+where $c$ is a ground cost, typically squared Euclidean distance. This is intuitive --- every source
+point is assigned one destination --- but it is frequently ill-posed, because a deterministic map
+cannot split mass, and no such map exists when the target is more spread out than the source.
+Kantorovich's relaxation resolves this by replacing the map with a \emph{coupling}: a joint
+distribution $\pi \in \Pi(\mu,\nu)$ whose marginals are $\mu$ and $\nu$, giving
+\begin{equation}
+  \min_{\pi \in \Pi(\mu,\nu)} \int_{\mathcal{X}\times\mathcal{Y}} c(x,y)\,\mathrm{d}\pi(x,y).
+\end{equation}
+A coupling may send fractions of a source point to several destinations, which is what makes the
+relaxed problem always solvable and appropriate for noisy, overlapping empirical distributions. When
+$c$ is the $p$-th power of a metric the optimal value defines the $p$-Wasserstein distance
+$W_p(\mu,\nu)$; the case $p=2$ is the one used here, and its geodesics give a principled way to
+interpolate between distributions.
+
+Solved exactly, the discrete problem is a linear program with roughly $O(n^3 \log n)$ cost, which is
+prohibitive at single-cell scale. Entropic regularisation makes it tractable. Adding a negative
+entropy term to the objective,
+\begin{equation}
+  \min_{\pi \in \Pi(\mu,\nu)} \; \langle C, \pi \rangle \;-\; \varepsilon H(\pi),
+\end{equation}
+renders the problem strictly convex, so the optimum is unique and takes the scaling form
+$\pi = \operatorname{diag}(u)\,K\,\operatorname{diag}(v)$ with Gibbs kernel
+$K_{ij} = \exp(-c(x_i,y_j)/\varepsilon)$. The Sinkhorn--Knopp algorithm recovers $u$ and $v$ by
+alternating matrix--vector products~\cite{cuturi}, which are cheap and parallelise well on a GPU.
+
+The regularisation parameter $\varepsilon$ is not merely a computational convenience, and it is the
+reason this framework appears in this thesis at all. It controls how sharply mass is assigned. As
+$\varepsilon \rightarrow 0$ the coupling concentrates and approaches the unregularised solution, in
+which each control cell is matched to essentially one treated cell. As $\varepsilon$ grows the plan
+blurs, and in the limit every control cell is coupled equally to every treated cell --- the product
+of the marginals. Given a coupling, the \emph{barycentric projection} maps each control cell $x_i$ to
+the $\pi$-weighted average of its partners,
+\begin{equation}
+  \hat{y}(x_i) \;=\; \frac{\sum_j \pi_{ij}\, y_j}{\sum_j \pi_{ij}},
+\end{equation}
+and the two extremes of $\varepsilon$ therefore produce two familiar objects: at small $\varepsilon$
+a specific observed treated cell, and at large $\varepsilon$ the group mean. A sweep over
+$\varepsilon$ is thus a continuous interpolation between two target constructions that would
+otherwise have to be treated as unrelated alternatives, which is how Section~\ref{sec:res-epsilon}
+uses it.
+
+Applied to biology, this machinery has largely been used for trajectory inference. Waddington-OT
+\cite{schiebinger} treats the cell population at each time point as a distribution in expression
+space and recovers a probabilistic ancestor--descendant link between snapshots, on the assumption
+that cells follow paths minimising transport cost. Subsequent work relaxes the assumption that mass
+is conserved --- cells divide and die, so the two populations need not have equal total mass --- using
+unbalanced formulations built on the Wasserstein--Fisher--Rao metric. A separate line of work
+exploits the fact that when both measures are Gaussian the transport cost has a closed form, the
+Bures--Wasserstein distance, which splits cleanly into a shift in means and a change in covariance
+structure and so distinguishes a population that moved from one that merely spread out.
+
+Two practical points govern how couplings are computed here. The ground cost must be evaluated in a
+space where Euclidean distance is meaningful, and raw counts are not such a space: they are sparse,
+overdispersed and dominated by library size. Couplings are therefore computed in the released Tahoe
+scVI latent~\cite{scvi}, a variational autoencoder embedding that models counts with a
+negative-binomial likelihood and yields a compact continuous representation in which distances
+behave. And because the cost of a full coupling grows quadratically, transport is solved within
+matched groups --- a single cell line on a single plate --- rather than across the atlas, which is
+both computationally necessary and biologically correct, since a control cell from one cell line is
+not a plausible counterfactual partner for a treated cell from another.

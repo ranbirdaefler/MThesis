@@ -88,11 +88,20 @@ its own, larger, (drug, cell line)-keyed holdout for the same purpose
 expression, terminated by \ENDCELL. The prompt supplies cell line, drug, dose, mechanism, and the
 untreated control cell's own sentence; the response is the treated cell's sentence.
 
-\paragraph{Backbone.} \texttt{C2S-Scale-Pythia-1b}~\cite{c2sscale}, a C2S-Scale checkpoint built on
-the Pythia-1b decoder~\cite{pythia}, cold-started for every arm from
-the same base checkpoint with identical hyperparameters (1 epoch, learning rate $10^{-5}$,
-gradient accumulation 16, maximum length 8192, bf16), so that in each experiment the training
-target or objective is the only variable.
+\paragraph{Backbone.} \texttt{C2S-Scale-Pythia-1b-pt}~\cite{c2sscale}, a C2S-Scale checkpoint built
+on the Pythia-1b decoder~\cite{pythia}, cold-started for every arm from the same base checkpoint with
+identical hyperparameters (1 epoch, learning rate $10^{-5}$, gradient accumulation 16, maximum
+length 8192, bf16), so that in each experiment the training target or objective is the only
+variable.
+
+What that checkpoint has already seen bears directly on how the held-out splits should be read. It
+is pretrained on over 50 million human and mouse cells drawn from 825 single-cell datasets in
+CELLxGENE and the Human Cell Atlas --- an \emph{atlas} corpus, carrying no chemical or genetic
+perturbation data, and the released model card lists cell and tissue prediction, conditioned
+generation and gene-set conversion among its capabilities but not perturbation prediction. The base
+model therefore reaches our fine-tuning having never seen a drug-treated cell, which is what allows
+the tier-2 and tier-3 splits to mean what they claim: a drug held out here is unseen by the whole
+pipeline, not merely by its final stage.
 
 \paragraph{Sentinels.} \ENDCELL{} and, for the residual arm, \DOWN{} are registered as atomic
 special tokens. This matters: unregistered, \DOWN{} splits into sub-words and the up/down boundary
@@ -364,12 +373,38 @@ re-read with a forward hook projecting the subspace out at every position; the s
 KL divergence over response tokens. Measuring in logit space rather than by generating removes the
 sampling-noise floor that made an earlier steering experiment inconclusive.
 
-\paragraph{The identity test.} Ablation shows a subspace carries functional variance; it cannot show
-that the subspace's \emph{drug-specific content} is read. Only a swap can. For each cell that truly
-received drug A, drug A's code is overwritten with drug B's \emph{within the purified subspace}, and
-the resulting KL is compared against injecting a random vector of \emph{identical norm}. Drug means
-are estimated on a held-out half of the cells and the swap performed on the disjoint half, so
-mean-estimation noise cannot itself manufacture a null.
+\paragraph{The identity test, and two designs that failed before it.} Ablation shows a subspace
+carries functional variance; it cannot show that the subspace's \emph{drug-specific content} is read.
+Only a substitution can. Two attempts at one were retracted, and since the failures were instructive
+they are stated rather than hidden.
+
+The first overwrote drug A's code with drug B's inside a purified subspace and compared the resulting
+KL against a random vector of identical norm drawn in the \emph{full} residual stream --- so almost
+all of the control's energy lay in directions the intervention never touched. The second drew the
+random vector inside the subspace, which appeared to fix it and did not: the hook ablates before
+adding, so the delivered perturbation is (added $-$ removed), and because the injected class mean was
+uncentred it shared its global-mean component with the thing removed. The substitution arm was then
+a near-restore and the control arm a genuine displacement. Simulated with no model in the loop, the
+control delivers $5.3\times$ the perturbation in $100\%$ of draws. Both retracted results pointed the
+same way, and that way was geometry rather than biology.
+
+The design used here removes the ablation from the identity test. It injects a \emph{displacement}
+$P(\mu_B - \mu_A)$ --- in which the global mean cancels exactly --- and scores a \emph{contrast},
+\begin{equation}
+  \log P\!\left(r_B \mid \textrm{prompt}_A\right) \;-\; \log P\!\left(r_A \mid \textrm{prompt}_A\right),
+\end{equation}
+so that any shift common to both responses, including the entire normaliser, subtracts out. What
+survives is the model's preference between drug B's own held-out response and drug A's. The headline
+control is a second real drug displacement $P(\mu_C - \mu_A)$, rescaled to identical norm: same
+anchor, same construction, wrong drug. An isotropic in-subspace direction is retained only as an
+off-manifold damage diagnostic, never as the comparison, because a random direction disrupts the
+model in ways an on-manifold class-mean displacement does not.
+
+Subspaces and class means are fit on one split, $r_B$ drawn from a second disjoint split, and all
+scoring done on a third. Uncertainty is a cluster bootstrap over (A,B) pairs; equivalence requires
+the interval to lie inside a pre-registered margin \emph{and} contain zero; and a layer is excluded
+where the cell-line positive control has no dynamic range, since a saturated instrument cannot
+support either verdict.
 
 \subsection{Target constructions}
 

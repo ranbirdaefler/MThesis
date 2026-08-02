@@ -1,156 +1,149 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\subsection{Motivation}
+A compound that enters a cell changes what that cell transcribes. Which genes move, by how much,
+and in which direction is the most direct readout available of what the compound actually does ---
+not what it was designed to bind, but what the cell does in response. Reading that response is
+routine. Reading it for every combination that might matter is not. A compound behaves differently
+at different doses, and differently again depending on the genetic background of the cell receiving
+it, so the space to be explored is the product of three large sets rather than any one of them. Even
+the largest screens sample a small corner of it, and every combination left untested is a question
+left open.
 
-Predicting how a cell's transcriptome responds to a drug is one of the central computational
-problems in pharmacogenomics. If a model could take an untreated cell and a compound and emit the
-treated cell's expression profile, it would allow \emph{in silico} screening across combinations of
-compound, dose and cellular context that are far too numerous to assay experimentally.
+This is the gap prediction is meant to close. If the transcriptional response to a treatment could
+be computed rather than measured, the untested corners of that space would become inspectable, and
+the experiments actually run could be chosen because they are informative rather than because they
+happened to fit on the plate. The task, stated plainly, is this: given the transcriptome of an
+untreated cell and the identity of a drug, predict the transcriptome that cell would have shown had
+the drug been applied.
 
-Two developments make the problem newly tractable in principle. First, single-cell perturbation
-atlases have grown by orders of magnitude; Tahoe-100M~\cite{tahoe100m} provides roughly
-$100$ million drug-treated single-cell profiles across a panel of cancer cell lines. Second,
-single-cell foundation models~\cite{scgpt,geneformer} and, more specifically, the
-Cell2Sentence family~\cite{c2s,c2sscale} have shown that a cell's transcriptome can be serialised as
-a \emph{cell sentence} --- gene symbols listed in descending order of expression --- and modelled
-autoregressively by a pretrained language model. The combination invites an obvious experiment:
-fine-tune a cell-sentence language model on a large perturbation atlas and ask whether it learns
-drug-specific biology.
+The task is harder than it sounds, for a reason that is easy to state and impossible to engineer
+around. The ground truth is a counterfactual. Sequencing destroys the cell it reads, so the treated
+and untreated profiles of the same cell can never both be observed, and a prediction can only ever
+be checked against a different cell that received the drug. Everything downstream inherits this. It
+is why paired training data must be assembled by matching cells rather than by tracking them, why
+evaluation is usually framed at the level of populations rather than individuals, and why
+distinguishing a real drug effect from ordinary cell-to-cell variation requires care rather than
+optimism.
 
-This thesis reports that experiment and its outcome. The headline is negative, but the value is in
-\emph{why} it is negative and in how far the negative can be pushed before it stops being a property
-of the model and becomes a property of the data.
+Assembling data at the scale this problem demands became possible only recently. Two decades of
+falling sequencing costs, rising throughput and increasingly clever sample multiplexing turned
+single-cell profiling from a delicate experiment into something that can be run industrially, and
+Tahoe-100M~\cite{tahoe100m} is what the end of that trajectory looks like: roughly a hundred million
+single-cell transcriptomes spanning some 1,100 small molecules across 50 cancer cell lines. Every
+compound and every cell line appears not as a summary statistic but as a cloud of individual cells.
 
-\subsection{The question}
+That resolution changes which questions can be asked. The obvious one is conditional --- what does
+this compound do to this cellular context, rather than what does it do on average across contexts
+that may have little in common. The less obvious question is whether the first has an answer.
+Because many conditions were run more than once, it becomes possible to measure how much of an
+apparent drug effect reproduces across replicates and how much is simply the variability of the
+assay. That second measurement turns out to matter as much as the first, and a good deal of what
+follows rests on the observation that standard evaluations quietly confuse the two.
 
-We fine-tune \texttt{C2S-Scale-Pythia-1b} on Tahoe-100M and ask three questions in sequence:
+The other development behind this thesis has nothing to do with cells. Over the same period,
+pretrained transformer language models became unreasonably good and unreasonably general, and the
+engineering poured into them --- architectures, training recipes, scaling laws, the entire
+surrounding toolchain --- came to exceed what any single scientific field could plausibly assemble
+for itself. That created a standing temptation: if a problem can be made to look like text, it
+inherits all of that work for free.
 
-\begin{enumerate}
-  \item \textbf{Is the model any good?} Does it beat trivial baselines on a metric that is
-        \emph{calibrated} --- that is, on a metric a zero-information predictor cannot exploit?
-  \item \textbf{Does it use the drug at all?} If we hold the input cell fixed and change only the
-        drug token in the prompt, does the output change?
-  \item \textbf{If not, why not, and is it fixable?} Is the failure in the data, the architecture,
-        the training target, or the way the target is written down?
-\end{enumerate}
+Cell2Sentence~\cite{c2s} takes the temptation about as literally as it can be taken. Rank the genes
+in a cell from most to least expressed, write their names out in that order, and the cell becomes a
+sentence --- ordinary text that an ordinary language model can be fine-tuned on. The encoding is
+unsentimental about biology, discarding how much each gene is expressed and keeping only the
+ordering, on the argument that rank retains enough of the signal for the rest to be reconstructed.
+In exchange it requires no new architecture and no new training machinery, only cells written in a
+format that existing models already consume.
 
-The third question is where the work lives. A negative answer to (1) and (2) alone would take a side
-in an argument the field has not settled, and this thesis is best read as an attempt to adjudicate
-one corner of it.
+C2S-Scale~\cite{c2sscale} develops that idea into a family of models. Larger backbones are
+pretrained on over 50 million cells drawn from 825 single-cell datasets in CELLxGENE and the
+Human Cell Atlas, and then fine-tuned across a spread of tasks: predicting cell type and tissue,
+generating cells conditioned on a label, captioning clusters, answering questions about a dataset in
+natural language, and predicting perturbation responses. That last task is the one this thesis
+builds on, and it is worth being specific about its scope. Their perturbation work covers cytokine
+stimulation in peripheral blood cells, and, for small molecules, bulk L1000 profiles and the
+SciPlex3 panel. The single-cell results are scored as distributions --- how closely the generated
+population for a condition resembles the observed one --- rather than condition by condition. The
+checkpoint used throughout this thesis, \texttt{C2S-Scale-Pythia-1b-pt}, is the pretrained model
+from that family: atlas data only, with no drug-treated cells among it.
 
-\subsection{An unsettled dispute}
+What we do is extend that line of work to chemical perturbation at the scale Tahoe-100M now makes
+available, and evaluate it as a prediction problem in the strict sense --- condition by condition,
+against controls chosen so that a model which ignores the drug cannot pass. The question is whether
+a cell-sentence model fine-tuned on this atlas learns what a particular compound does to a
+particular cell.
 
-Two camps disagree about whether deep perturbation models work at all.
+Two things are worth keeping straight about what the model has actually seen, since the scale of the
+atlas invites an easy overstatement. Its pretraining is large but drug-free: tens of millions of
+cells, none of them treated with anything. And the fine-tuning does not consume Tahoe entire --- it
+draws a sample of a few hundred thousand treated cells from it, which is ample for the task but is
+not a hundred million. Whatever the model learns about drugs, it learns during fine-tuning, from
+that sample.
 
-\emph{Against}: Ahlmann-Eltze, Huber and Anders~\cite{ahlmanneltze} report that deep-learning-based
-gene perturbation effect prediction does not outperform simple linear baselines;
-DrEval~\cite{dreval} finds that deep models barely beat a naive predictor of mean drug and
-cell-line effects; and several independent benchmarks
-concur~\cite{csendes,bendidi,kernfeld,perturbench}. The recurring finding is that a
-\emph{per-perturbation mean} is remarkably hard to beat.
+It does learn something, and the something is the difficulty. The model acquires a good account of
+what a treated cell looks like \emph{in general} --- the shared shape that perturbed transcriptomes
+have in common, which is substantial and largely the same whichever compound produced it. What it
+does not acquire is the part that distinguishes one compound from another. Change the drug named in
+the prompt while holding the input cell fixed, and the prediction barely moves; on the calibrated
+metric the model is statistically indistinguishable from a baseline that copies the untreated cell
+and is told nothing about any drug at all.
 
-\emph{For}: Miller et al.~\cite{miller} argue that these conclusions stem from the
-\emph{metrics}, not the models. They introduce a framework of positive and negative controls and a
-quantitative calibration measure --- the Dynamic Range Fraction --- and show across 14 Perturb-seq
-datasets that common metrics such as MSE and control-referenced correlation are poorly calibrated,
-while weighted and rank-based alternatives are not. Under calibrated metrics, they report, deep
-models \emph{do} beat mean, control and linear baselines.
+A second comparison is worth separating from that one, because it is weaker but more informative. A
+per-drug average, estimated from the same compound in \emph{other} cell lines, also outperforms the
+model --- but this is not a naive baseline. It is very nearly the best any method can do at the part
+of the problem it addresses, scoring $0.963$ against a replicate ceiling of $0.968$, and being close
+to it would be a real achievement rather than a low bar. What it cannot do is condition on the cell
+in front of it, which is precisely why the comparison is useful: it separates the drug's average
+effect from the part that depends on context. Section~\ref{sec:res-transfer} measures that split, and
+finds the second part worth roughly half the drug-specific signal --- reached by the average, by the
+model, and by the literature alike, which is to say not at all.
 
-The disagreement is empirically decidable, but only within the setting where it is tested --- and
-the setting of this thesis has not been tested by either camp. Miller and Ahlmann-Eltze study
-\textbf{genetic} perturbation; DrEval studies \textbf{drug sensitivity} as a scalar potency. None
-studies drug perturbation predicted as a full transcriptomic response by a generative language
-model.
+A negative result earns its place only if it can be made specific, and that is the organising
+principle of what follows. We establish first that the failure is real rather than an artifact of
+how this field measures success --- a distinction less pedantic than it sounds, since the standard
+metric can be saturated by a predictor that knows nothing about drugs. We then locate where in the
+pipeline the failure originates, show that the location implies a repair, apply it, and finally
+bound how much of the problem any method of this kind could recover even if that repair were
+perfect. The thesis therefore ends not in closure but in a number: a measured fraction of the
+drug-specific signal claimed by nothing in the literature, by no baseline we could construct, and by
+none of our own models.
 
-Our approach is to adopt the \emph{proponents'} instrument. We port Miller's calibration framework
-and confirm its central methodological claim emphatically --- in our setting only one metric of five
-is calibrated at all --- and then evaluate the model on precisely the metric their analysis
-endorses. Siding with the sceptics using the proponents' own instrument is the strongest available
-form of the argument, since it cannot be answered by the objection their paper itself raises. What
-this thesis adds beyond the verdict is a mechanism for the failure, a repair that follows from the
-mechanism, and a quantitative bound on how much the repair can ever recover.
-
-\subsection{Summary of findings}
-
-\begin{description}
-  \item[The evaluation is the first result.] The metric the field standardises on is exploitable.
-        A zero-information baseline that places every gene at the middle rank scores
-        $\DEdr = 1.000$ --- above the noise ceiling ($0.76$) and above the model ($0.73$). The
-        ordering is inverted: less information yields a higher score. Under a Dynamic Range Fraction
-        analysis~\cite{miller} computed within plate, $\NIR$ is the only calibrated metric
-        ($\DRF = +0.446$); of the four prediction metrics we tested, three are clearly inverted --- they reward the generic gene ordering rather than the drug --- and the fourth is approximately neutral.
-
-  \item[The model is drug-blind.] On every instrument that isolates the drug --- forced-choice
-        grading, output invariance, the scramble ablation, and $\NIR$ --- the model is at chance and
-        statistically indistinguishable from a prompt carrying the \emph{wrong} drug. A
-        zero-drug-information control-copy baseline scores $0.766$ against the model's $0.768$.
-
-  \item[The blindness is a readout failure, not an encoding failure.] Drug identity is linearly
-        decodable from the residual stream at $82\%$ (layer 9) and rises to $0.88$ by layer 16 once
-        context is projected out, while the drug subspace's causal variance share stays flat near
-        $3\%$. A matched-norm activation swap --- overwriting drug A's code with drug B's inside the
-        confound-purified drug subspace --- perturbs the output \emph{no more than matched noise} at
-        every depth tested. The generation readout is sensitive to the \emph{magnitude} of activity
-        in the drug region and blind to its \emph{direction}.
-
-  \item[No target-side fix is sufficient.] Entropic optimal-transport regularisation gives a
-        one-parameter family whose endpoints are exactly the two target-side repairs we tried.
-        Sweeping it leaves the model in the near-null regime throughout: one arm shows a weak effect
-        under a sharper test introduced later, and even that sits roughly five-fold below what
-        changing the \emph{encoding} achieves.
-
-  \item[The bottleneck is the tokenisation.] Because a cell sentence ranks genes by expression,
-        $83\%$ of the target tokens are identical between any two drugs in the same context.
-        Cross-entropy therefore allocates roughly $1\%$ of its gradient to drug identity.
-        Re-encoding the target as the \emph{drug-specific residual} raises the differing fraction to
-        $59\%$ and produces the first non-null drug effect in this project:
-        $\gap = \ci{+0.143}{+0.111}{+0.179}$.
-
-  \item[And it generalises.] On a holdout keyed at the (drug, cell line) level, conditions whose
-        \emph{pairing} was never trained on score $\gap = \ci{+0.1002}{+0.0661}{+0.1368}$
-        ($n=250$, 38 cell lines), statistically indistinguishable from the trained split's
-        $+0.0898$. There is no memorisation premium: the model learned a drug representation that
-        transfers to cell lines in which it never saw that drug.
-
-  \item[But a lookup table wins.] A per-drug mean residual measured in \emph{other} cell lines
-        scores $\NIR = 0.963$ against a replicate ceiling of $0.968$; the $1$B-parameter model
-        reaches $0.639$. The model does not merely fail to capture the drug's context-dependence ---
-        it fails to capture the \emph{main effect} that a lookup table obtains for free.
-
-  \item[And yet the lookup is not the ceiling either.] Because $\NIR$ compresses near the top of its
-        range, $\texttt{drug\_lookup} \approx \textrm{ceiling}$ does not mean the modelling target
-        has vanished. Measured in cosine space with measurement noise divided out, the transfer
-        coefficient is $\Tcoef = \ci{0.557}{0.513}{0.601}$ against a simulated $\kappa = 0$ null of
-        $1.001$, with a structure-matched negative control at $+0.000$: \textbf{roughly $45\%$ of
-        the drug-specific signal is a drug$\times$cell-line interaction that no lookup can reach and
-        that the model does not reach either.} The thesis therefore ends not in closure but in a
-        quantified, unclaimed target.
-\end{description}
-
-\subsection{Contributions}
+Four questions carry that argument, in order:
 
 \begin{enumerate}
-  \item A \textbf{metric-calibration audit} demonstrating that the standard evaluation for
-        single-cell perturbation prediction is saturated by a control regression-to-the-mean
-        artifact, with a zero-information baseline that scores above the noise ceiling. This
-        transfers to any work using $\DEdr$-family metrics.
-  \item A \textbf{mechanistic localisation} of drug-blindness to the generation readout, using
-        logit-space ablation with a confound-purified subspace, a passing removal gate, a positive
-        control, and a translation-clean matched-norm swap.
-  \item A \textbf{repair} --- residual target encoding --- that produces drug use which generalises
-        to unseen (drug, cell line) pairings with no memorisation premium.
-  \item A \textbf{quantitative bound} on the remaining headroom, separating the per-drug main effect
-        from the drug$\times$cell-line interaction, and showing that the latter --- worth about half
-        the drug-specific variance --- is reached by nothing in the literature or in this thesis.
+  \item \textbf{Is the evaluation trustworthy?} Before asking whether a model is any good, one has
+        to ask whether the metric could tell. Can a predictor carrying no drug information score
+        well on the measures the field has standardised on, and if so, which measures survive?
+  \item \textbf{Does the model use the drug at all?} Holding the input cell fixed and changing only
+        the compound it is told about, does the prediction move --- and does it move in the
+        direction the real response moved?
+  \item \textbf{If not, where does the failure live?} Is the drug missing from the data, missing
+        from the model's internal representation, or present in that representation but ignored by
+        the process that writes the output? Each answer implies a different repair, and only one of
+        them is cheap.
+  \item \textbf{How much is recoverable at all?} A per-drug average is a strong baseline. How much
+        of the drug-specific signal does it capture, how much is genuinely conditional on cellular
+        context, and how much does any method --- ours or anyone else's --- actually reach?
 \end{enumerate}
 
-\subsection{Outline}
+The contributions follow the same order. We audit the calibration of the standard evaluation and
+show that it can be saturated by a predictor carrying no drug information whatsoever, which bears on
+any work built from the same family of metrics. We establish drug-blindness on the one metric that
+survives that audit, using several independent instruments so that no single measurement carries the
+claim alone. We identify the target encoding --- not the data, the architecture, or the training
+objective --- as the binding constraint, and derive from that diagnosis a re-encoding of the
+prediction target which produces the first measurable drug effect in this project and generalises to
+drug-and-cell-line pairings never seen during training. And we separate the per-drug main effect
+from the drug-by-cell-line interaction, showing that the interaction accounts for roughly half the
+drug-specific signal and is reached by neither the lookup baseline nor the model.
 
-Section~\ref{sec:litreview} places the work against single-cell foundation models, the perturbation
-prediction literature, the baseline critique, and the connectivity-mapping tradition whose central
-assumption this thesis ends up measuring. Section~\ref{sec:methods} describes the data, the model,
-the metric-calibration framework, and --- at length, because they are load-bearing --- the controls
-that make each negative result interpretable. Section~\ref{sec:results} reports the results in the
-order the argument requires. Section~\ref{sec:limitations} states the scope honestly, including the
-channels closed by measurement and the ones merely untested. Section~\ref{sec:conclusions} concludes.
+The thesis proceeds as follows. Section~\ref{sec:litreview} places the work against single-cell
+foundation models, the perturbation-prediction literature, and an unsettled dispute within it about
+whether deep models beat trivial baselines at all --- a dispute this thesis adjudicates in one
+corner, using the instruments of the side it ultimately argues against. Section~\ref{sec:methods}
+covers the data, the model, the calibration framework, and, at some length because they carry the
+argument, the controls that make each negative result interpretable. Section~\ref{sec:results}
+reports the findings in the order the argument needs rather than the order in which they arrived.
+Section~\ref{sec:limitations} sets out the scope honestly, separating what is closed by measurement
+from what is merely untested, and Section~\ref{sec:conclusions} concludes.

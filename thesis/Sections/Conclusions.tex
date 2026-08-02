@@ -22,20 +22,30 @@ That is the strongest form the sceptical result can take: it cannot be answered 
 their paper raises. Their conclusion is not overturned so much as bounded --- it does not extend
 from genetic perturbation to this task, and the per-drug-constant finding above suggests why.
 
-\paragraph{The model is drug-blind, and the blindness is a readout failure.} Four independent
+\paragraph{The model is drug-blind, and the representation is not the reason.} Four independent
 instruments agree that swapping the drug token changes the output by nothing. Yet drug identity is
 linearly decodable from the residual stream, rising to $0.88$ by layer 16 with context removed,
-while the purified drug subspace's causal variance share stays flat near $3\%$. A matched-norm swap
---- overwriting one drug's code with another's --- moves the output no more than matched noise at
-every depth. The model computes an increasingly explicit drug representation and sets it aside. Read
-through representational selectivity, the asymmetry is principled: cell-line conditioning is a fixed
-lookup that emitting any plausible profile requires, whereas drug$\rightarrow$gene response demands
-flexible composition and never enters the causally active subspace.
+while the purified drug subspace's causal variance share stays flat near $3\%$. The model computes an
+increasingly explicit drug representation and does not act on it --- a dissociation between what is
+encoded and what is used.
 
-\paragraph{The bottleneck was the tokenisation, and it is repairable.} Because a cell sentence ranks
-genes by expression, $83\%$ of the target tokens are identical between any two drugs in the same
-context, so cross-entropy allocates roughly $1\%$ of its gradient to drug identity. This explains a
-uniform pattern of failure: an entire $\varepsilon$-ladder of target constructions, from a single
+How far that can be pushed toward a mechanism is limited, and the limit should be stated plainly.
+Two earlier attempts to localise the failure by activation swapping were retracted after their
+matched controls were found confounded, and what replaces them
+(Section~\ref{sec:res-mechanism}) is a small, replicated, single-layer effect present in one training
+arm and absent in another. That supports the modest reading --- the generation readout consults the
+drug representation at very low gain --- and does not support a claim about privileged subspaces or
+global workspaces, which is offered here as an interpretive frame rather than a result.
+
+\paragraph{The bottleneck appears to be the tokenisation, and it is repairable.} Because a cell
+sentence ranks genes by expression, the targets for two different drugs in the same context are
+nearly the same string: $82.7\%$ of the top-$200$ genes are shared, so only about a sixth of the
+target distinguishes one drug from another. Since the training loss weights every token position
+equally, the natural inference is that very little of the gradient can be carrying drug identity ---
+but that inference is a \emph{hypothesis} about the optimisation, not a measurement of it. What is
+measured here is the overlap of the target gene sets; no token-level loss or gradient attribution was
+computed, and the claim should be read at that strength. What follows is that the hypothesis makes
+correct predictions, which is the evidence for it. It explains a uniform pattern of failure: an entire $\varepsilon$-ladder of target constructions, from a single
 state-matched treated cell to a full pseudobulk collapse, stays in the near-null regime, because all
 of them change \emph{what the target is} and none change \emph{what the tokens encode}. (One arm,
 the optimal-transport target, does show a weak effect once a sharper stratified test is applied ---
@@ -95,11 +105,20 @@ needs in order to mean anything.
 between them they redirect what follows from this work.
 
 The drug$\times$cell-line interaction is large --- roughly $45\%$ of the drug-specific variance ---
-but it has \emph{no learnable structure}: no cell line modulates different drugs in a consistent
-direction, with an excess within-line consistency of $-0.007$ and, at plate scope, an interval excluding anything above $+0.002$. So the interaction behaves as irreducible noise for any predictor, and a lookup
-scoring $0.963$ against a $0.968$ ceiling is not evidence that the target has vanished but that the
-lookup is already at the \emph{achievable} ceiling. On seen drugs, nothing beats retrieval, and that
-is a statement about the data rather than about any model.
+and we could not find structure in it. No cell line modulates different drugs in a consistent
+direction (excess within-line consistency $-0.007$, and at plate scope an interval excluding anything
+above $+0.002$), and a direct test of whether mechanism-matched drugs share an interaction with a
+given cell line returned nothing detectable (permutation $p \approx 0.15$--$0.31$).
+
+Those are two negative results and they do not license the conclusion that the interaction is
+irreducible. The second test bounds its own power severely: the interaction's split-half reliability
+in this atlas is $0.195$, so $\kappa$ is barely estimable, and same-mechanism compounds are so
+heavily co-plated that only $3$--$7\%$ of matched pairs survive a different-plate requirement. The
+honest statement is that the structure of the interaction is \emph{unresolved here}, and that
+resolving it needs more cells per condition or a plating design that crosses mechanism with plate ---
+neither of which is an analysis choice. What can be said without qualification is that a lookup
+scoring $0.963$ against a $0.968$ ceiling is already close to what a per-drug constant can achieve,
+so on seen drugs nothing we built beats retrieval.
 
 But a lookup requires the drug to have been seen. For drugs that have not been, protein-target and
 mechanism annotations carry real signal against count-matched nulls

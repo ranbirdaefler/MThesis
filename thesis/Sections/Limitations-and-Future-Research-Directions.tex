@@ -115,6 +115,41 @@ therefore less promising than it appeared before Section~\ref{sec:res-transfer} 
         (Section~\ref{sec:res-mechanism}), it addresses token dilution but not the actual defect.
 \end{itemize}
 
+\paragraph{One model size, and the smallest one.} Every result here comes from a 1B-parameter
+backbone. C2S-Scale releases checkpoints up to Gemma-2 at 27B, and we tested none of them, so the
+most predictable question an examiner can ask --- does it work if the model is bigger --- has no
+answer in this thesis.
+
+Two things can be said about what we would expect, and they point in different directions. The
+bottleneck this work identifies is not capacity. It is that roughly $1\%$ of the training gradient
+reaches drug identity, because the target tokens are overwhelmingly shared across drugs
+(Section~\ref{sec:res-encoding}); a larger model receives the same diluted signal from the same
+objective, and the fact that re-encoding the target lifted the effect while leaving capacity
+untouched is evidence that the constraint binds where we say it does.
+
+The genuinely different argument for scale is not capacity but \emph{prior knowledge}. A 27B model
+pretrained on far more text plausibly knows, as a fact about the world, that a named compound
+inhibits a named kinase --- knowledge a 1B model may simply lack. That matters here because
+Section~\ref{sec:res-field} finds the model reads the drug \emph{name} but not the
+\emph{mechanism} field it is already handed, and a model with real pharmacological knowledge is
+exactly the case where that might change. This is a sharper hypothesis than ``bigger is better'' and
+it is testable cheaply with a low-rank adaptation of a mid-sized checkpoint rather than a full
+fine-tune. We did not run it, and it is the first thing we would run with more time.
+
+\paragraph{The starting checkpoint was never prepared for this task.} We fine-tune from
+\texttt{C2S-Scale-Pythia-1b-pt}, which is pretrained on atlas data alone --- CELLxGENE and the Human
+Cell Atlas, no perturbation corpus of any kind --- and whose released capabilities do not include
+perturbation prediction. This cuts two ways and both should be stated. It is why the held-out splits
+are clean: a drug withheld here was never seen at any stage, so nothing in the pipeline can have
+memorised it. But it also means the failure we report is a failure of \emph{this} starting point, and
+a reader may reasonably ask whether a checkpoint already tuned for perturbation prediction would
+behave differently. We cannot answer that from the public artifacts. The perturbation-specialised
+model in the same line of work is a Gemma-3 4B checkpoint that was not released, and the available
+C2S-Scale checkpoints are the pretrained ones. What we can say is narrower and worth separating from
+the broader claim: every arm in this thesis starts from the same base and differs only in the
+variable under test, so the \emph{comparisons} between arms are unaffected by this choice even where
+the absolute level is not.
+
 \paragraph{Generality.} Everything here is one backbone on one atlas in one representation. Whether
 the readout-specificity failure is a property of cell-sentence models specifically, or of
 autoregressive conditional generation over transcriptomes generally, is open. The mechanistic
