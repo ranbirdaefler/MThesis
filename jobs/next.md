@@ -691,6 +691,88 @@ current run --- a transductive builder is a defect regardless of how large its e
 
 ---
 
+## 8. `unitaudit.sbatch` — what is the physical experiment?  (CPU, ~30 min)  **[Step 2]**
+
+A discovery step, and the one that sets the cost of the rebuild. Tahoe assigns a treatment to a
+**sample/well** holding a mixture of cell lines; the per-line profiles are deconvolved observations
+nested inside one assignment. Every analysis in this repository instead keys on
+`(drug, cell_line, plate, dose)`, and that tuple does not identify a physical experiment.
+
+Six questions, each of which changes what happens next:
+
+1. **Is `dose` holding sample identifiers?** If yes, sample identity is *mislabelled, not lost*, and
+   the cache can be enriched in place rather than rebuilt. This is the largest cost fork in the whole
+   remediation.
+2. **How many cell lines nest inside one treatment?** That number is the pseudoreplication factor and
+   it sets the clustering unit for every interval in the thesis.
+3. **Do replicate treatments exist** --- the same drug at the same molar dose in independent wells?
+   If not, `repro_cos` measures split-half sampling precision within one well and cannot be called
+   biological reproducibility. If so, the reliability story gets stronger and an independent-well
+   analysis becomes available.
+4. **How many samples are combinations?** The shipped parser takes the first component, so any
+   multi-drug sample has been analysed as single-drug.
+5. **What fraction of conditions yield a molar dose** once parsed properly?
+6. **Does any sample cross the existing holdout?** If one physical treatment has conditions on both
+   sides, the split is broken at the assignment level and careful fitting cannot repair it --- the new
+   split must be assigned by sample.
+
+```bash
+scp shared/tahoe_design.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+scp endcell/analysis/experimental_unit_audit.py 3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > unitaudit.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=unitaudit
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64G
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/unitaudit_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+
+$PY tahoe_design.py --selftest
+$PY experimental_unit_audit.py --selftest
+
+$PY experimental_unit_audit.py --cache_dir "$D/ot_cache" \
+    --holdout "$D/residual_targets_holdout2/holdout.json" \
+    --out RESULTS/experimental_unit_audit.json
+echo done
+EOF
+sbatch unitaudit.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/unitaudit_*.out | head -1); grep -nE "SELFTEST|verdict|cell lines per sample|treatment samples|spanning|distinct \(drug|replicated in|samples per treatment|combination|carrying|usable molar|unusable|CROSSING|WHAT THIS DECIDES|->" $LOG
+```
+
+**What each answer changes.**
+
+| finding | consequence |
+|---|---|
+| `dose` holds sample IDs | enrich the cache in place (Step 3 stays ~half a day) |
+| it does not | full cache rebuild (Step 3 becomes ~1.5 days plus CPU) |
+| replicate wells exist | independent-well reliability available; `repro_cos` can be validated against it |
+| none exist | rename `repro_cos` to split-half precision everywhere and drop Workstream H's replicate arm |
+| combination samples present | exclude them explicitly before the retrain, and say so |
+| any sample crosses the split | the new split manifest must be keyed by **sample**, not condition |
+
+Nothing in this job changes a thesis number. It decides which version of Steps 3 and 4 gets written,
+and it supplies the pseudoreplication factor that every corrected confidence interval needs.
+
+---
+
 ## Validated locally before sending
 
 | check | result |
