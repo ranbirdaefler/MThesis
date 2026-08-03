@@ -162,13 +162,23 @@ def audit(meta, samples, split=None):
     logger.info(f"    of which replicated in >1 sample: {n_replicated} "
                 f"({100.0*n_replicated/max(1,len(by_treat)):.0f}%)")
     logger.info(f"    samples per treatment: {dict(sorted(rep_counts.items()))}")
-    if n_replicated == 0:
-        logger.info("    -> NO independent-well replication. `repro_cos` measures split-half")
-        logger.info("       sampling precision within ONE well and must not be called biological")
-        logger.info("       reproducibility. Workstream H's replicate analysis is not available.")
+    # A COUNT IS NOT A RATE. `n_replicated > 0` fired on 1 replicated treatment out of 287 and
+    # printed "replication EXISTS", which is true and useless: one treatment cannot estimate
+    # reproducibility. The verdict is a fraction, and the threshold is stated.
+    frac_rep = n_replicated / max(1, len(by_treat))
+    rep["frac_treatments_replicated"] = round(frac_rep, 4)
+    rep["replication_usable"] = bool(n_replicated >= 20 and frac_rep >= 0.05)
+    if not rep["replication_usable"]:
+        logger.info(f"    -> effectively NO independent-well replication ({n_replicated} of "
+                    f"{len(by_treat)} treatments, {100*frac_rep:.1f}%). `repro_cos` measures")
+        logger.info("       split-half sampling precision within ONE well and must not be called")
+        logger.info("       biological reproducibility. Workstream H's replicate arm does not exist,")
+        logger.info("       and the disattenuation divisor is a within-well quantity -- so any")
+        logger.info("       interaction share it produces is, if anything, UNDERSTATED.")
     else:
-        logger.info("    -> independent-well replication EXISTS; biological reproducibility can be")
-        logger.info("       estimated on that subset rather than inferred from split halves.")
+        logger.info(f"    -> independent-well replication is usable ({n_replicated} treatments, "
+                    f"{100*frac_rep:.0f}%); biological reproducibility can be estimated on that")
+        logger.info("       subset rather than inferred from split halves.")
 
     # within-cell-line plate replication, which is what the cache's plate labels can support
     by_dcl = defaultdict(set)

@@ -566,6 +566,56 @@ def main():
     report(recs, args, rng, gen_stats, pred_by_cl, kept)
 
 
+def _two_way_ci(recs, key_a, key_b):
+    """Cameron-Gelbach-Miller two-way cluster-robust interval for the mean paired difference.
+
+    THE DESIGN IS CROSSED, NOT NESTED, and that is why neither single clustering is correct. The
+    experimental-unit audit measured 48.6 cell lines per treated well across 289 wells: a well
+    contains many cell lines AND a cell line appears in many wells. Two conditions sharing a well
+    share the drug assignment and the batch; two conditions sharing a cell line share the biology.
+    Clustering on cell lines alone (about 50 clusters) ignores the first; clustering on wells alone
+    (289 clusters) ignores the second and, because there are more wells than lines, actually gives a
+    NARROWER interval -- so "cluster on the well instead" would have been the anti-conservative move.
+
+        V_2way = V_line + V_well - V_intersection
+
+    The intersection of the two groupings is the condition itself, so V_intersection is the ordinary
+    independent-sampling variance. The estimator can go negative in finite samples; when it does we
+    fall back to the wider of the two one-way variances and say so.
+    """
+    rows = [r for r in recs if r.get(key_a) is not None and r.get(key_b) is not None]
+    if len(rows) < 3:
+        return None
+    d = np.array([r[key_a] - r[key_b] for r in rows], float)
+    n = len(d)
+    m = float(d.mean())
+    dev = d - m
+
+    def v_of(keyname):
+        g = defaultdict(list)
+        for i, r in enumerate(rows):
+            g[r.get(keyname, r["cell_line"])].append(i)
+        if len(g) < 2:
+            return None
+        s = sum(dev[idx].sum() ** 2 for idx in g.values())
+        return (len(g) / max(1, len(g) - 1)) * s / (n ** 2)
+
+    v_line, v_well = v_of("cell_line"), v_of("sample_id")
+    v_int = float((dev ** 2).sum()) / (n ** 2)
+    if v_line is None or v_well is None:
+        v = v_line if v_well is None else v_well
+        note = "one_way_only"
+    else:
+        v = v_line + v_well - v_int
+        note = "two_way"
+        if v <= 0:
+            v, note = max(v_line, v_well), "two_way_negative_fell_back_to_wider_one_way"
+    se = float(np.sqrt(max(v, 0.0)))
+    n_line = len({r["cell_line"] for r in rows})
+    n_well = len({r.get("sample_id") for r in rows})
+    return m, m - 1.96 * se, m + 1.96 * se, n, f"{n_line}L/{n_well}W:{note}"
+
+
 def _clustered_ci(recs, key_a, key_b, rng, n_boot, cluster="cell_line"):
     """Clustered bootstrap. `cluster` selects the independence unit.
 
@@ -575,6 +625,8 @@ def _clustered_ci(recs, key_a, key_b, rng, n_boot, cluster="cell_line"):
     independent and produces intervals that are too narrow by whatever the well-level ICC is.
     `cluster="sample_id"` resamples wells instead, which is the unit the design supports.
     """
+    if cluster == "two_way":
+        return _two_way_ci(recs, key_a, key_b)
     pairs = [(r.get(cluster, r["cell_line"]), r[key_a] - r[key_b]) for r in recs
              if r.get(key_a) is not None and r.get(key_b) is not None]
     if not pairs:
@@ -639,8 +691,10 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     # which is separate from "does the model react to the drug token" (model - scramble).
     logger.info("-" * 100)
     logger.info("  model - BASELINE. Two intervals: clustered over CELL LINES (as previously")
-    logger.info("  reported) and over treated WELLS, which is the unit the design actually supports --")
-    logger.info("  one Tahoe well carries many cell lines, so lines within a well are not independent.")
+    logger.info("  reported), and TWO-WAY cluster-robust over lines AND wells. The design is crossed --")
+    logger.info("  48.6 cell lines per well, each line in many wells -- so neither grouping alone")
+    logger.info("  captures the dependence, and there are MORE wells than lines, which means")
+    logger.info("  clustering on wells alone would have been the anti-conservative choice.")
     logger.info("  `_oracle` rows are fitted over the FULL cache and are not baselines the model could")
     logger.info("  fairly be asked to beat; they bound how much the fair lookups were inflated.")
     base_out = {}
@@ -651,15 +705,15 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
             continue
         m, lo, hi, n, ncl = r
         base_out[b] = {"gap": m, "ci": [lo, hi], "n": n, "n_cell_lines": ncl}
-        w = _clustered_ci(recs, "model", b, rng, args.n_boot, cluster="sample_id")
+        w = _clustered_ci(recs, "model", b, rng, args.n_boot, cluster="two_way")
         if w:
-            _, wlo, whi, _, nw = w
-            base_out[b]["ci_by_well"] = [wlo, whi]
-            base_out[b]["n_wells"] = nw
+            _, wlo, whi, _, note = w
+            base_out[b]["ci_two_way"] = [wlo, whi]
+            base_out[b]["two_way_note"] = note
             widen = (whi - wlo) / max(1e-9, hi - lo)
-            base_out[b]["well_widening"] = round(widen, 3)
+            base_out[b]["two_way_widening"] = round(widen, 3)
             logger.info(f"    model - {b:20s} {m:+.4f}  line [{lo:+.4f}, {hi:+.4f}]  "
-                        f"well [{wlo:+.4f}, {whi:+.4f}] (x{widen:.2f})  n={n}  "
+                        f"2way [{wlo:+.4f}, {whi:+.4f}] (x{widen:.2f}, {note})  n={n}  "
                         f"{'model WINS' if wlo > 0 else ('model LOSES' if whi < 0 else 'tie')}")
         else:
             logger.info(f"    model - {b:20s} {m:+.4f}  line [{lo:+.4f}, {hi:+.4f}]  n={n}")
@@ -702,30 +756,30 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     for strat in ("near", "orth", "opposite"):
         r = _clustered_ci(recs, "model", f"scramble_{strat}", rng, args.n_boot)
         rw = _clustered_ci(recs, "model", f"scramble_{strat}", rng, args.n_boot,
-                           cluster="sample_id")
+                           cluster="two_way")
         if r:
             m, lo, hi, n, ncl = r
             mc = np.mean([x[f"cos_{strat}"] for x in recs if x.get(f"cos_{strat}") is not None])
             strat_out[strat] = {"gap": m, "ci": [lo, hi], "n": n, "mean_cos": float(mc)}
             if rw:
-                _, wlo, whi, _, nw = rw
-                strat_out[strat]["ci_by_well"] = [wlo, whi]
-                strat_out[strat]["n_wells"] = nw
-            # the WELL interval is the one that decides, since lines inside a well are not
-            # independent assignments of the drug
+                _, wlo, whi, _, note = rw
+                strat_out[strat]["ci_two_way"] = [wlo, whi]
+                strat_out[strat]["two_way_note"] = note
+            # the TWO-WAY interval decides: the design is crossed, so neither cell lines nor wells
+            # alone capture the dependence (see _two_way_ci)
             dlo, dhi = (rw[1], rw[2]) if rw else (lo, hi)
             flag = "CI excludes 0" if dlo > 0 else "CI spans 0"
             logger.info(f"    {strat:9s} (mean cos(A,B)={mc:+.2f})  gap = {m:+.4f}  "
-                        f"line [{lo:+.4f}, {hi:+.4f}]  well [{dlo:+.4f}, {dhi:+.4f}]  {flag}")
+                        f"line [{lo:+.4f}, {hi:+.4f}]  2way [{dlo:+.4f}, {dhi:+.4f}]  {flag}")
     if len(strat_out) == 3:
         mono = strat_out["opposite"]["gap"] > strat_out["near"]["gap"]
         logger.info(f"    >>> gap grows with dissimilarity: {'YES' if mono else 'NO'} "
                     f"(near {strat_out['near']['gap']:+.4f} -> opposite {strat_out['opposite']['gap']:+.4f}). "
                     f"{'Consistent with genuine drug use.' if mono else 'A flat profile is a red flag.'}")
         best = strat_out["opposite"]
-        blo, bhi = best.get("ci_by_well", best["ci"])
+        blo, bhi = best.get("ci_two_way", best["ci"])
         logger.info(f"    >>> HEADLINE (opposite-signature swap, different drug, same plate): "
-                    f"{best['gap']:+.4f} well-clustered CI [{blo:+.4f}, {bhi:+.4f}] -> "
+                    f"{best['gap']:+.4f} two-way clustered CI [{blo:+.4f}, {bhi:+.4f}] -> "
                     f"{'DRUG USE' if blo > 0 else 'NULL'}")
 
     # --- (2) MODE COLLAPSE: are predictions for different drugs actually different? ---
