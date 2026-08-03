@@ -157,8 +157,13 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
         sed = math.sqrt(ci_a["se"] ** 2 + ci_b["se"] ** 2)
         d = float(np.mean(a) - np.mean(b))
         z = d / sed if sed > 0 else float("nan")
-        pc = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z) / math.sqrt(2.0))))
         dfp = max(1, min(ci_a.get("df", 1), ci_b.get("df", 1)))
+        # THE P MUST USE THE SAME REFERENCE AS THE INTERVAL. This computed the interval from a
+        # Student-t critical value and the p-value from a normal, which is incoherent -- the same
+        # statistic cannot be significant under one reference and reported under another. With
+        # df=30 the pooled difference moves p 0.0150 -> 0.0212, and the drug-matched contrast
+        # 0.4765 -> 0.4852 at df=19. Neither verdict changes; both numbers were wrong.
+        pc = 2.0 * (1.0 - inf._t_cdf(abs(z), dfp))
         tc = inf.crit(0.05, dfp)
         clustered = {"difference": d, "se": sed, "z": z, "p": pc, "df": dfp,
                      "covariance": "omitted; conservative because the arms are positively correlated",
@@ -186,8 +191,8 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
             sd = math.sqrt(ca["se"] ** 2 + cb["se"] ** 2)
             dd = float(np.mean(va) - np.mean(vb))
             zz = dd / sd if sd > 0 else float("nan")
-            pp = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(zz) / math.sqrt(2.0))))
             dfr = max(1, min(ca.get("df", 1), cb.get("df", 1)))
+            pp = 2.0 * (1.0 - inf._t_cdf(abs(zz), dfr))   # t, matching the interval -- see above
             tr = inf.crit(0.05, dfr)
             restricted = {"difference": dd, "se": sd, "z": zz, "p": pp, "df": dfr,
                           "ci": [dd - tr * sd, dd + tr * sd],
