@@ -203,6 +203,11 @@ def main():
                          "an ORDINARY model (single-cell / consensus / OT): its generated treated cell is "
                          "decoded and converted to an IMPLIED residual (minus control, minus generic), so "
                          "old models are scored in the SAME space -- the apples-to-apples control.")
+    ap.add_argument("--truth_from", default=None,
+                    help="path to the target build's report.json. Reproduces that build's frame "
+                         "exactly -- scope, leave-one-drug-out, split controls, reliability threshold "
+                         "-- so the truth the model is scored against is the one it was trained on. "
+                         "Omit ONLY when reproducing a published number in the published frame.")
     ap.add_argument("--truth_repro_thr", type=float, default=0.2,
                     help="reliability bar for the TRUTH residuals we score against (scoring against "
                          "an irreproducible truth is meaningless)")
@@ -234,11 +239,51 @@ def main():
     P = len(panel)
     rng = np.random.RandomState(args.seed)
 
-    # residuals + the half-split needed for the ceiling
-    # Truths must be RELIABLE or the NIR is scored against noise -> same reproducibility bar as training.
+    # THE TRUTH MUST BE BUILT IN THE FRAME THE MODEL WAS TRAINED IN.
+    #
+    # `build_residuals` is a compatibility shim whose defaults reproduce the PUBLISHED build -- cell-line
+    # scope, no leave-one-drug-out, shared controls, a generic fitted over every condition. Those
+    # defaults exist so old numbers stay regenerable, and they are exactly wrong for scoring a NEW
+    # checkpoint: a model trained to emit plate-scoped, leave-one-drug-out residuals would be scored
+    # against cell-line-scoped, non-LOO ones, and the resulting NIR would measure the mismatch between
+    # two definitions rather than the model's skill.
+    #
+    # `--truth_from <report.json>` reads the build's own report and reproduces its frame exactly, so the
+    # two can never drift. Without it the published frame is used and the run says so loudly, because
+    # silently scoring against the wrong target is the failure this whole remediation is about.
+    truth_cfg = dict(generic_scope="cell_line", loo=False, split_controls=False,
+                     repro_thr=args.truth_repro_thr, holdout=None)
+    if args.truth_from:
+        rep_doc = json.load(open(args.truth_from))
+        truth_cfg.update(
+            generic_scope=rep_doc.get("scope", "plate"),
+            loo=bool(rep_doc.get("leave_one_drug_out", True)),
+            split_controls=not bool(rep_doc.get("reliability_controls", {})
+                                    .get("shared_control_reliability", False)),
+            repro_thr=float(rep_doc.get("repro_thr", args.truth_repro_thr)),
+            holdout=(args.holdout if args.holdout and os.path.exists(args.holdout) else None),
+        )
+        logger.info(f"truth frame taken from {args.truth_from}: scope={truth_cfg['generic_scope']} "
+                    f"loo={truth_cfg['loo']} split_controls={truth_cfg['split_controls']} "
+                    f"repro_thr={truth_cfg['repro_thr']:.4f} "
+                    f"generic fitted on {'TRAIN ONLY' if truth_cfg['holdout'] else 'all conditions'}")
+        if truth_cfg["holdout"] is None:
+            logger.warning("no --holdout given, so the truth's generic is fitted over every condition "
+                           "and any held-out split scored against it is transductive")
+    else:
+        logger.warning("=" * 96)
+        logger.warning("NO --truth_from: scoring against the PUBLISHED truth frame (cell-line scope, "
+                       "no leave-one-drug-out, shared controls, generic over all conditions).")
+        logger.warning("That is correct ONLY when reproducing a published number. For a checkpoint "
+                       "trained on repaired targets it scores the model against a DIFFERENT quantity "
+                       "than it learned. Pass --truth_from <build>/report.json.")
+        logger.warning("=" * 96)
+
     kept, generic, ctrl_rows, X, meta = brt.build_residuals(
-        args.cache_dir, args.min_treated, args.min_control, repro_thr=args.truth_repro_thr,
-        seed=args.seed)
+        args.cache_dir, args.min_treated, args.min_control,
+        repro_thr=truth_cfg["repro_thr"], seed=args.seed,
+        generic_scope=truth_cfg["generic_scope"], loo=truth_cfg["loo"],
+        split_controls=truth_cfg["split_controls"], holdout=truth_cfg["holdout"])
     logger.info(f"conditions with residuals: {len(kept)}")
     cvcl, moa_of, conc_of = brt.load_meta_maps()
 
