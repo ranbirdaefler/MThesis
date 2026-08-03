@@ -903,8 +903,19 @@ def run(args):
     fit_digest = gen.digest()
     logger.info(f"generic scope={args.generic_scope} shrink_k={args.shrink_k} "
                 f"leave-one-drug-out=on  fit_digest={fit_digest[:16]}")
+    # `--repro_thr auto` resolves against the run's own null instead of a number typed into a job
+    # script. The threshold decides the training-set size, so it should be reproducible from the
+    # data rather than inherited from a build that measured reliability on a different scale.
+    thr_req = args.repro_thr
     relcal = reliability_calibration(conds, shifts, gen, train_keys, args.generic_scope,
-                                     args.repro_thr, args.seed)
+                                     -1.0 if isinstance(thr_req, str) else thr_req, args.seed)
+    if isinstance(thr_req, str):
+        key = {"auto": "null_p95", "auto95": "null_p95", "auto99": "null_p99"}[thr_req]
+        args.repro_thr = float(relcal[key])
+        logger.info(f"--repro_thr {thr_req} -> {args.repro_thr:+.4f} (the null's "
+                    f"{'95th' if key.endswith('95') else '99th'} percentile). A condition is kept "
+                    f"when its two independent halves agree more than two UNRELATED conditions' "
+                    f"halves do, which is a validity line rather than a taste threshold.")
 
     logger.info("=== [4/4] transform ===")
     kept, relstats = transform(conds, shifts, gen, split, args.generic_scope, args.repro_thr,
@@ -1111,7 +1122,13 @@ def main():
                          "of the Hub (offline runs and tests)")
     ap.add_argument("--min_treated", type=int, default=40)
     ap.add_argument("--min_control", type=int, default=20)
-    ap.add_argument("--repro_thr", type=float, default=0.2, help="cos(res_A,res_B) filter")
+    ap.add_argument("--repro_thr", default=0.2,
+                    type=lambda v: v if v in ("auto", "auto95", "auto99") else float(v),
+                    help="cos(res_A,res_B) filter. A number, or `auto`/`auto95` for the 95th "
+                         "percentile of the run's own null (half A of one condition vs half B "
+                         "of another) and `auto99` for the 99th. 0.2 was chosen when reliability "
+                         "was measured with shared controls and is NOT comparable to the "
+                         "split-control scale -- see reliability_calibration.")
     ap.add_argument("--k_up", type=int, default=100)
     ap.add_argument("--k_down", type=int, default=100)
     ap.add_argument("--max_ctrl", type=int, default=60, help="control cells (=examples) per condition")
