@@ -949,7 +949,9 @@ def selftest():
         conds[k] = {"cell_line": "c1", "plate": "p1", "drug": d, "group": ("c1", "p1"),
                     "n_cells": 50, "sample_id": f"smp_{i}"}
         shifts[k] = {h: np.full(4, val, dtype=np.float32) for h in ("full", "A", "B")}
-    g = Generic(shifts, conds, list(conds), shrink_k=0.0)
+    # min_plate_drugs=0: these checks are about the weighting arithmetic, not plate support,
+    # which has its own test in tests/test_split_before_fit.py
+    g = Generic(shifts, conds, list(conds), shrink_k=0.0, min_plate_drugs=0)
     # leave-one-out for drug Y: the generic it sees is drug X's mean alone = 3.0
     v_y = g.value("c1", "p1", "Y", "full", "plate")[0]
     # leave-one-out for drug X: only drug Y remains = 0.0
@@ -965,10 +967,11 @@ def selftest():
     shifts[k_ho] = {h: np.full(4, 1e6, dtype=np.float32) for h in ("full", "A", "B")}
     train_only = [k for k in conds if k != k_ho]
     ok.append(("a poisoned held-out condition leaves the fit digest unchanged",
-               Generic(shifts, conds, train_only, shrink_k=0.0).digest() == g.digest()))
+               Generic(shifts, conds, train_only, shrink_k=0.0,
+                       min_plate_drugs=0).digest() == g.digest()))
 
     # shrinkage: a plate with one other drug is pulled most of the way to the cell-line generic
-    gs = Generic(shifts, conds, train_only, shrink_k=5.0)
+    gs = Generic(shifts, conds, train_only, shrink_k=5.0, min_plate_drugs=0)
     blended = gs.value("c1", "p1", "X", "full", "plate")[0]
     ok.append(("shrink_k pulls a thin plate generic toward the cell-line generic",
                abs(blended - 0.0) < 1e-6))     # only one scope level here, so fine == coarse
