@@ -239,8 +239,44 @@ def run(args):
     import build_residual_targets as brt
 
     rng = np.random.RandomState(args.seed)
+
+    # THE FRAME. This used to call build_residuals with bare defaults, which are the PUBLISHED ones:
+    # cell-line scope, no leave-one-drug-out, shared reliability controls, and a generic fitted over
+    # every condition. That is ERRATA defect 24 surviving in a second consumer -- the gate was
+    # measuring channel availability in a residual frame the repaired pipeline no longer uses, and
+    # the gate is load-bearing for Q18. --truth_from pins it to the build's own report, exactly as
+    # residual_eval does; without it the old frame is used and the run says so.
+    tcfg = dict(generic_scope="cell_line", loo=False, split_controls=False,
+                repro_thr=args.repro_thr, holdout=None, eval_filter=True, split=None)
+    if getattr(args, "truth_from", None):
+        rd = json.load(open(args.truth_from))
+        tcfg.update(generic_scope=rd.get("scope", "plate"),
+                    loo=bool(rd.get("leave_one_drug_out", True)),
+                    split_controls=not bool(rd.get("reliability_controls", {})
+                                            .get("shared_control_reliability", False)),
+                    repro_thr=float(rd.get("repro_thr", args.repro_thr)),
+                    eval_filter=bool(rd.get("eval_repro_filter", False)),
+                    holdout=(args.holdout if getattr(args, "holdout", None)
+                             and os.path.exists(args.holdout) else None))
+        if tcfg["holdout"]:
+            hm = json.load(open(tcfg["holdout"]))
+            if hm.get("split_all"):
+                tcfg["split"] = {tuple(k.split("|")): v for k, v in hm["split_all"].items()}
+        logger.info(f"truth frame from {args.truth_from}: scope={tcfg['generic_scope']} "
+                    f"loo={tcfg['loo']} split_controls={tcfg['split_controls']} "
+                    f"repro_thr={tcfg['repro_thr']:.4f} eval_filter={tcfg['eval_filter']}")
+    else:
+        logger.warning("=" * 96)
+        logger.warning("NO --truth_from: the channel gate is measuring the PUBLISHED residual frame "
+                       "(cell-line scope, no leave-one-drug-out, shared controls, generic over every "
+                       "condition). Correct only when reproducing a published number.")
+        logger.warning("=" * 96)
+
     kept, generic, ctrl_rows, X, meta = brt.build_residuals(
-        args.cache_dir, args.min_treated, args.min_control, args.repro_thr, seed=args.seed)
+        args.cache_dir, args.min_treated, args.min_control, tcfg["repro_thr"], seed=args.seed,
+        generic_scope=tcfg["generic_scope"], loo=tcfg["loo"],
+        split_controls=tcfg["split_controls"], holdout=tcfg["holdout"],
+        eval_filter=tcfg["eval_filter"], split=tcfg["split"])
     P = len(next(iter(kept.values()))["residual"])
     logger.info(f"conditions: {len(kept)}  panel: {P}")
 
@@ -270,7 +306,11 @@ def run(args):
             if len(others) < 3:
                 continue
             oth_truth = [truth[k2] for k2 in others]
-            row = {"drug": d, "cell_line": c, "n_others": len(others)}
+            # the WELL, so the gate can use the two-way estimator the rest of the stack uses.
+            # key = (drug, cell_line_id, plate, sample_id); a treated well spans ~48.6 cell lines,
+            # so cell line alone is not the unit of independent assignment.
+            row = {"drug": d, "cell_line": c, "n_others": len(others),
+                   "plate": key[2], "well": (key[3] if len(key) > 3 else key[2])}
             cand_drugs = sorted({k2[0] for k2 in others})
             p_key = key[2]
             same_pool = [k2 for k2 in others if k2[2] == p_key]
@@ -344,17 +384,32 @@ def run(args):
     out = {"config": vars(args), "coverage": cov, "n_conditions": len(recs)}
 
     def gap_vs(ch, arm_key, null_key):
-        vals = [(r["cell_line"], r[arm_key], r.get(null_key)) for r in recs
-                if r.get(arm_key) is not None and r.get(null_key) is not None]
-        if not vals:
+        use = [r for r in recs if r.get(arm_key) is not None and r.get(null_key) is not None]
+        if not use:
             return None
-        ci = clustered_ci([v - n for _, v, n in vals], [cl for cl, _, _ in vals], rng, args.n_boot)
-        if not ci:
+        diffs = [r[arm_key] - r[null_key] for r in use]
+        lines = [r["cell_line"] for r in use]
+        wells = [r.get("well", r["cell_line"]) for r in use]
+
+        # TWO-WAY IS PRIMARY. `two_way_ci` was added for ERRATA defect 19 and then never called, so
+        # the gate kept reporting one-way cell-line intervals -- too narrow for a crossed design, and
+        # the exposed row (`moa` under different-plate) is barely positive as it is.
+        tw = two_way_ci(diffs, lines, wells)
+        ci = clustered_ci(diffs, lines, rng, args.n_boot)
+        out_ = {"arm": float(np.mean([r[arm_key] for r in use])),
+                "null": float(np.mean([r[null_key] for r in use])),
+                "n": len(use), "n_cell_lines": len(set(lines)), "n_wells": len(set(wells))}
+        if tw:
+            out_.update(gap=tw["point"], ci=[tw["lo"], tw["hi"]], unit=tw["unit"],
+                        df=tw.get("df"),
+                        ci_one_way_cell_line=([ci[1], ci[2]] if ci else None))
+        elif ci:
+            g, lo, hi, n_, ncl = ci
+            out_.update(gap=g, ci=[lo, hi], unit="one-way cell line (two-way unavailable)",
+                        ci_one_way_cell_line=[lo, hi])
+        else:
             return None
-        g, lo, hi, n_, ncl = ci
-        return {"arm": float(np.mean([v for _, v, _ in vals])),
-                "null": float(np.mean([n for _, _, n in vals])),
-                "gap": g, "ci": [lo, hi], "n": n_, "n_cell_lines": ncl}
+        return out_
 
     logger.info("=" * 100)
     logger.info("CO-PLATING -- how often a partner shares the target's plate. If the channel and the")
@@ -580,6 +635,14 @@ def main():
     ap.add_argument("--min_treated", type=int, default=40)
     ap.add_argument("--min_control", type=int, default=20)
     ap.add_argument("--repro_thr", type=float, default=0.2)
+    ap.add_argument("--truth_from", default=None,
+                    help="path to the target build's report.json. Reproduces that build's residual "
+                         "frame exactly -- scope, leave-one-drug-out, split controls, reliability "
+                         "threshold and held-out filtering. Without it the PUBLISHED frame is used, "
+                         "which is correct only when reproducing a published number.")
+    ap.add_argument("--holdout", default=None,
+                    help="path to the build's holdout.json, so the generic is fitted on training "
+                         "conditions only and the real split labels are used")
     ap.add_argument("--min_drugs", type=int, default=6,
                     help="cell lines with fewer drugs give a comparison set too small to score")
     ap.add_argument("--k_sig", type=int, default=100)

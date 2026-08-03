@@ -268,7 +268,7 @@ def main():
     # two can never drift. Without it the published frame is used and the run says so loudly, because
     # silently scoring against the wrong target is the failure this whole remediation is about.
     truth_cfg = dict(generic_scope="cell_line", loo=False, split_controls=False,
-                     repro_thr=args.truth_repro_thr, holdout=None)
+                     repro_thr=args.truth_repro_thr, holdout=None, eval_filter=True)
     if args.truth_from:
         rep_doc = json.load(open(args.truth_from))
         truth_cfg.update(
@@ -278,11 +278,25 @@ def main():
                                     .get("shared_control_reliability", False)),
             repro_thr=float(rep_doc.get("repro_thr", args.truth_repro_thr)),
             holdout=(args.holdout if args.holdout and os.path.exists(args.holdout) else None),
+            # THE FLAG THE BUILD RECORDED AND NOBODY READ. `report.json` has carried
+            # `eval_repro_filter` since the split-before-fit rebuild, but this branch propagated
+            # scope / loo / split_controls / repro_thr and silently dropped it -- so held-out truth
+            # was reliability-filtered even when the build had deliberately not filtered it. That is
+            # selection on the outcome, on the evaluation set.
+            eval_filter=bool(rep_doc.get("eval_repro_filter", False)),
         )
         logger.info(f"truth frame taken from {args.truth_from}: scope={truth_cfg['generic_scope']} "
                     f"loo={truth_cfg['loo']} split_controls={truth_cfg['split_controls']} "
                     f"repro_thr={truth_cfg['repro_thr']:.4f} "
+                    f"eval_repro_filter={truth_cfg['eval_filter']} "
                     f"generic fitted on {'TRAIN ONLY' if truth_cfg['holdout'] else 'all conditions'}")
+        if truth_cfg["eval_filter"]:
+            logger.warning("the build filtered HELD-OUT conditions on their own split-half "
+                           "reproducibility, so this evaluation runs on the reliability-surviving "
+                           "subset rather than the full holdout. That is outcome selection on the "
+                           "evaluation set: it retains the cleanest conditions, so it flatters "
+                           "absolute scores and is CONSERVATIVE for a null result. Rebuild without "
+                           "--eval_repro_filter for the primary number.")
         if truth_cfg["holdout"] is None:
             logger.warning("no --holdout given, so the truth's generic is fitted over every condition "
                            "and any held-out split scored against it is transductive")
@@ -295,11 +309,28 @@ def main():
                        "than it learned. Pass --truth_from <build>/report.json.")
         logger.warning("=" * 96)
 
+    # The manifest's COMPLETE pre-filter split, so `transform` sees the real labels. Without this
+    # the shim forces every label to "train", which makes its reliability filter fire on the
+    # `s == "train"` disjunct for every condition and renders eval_filter inert.
+    truth_split = None
+    if truth_cfg["holdout"]:
+        _hm = json.load(open(truth_cfg["holdout"]))
+        _sa = _hm.get("split_all")
+        if _sa:
+            truth_split = {tuple(k.split("|")): v for k, v in _sa.items()}
+            logger.info(f"split labels for the truth build: {len(truth_split)} conditions from "
+                        f"split_all (the complete pre-filter assignment)")
+        else:
+            logger.warning("this holdout.json predates `split_all`; the truth build cannot "
+                           "distinguish train from held-out conditions and will filter both. "
+                           "Rebuild the targets before quoting held-out numbers.")
+
     kept, generic, ctrl_rows, X, meta = brt.build_residuals(
         args.cache_dir, args.min_treated, args.min_control,
         repro_thr=truth_cfg["repro_thr"], seed=args.seed,
         generic_scope=truth_cfg["generic_scope"], loo=truth_cfg["loo"],
-        split_controls=truth_cfg["split_controls"], holdout=truth_cfg["holdout"])
+        split_controls=truth_cfg["split_controls"], holdout=truth_cfg["holdout"],
+        eval_filter=truth_cfg["eval_filter"], split=truth_split)
     logger.info(f"conditions with residuals: {len(kept)}")
     cvcl, moa_of, conc_of = brt.load_meta_maps()
 

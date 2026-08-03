@@ -668,7 +668,8 @@ def transform(conds, shifts, gen, split, scope, repro_thr, eval_filter=True):
 def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
                     generic_scope="cell_line", shrink_k=0.0, loo=False, split_controls=False,
                     train_keys=None, holdout=None, meta_dir=None, repo=TAHOE_REPO,
-                    drop_combinations=False):
+                    drop_combinations=False, eval_filter=True, split=None,
+                    verify_digest=None, min_plate_drugs=3):
     """COMPATIBILITY SHIM for the five analysis scripts that consume residual truth.
 
     `residual_eval.py`, `channel_gate.py`, `reconstructed_eval.py`, `reward_calibration.py` and
@@ -693,6 +694,23 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
     scoring a held-out split against this truth is scoring against targets partly defined by the
     holdout. That is the transductive defect, on the evaluation side rather than the training side,
     and closing it in `residual_eval` is Step 6.
+
+    TWO FURTHER DEFECTS, BOTH CLOSED HERE, BOTH OF WHICH REACHED PUBLISHED NUMBERS.
+
+    (1) This used to derive `train_keys` from the manifest split map, which the builder writes
+        FILTERED BY THE RELIABILITY SURVIVORS. So the replayed generic was fitted on roughly half the
+        inventory the real one saw. It now prefers `train_keys_fit`, the exact list, and verifies the
+        result against the build own `fit_digest` when one is available. A replay that cannot prove
+        it rebuilt the same object says so.
+
+    (2) This used to set every label to "train" and call transform with eval_filter hardcoded True.
+        Two bugs in one line. The label overwrite matters MORE than the flag, because `transform`
+        drops a condition when `cs <= repro_thr and (s == "train" or eval_filter)` -- with every
+        label forced to "train" the first disjunct fires and `eval_filter=False` is INERT. Held-out
+        truth was therefore selected on its own split-half reproducibility no matter what the caller
+        asked for. Both the labels and the flag are now honoured.
+
+    Defaults are unchanged, so a caller that passes neither still reproduces the published behaviour.
     """
     _, _, conc_of = load_meta_maps(repo, meta_dir)
     conds, ctrl_rows, X, meta, notes = inventory(
@@ -700,20 +718,62 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
         drop_combinations=drop_combinations, require_sample_id=False)
     shifts, _, _ = compute_shifts(conds, ctrl_rows, X, seed, shared_control=not split_controls)
 
-    if train_keys is None and holdout and os.path.exists(holdout):
+    hm = {}
+    if holdout and os.path.exists(holdout):
         hm = json.load(open(holdout))
-        want = {k for k, v in hm.get("split", {}).items() if v == "train"}
-        train_keys = [k for k in conds if "|".join(map(str, k)) in want]
-        logger.info(f"generic fitted on {len(train_keys)} training conditions from {holdout}")
+    if train_keys is None and hm:
+        exact = hm.get("train_keys_fit")
+        if exact:
+            want = set(exact)
+            train_keys = [k for k in conds if "|".join(map(str, k)) in want]
+            missing = len(want) - len(train_keys)
+            logger.info(f"generic fitted on {len(train_keys)} training conditions from "
+                        f"{holdout} (train_keys_fit, the build EXACT fit inventory)")
+            if missing:
+                logger.warning(f"{missing} of the build {len(want)} fit keys are absent from this "
+                               f"cache; the replayed generic CANNOT match the build fit_digest")
+        else:
+            want = {k for k, v in hm.get("split", {}).items() if v == "train"}
+            train_keys = [k for k in conds if "|".join(map(str, k)) in want]
+            logger.warning("=" * 96)
+            logger.warning(f"{holdout} predates train_keys_fit, so the fit inventory is being "
+                           f"recovered from the manifest split map -- WHICH THE BUILDER WRITES "
+                           f"FILTERED BY THE RELIABILITY SURVIVORS.")
+            logger.warning(f"The generic is therefore fitted on {len(train_keys)} conditions, which "
+                           f"is a SUBSET of what the build used, and the residuals below are not the "
+                           f"ones the checkpoint was trained against. Rebuild the targets to emit a "
+                           f"complete manifest before quoting any number from this run.")
+            logger.warning("=" * 96)
     if train_keys is None:
         train_keys = list(conds)
         logger.warning("build_residuals: the generic is being fitted over EVERY condition. Any "
                        "held-out split scored against this truth is transductive. Pass holdout= or "
                        "train_keys= to close that.")
 
-    gen = Generic(shifts, conds, train_keys, shrink_k=shrink_k, loo=loo)
-    split = {k: "train" for k in conds}
-    kept, _ = transform(conds, shifts, gen, split, generic_scope, repro_thr, eval_filter=True)
+    gen = Generic(shifts, conds, train_keys, shrink_k=shrink_k, loo=loo,
+                  min_plate_drugs=min_plate_drugs)
+
+    # PROVE the replay reconstructed the build generic rather than assume it. `fit_digest` has been
+    # written since the split-before-fit rebuild and was checked by nothing until now.
+    want_digest = verify_digest or hm.get("fit_digest")
+    if want_digest:
+        got = gen.digest()
+        if got == want_digest:
+            logger.info(f"fit_digest MATCHES the build ({got[:16]}): this is the same generic the "
+                        f"checkpoint was trained against")
+        else:
+            logger.error("=" * 96)
+            logger.error(f"fit_digest MISMATCH: build {want_digest[:16]}, replay {got[:16]}")
+            logger.error("The truth being constructed here is NOT the truth the model was trained "
+                         "on. Usual causes: a different cache, a different --generic_scope / "
+                         "--shrink_k / --min_plate_drugs, or shared-vs-split reliability controls.")
+            logger.error("=" * 96)
+
+    # The caller labels, not everything-is-train. See the docstring: forcing every label to "train"
+    # made eval_filter=False inert, because transform filter fires on s == "train" OR the flag.
+    if split is None:
+        split = {k: "train" for k in conds}
+    kept, _ = transform(conds, shifts, gen, split, generic_scope, repro_thr, eval_filter=eval_filter)
     gexp = gen.export(conds, generic_scope)
     if generic_scope == "cell_line":
         generic = gexp
@@ -1029,7 +1089,34 @@ def run(args):
               "fit_digest": fit_digest, "reliability_by_split": relstats,
               "scope_sensitivity": sens, "well_crossing": crossing,
               "inventory": notes, "down_token": DOWN, "end_token": END}
+    # THE MANIFEST MUST CARRY WHAT A REPLAY NEEDS, WHICH IS NOT WHAT IT USED TO CARRY.
+    #
+    # `split` below is filtered by `kept`, and for a long time it was the ONLY split written. An
+    # evaluator replaying the truth read it back, took its "train" entries as the fit inventory, and
+    # therefore refitted the generic on the reliability SURVIVORS rather than on the full pre-filter
+    # training set the checkpoint was actually trained against. On the repository's own fixture that
+    # is 21 keys instead of 44: three of eight plate-scoped groups become undefined and the
+    # survivors drift a fifth in relative L2. Nothing detected it, because `fit_digest` was written
+    # and never checked by any consumer.
+    #
+    # So: `split_all` is every inventoried condition with its metadata-assigned label, `train_keys_fit`
+    # is the exact inventory the generic was fitted on, and `fit_digest` lets a replay PROVE it
+    # reconstructed the same object rather than assume it. `eval_repro_filter` and `repro_thr` travel
+    # with them because a replay that filters differently evaluates a different population.
+    # `split` is retained, filtered, purely as an attrition report for older readers.
     json.dump({"split": {"|".join(map(str, k)): v for k, v in split.items() if k in kept},
+               "split_all": {"|".join(map(str, k)): v for k, v in split.items()},
+               "train_keys_fit": ["|".join(map(str, k)) for k in train_keys],
+               "fit_digest": fit_digest,
+               "eval_repro_filter": bool(args.eval_repro_filter),
+               "repro_thr": float(args.repro_thr),
+               "generic_scope": args.generic_scope,
+               "leave_one_drug_out": True,
+               "shared_control_reliability": bool(args.shared_control_reliability),
+               "shrink_k": float(args.shrink_k),
+               "min_plate_drugs": int(args.min_plate_drugs),
+               "n_conditions_inventoried": len(conds),
+               "n_conditions_kept": len(kept),
                "holdout_drugs": ho_drugs,
                "holdout_combos": ["|".join(map(str, kk)) for kk in ho_combos],
                "key_fields": ["drug", "cell_line_id", "plate", "sample_id"],

@@ -611,3 +611,134 @@ def test_split_table_comparator_defaults_to_the_neutral_stratum():
     blk = blk[:blk.index("means[") if "means[" in blk else len(blk)]
     assert '_clustered_ci(sub, "model", "scramble_opposite"' not in blk, \
         "the by-split table still hard-codes scramble_opposite"
+
+
+
+def _refit_from_manifest(cache, meta_dir, b, keyset=None):
+    """Rebuild the build's generic from its own manifest. `keyset` overrides the fit inventory so the
+    negative control can reconstruct from the FILTERED map instead of the exact one."""
+    rep_doc = b["report"]
+    _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
+    conds, ctrl, X, _, _ = brt.inventory(
+        cache, N_CELLS, N_CELLS, conc, drop_combinations=True, require_sample_id=True)
+    shifts, _, _ = brt.compute_shifts(
+        conds, ctrl, X, 42,
+        shared_control=bool(rep_doc["reliability_controls"]["shared_control_reliability"]))
+    want = set(keyset if keyset is not None else b["holdout"]["train_keys_fit"])
+    tk = [k for k in conds if "|".join(map(str, k)) in want]
+    return brt.Generic(shifts, conds, tk, shrink_k=float(rep_doc["shrink_k"]),
+                       loo=bool(rep_doc["leave_one_drug_out"]),
+                       min_plate_drugs=int(rep_doc["min_plate_drugs"])), len(tk)
+
+# ---------------------------------------------------------------------------------------------
+# THE REPLAY GATE.
+#
+# The evaluator does not read residual.jsonl. It rebuilds the truth by calling `build_residuals`,
+# and for a long time that rebuild produced a DIFFERENT generic from the one the checkpoint was
+# trained against: the builder writes holdout.json's `split` map filtered by the reliability
+# survivors, and the shim took that map's "train" entries as its fit inventory. Roughly half the
+# conditions. Nothing noticed, because `fit_digest` was written by the builder and read by nobody.
+#
+# These tests make the digest load-bearing.
+
+def test_replay_reproduces_the_builds_generic_exactly(tmp_path):
+    """The whole point. A replay through the shim must rebuild the SAME generic the build fitted."""
+    # 0.93 so the reliability filter actually drops conditions -- at the default threshold this
+    # fixture keeps everything and the test would pass vacuously.
+    b = _build(str(tmp_path), "replay", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_replay")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    ho = os.path.join(b["dir"], "holdout.json")
+
+    # the manifest must carry what a replay needs
+    assert "split_all" in b["holdout"], "the complete pre-filter split is not persisted"
+    assert "train_keys_fit" in b["holdout"], "the exact fit inventory is not persisted"
+    assert b["holdout"]["fit_digest"] == b["fit_digest"]
+
+    # ... and split_all must be a STRICT SUPERSET of the filtered map, or the test proves nothing
+    assert len(b["holdout"]["split_all"]) > len(b["holdout"]["split"]), (
+        "the reliability filter dropped nothing, so this fixture cannot detect the defect")
+    n_fit = len(b["holdout"]["train_keys_fit"])
+    n_kept_train = sum(1 for v in b["holdout"]["split"].values() if v == "train")
+    assert n_fit > n_kept_train, (
+        f"fit inventory {n_fit} is not larger than the surviving train set {n_kept_train}")
+
+    rep_doc = b["report"]
+    kept, _, _, _, _ = brt.build_residuals(
+        cache, N_CELLS, N_CELLS, repro_thr=float(rep_doc["repro_thr"]), seed=0,
+        generic_scope=rep_doc["scope"], loo=bool(rep_doc["leave_one_drug_out"]),
+        split_controls=not bool(rep_doc["reliability_controls"]["shared_control_reliability"]),
+        holdout=ho, meta_dir=meta_dir, min_plate_drugs=int(rep_doc["min_plate_drugs"]),
+        eval_filter=bool(rep_doc["eval_repro_filter"]),
+        split={tuple(k.split("|")): v for k, v in b["holdout"]["split_all"].items()})
+    assert kept, "the replay produced no conditions at all"
+
+    # the digest is checked INSIDE build_residuals; assert it independently here too, reconstructing
+    # the fit from the manifest alone -- inventory flags and seed must match the build exactly, which
+    # is itself the point: a replay that gets any of them wrong produces a different truth silently.
+    g, _ = _refit_from_manifest(cache, meta_dir, b)
+    assert g.digest() == b["fit_digest"], "the replayed generic is not the build's generic"
+
+
+def test_the_old_manifest_path_would_have_fitted_on_fewer_conditions(tmp_path):
+    """The negative control: reconstructing from the FILTERED map must give a different generic.
+
+    Without this the test above could pass vacuously on a fixture where the filter drops nothing."""
+    b = _build(str(tmp_path), "old", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_old")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    g_exact, n_exact = _refit_from_manifest(cache, meta_dir, b)
+    g_old, n_old = _refit_from_manifest(
+        cache, meta_dir, b,
+        keyset={k for k, v in b["holdout"]["split"].items() if v == "train"})
+    assert n_old < n_exact
+    assert g_exact.digest() == b["fit_digest"]
+    assert g_old.digest() != b["fit_digest"], (
+        "the filtered map reproduces the build's digest, so this fixture cannot detect the defect")
+
+
+def test_eval_filter_false_actually_keeps_unreliable_held_out_conditions(tmp_path):
+    """`eval_filter=False` was INERT, and the reason is subtle enough to pin.
+
+    transform drops a condition when `cs <= repro_thr and (s == "train" or eval_filter)`. The shim
+    used to overwrite every label with "train", so the FIRST disjunct fired for every condition and
+    the flag could not matter. Fixing the flag without fixing the labels changes nothing, so this
+    test passes real labels and varies only the flag."""
+    b = _build(str(tmp_path), "filt", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_filt")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    ho = os.path.join(b["dir"], "holdout.json")
+    split = {tuple(k.split("|")): v for k, v in b["holdout"]["split_all"].items()}
+    assert any(v != "train" for v in split.values()), "fixture has no held-out conditions"
+
+    def run(ef):
+        kept, _, _, _, _ = brt.build_residuals(
+            cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=0,
+            generic_scope=b["report"]["scope"], loo=True, split_controls=True,
+            holdout=ho, meta_dir=meta_dir, eval_filter=ef, split=split,
+            min_plate_drugs=int(b["report"]["min_plate_drugs"]))
+        return kept
+
+    off, on = run(False), run(True)
+    assert len(off) > len(on), (
+        f"eval_filter is inert: {len(off)} kept with the filter off vs {len(on)} with it on")
+    # every extra condition must be a HELD-OUT one -- train is filtered either way, by design
+    extra = set(off) - set(on)
+    assert extra, "no conditions differ at all"
+    assert all(split.get(k, "train") != "train" for k in extra), (
+        "the filter leaked into training conditions, which must always be filtered")
+
+
+def test_the_shim_defaults_still_reproduce_the_published_behaviour(tmp_path):
+    """The compatibility contract. Callers passing neither `split` nor `eval_filter` must get the
+    old semantics, or every published number becomes unreproducible."""
+    b = _build(str(tmp_path), "compat")
+    cache = os.path.join(str(tmp_path), "cache_compat")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    sig = inspect.signature(brt.build_residuals)
+    assert sig.parameters["eval_filter"].default is True
+    assert sig.parameters["split"].default is None
+    # and it still runs positionally, the way the five consumers call it
+    kept, generic, ctrl, X, meta = brt.build_residuals(cache, N_CELLS, N_CELLS, -1.0,
+                                                       meta_dir=meta_dir)
+    assert kept and generic is not None
