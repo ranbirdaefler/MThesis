@@ -790,15 +790,47 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
             logger.info(f"fit_digest MATCHES the build ({got[:16]}): this is the same generic the "
                         f"checkpoint was trained against")
         else:
-            logger.error("=" * 96)
-            logger.error(f"fit_digest MISMATCH: build {want_digest[:16]}, replay {got[:16]}")
-            logger.error("The truth being constructed here is NOT the truth the model was trained "
-                         "on. Usual causes: a different cache, a different --generic_scope / "
-                         "--shrink_k / --min_plate_drugs, or shared-vs-split reliability controls.")
-            logger.error("=" * 96)
+            # RAISE. This used to log three errors and carry on, which meant a GPU job could spend a
+            # day scoring a checkpoint against a truth it was never trained on and report a number.
+            #
+            # Note which causes can actually fire: `Generic.digest()` hashes the fitted drug means,
+            # so it moves when `shifts` or the fit inventory move -- cache, seed, inventory flags,
+            # reliability controls. It does NOT hash shrink_k, loo or min_plate_drugs, and scope is
+            # not a fit-time property at all; those four are checked separately below against the
+            # manifest, because naming them here would be a lie.
+            raise SystemExit(
+                f"REFUSING TO BUILD TRUTH (fit_digest): build {want_digest[:16]}, replay "
+                f"{got[:16]}. The truth being constructed here is NOT the truth the model was "
+                f"trained on. Usual causes: a different cache, a different --seed, different "
+                f"inventory flags (drop_combinations / require_sample_id), or shared-vs-split "
+                f"reliability controls.")
+
+    # WHAT THE DIGEST CANNOT SEE. `Generic.digest()` hashes group id, n_drugs and the per-drug
+    # means. `shrink_k`, `loo` and `min_plate_drugs` are stored on the object but never hashed, and
+    # `scope` is an argument to value()/export() rather than a fit-time property -- so all four can
+    # differ while the digest still reports MATCH, and they change the TARGETS by up to their own
+    # norm. The manifest now records them, so cross-check rather than trust the hash.
+    for field, mine, kind in (("generic_scope", generic_scope, str),
+                              ("leave_one_drug_out", loo, bool),
+                              ("shrink_k", shrink_k, float),
+                              ("min_plate_drugs", min_plate_drugs, int),
+                              ("shared_control_reliability", not split_controls, bool)):
+        theirs = hm.get(field)
+        if theirs is None:
+            continue
+        if kind(theirs) != kind(mine):
+            raise SystemExit(
+                f"REFUSING TO BUILD TRUTH (frame): the build used {field}={theirs!r} and this "
+                f"replay is using {mine!r}. fit_digest cannot detect this -- it hashes the fitted "
+                f"drug means, not the estimator that turns them into targets -- so it would report "
+                f"MATCH while every target differed. Pass the build's value.")
 
     # The caller labels, not everything-is-train. See the docstring: forcing every label to "train"
     # made eval_filter=False inert, because transform filter fires on s == "train" OR the flag.
+    if eval_filter is False and split is None:
+        raise SystemExit(
+            "eval_filter=False cannot take effect without real split labels: transform's filter "
+            "fires on the `s == \"train\"` disjunct for every condition.")
     if split is None:
         split = {k: "train" for k in conds}
     else:
@@ -1017,6 +1049,17 @@ def run(args):
     # fixture sets scope_sensitivity=False; `test_auto_threshold_resolves_before_anything_reads_it`
     # now exercises both flags together.
     thr_req = args.repro_thr
+    # `--repro_thr` has no argparse `type=`, so ANY command-line value arrives as a string -- and the
+    # auto-resolution below is keyed on a three-entry dict. Passing a NUMBER on the command line
+    # therefore used to die with `KeyError: '0.1086'` after the fit, an hour into the job. Numeric
+    # strings are coerced here; only the genuine keywords reach the dict.
+    if isinstance(thr_req, str) and thr_req not in ("auto", "auto95", "auto99"):
+        try:
+            thr_req = float(thr_req)
+            args.repro_thr = thr_req
+        except ValueError:
+            raise SystemExit(f"--repro_thr {thr_req!r} is neither a number nor one of "
+                             f"auto / auto95 / auto99")
     relcal = reliability_calibration(conds, shifts, gen, train_keys, args.generic_scope,
                                      -1.0 if isinstance(thr_req, str) else thr_req, args.seed)
     if isinstance(thr_req, str):

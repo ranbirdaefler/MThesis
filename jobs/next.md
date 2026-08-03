@@ -152,6 +152,12 @@ $PY train_c2s_tahoe_endcell.py --mode full \
 echo "=== [3] eval -- prompt_order MUST match training ==="
 $PY residual_eval.py --cache_dir "$CACHE" --model_path "$CKPT/final" --model_kind residual \
     --prompt_order drug_last --field_decomp \
+    --truth_from "$TGT/report.json" \
+    `# MANDATORY. Without it the truth is built in the PUBLISHED frame -- cell-line scope, no
+     # leave-one-drug-out, shared controls, a generic fitted over every condition -- and the
+     # checkpoint is scored against a quantity it never learned. Measured on the fixture: every
+     # target differs, median relative L2 0.512, median cos 0.868. --holdout ALONE DOES NOTHING:
+     # residual_eval only reads it inside the --truth_from branch.` \
     --holdout "$TGT/holdout.json" --train_file "$TGT/residual.jsonl" \
     --split_quota "train=200,unseen_combo=250,unseen_drug=120" \
     --k_samples 4 --max_new_tokens 1400 --bf16 --seed 42 \
@@ -933,6 +939,12 @@ $PY train_c2s_tahoe_endcell.py --mode full \
 echo "=== [2] eval on the repaired holdout ==="
 $PY residual_eval.py --cache_dir "$D/ot_cache" \
     --model_path "$CKPT/final" --model_kind residual \
+    --truth_from "$TGT/report.json" \
+    `# MANDATORY. Without it the truth is built in the PUBLISHED frame -- cell-line scope, no
+     # leave-one-drug-out, shared controls, a generic fitted over every condition -- and the
+     # checkpoint is scored against a quantity it never learned. Measured on the fixture: every
+     # target differs, median relative L2 0.512, median cos 0.868. --holdout ALONE DOES NOTHING:
+     # residual_eval only reads it inside the --truth_from branch.` \
     --holdout "$TGT/holdout.json" --train_file "$TGT/residual.jsonl" \
     --split_quota "train=200,unseen_combo=250,unseen_drug=120" \
     --k_samples 4 --max_new_tokens 1400 --bf16 --seed 42 \

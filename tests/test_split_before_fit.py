@@ -665,7 +665,8 @@ def test_replay_reproduces_the_builds_generic_exactly(tmp_path):
 
     rep_doc = b["report"]
     kept, _, _, _, _ = brt.build_residuals(
-        cache, N_CELLS, N_CELLS, repro_thr=float(rep_doc["repro_thr"]), seed=0,
+        cache, N_CELLS, N_CELLS, repro_thr=float(rep_doc["repro_thr"]), seed=42,   # the fixture is built at 42; a replay at
+                        # another seed derives different A/B halves
         generic_scope=rep_doc["scope"], loo=bool(rep_doc["leave_one_drug_out"]),
         split_controls=not bool(rep_doc["reliability_controls"]["shared_control_reliability"]),
         holdout=ho, meta_dir=meta_dir, min_plate_drugs=int(rep_doc["min_plate_drugs"]),
@@ -713,7 +714,8 @@ def test_eval_filter_false_actually_keeps_unreliable_held_out_conditions(tmp_pat
 
     def run(ef):
         kept, _, _, _, _ = brt.build_residuals(
-            cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=0,
+            cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=42,   # the fixture is built at 42; a replay at
+                        # another seed derives different A/B halves
             generic_scope=b["report"]["scope"], loo=True, split_controls=True,
             holdout=ho, meta_dir=meta_dir, eval_filter=ef, split=split,
             min_plate_drugs=int(b["report"]["min_plate_drugs"]))
@@ -785,8 +787,74 @@ def test_a_split_that_matches_almost_nothing_is_refused(tmp_path):
     meta_dir = os.path.join(str(tmp_path), "meta")
     ho = os.path.join(b["dir"], "holdout.json")
     with pytest.raises(SystemExit) as e:
-        brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=0,
+        brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=42,   # the fixture is built at 42; a replay at
+                        # another seed derives different A/B halves
                             generic_scope="plate", loo=True, split_controls=True,
                             holdout=ho, meta_dir=meta_dir, eval_filter=False,
                             split={"nonexistent|key|p|s": "train"})
     assert "REFUSING TO BUILD TRUTH" in str(e.value)
+
+
+def test_a_fit_digest_mismatch_refuses_rather_than_logging(tmp_path):
+    """It used to log three errors and carry on.
+
+    residual_eval loads a causal LM onto CUDA a few minutes after this call, so "log and continue"
+    means a GPU day spent scoring a checkpoint against a truth it was never trained on, ending in a
+    number that looks exactly like a real one. The three replay tests above were themselves passing
+    while logging MISMATCH -- they replayed at seed 0 against a fixture built at seed 42 -- which is
+    how this was found.
+    """
+    b = _build(str(tmp_path), "mism", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_mism")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    ho = os.path.join(b["dir"], "holdout.json")
+    split = {tuple(k.split("|")): v for k, v in b["holdout"]["split_all"].items()}
+    kw = dict(generic_scope=b["report"]["scope"], loo=True, split_controls=True, holdout=ho,
+              meta_dir=meta_dir, eval_filter=False, split=split,
+              min_plate_drugs=int(b["report"]["min_plate_drugs"]))
+
+    # right seed -> no raise
+    brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=42, **kw)
+
+    # wrong seed -> different A/B halves -> different shifts -> different digest -> STOP
+    with pytest.raises(SystemExit) as e:
+        brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=7, **kw)
+    assert "fit_digest" in str(e.value)
+
+
+def test_the_frame_parameters_the_digest_cannot_see_are_checked_against_the_manifest(tmp_path):
+    """Generic.digest() hashes the fitted drug MEANS. It does not hash shrink_k, loo or
+    min_plate_drugs, and scope is not a fit-time property at all -- so all four can differ while the
+    digest reports MATCH, and each of them changes the targets by up to their own norm."""
+    b = _build(str(tmp_path), "frame", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_frame")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    ho = os.path.join(b["dir"], "holdout.json")
+    split = {tuple(k.split("|")): v for k, v in b["holdout"]["split_all"].items()}
+    base = dict(generic_scope=b["report"]["scope"], loo=True, split_controls=True, holdout=ho,
+                meta_dir=meta_dir, eval_filter=False, split=split,
+                min_plate_drugs=int(b["report"]["min_plate_drugs"]))
+    brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=42, **base)
+
+    for field, bad in (("generic_scope", "cell_line"), ("loo", False), ("min_plate_drugs", 99)):
+        kw = dict(base, **{field: bad})
+        with pytest.raises(SystemExit) as e:
+            brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=42, **kw)
+        assert "REFUSING TO BUILD TRUTH (frame)" in str(e.value), f"{field} was not caught"
+
+
+def test_a_numeric_repro_thr_on_the_command_line_is_accepted(tmp_path):
+    """`--repro_thr` has no argparse type=, so a command-line number arrives as a STRING and used to
+    hit the auto-resolution dict: `KeyError: '0.1086'`, an hour into a cluster job, after the fit.
+
+    The queue passes the previous build's resolved threshold as a literal (reading it back out of
+    report.json, because `auto` re-resolves against a sampled null and is only reproducible up to its
+    RNG), so this path is now load-bearing."""
+    b = _build(str(tmp_path), "numthr", repro_thr="0.35")
+    assert abs(float(b["report"]["repro_thr"]) - 0.35) < 1e-9
+    # the keywords still work
+    b2 = _build(str(tmp_path), "autothr", repro_thr="auto")
+    assert isinstance(b2["report"]["repro_thr"], float)
+    # and nonsense is refused rather than silently treated as a keyword
+    with pytest.raises(SystemExit):
+        _build(str(tmp_path), "badthr", repro_thr="nonsense")

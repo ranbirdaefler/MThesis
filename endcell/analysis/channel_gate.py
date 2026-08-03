@@ -52,8 +52,16 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ot"))
+# `shared` MUST be here. Without it `import inference` fails, `two_way_ci` returns None, and
+# `gap_vs` falls back to the one-way bootstrap -- the exact estimator this file was changed to stop
+# using -- while logging nothing a reader would notice. On the cluster the layout is FLAT (~/tahoe/),
+# so os.getcwd() is what resolves it there; the ../../shared entry is for the repo layout.
+for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+               os.path.abspath(__file__)))), "shared"),
+           os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ot"),
+           os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 TAHOE_REPO = "tahoebio/Tahoe-100M"
 
@@ -91,6 +99,13 @@ def two_way_ci(recs_vals, lines, wells):
     try:
         import inference as _inf
     except ImportError:
+        # LOUDLY. A bare `return None` here is indistinguishable from "the design was degenerate",
+        # and the caller's fallback is the one-way interval this function exists to replace.
+        logger.error("=" * 96)
+        logger.error("CANNOT IMPORT `inference`: every interval below falls back to a ONE-WAY "
+                     "cell-line bootstrap, which is too narrow for this crossed design. Ship "
+                     "shared/inference.py alongside this script. DO NOT quote these intervals.")
+        logger.error("=" * 96)
         return None
     return _inf.two_way_cluster_ci(list(recs_vals), list(lines), list(wells))
 
@@ -410,6 +425,9 @@ def run(args):
                         ci_one_way_cell_line=[lo, hi])
         else:
             return None
+        if not tw:
+            logger.warning(f"  [{ch}] two-way interval unavailable; reporting the ONE-WAY "
+                           f"cell-line bootstrap, which is too narrow here")
         return out_
 
     logger.info("=" * 100)
