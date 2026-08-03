@@ -382,6 +382,7 @@ def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, 
                 "same_plate": k1[2] == k2[2], "same_dose": _same_dose(k1, k2, molar_of),
                 "same_well": k1[3] == k2[3],
                 "node_a": f"{k1[1]}|{k1[3]}", "node_b": f"{k2[1]}|{k2[3]}",
+                "drug_b": k2[0],                 # different-drug pairs depend through BOTH drugs
                 "r_between": r_between,
                 "rel_gm": float(np.sqrt(rel1 * rel2)),
                 "T": float(r_between / np.sqrt(rel1 * rel2)),
@@ -542,6 +543,10 @@ def cross_line_diff_drug_pairs(kept, n_pairs=4000, seed=0, min_rel=0.05):
         r_between = cos(kept[k1]["residual"], kept[k2]["residual"])
         rows.append({"cluster": k1[0], "drug": k1[0], "cl1": k1[1], "cl2": k2[1],
                      "same_plate": False, "same_dose": k1[3] == k2[3],
+                     # without these the structure-matched control -- the arm the verdict is
+                     # explicitly gated on -- silently had no multiway interval at all
+                     "drug": k1[0], "drug_b": k2[0],
+                     "node_a": f"{k1[1]}|{k1[3]}", "node_b": f"{k2[1]}|{k2[3]}",
                      "r_between": r_between, "rel_gm": float(np.sqrt(rel1 * rel2)),
                      "T": float(r_between / np.sqrt(rel1 * rel2))})
     return rows
@@ -600,9 +605,13 @@ def _dyadic(rows):
     # beta(drug) while sharing no condition. With conditions alone the estimator returned an interval
     # NARROWER than one-way drug clustering, which is impossible for a dependence model that captures
     # a superset -- that impossibility is how the omission was caught.
+    # Node set = {drug_1, drug_2, condition_1, condition_2}. For a same-drug pair the two drug
+    # entries collapse to one, so this is the correct generalisation rather than a special case.
     return inf.multiway_cluster_ci(
         [r["T"] for r in rows],
-        [{"drug::" + str(r.get("drug", r.get("cluster"))), r["node_a"], r["node_b"]} for r in rows])
+        [{"drug::" + str(r.get("drug", r.get("cluster"))),
+          "drug::" + str(r.get("drug_b", r.get("drug", r.get("cluster")))),
+          r["node_a"], r["node_b"]} for r in rows])
 
 
 def report(kept, args, rng):
@@ -734,10 +743,15 @@ def report(kept, args, rng):
     if dose_rows:
         ci = clustered_ci([r["T"] for r in dose_rows], [r["cluster"] for r in dose_rows], rng, args.n_boot)
         m, lo, hi, n, ncl = ci
+        # ITS OWN, from dose_rows. This block previously read `dy` from whatever the preceding loop
+        # had left behind -- in one run that happened to be None so nothing wrong was printed, but
+        # the same code would have reported another arm's interval on the dose row without a word.
+        dy_dose = _dyadic(dose_rows)
         out["dose_transfer_same_line"] = {"T": m, "ci": [lo, hi], "n_pairs": n,
-                                          "ci_dyadic": ([dy["lo"], dy["hi"]] if dy else None),
+                                          "ci_dyadic": ([dy_dose["lo"], dy_dose["hi"]] if dy_dose
+                                                        else None),
                                           "dose_source": "molar, resolved via tahoe_design"}
-        dtxt = f"  dyadic [{dy['lo']:.3f}, {dy['hi']:.3f}]" if dy else ""
+        dtxt = f"  dyadic [{dy_dose['lo']:.3f}, {dy_dose['hi']:.3f}]" if dy_dose else ""
         logger.info(f"  DOSE (same drug, same cell line, DIFFERENT MOLAR dose)  T = {m:.3f} "
                     f"drug-clustered [{lo:.3f}, {hi:.3f}]{dtxt}  ({n} pairs)")
         logger.info("       an upper reference for cross-line T: if cross-line T is close to this, "
