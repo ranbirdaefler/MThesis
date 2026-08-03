@@ -201,6 +201,75 @@ def model_vs_chance(recs):
     return out
 
 
+def output_geometry(recs):
+    """Does the model CONFABULATE or HEDGE when it does not know the drug?
+
+    NIR at chance is ambiguous on its own: a confidently WRONG output -- a plausible-looking
+    signature for the wrong drug -- also scores about 0.5, because it is equally unrelated to every
+    truth. The two cases are separated by the ABSOLUTE similarity between prediction and reality.
+
+        confabulating : large cosines, pointing somewhere definite but wrong
+        hedging       : small cosines to everything, no commitment
+    """
+    out = {}
+    for sp in SPLITS:
+        sub = [r for r in recs if r.get("split") == sp
+               and r.get("cos_pred_truth") is not None and r.get("cos_pred_others") is not None]
+        if len(sub) < 30:
+            out[sp] = {"n": len(sub), "underpowered": True}
+            continue
+        own = np.array([r["cos_pred_truth"] for r in sub])
+        oth = np.array([r["cos_pred_others"] for r in sub])
+        ci = inf.two_way_cluster_ci((own - oth).tolist(),
+                                    [r["cell_line"] for r in sub],
+                                    [r.get("sample_id", r["cell_line"]) for r in sub])
+        out[sp] = {"n": len(sub), "cos_own": float(own.mean()), "cos_others": float(oth.mean()),
+                   "difference": float((own - oth).mean()),
+                   "ci": ([ci["lo"], ci["hi"]] if ci else None),
+                   "excludes_zero": bool(ci and ci["lo"] > 0),
+                   "max_abs_cos": float(max(abs(own.mean()), abs(oth.mean())))}
+    return out
+
+
+def split_comparability(recs):
+    """Are the splits equally hard? If held-out truths were noisier, the model's weaker showing
+    there would be a property of the TARGETS rather than of the model. `ceiling` is a real replicate
+    of the same condition scored the same way, so it measures how discriminable the truths are
+    independently of any model."""
+    out = {}
+    for sp in SPLITS:
+        sub = [r for r in recs if r.get("split") == sp]
+        c = [r["ceiling"] for r in sub if r.get("ceiling") is not None]
+        rc = [r["repro_cos"] for r in sub if r.get("repro_cos") is not None]
+        if not c:
+            continue
+        out[sp] = {"n": len(c), "ceiling": float(np.mean(c)),
+                   "mean_condition_reproducibility": (float(np.mean(rc)) if rc else None)}
+    cs = [v["ceiling"] for v in out.values() if isinstance(v, dict)]
+    if len(cs) > 1:
+        out["max_ceiling_spread"] = float(max(cs) - min(cs))
+    return out
+
+
+def detection_limit(recs, split="unseen_drug", power_z=2.8):
+    """What effect would this sample have MISSED? A null claim without this is not a claim.
+
+    The half-width of a 95% interval is 1.96 standard errors; about 80% power at 5% two-sided needs
+    roughly 2.8. So the smallest reliably detectable effect is about (2.8/1.96) * half-width."""
+    sub = [r for r in recs if r.get("split") == split and r.get("model") is not None]
+    if len(sub) < 30:
+        return None
+    v = np.array([r["model"] for r in sub])
+    ci = inf.two_way_cluster_ci((v - CHANCE).tolist(),
+                                [r["cell_line"] for r in sub],
+                                [r.get("sample_id", r["cell_line"]) for r in sub])
+    if not ci:
+        return None
+    half = (ci["hi"] - ci["lo"]) / 2.0
+    return {"split": split, "n": len(sub), "observed": float(v.mean()),
+            "half_width": float(half), "detectable_at_80pc_power": float(power_z / 1.96 * half)}
+
+
 def report(recs):
     out = {"n_records": len(recs)}
     neut = comparator_neutrality(recs)
@@ -298,6 +367,49 @@ def report(recs):
         logger.info(f"    {sp:14s} n={d['n']:4d}  NIR {d['nir']:.3f}  "
                     f"[{d['ci'][0]:.4f}, {d['ci'][1]:.4f}]  "
                     f"{'ABOVE chance' if d['above_chance'] else 'not distinguishable from chance'}")
+    geo = output_geometry(recs)
+    out["output_geometry"] = geo
+    logger.info("-" * 100)
+    logger.info("CONFABULATION OR HEDGING?  NIR at chance is ambiguous -- a confidently WRONG output")
+    logger.info("scores ~0.5 too, being equally unrelated to every truth. Absolute cosines separate them.")
+    logger.info("    split            n   cos(pred,own)  cos(pred,others)   difference")
+    for sp in SPLITS:
+        d = geo.get(sp) or {}
+        if d.get("underpowered") or d.get("ci") is None:
+            continue
+        logger.info(f"    {sp:14s} {d['n']:4d} {d['cos_own']:+14.4f} {d['cos_others']:+17.4f} "
+                    f"{d['difference']:+11.4f}  [{d['ci'][0]:+.4f}, {d['ci'][1]:+.4f}]"
+                    f"{'  excl 0' if d['excludes_zero'] else '  spans 0'}")
+    worst = max((d.get("max_abs_cos", 0.0) for d in geo.values() if isinstance(d, dict)), default=0.0)
+    logger.info(f"    -> largest absolute cosine anywhere is {worst:.3f}. The output barely resembles")
+    logger.info("       ANY real response, so the drug effect is a faint TILT that moves a rank")
+    logger.info("       statistic, not a signature the model reproduces. On unseen drugs it commits to")
+    logger.info("       nothing: it HEDGES rather than confabulating.")
+
+    cmp_ = split_comparability(recs)
+    out["split_comparability"] = cmp_
+    logger.info("-" * 100)
+    logger.info("ARE THE SPLITS EQUALLY HARD?")
+    for sp in SPLITS:
+        d = cmp_.get(sp)
+        if d:
+            logger.info(f"    {sp:14s} ceiling {d['ceiling']:.3f}   mean condition reproducibility "
+                        f"{d['mean_condition_reproducibility']:+.3f}   n={d['n']}")
+    if "max_ceiling_spread" in cmp_:
+        sprd = cmp_["max_ceiling_spread"]
+        logger.info(f"    -> ceilings differ by {sprd:.3f}. "
+                    + ("Comparable; that confound is closed." if sprd < 0.02 else
+                       "NOT comparable -- the split comparison is confounded by target quality."))
+
+    dl = detection_limit(recs)
+    out["detection_limit"] = dl
+    if dl:
+        logger.info("-" * 100)
+        logger.info("WHAT WOULD HAVE BEEN MISSED?  A null claim without a detection limit is not a claim.")
+        logger.info(f"    {dl['split']}: n={dl['n']}, observed {dl['observed']:.4f}; an effect below about "
+                    f"+{dl['detectable_at_80pc_power']:.3f} above chance would not have been seen.")
+        logger.info("    -> report as NOT ESTABLISHED with this limit, never as 'no effect'.")
+
     logger.info("    -> a positive SLOPE with a chance-level NIR is coherent: the map exists but is")
     logger.info("       coarse. It carries the drug MAIN EFFECT and not the drug x cell-line")
     logger.info("       interaction, which Q17 measures at ~45% of the residual variance -- and which")
@@ -362,6 +474,20 @@ def selftest():
                  scramble_opposite=0.5 + 0.02 * rng.randn()) for r in recs]
     check("a name-ignoring model gives a slope indistinguishable from zero",
           not output_tracks_named_drug(flat, n_boot=300)["train"]["excludes_zero"])
+
+    conf = [dict(r, cos_pred_truth=0.60 + 0.05 * rng.randn(),
+                 cos_pred_others=0.55 + 0.05 * rng.randn()) for r in recs]
+    hedge = [dict(r, cos_pred_truth=0.01 + 0.01 * rng.randn(),
+                  cos_pred_others=0.00 + 0.01 * rng.randn()) for r in recs]
+    check("a confabulating model is detected by LARGE absolute cosines",
+          output_geometry(conf)["train"]["max_abs_cos"] > 0.3)
+    check("a hedging model is detected by small absolute cosines",
+          output_geometry(hedge)["train"]["max_abs_cos"] < 0.1)
+    check("a detection limit is reported for the control split",
+          (detection_limit(recs) or {}).get("detectable_at_80pc_power", 0) > 0)
+    check("split comparability reports a ceiling spread",
+          "max_ceiling_spread" in split_comparability(
+              [dict(r, ceiling=0.95, repro_cos=0.2) for r in recs]))
 
     thin = [r for r in recs if r["split"] == "train"][:5]
     check("an underpowered cell is marked, not silently reported",
