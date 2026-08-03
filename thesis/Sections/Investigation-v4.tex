@@ -1037,7 +1037,7 @@ with $\rho$ the Spearman--Brown reliability of the full-sample residual. Dividin
 reliability is essential --- measurement noise alone depresses the raw cross-line cosine and would
 otherwise be read as interaction --- and the reliability entering it is a \emph{within-well}
 split-half precision, which is optimistic relative to true biological reproducibility. That
-optimism sits in the denominator, so the interaction share $1 - \Tcoef$ is, if anything,
+optimism sits in the denominator, so the unshared fraction $1 - \Tcoef$ is, if anything,
 understated.
 
 The measurement itself carries a control-design lesson, stated because it changed the protocol.
@@ -1067,7 +1067,8 @@ returns $-0.001$.
 Quantity & Estimate & 95\% interval & Reference \\
 \midrule
 $\Tcoef$ (cross cell lines, plate-scoped generic) & $0.553$ & $[0.514, 0.593]$ & simulated $\kappa{=}0$ null $\approx 1.0$ \\
-drug $\times$ cell-line interaction share & $44.7\%$ & $[40.7\%, 48.6\%]$ & --- \\
+residual NOT shared across contexts, $1-\Tcoef$ & $44.7\%$ & $[40.7\%, 48.6\%]$ &
+mixes cell line, dose, well and estimator --- not a pure interaction \\
 $\Tcoef$ across dose (same drug, same line) & $0.707$ & $[0.632, 0.782]$ & reference scale \\
 matched negative controls & $-0.017$, $-0.008$ & spanning zero & must be $\approx 0$ \\
 \bottomrule
@@ -1081,6 +1082,18 @@ earlier false alarm reads $+0.478$ for the reasons given in the text.}
 Roughly $44\%$ of the drug-specific residual variance is drug$\times$cell-line interaction, robust
 to the generic's scope and to control splitting. Two internal checks agree, and both were decisive
 between scopes. \emph{Dose ordering}: same-drug, same-line, different-dose transfer is $0.707$
+\medskip\noindent
+\textbf{What this coefficient does and does not identify.} $\Tcoef$ is a descriptive sensitivity
+analysis, not a load-bearing estimate, and the reason is in its own configuration. The scoped
+calculation retains conditions at a reproducibility threshold of $0.2$; it permits cross-line pairs
+that differ in \emph{dose} (\texttt{same\_dose\_only=false}); it uses a \emph{self-including} generic
+(\texttt{loo\_generic=false}), so each condition's own drug contributes to the programme subtracted
+from it; and a cross-line pair may also sit in a different treatment well. The coefficient therefore
+combines cell-line, dose, well and target-estimator differences. Reading $1-\Tcoef$ as a
+drug$\times$cell-line interaction share would require all three of the other axes to be inert, and
+nothing here establishes that. The dose arm below is the exception: it holds drug and cell line fixed
+and varies only molar concentration, so its contrast is clean.
+
 [$0.632$, $0.782$], above the cross-line $0.553$ --- changing the dose costs \emph{less} than
 changing the cell line, the biologically correct ordering; at cell-line scope the ordering
 inverts. \emph{Control-split bias}: at plate scope the shared- and split-control builds agree to
@@ -1163,7 +1176,8 @@ failed identically, and it predicts that changing what the tokens \emph{encode} 
 
 \begin{claim}
 There is a conditional target worth about half the drug-specific variance that a per-drug constant
-cannot express ($44.7\%$ interaction share); no learnable structure in it is found; and re-encoding
+cannot express ($44.7\%$ of the drug-specific residual is not shared across contexts, though that
+figure mixes several axes); no learnable structure in it is found; and re-encoding
 the target as the residual exposes $59\%$ of its tokens to the drug at an unchanged retrieval
 ceiling --- the information was always present, and the tokenisation discarded it.
 \end{claim}
@@ -1376,7 +1390,7 @@ $\NIR$ is not a contradiction: it says the drug-to-signature map exists but is \
 model knows roughly what a drug does and not what it does \emph{in this well} --- and $\NIR$ asks
 the second question, ranking against the $\approx 40$ other drugs measured in the same cell line.
 That is the drug main effect without the drug $\times$ cell-line interaction, which
-\S\ref{sec:res-transfer} measures at $44.7\%$ of the residual variance. It is also why the lookup
+\S\ref{sec:res-transfer} measures descriptively at $44.7\%$ of the residual. It is also why the lookup
 wins in the next section: \texttt{drug\_lookup} \emph{is} that main effect, estimated straight from
 data far more precisely than the model learned it.
 
