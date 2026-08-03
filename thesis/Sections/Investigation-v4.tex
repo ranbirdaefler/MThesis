@@ -1094,7 +1094,7 @@ keep plate variance out of the comparison, and here the target construction has 
 \begin{claim}
 The information was always present and the tokenisation discarded it: ranking the target by signed
 residual exposes $59\%$ of its tokens to the drug at an unchanged retrieval ceiling, and the
-residual is estimable without leakage --- split before fit, generic plate-scoped and drug-meaned,
+residual is estimable without leakage: split before fit, generic plate-scoped and drug-meaned,
 reliability resolved from the data.
 \end{claim}
 
@@ -1263,7 +1263,7 @@ atlas is $0.195$, so the quantity being correlated is barely estimable, and same
 are so heavily co-plated that only $3$--$7\%$ of matched pairs survive a different-plate
 requirement, which leaves the plate confound in place. The defensible reading is that $\kappa$'s
 structure is unresolved in this dataset. Resolving it would take more cells per condition, or a
-plating design that crosses mechanism with plate --- neither of which is an analysis choice.
+plating design that crosses mechanism with plate, neither of which is an analysis choice.
 
 \begin{claim}
 There is a conditional target worth about half the drug-specific variance that a per-drug constant
@@ -1338,7 +1338,7 @@ question.
 
 A model that responds to the drug token has cleared a low bar, because reproducing a training
 average requires responding to it too. Everything scored above came from conditions the model
-trained on, so the result so far shows that the token is consulted --- not that anything
+trained on, so the result so far shows that the token is consulted, not that anything
 transferable was learned. Separating those two requires withholding data, and the physical layout of
 \S\ref{sec:methods-data} forces which withholding is meaningful. A (drug, cell line) holdout ---
 the field's standard Leave-Pairs-Out split, and the split an earlier version of this work used ---
@@ -1350,7 +1350,7 @@ generalisation, and no processing of the targets changes it, because it is a pro
 randomised.
 
 Holding out whole wells is the only assignment-respecting choice the design offers, and it answers a
-different and narrower question: generalisation to an unseen treatment well of a seen drug --- a new
+different and narrower question: generalisation to an unseen treatment well of a seen drug: a new
 physical preparation, not a new cellular context. Fixed-dose cross-context transfer, present in one
 line and absent in another, is structurally unidentifiable in this atlas; this is a property of
 Tahoe's design, not of our pipeline, and no rebuild fixes it.
@@ -1358,7 +1358,7 @@ Tahoe's design, not of our pipeline, and no rebuild fixes it.
 The split used throughout the residual arm is therefore keyed at the well. \texttt{train} holds
 every condition of the remaining wells ($4{,}999$ conditions before the reliability line, $2{,}523$
 after it). \texttt{unseen\_combo} holds $36$ treated wells out whole ($904$ conditions, $900$ after
-inventory filters), and the holdout never takes a drug's last training well --- without that guard a
+inventory filters), and the holdout never takes a drug's last training well; without that guard a
 two-well drug could silently become an unseen drug while sitting in the unseen-combination arm,
 making the two arms measure the same thing; zero wells contribute conditions to both sides of this
 split. \texttt{unseen\_drug} holds every condition of $10$ held-out drugs ($714$ conditions, $711$
@@ -1370,7 +1370,7 @@ interest is contingent on the transfer coefficient. Two warnings ride with the d
 reports, citing~\cite{partin}, that apparently good performance on pair-holdout splits can be
 reached simply by predicting each drug's average response across the training cell lines; our
 held-out-well estimand sits exactly in the regime where that warning bites, which is why the
-baseline ladder of \S\ref{sec:res-lookup} is not optional --- the drug-average predictor is not a
+baseline ladder of \S\ref{sec:res-lookup} is not optional: the drug-average predictor is not a
 formality, it is the hypothesis under test. And evaluation samples conditions under an explicit
 per-split quota, because a uniform draw reproduces the pool's proportions and starves precisely the
 split the experiment exists to test: in a first run, $250$ constructed held-out combinations yielded
@@ -1434,7 +1434,7 @@ Read in the neutral column, \texttt{train} clears zero at \ci{+0.1457}{+0.0813}{
 well-clustering and line-clustering alike ($[-0.0050, +0.0993]$). Generalisation to an unseen
 treatment well of a seen drug is therefore not established. The precision matters: not established
 is not the same as shown to be zero. The interval reaches $+0.099$, so an effect of up to roughly
-$+0.1$ remains compatible with these data at $n = 250$ --- a limit of power at the sample size the
+$+0.1$ remains compatible with these data at $n = 250$: a limit of power at the sample size the
 holdout affords, reported as one. (On \texttt{unseen\_drug} the corresponding detection limit is
 $+0.099$.) The difficulty of the three splits is not the explanation: their split-half replicate
 ceilings are $0.962$, $0.955$ and $0.956$, so the splits are equally hard and the held-out shortfall
@@ -1448,7 +1448,7 @@ arms differ in two ways at once: whether the condition was trained on, and which
 Restricting the comparison to the $20$ drugs present in both arms, the advantage attenuates to
 $+0.0420$ with $p = 0.4851$. The defensible statement is therefore narrow: a condition-weighted
 training-exposure advantage exists in this evaluation, and its generality across drugs is
-unresolved --- the design cannot separate exposure from drug identity, and we do not claim either
+unresolved: the design cannot separate exposure from drug identity, and we do not claim either
 direction of the stronger interpretation.
 
 Two instruments that need no comparator at all cannot be touched by any of this, and they carry the
@@ -1461,7 +1461,7 @@ degradation worth the name between train and held-out. Second, scored against ch
 comparator, the model's own $\NIR$ clears $0.5$ on \texttt{train} ($0.635$ [$0.575$, $0.695$]) and
 is not distinguishable from it on either held-out split. A positive slope alongside a chance-level
 $\NIR$ is not a contradiction: it says the drug-to-signature map exists but is coarse. The model
-knows roughly what a drug does and not what it does in this well --- and $\NIR$ asks the second
+knows roughly what a drug does and not what it does in this well, and $\NIR$ asks the second
 question, ranking against the $\approx 40$ other drugs measured in the same cell line. That is the
 drug main effect without the drug $\times$ cell-line interaction, which \S\ref{sec:res-transfer}
 measures at $44.7\%$ of the residual variance. It is also why the lookup wins in the next section:
@@ -1478,7 +1478,7 @@ One caveat attaches to every held-out number in this chapter, and it is stated h
 numbers live. The evaluation's truths are reconstructed through a compatibility path that refits the
 generic on the reliability-surviving subset of training conditions rather than the full set the
 checkpoint was trained against, and that filters held-out conditions by their own split-half
-reproducibility --- a selection on the evaluation set's outcome. Its direction is conservative for
+reproducibility: a selection on the evaluation set's outcome. Its direction is conservative for
 the headline: it retains the cleanest, easiest conditions, and the held-out result still fails to
 clear zero. But the evaluated population is not the full held-out population, and the intervals
 above should be read as applying to the reproducible subset.
@@ -1590,7 +1590,7 @@ on count alone would differ from the channel arm in plate membership as well as 
 which is two differences where the estimand allows one. A co-plating diagnostic is printed before
 any verdict, so the size of the correction is a number rather than an argument, and where a
 plate-matched null spans too few cell lines the channel is reported \textsc{untestable} rather than
-closed --- ``we could not build the control'' must never be written as ``closed''. Coverage is
+closed. ``We could not build the control'' must never be written as ``closed''. Coverage is
 likewise reported before any verdict, because a channel annotated on few drugs cannot be closed by a
 null result: it was never tested.
 
@@ -1653,7 +1653,7 @@ Three caveats bound it. Coverage is $54\%$ and $32\%$, so this is measured on th
 The channel gaps are severalfold below the advantage a same-drug lookup enjoys for a seen drug
 ($+0.44$ above chance), so the reachable ceiling in this regime is much lower. And target and MoA
 overlap, so whether target adds anything over MoA is a further question this measurement does not
-settle --- settling it would need a leave-one-mechanism-out split rather than the
+settle: settling it would need a leave-one-mechanism-out split rather than the
 leave-one-drug-out split used here, since a held-out drug's mechanism class is generally still
 represented in training.
 
@@ -1668,10 +1668,10 @@ generation arms and swaps exactly one span of the instruction line to the opposi
 partner, leaving every other byte identical: the drug name with the mechanism kept, the mechanism
 with the name kept, and both together. One guard is essential rather than tidy: if the swap partner
 happens to share the original's mechanism, then swapping only the mechanism produces a prompt
-identical to the model's own, and the arm scores a gap of exactly zero by construction --- read
-naively, indistinguishable from ``the model ignores the mechanism'', the very claim under test ---
-so such conditions are dropped rather than scored, which is why the mechanism arm carries fewer
-conditions than the others.
+identical to the model's own, and the arm scores a gap of exactly zero by construction; read
+naively, that is indistinguishable from ``the model ignores the mechanism'', the very claim under
+test, so such conditions are dropped rather than scored. This is why the mechanism arm carries
+fewer conditions than the others.
 
 On the earlier target build, the decomposed arms suggested the response is carried almost entirely
 by the name span: swapping only the drug name gave $\gap = \ci{+0.0809}{+0.0592}{+0.1010}$
@@ -1684,7 +1684,7 @@ current run establishes is response to the combined drug-and-mechanism prompt, w
 field's contribution unresolved.
 
 The practical consequence is narrower than the one earlier drafts drew, and more honest. The
-target-prompt arm is not retired by measurement --- it is untested. What argues for building it
+target-prompt arm is not retired by measurement: it is untested. What argues for building it
 carefully rather than eagerly is the shape of the failure documented above: the model's deficit is
 not confined to missing information about unseen drugs, because on seen drugs it recovers only a
 fifth of the chance-to-ceiling distance against a lookup that knows nothing about contexts at all.
@@ -1704,7 +1704,7 @@ the same plate; the residual frame scores a predicted drug-specific signature ag
 the same cell line, after the generic programme has been subtracted. Both have chance at $0.50$ by
 construction, and that coincidence is the trap: the residual frame's ceiling is $0.958$ where the
 expression frame's is $0.576$, so a model scoring $0.569$ in one and $0.498$ in the other has not
-improved --- it is being measured against a different question.
+improved: it is being measured against a different question.
 
 \begin{table}[h]
 \centering
@@ -1725,7 +1725,8 @@ Frame & Arm & $\NIR$ & What it knows \\
  & drug lookup (training-only) & 0.941 & this drug's signature from other cell lines \\
  & drug lookup, one line & 0.859 & the same, from a single other cell line \\
  & \textbf{model} & \textbf{0.569} & control cell $+$ drug \\
- & scramble, \texttt{orth} partner & 0.497 & the neutral comparator: chance by construction \\
+ & scramble, \texttt{orth} partner & 0.497 & the neutral comparator: \emph{empirically} near
+chance, and selected on the observed outcome \\
  & scramble, \texttt{opposite} partner & 0.403 & an active treatment, not a null \\
  & generic response & 0.500 & nothing (the zero vector, by construction) \\
 \bottomrule
