@@ -220,6 +220,14 @@ def main():
                          "HALVED a measured effect (Q15). One forgotten flag was worth +0.0716 vs +0.1429.")
     ap.add_argument("--gen_batch_size", type=int, default=8)
     ap.add_argument("--bf16", action="store_true")
+    ap.add_argument("--split_comparator", default="scramble_orth",
+                    choices=["scramble_orth", "scramble_opposite", "scramble_near"],
+                    help="Comparator for the by-split table. Defaults to the NEUTRAL stratum. "
+                         "scramble_opposite is NOT a null: it tracks the partner drug (measured NIR "
+                         "0.403 at partner cosine -0.24 against 0.497 at 0.00), so a gap against it "
+                         "mixes 'the model used the drug' with 'the comparator was pushed the other "
+                         "way'. The old behaviour is reproduced with --split_comparator "
+                         "scramble_opposite, and both are reported either way.")
     ap.add_argument("--n_boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", default="RESULTS/residual_eval.json")
@@ -863,7 +871,17 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
         splits[r.get("split", "unknown")].append(r)
     if len(splits) > 1 or "unknown" not in splits:
         logger.info("-" * 100)
-        logger.info("  GENERALIZATION — opposite-signature gap by split "
+        # The comparator is NOT fixed at scramble_opposite any more. That stratum tracks the
+        # partner drug rather than sitting at chance, so a gap measured against it is inflated by
+        # however far the partner was pushed. The neutral stratum is the honest denominator.
+        cmp_arm = args.split_comparator
+        if not any(r.get(cmp_arm) is not None for r in recs):
+            fb = "scramble_opposite"
+            logger.warning(f"  {cmp_arm} is not populated in these records; falling back to {fb}. "
+                           f"That arm is NOT neutral -- read the gap as an upper bound.")
+            cmp_arm = fb
+        alt_arm = "scramble_opposite" if cmp_arm != "scramble_opposite" else "scramble_orth"
+        logger.info(f"  GENERALIZATION — gap vs {cmp_arm} by split "
                     "(train = memorisation; unseen_combo = CROSS-CONTEXT TRANSFER, the real test;")
         logger.info("  unseen_drug = no drug information at all, expected ~0 given the SAR gate):")
         gen_out = {}
@@ -881,14 +899,21 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                             f"UNDERPOWERED (need n>={MIN_N} and >={MIN_CL} cell lines) -- NO VERDICT")
                 gen_out[name] = {"n": len(sub), "n_cell_lines": n_cl_sub, "underpowered": True}
                 continue
-            r = _clustered_ci(sub, "model", "scramble_opposite", rng, args.n_boot)
+            r = _clustered_ci(sub, "model", cmp_arm, rng, args.n_boot)
+            r_alt = _clustered_ci(sub, "model", alt_arm, rng, args.n_boot)
             mo = np.mean([x["model"] for x in sub if x.get("model") is not None])
             if r:
                 m, lo, hi, n, ncl = r
-                gen_out[name] = {"gap": m, "ci": [lo, hi], "n": n, "n_cell_lines": ncl, "model_nir": float(mo)}
+                gen_out[name] = {"gap": m, "ci": [lo, hi], "n": n, "n_cell_lines": ncl,
+                                 "model_nir": float(mo), "comparator": cmp_arm}
+                if r_alt:
+                    gen_out[name]["gap_vs_" + alt_arm] = {"gap": r_alt[0], "ci": [r_alt[1], r_alt[2]]}
                 logger.info(f"    {name:14s} n={n:4d} ({ncl:2d} cell lines)  model NIR={mo:.3f}  "
                             f"gap = {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  "
                             f"{'USES DRUG' if lo > 0 else 'null'}")
+                if r_alt:
+                    logger.info(f"    {'':14s} {'':4s}  {'':16s} for reference, vs {alt_arm}: "
+                                f"{r_alt[0]:+.4f}  CI [{r_alt[1]:+.4f}, {r_alt[2]:+.4f}]")
                 # Baselines PER SPLIT. Pooling them mixes regimes: on unseen_drug the lookup is an
                 # ORACLE -- it reads the held-out drug's true residuals, information the model is
                 # definitionally denied -- so only the train / unseen_combo rows are fair contests.

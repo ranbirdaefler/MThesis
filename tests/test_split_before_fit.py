@@ -1,3 +1,4 @@
+import inspect
 """The release gate for the generalisation chapter.
 
 The defect this exists to catch: `build_residual_targets` used to fit the generic shift and the
@@ -577,3 +578,36 @@ def test_a_cache_with_no_recoverable_treatment_unit_is_refused(tmp_path):
     # explicit opt-out still works, and the report says the unit is unavailable
     _, _, _, _, notes = brt.inventory(cache, N_CELLS, N_CELLS, conc, require_sample_id=False)
     assert notes["sample_id_source"] == "unavailable"
+
+
+# --- the by-split comparator must default to the NEUTRAL stratum ---------------------------------
+# scramble_opposite is not a null: measured NIR 0.403 at partner cosine -0.24 against 0.497 at 0.00,
+# so a gap against it mixes "the model used the drug" with "the comparator was pushed the other way".
+# The by-split table hard-coded it, which is exactly where the transfer claim is read off.
+
+def test_split_table_comparator_defaults_to_the_neutral_stratum():
+    import argparse
+    import endcell.analysis.residual_eval as re_
+    src = inspect.getsource(re_)
+    ap = [ln for ln in src.splitlines() if "--split_comparator" in ln]
+    assert ap, "the by-split comparator is not configurable"
+
+    parser = None
+    for name in dir(re_):
+        fn = getattr(re_, name)
+        if callable(fn) and name in ("build_parser", "_parser", "make_parser"):
+            parser = fn()
+            break
+    if parser is None:                      # parser is built inline in main(); read the default off source
+        i = src.index("--split_comparator")
+        window = src[i:i + 400]
+        assert 'default="scramble_orth"' in window, "the default comparator is not the neutral stratum"
+    else:
+        assert parser.get_default("split_comparator") == "scramble_orth"
+        assert isinstance(parser, argparse.ArgumentParser)
+
+    # and the hard-coded call site is gone from the by-split block
+    blk = src[src.index("GENERALIZATION"):]
+    blk = blk[:blk.index("means[") if "means[" in blk else len(blk)]
+    assert '_clustered_ci(sub, "model", "scramble_opposite"' not in blk, \
+        "the by-split table still hard-codes scramble_opposite"
