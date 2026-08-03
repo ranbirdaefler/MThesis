@@ -725,6 +725,68 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
     return kept, generic, ctrl_rows, X, meta
 
 
+def reliability_calibration(conds, shifts, gen, train_keys, scope, repro_thr, seed, n_null=4000):
+    """What `--repro_thr` actually keeps, against a null for what "reproducible" means.
+
+    The 0.2 threshold was chosen when reliability was measured with SHARED controls, where it kept
+    62% of conditions. Split controls are a different measurement on a different scale -- the mean
+    drops to about 0.13 -- so carrying 0.2 across unchanged silently turns a moderate quality bar
+    into a stringent one. That is not necessarily wrong, but it must be a decision rather than an
+    inheritance, so this reports the whole curve and gives the threshold a reference point.
+
+    The null pairs half A of one condition with half B of a DIFFERENT one: same encoding, same
+    dimensionality, same noise, no shared biology. Everything above it is reproducible structure.
+    """
+    rng = np.random.RandomState(seed + 991)
+    cos_of = []
+    for k in train_keys:
+        info = conds[k]
+        gA = gen.value(info["cell_line"], info["plate"], info["drug"], "A", scope)
+        gB = gen.value(info["cell_line"], info["plate"], info["drug"], "B", scope)
+        if gA is None or gB is None:
+            continue
+        rA, rB = shifts[k]["A"] - gA, shifts[k]["B"] - gB
+        cos_of.append((k, rA, rB))
+    if len(cos_of) < 10:
+        return {}
+    obs = np.array([float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9))
+                    for _, a, b in cos_of])
+
+    null = []
+    for _ in range(n_null):
+        i, j = rng.randint(len(cos_of)), rng.randint(len(cos_of))
+        if i == j:
+            continue
+        a, b = cos_of[i][1], cos_of[j][2]
+        null.append(float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9)))
+    null = np.array(null)
+    q95, q99 = float(np.percentile(null, 95)), float(np.percentile(null, 99))
+
+    ladder = sorted({round(t, 3) for t in
+                     [0.0, 0.05, q95, q99, 0.10, 0.15, 0.20, 0.25, 0.30] if t is not None})
+    rows = [{"thr": t, "retained": round(float(np.mean(obs > t)), 4),
+             "n": int((obs > t).sum())} for t in ladder]
+
+    logger.info("RELIABILITY CALIBRATION -- what the threshold keeps, and what beats a null")
+    logger.info(f"  observed cos(res_A, res_B): mean {obs.mean():+.3f}  median "
+                f"{np.median(obs):+.3f}  n={len(obs)}")
+    logger.info(f"  null (half A of one condition vs half B of another): mean {null.mean():+.3f}  "
+                f"95th pct {q95:+.3f}  99th pct {q99:+.3f}")
+    for r in rows:
+        mark = "  <- in use" if abs(r["thr"] - repro_thr) < 1e-9 else ""
+        tag = ("  (null 95th)" if abs(r["thr"] - round(q95, 3)) < 1e-9 else
+               "  (null 99th)" if abs(r["thr"] - round(q99, 3)) < 1e-9 else "")
+        logger.info(f"    thr {r['thr']:+.3f}  keeps {r['retained']:>6.1%}  ({r['n']} conditions)"
+                    f"{tag}{mark}")
+    logger.info(f"  -> the fraction of conditions with a residual that reproduces at all is "
+                f"{float(np.mean(obs > q95)):.0%} (above the null's 95th percentile). Anything "
+                f"stricter is a quality choice, not a validity one.")
+    return {"mean_cos": float(obs.mean()), "median_cos": float(np.median(obs)),
+            "null_mean": float(null.mean()), "null_p95": q95, "null_p99": q99,
+            "frac_above_null_p95": float(np.mean(obs > q95)), "ladder": rows,
+            "threshold_in_use": repro_thr}
+
+
 def scope_sensitivity(conds, shifts, train_keys, repro_thr):
     """What each scope choice costs, measured on TRAIN conditions only.
 
@@ -841,6 +903,8 @@ def run(args):
     fit_digest = gen.digest()
     logger.info(f"generic scope={args.generic_scope} shrink_k={args.shrink_k} "
                 f"leave-one-drug-out=on  fit_digest={fit_digest[:16]}")
+    relcal = reliability_calibration(conds, shifts, gen, train_keys, args.generic_scope,
+                                     args.repro_thr, args.seed)
 
     logger.info("=== [4/4] transform ===")
     kept, relstats = transform(conds, shifts, gen, split, args.generic_scope, args.repro_thr,
@@ -938,6 +1002,7 @@ def run(args):
               "leave_one_drug_out": True, "drug_weighted_generic": True,
               "split_before_fit": True, "split_unit": args.split_unit,
               "reliability_controls": relprov,
+              "reliability_calibration": relcal,
               "eval_repro_filter": bool(args.eval_repro_filter),
               "fit_digest": fit_digest, "reliability_by_split": relstats,
               "scope_sensitivity": sens, "well_crossing": crossing,
