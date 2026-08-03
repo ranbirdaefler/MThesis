@@ -12,7 +12,10 @@ prints the retracted `HEADROOM ... has essentially vanished` line — so this sc
 
 ## 1. `fielddecomp.sbatch` — which part of the prompt does the model read?  (GPU, ~1.5 h, NO retrain)
 
-The channel gate showed that **mechanism carries real signal** (+0.078 over its count-matched null).
+The channel gate appeared to show that mechanism carries real signal (+0.078 over its
+count-matched null) — but that null is **not plate-matched**, and mechanism partners are
+largely co-plated in a frame that retains plate structure. Section 11 re-measures it. Until
+that lands, treat this arm's motivation as pending rather than established.
 The prompt has always contained `Mechanism: {moa}`. And the model's unseen-drug gap was null. Those
 three facts sit uneasily together, and the only thing currently reconciling them is "that arm was
 underpowered" — which is true but is a dodge.
@@ -942,6 +945,154 @@ same-drug scramble partners deflate it. "Everything shrinks" is not the safe pre
 Note that `drug_lookup` in this eval is still fitted from the full cache and is therefore an oracle.
 Step 6 restricts it to training conditions, and until that lands the lookup baseline should be read
 as an upper bound rather than as a competitor.
+
+---
+
+## 11. `chgate.sbatch` — the channel gate, against a null that is actually matched  (CPU, ~2 h)  **[audit F1]**
+
+**This can retract a printed claim, which is why it goes before the retrain.**
+
+`Conclusions.tex:123-129` says two channels are live: MoA at +0.078 and target at +0.084 over a
+count-matched random null. The gate's own estimand requires the arm and its null to differ in
+**exactly one** respect. They differ in two.
+
+Mechanism- and target-paired drugs are largely **co-plated** — a mechanism series is laid out
+together — while drugs drawn at random are co-plated at the background rate. The residuals being
+averaged come from the cell-line-scoped build, which `FINDINGS.md:523` measures as **plate-retaining**
+(same-plate null +0.478 against −0.018 at plate scope). So the channel arm gets a plate-similarity
+advantage its null does not have, and some unknown share of +0.078 is plate rather than mechanism.
+
+This is the same class of defect as the two probe retractions: a control matched on one axis and
+silently unmatched on another. It is also the class this project is otherwise good at catching, so
+it is worth being blunt that we did not catch this one — an external audit did.
+
+The re-run reports three constructions side by side and lets the difference between them be the
+answer:
+
+| construction | what it is | reads |
+|---|---|---|
+| `count_matched` | the published null — same number of partners, drawn at random | continuity with +0.078 |
+| `plate_matched` | same number of partners **and** the same same-plate/different-plate split | **the verdict** |
+| `different_plate` | both arms restricted to partners sharing no plate with the target | the clean arm, likely thin |
+
+Plus a **co-plating diagnostic** printed before any verdict: if the channel and the count-matched
+null are co-plated at the same rate, there is no confound here and the published number stands as
+measured.
+
+The selftest now plants worlds with a plate effect and **no channel biology at all**, partners 90%
+co-plated. Over 12 worlds the count-matched null reads **+0.384**; the plate-matched null reads
+**+0.016**. That is not a claim about Tahoe's true magnitude — the parameters are deliberately
+adverse — but it establishes that the construction can manufacture an effect several times the size
+of the one being defended.
+
+```bash
+scp shared/tahoe_design.py endcell/ot/build_residual_targets.py \
+    endcell/analysis/channel_gate.py endcell/analysis/artifact_manifest.py \
+    3180408@login.hpc.unibocconi.it:~/tahoe/
+```
+
+```bash
+cd ~/tahoe && cat > chgate.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=chgate
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=06:00:00
+#SBATCH --output=logs/chgate_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_TOKEN=$(cat ~/.hf_token)
+export HF_HUB_DISABLE_XET=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+D=/data/BuffaF-Projetcs/florian_c2s
+
+$PY channel_gate.py --selftest
+
+# the published frame, so the count-matched column reproduces the number in the thesis
+$PY channel_gate.py --cache_dir "$D/ot_cache" --seed 42 \
+    --out RESULTS/channel_gate_platematched.json
+echo done
+EOF
+sbatch chgate.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/chgate_*.out | head -1); grep -nE "SELFTEST|PLATE-ONLY|CO-PLATING|channel |excess|count_matched|plate_matched|different_plate|-> |>>>" $LOG
+```
+
+**How to read it.**
+
+- **`excess` near zero** in the co-plating block → mechanism partners are no more co-plated than
+  random ones, there was never a confound, and +0.078 stands. Write one sentence saying it was
+  tested.
+- **`plate_matched` CI clears the margin** → the channel is real *after* the plate advantage is
+  removed. The verdict survives, with a smaller and better-defended number.
+- **`plate_matched` CI spans zero while `count_matched` did not** → the published gap was plate
+  structure. `Conclusions.tex:123-129`, `jobs/next.md` §1 and Q20's stated motivation all get
+  rewritten, and the project gets a third retraction that follows the same discipline as the first
+  two.
+- **`UNTESTABLE`** → mechanism partners are too co-plated to build a matched null at adequate
+  coverage. This is **not** a null result and must not be written as one. The honest sentence is
+  "this atlas cannot separate mechanism from plate for this channel", which still overturns "live".
+
+---
+
+## 12. `artifacts.sbatch` — can every quoted number be shown to an examiner?  (CPU, ~5 min)  **[audit F3]**
+
+Six result sets quoted in the thesis have no committed artifact: the channel gate, the probe arms
+and their replication, the three κ runs, the field decomposition, and the variance decomposition
+carrying the matched-null / dose / shared-split arms. A local scan confirms it — **8 of 17**
+manifest entries have no file in `RESULTS_cluster/`.
+
+The audit calls these "not established". That is the right word for what it could check, but it is
+probably not what happened: those jobs ran and wrote into `~/tahoe/RESULTS`, and what is missing is
+the copy back. This job runs where the artifacts are, says which of the two it is, and tars up
+everything present so the gap closes in one scp.
+
+```bash
+cd ~/tahoe && cat > artifacts.sbatch <<'EOF'
+#!/bin/bash
+#SBATCH --job-name=artifacts
+#SBATCH --account=3180408
+#SBATCH --partition=defq
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=8G
+#SBATCH --time=00:30:00
+#SBATCH --output=logs/artifacts_%j.out
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export PYTHONNOUSERSITE=1
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+cd ~/tahoe
+mkdir -p RESULTS logs
+
+$PY artifact_manifest.py --selftest
+$PY artifact_manifest.py --scan ~/tahoe/RESULTS \
+    --bundle ~/tahoe/artifacts_bundle.tar.gz --out RESULTS/artifact_scan.json
+ls -la ~/tahoe/artifacts_bundle.tar.gz
+echo done
+EOF
+sbatch artifacts.sbatch
+```
+
+```bash
+LOG=$(ls -t logs/artifacts_*.out | head -1); grep -nE "SELFTEST|ok  |MISS|entries complete|needs a re-run|bundled" $LOG
+```
+
+Then bring the bundle back and commit it:
+
+```bash
+scp 3180408@login.hpc.unibocconi.it:~/tahoe/artifacts_bundle.tar.gz . && tar xzf artifacts_bundle.tar.gz -C RESULTS_cluster/
+```
+
+Anything still missing after that is a genuine gap with two honest outcomes and no third: re-run the
+job, or withdraw the number from the thesis.
 
 ---
 
