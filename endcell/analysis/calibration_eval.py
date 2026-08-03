@@ -50,6 +50,14 @@ for _p in _cands:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 # --- end bootstrap ---
+try:
+    import inference as inf
+except ImportError:
+    import sys as _s, os as _o
+    _s.path.insert(0, _o.path.join(_o.path.dirname(_o.path.dirname(
+        _o.path.dirname(_o.path.abspath(__file__)))), "shared"))
+    import inference as inf
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -61,15 +69,13 @@ def _expr_to_rank(vec, fill_frac=1.0):
     at the worst rank (P), matching the [END_CELL] DE-Δr convention that makes on/off genes extreme."""
     P = len(vec)
     fill = P * fill_frac
-    order = np.argsort(-vec, kind="stable")
     ranks = np.full(P, float(fill))
-    r = 1
-    for i in order:
-        if vec[i] > 0:
-            ranks[i] = r
-            r += 1
-        else:
-            break  # rest are zero (argsort desc) -> keep fill
+    nz = np.where(np.asarray(vec) > 0)[0]
+    if len(nz):
+        # average ranks among the EXPRESSED genes; zeros stay tied at `fill`, which is the
+        # [END_CELL] convention. Two genes at the same expression now receive the same rank instead
+        # of being ordered by panel position.
+        ranks[nz] = _rankdata(-np.asarray(vec, dtype=float)[nz])
     return ranks
 
 
@@ -118,14 +124,37 @@ def m_nir(pred, own_true, other_truths):
         return None
     d_own = np.linalg.norm(pred - own_true)
     d_oth = np.array([np.linalg.norm(pred - t) for t in other_truths])
-    n_worse = np.sum(d_oth > d_own)                 # how many others are farther than own
+    # TIE-AWARE, Mann-Whitney convention: an exact tie counts a half. Under strict `>` a DEGENERATE
+    # predictor -- one equidistant from every truth -- scores 0.000 rather than the 0.500 it
+    # deserves, which makes a metric look catastrophically bad when it is merely uninformative.
+    # residual_eval already does it this way; the two must agree or "NIR" means two things.
+    n_worse = float(np.sum(d_oth > d_own) + 0.5 * np.sum(d_oth == d_own))
     return float(n_worse / len(d_oth))              # 1 => own closest; 0.5 => chance
 
 
 def _rankdata(a):
+    """Ranks with AVERAGE ranks within tie groups.
+
+    The previous version broke ties by array index, which makes the rank of a tied gene depend on
+    where it happens to sit in the panel. That is not a small effect here: expression vectors are
+    sparse and heavily tied at zero and at low counts, and an index-dependent rank turns arbitrary
+    gene ordering into apparent signal for every rank-based metric -- including the two the audit
+    calls exploitable.
+    """
+    a = np.asarray(a, dtype=float)
+    n = len(a)
     order = np.argsort(a, kind="stable")
-    r = np.empty(len(a), float)
-    r[order] = np.arange(1, len(a) + 1)
+    r = np.empty(n, dtype=float)
+    r[order] = np.arange(1, n + 1)
+    sa = a[order]
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and sa[j + 1] == sa[i]:
+            j += 1
+        if j > i:
+            r[order[i:j + 1]] = (i + j + 2) / 2.0        # mean of ranks i+1 .. j+1
+        i = j + 1
     return r
 
 
@@ -200,25 +229,92 @@ def calibrate_cellline(drugs, ctrl_vec, de_k, rng, deg_pool_cap):
 METRICS = ["weighted_r2", "spearman_expr", "de_delta", "panel_tau", "nir"]
 
 
-def aggregate_drf(all_rows):
-    """DRF per metric as a RATIO-OF-MEANS (stable): [mean(m_pos) - mean(m_neg)] / [mean(m_perfect) -
-    mean(m_neg)]. The earlier mean-of-ratios blew up when a control landed near the perfect endpoint;
-    ratio-of-means is well-behaved and is what the m(neg)/m(pos) columns already imply."""
+def _drf_of(rows, m):
+    """DRF for one metric from a set of cell-line rows. A RATIO OF MEANS, evaluated whole."""
+    pos, ng, pf = [], [], []
+    for r in rows:
+        p, n, f = r["pos_interp"][m], r["neg_mean"][m], r["perfect"][m]
+        if p is None or n is None or f is None:
+            continue
+        pos.append(p); ng.append(n); pf.append(f)
+    if not pos:
+        return None
+    mp, mn, mf = float(np.mean(pos)), float(np.mean(ng)), float(np.mean(pf))
+    denom = mf - mn
+    return None if abs(denom) < 1e-6 else float((mp - mn) / denom)
+
+
+def aggregate_drf(all_rows, n_boot=2000, seed=0):
+    """DRF per metric, with an interval, a p-value and Holm across the family.
+
+    THREE THINGS THE SHIPPED VERSION DID NOT DO.
+
+    (a) DRF is a ratio whose DENOMINATOR is estimated from the same data. Any interval that
+        resamples the numerator while holding `m_perfect - m_neg` fixed is too narrow. Every
+        resample here recomputes the whole ratio through `_drf_of`, so the denominator moves with
+        the numerator by construction.
+
+    (b) There was no interval at all -- a point estimate was being read as a verdict.
+
+    (c) "Only NIR is calibrated" is a SIMULTANEOUS claim about five metrics, so it needs
+        family-wise control. Holm, not BH: the statement is about all five at once, and BH would
+        control the wrong quantity. The p-value is one-sided against DRF <= 0, since a metric is
+        calibrated when it ranks the noise ceiling ABOVE the negative control, not merely
+        differently from it.
+    """
     out = {"neg_mean": {}}
+    clusters = list(range(len(all_rows)))            # one row per cell line; the cell line is the unit
+    pvals, keys = [], []
     for m in METRICS:
-        pos, ng, pf = [], [], []
-        for r in all_rows:
-            p, n, f = r["pos_interp"][m], r["neg_mean"][m], r["perfect"][m]
-            if p is None or n is None or f is None:
-                continue
-            pos.append(p); ng.append(n); pf.append(f)
-        if pos:
-            mp, mn, mf = float(np.mean(pos)), float(np.mean(ng)), float(np.mean(pf))
-            denom = mf - mn
-            out["neg_mean"][m] = {"drf": (float((mp - mn) / denom) if abs(denom) > 1e-6 else None),
-                                  "n": len(pos), "m_pos": mp, "m_neg": mn, "m_perfect": mf}
-        else:
+        usable = [r for r in all_rows
+                  if r["pos_interp"][m] is not None and r["neg_mean"][m] is not None
+                  and r["perfect"][m] is not None]
+        if not usable:
             out["neg_mean"][m] = None
+            continue
+        mp = float(np.mean([r["pos_interp"][m] for r in usable]))
+        mn = float(np.mean([r["neg_mean"][m] for r in usable]))
+        mf = float(np.mean([r["perfect"][m] for r in usable]))
+        rec = {"drf": _drf_of(usable, m), "n": len(usable),
+               "m_pos": mp, "m_neg": mn, "m_perfect": mf}
+        ci = inf.cluster_bootstrap(usable, list(range(len(usable))),
+                                   lambda rs, _m=m: _drf_of(rs, _m), n_boot=n_boot, seed=seed)
+        if ci:
+            rec["ci"] = [ci["lo"], ci["hi"]]
+            rec["boot_sd"] = ci["boot_sd"]
+            rec["n_cell_lines"] = ci["n_clusters"]
+            # one-sided bootstrap p against DRF <= 0
+            rng = np.random.RandomState(seed + 17)
+            draws = []
+            idx = np.arange(len(usable))
+            for _ in range(n_boot):
+                sel = rng.randint(0, len(idx), len(idx))
+                v = _drf_of([usable[i] for i in sel], m)
+                if v is not None:
+                    draws.append(v)
+            if draws:
+                p = (sum(1 for d in draws if d <= 0) + 1) / (len(draws) + 1)
+                rec["p_one_sided"] = float(p)
+                pvals.append(p); keys.append(m)
+        out["neg_mean"][m] = rec
+
+    if pvals:
+        adj = inf.holm(pvals)
+        for k, a in zip(keys, adj):
+            out["neg_mean"][k]["p_holm"] = float(a)
+            out["neg_mean"][k]["calibrated"] = bool(a < 0.05 and out["neg_mean"][k]["drf"] > 0)
+        out["multiplicity"] = {"method": "Holm across the metric family", "n_tests": len(pvals),
+                               "family": keys}
+        cal = [k for k in keys if out["neg_mean"][k].get("calibrated")]
+        logger.info("  DRF, Holm-adjusted across %d metrics -- calibrated: %s",
+                    len(pvals), ", ".join(cal) if cal else "NONE")
+        for k in keys:
+            r = out["neg_mean"][k]
+            ci = r.get("ci")
+            logger.info("    %-14s DRF %+.3f %s  p=%.4f  holm=%.4f  %s", k, r["drf"],
+                        (f"[{ci[0]:+.3f}, {ci[1]:+.3f}]" if ci else "[--]"),
+                        r.get("p_one_sided", float("nan")), r.get("p_holm", float("nan")),
+                        "CALIBRATED" if r.get("calibrated") else "not calibrated")
     return out
 
 

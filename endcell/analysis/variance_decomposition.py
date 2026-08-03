@@ -91,6 +91,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 
 # --------------------------------------------------------------------------- primitives
+try:
+    import tahoe_design as td
+    import inference as inf
+except ImportError:                                   # split-repo layout
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))), "shared"))
+    import tahoe_design as td
+    import inference as inf
+
+
+TAHOE_REPO = "tahoebio/Tahoe-100M"
+
+
 def _reject(x, g):
     """Component of x orthogonal to g. Removes the generic DIRECTION entirely, so no per-drug
     scaling of the generic program can survive into the residual."""
@@ -132,6 +145,41 @@ def clustered_ci(values, clusters, rng, n_boot=2000):
 
 
 # --------------------------------------------------------------------------- residual construction
+def dose_molar_map(samples, repo=TAHOE_REPO):
+    """sample id -> molar concentration, or None with the reason recorded.
+
+    Returns (molar_of, report). Anything unresolvable stays None rather than becoming 0.0, because a
+    missing dose and a zero dose are different experiments and the dose arm must drop the former
+    rather than silently treat it as a vehicle control."""
+    import pandas as pd
+    from huggingface_hub import hf_hub_download
+    sm = pd.read_parquet(hf_hub_download(repo, "metadata/sample_metadata.parquet",
+                                         repo_type="dataset"))
+    conc = {str(r.get("sample")): str(r.get("drugname_drugconc", "unknown"))
+            for _, r in sm.iterrows() if r.get("sample") is not None}
+    molar_of, n_ok, n_combo, reasons = {}, 0, 0, defaultdict(int)
+    for sid in set(map(str, samples)):
+        st = td.parse_treatment(conc.get(sid, "unknown"), sid)
+        if st.is_combination:
+            n_combo += 1
+            molar_of[sid] = None
+            continue
+        d = st.primary.dose if st.primary is not None else None
+        if d is not None and d.molar is not None:
+            molar_of[sid] = d.molar
+            n_ok += 1
+        else:
+            molar_of[sid] = None
+            reasons[(d.reason if d is not None else "sample not in metadata")] += 1
+    logger.info(f"dose resolution: {n_ok}/{len(molar_of)} samples yield a molar concentration; "
+                f"{n_combo} combinations excluded")
+    for r, c in sorted(reasons.items(), key=lambda kv: -kv[1])[:3]:
+        logger.info(f"    unresolved ({c}): {r}")
+    return molar_of, {"n_samples": len(molar_of), "n_with_molar": n_ok,
+                      "n_combination": n_combo,
+                      "unresolved_reasons": {str(k): int(v) for k, v in reasons.items()}}
+
+
 def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
                      split_controls=True, loo_generic=False, generic_scope="cell_line",
                      project_generic=False):
@@ -154,7 +202,18 @@ def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
     cl = meta["cell_line_id"].astype(str).values
     plate = meta["plate"].astype(str).values
     drug = meta["drug"].astype(str).values
-    dose = meta["dose"].astype(str).values
+    # THE FOURTH KEY ELEMENT IS A WELL, NOT A DOSE. `build_embeddings` wrote row["sample"] into a
+    # column named `dose`, so every "same dose" and "different dose" statement this script has ever
+    # produced was about well identity. The dose arm of the transfer coefficient is void because of
+    # it. `sample` below is the honest name; `dose_molar_of` resolves the real concentration through
+    # the sample metadata, and `same_dose` compares on a canonical molar key so that 1000 nM and
+    # 1 uM are one dose rather than two.
+    scol, how = td.sample_column(meta)
+    if scol is None:
+        raise SystemExit("no treatment/well identifier in the cache; the dose arm cannot be built")
+    logger.info(f"treatment identifier: column '{scol}' ({how})")
+    sample = meta[scol].astype(str).values
+    dose = sample                                     # retained: downstream keys are positional
 
     L = lambda ix: np.asarray(np.log1p(X[ix].todense()).mean(0)).ravel().astype(np.float32)
 
@@ -236,6 +295,11 @@ def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
                 "repro_cos": cos(rA, rB),
                 "shift_norm": float(np.linalg.norm(cond[k]["shift_full"])),
                 "generic_norm": float(np.linalg.norm(gen["full"])),
+                # <r, g>. Without it the "scope" figures can only be squared and compared to 1,
+                # which is an orthogonality DIAGNOSTIC being reported as a variance DECOMPOSITION.
+                # With it the three shares sum to one by construction (see inference.energy_shares).
+                "rg_dot": float(np.asarray(r_full, dtype=np.float64) @
+                                np.asarray(gen["full"], dtype=np.float64)),
                 "group": cond[k]["group"], "n_cells": cond[k]["n_cells"],
                 "n_ctrl": cond[k]["n_ctrl"],
             }
@@ -246,13 +310,31 @@ def build_conditions(cache_dir, min_treated=40, min_control=20, seed=0,
 
 
 # --------------------------------------------------------------------------- the estimator
+def _same_dose(k1, k2, molar_of):
+    """True / False / None. None means at least one dose is unresolvable, and the caller must drop
+    the pair from a dose comparison rather than guess."""
+    if molar_of is None:
+        return None
+    m1, m2 = molar_of.get(k1[3]), molar_of.get(k2[3])
+    if m1 is None or m2 is None:
+        return None
+    return bool(td.same_dose(m1, m2))
+
+
 def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, max_pairs_per_drug=60,
-                   seed=0, min_rel=0.05):
+                   seed=0, min_rel=0.05, molar_of=None):
     """Build (condition, condition) pairs and disattenuate.
 
     same_drug=True, cross_line=True   -> T, the quantity of interest
     same_drug=False                   -> the NEGATIVE CONTROL (different drugs, same plate)
     cross_line=False                  -> same cell line, different dose: the dose-interaction arm
+
+    DOSE COMPARISON. `molar_of` maps the fourth key element -- a WELL identifier, despite its name --
+    to a real molar concentration. Without it, `k1[3] != k2[3]` compares well identifiers, which is
+    why the dose arm was void: it was measuring "different well", and since one well carries every
+    cell line at one concentration, "different well" and "different dose" are not the same partition.
+    Pairs whose dose cannot be resolved are marked `same_dose=None` and excluded from the dose arm
+    rather than defaulted either way.
     """
     rng = np.random.RandomState(seed)
     rows = []
@@ -282,7 +364,7 @@ def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, 
                     continue
                 if not cross_line and diff_line:
                     continue
-                if same_dose_only and k1[3] != k2[3]:
+                if same_dose_only and not _same_dose(k1, k2, molar_of):
                     continue
                 pairs.append((k1, k2))
         if len(pairs) > max_pairs_per_drug:
@@ -297,7 +379,9 @@ def transfer_pairs(kept, same_drug=True, same_dose_only=False, cross_line=True, 
             rows.append({
                 "cluster": k1[0] if same_drug else gname,
                 "drug": k1[0], "cl1": k1[1], "cl2": k2[1],
-                "same_plate": k1[2] == k2[2], "same_dose": k1[3] == k2[3],
+                "same_plate": k1[2] == k2[2], "same_dose": _same_dose(k1, k2, molar_of),
+                "same_well": k1[3] == k2[3],
+                "node_a": f"{k1[1]}|{k1[3]}", "node_b": f"{k2[1]}|{k2[3]}",
                 "r_between": r_between,
                 "rel_gm": float(np.sqrt(rel1 * rel2)),
                 "T": float(r_between / np.sqrt(rel1 * rel2)),
@@ -502,28 +586,63 @@ def simulate_null(kept, n_drugs=60, n_lines=6, seed=0, kappa_frac=0.0):
 
 
 # --------------------------------------------------------------------------- reporting
+def _dyadic(rows):
+    """Dyadic-robust interval for a set of transfer pairs.
+
+    Two pairs are dependent if they share EITHER endpoint -- (A,B) and (A,C) both carry A's noise --
+    and clustering on the drug expresses only part of that. Returns None when the rows predate the
+    node fields, so an old cache degrades to the drug-clustered interval rather than crashing.
+    """
+    if not rows or "node_a" not in rows[0]:
+        return None
+    return inf.dyadic_cluster_ci([r["T"] for r in rows],
+                                 [r["node_a"] for r in rows], [r["node_b"] for r in rows])
+
+
 def report(kept, args, rng):
     out = {}
     logger.info("=" * 100)
 
     # ---- (6) SCOPE: what fraction of the response is the drug-specific residual? ----
+    # EXACT DECOMPOSITION. shift = residual + generic, so
+    #     ||s||^2 = ||r||^2 + ||g||^2 + 2<r,g>
+    # and the three shares sum to one by construction. The previous version reported ||r||/||s|| and
+    # ||g||/||s||, squared them, and treated "the sum is about 1" as evidence of orthogonality --
+    # a diagnostic standing in for a decomposition. The cross term is now a reported quantity.
     rn = np.array([np.linalg.norm(v["residual"]) for v in kept.values()])
     sn = np.array([v["shift_norm"] for v in kept.values()])
     gn = np.array([v["generic_norm"] for v in kept.values()])
-    frac = float(np.mean(rn / np.maximum(sn, 1e-9)))
+    have_cross = all("rg_dot" in v for v in kept.values())
+    s2 = np.maximum(sn ** 2, 1e-18)
+    r_share = float(np.mean(rn ** 2 / s2))
+    g_share = float(np.mean(gn ** 2 / s2))
+    frac = float(np.mean(rn / np.maximum(sn, 1e-9)))          # kept: the old norm ratio, for continuity
     out["scope"] = {"residual_over_shift": frac,
                     "generic_over_shift": float(np.mean(gn / np.maximum(sn, 1e-9))),
-                    "mean_residual_norm": float(rn.mean()), "mean_shift_norm": float(sn.mean())}
-    logger.info(f"  SCOPE  ||residual|| / ||shift|| = {frac:.3f}   "
-                f"||generic|| / ||shift|| = {out['scope']['generic_over_shift']:.3f}")
-    orth = frac ** 2 + out["scope"]["generic_over_shift"] ** 2
-    logger.info(f"         => the drug-SPECIFIC component is {100*frac:.0f}% of the response this "
-                f"project models. EVERY claim is scoped by this number.")
-    logger.info(f"         orthogonality check: (r/s)^2 + (g/s)^2 = {orth:.3f}  "
-                + ("(~1 => residual and generic are essentially ORTHOGONAL, so the decomposition is "
-                   "clean and the two fractions are variance shares)" if abs(orth - 1) < 0.05 else
-                   "(FAR from 1 => the components overlap; the fractions are NOT variance shares)"))
-    out["scope"]["orthogonality"] = float(orth)
+                    "mean_residual_norm": float(rn.mean()), "mean_shift_norm": float(sn.mean()),
+                    "residual_energy_share": r_share, "generic_energy_share": g_share}
+    if have_cross:
+        cross = np.array([v["rg_dot"] for v in kept.values()])
+        c_share = float(np.mean(2.0 * cross / s2))
+        out["scope"]["cross_energy_share"] = c_share
+        out["scope"]["energy_shares_sum"] = r_share + g_share + c_share
+        logger.info(f"  SCOPE (exact energy decomposition of shift = residual + generic)")
+        logger.info(f"         residual {r_share:6.3f} + generic {g_share:6.3f} + cross "
+                    f"{c_share:+6.3f}  =  {r_share + g_share + c_share:.3f}")
+        logger.info(f"         => {100*r_share:.0f}% of the response ENERGY is the drug-specific "
+                    f"residual. Every claim in this project is scoped by this number.")
+        if abs(c_share) > 0.05:
+            logger.info(f"         the cross term is {c_share:+.3f}: residual and generic are NOT "
+                        f"orthogonal, so neither share is a clean variance component and both "
+                        f"should be quoted with the cross term beside them.")
+        else:
+            logger.info(f"         the cross term is negligible ({c_share:+.3f}), so the two shares "
+                        f"read as variance components.")
+    else:
+        logger.warning("  SCOPE: no cross term stored (cache built by an older run); reporting the "
+                       "norm ratios only, which are NOT a decomposition")
+        logger.info(f"  SCOPE  ||residual|| / ||shift|| = {frac:.3f}   "
+                    f"||generic|| / ||shift|| = {out['scope']['generic_over_shift']:.3f}")
 
     # ---- the transfer coefficient, on the reliability-filtered set and unfiltered ----
     for tag, sub in (("repro-filtered (cos>0.2, the training set)",
@@ -534,14 +653,26 @@ def report(kept, args, rng):
         if not rows:
             continue
         ci = clustered_ci([r["T"] for r in rows], [r["cluster"] for r in rows], rng, args.n_boot)
+        dy = _dyadic(rows)
         rb = float(np.mean([r["r_between"] for r in rows]))
         rl = float(np.mean([r["rel_gm"] for r in rows]))
         m, lo, hi, n, ncl = ci
         out[f"T::{tag}"] = {"T": m, "ci": [lo, hi], "n_pairs": n, "n_drugs": ncl,
-                            "mean_r_between": rb, "mean_reliability": rl}
+                            "mean_r_between": rb, "mean_reliability": rl,
+                            "ci_dyadic": ([dy["lo"], dy["hi"]] if dy else None),
+                            "dyadic_unit": (dy["unit"] if dy else None),
+                            "dyadic_widening": (round((dy["hi"] - dy["lo"]) / max(1e-9, hi - lo), 3)
+                                                if dy else None)}
         logger.info(f"  T  [{tag}]")
         logger.info(f"       raw cross-line cos {rb:+.3f} / sqrt(rel {rl:.3f}) "
-                    f"-> T = {m:.3f}  CI [{lo:.3f}, {hi:.3f}]  ({n} pairs, {ncl} drugs)")
+                    f"-> T = {m:.3f}  drug-clustered CI [{lo:.3f}, {hi:.3f}]  "
+                    f"({n} pairs, {ncl} drugs)")
+        if dy:
+            # THE DYADIC INTERVAL IS THE ONE TO QUOTE. Pairs sharing either endpoint are dependent,
+            # and clustering on the drug captures only the drug half of that.
+            logger.info(f"       dyadic CI [{dy['lo']:.3f}, {dy['hi']:.3f}]  "
+                        f"(x{(dy['hi'] - dy['lo']) / max(1e-9, hi - lo):.2f}, {dy['unit']})"
+                        f"   <- quote this one")
 
     kept_f = {k: v for k, v in kept.items() if v["repro_cos"] > args.repro_thr}
 
@@ -562,26 +693,43 @@ def report(kept, args, rng):
             logger.warning(f"  negative control [{name}] produced NO PAIRS -- it cannot gate anything")
             continue
         ci = clustered_ci([r["T"] for r in rows], [r["cluster"] for r in rows], rng, args.n_boot)
+        dy = _dyadic(rows)
         m, lo, hi, n, _ = ci
         raw = float(np.mean([r["r_between"] for r in rows]))
-        neg_T[name] = {"T": m, "ci": [lo, hi], "n_pairs": n, "raw_cos": raw}
+        neg_T[name] = {"T": m, "ci": [lo, hi], "n_pairs": n, "raw_cos": raw,
+                       "ci_dyadic": ([dy["lo"], dy["hi"]] if dy else None)}
         tag = "  <- STRUCTURE-MATCHED: the verdict is gated on this" if "cross_line" in name else ""
+        dtxt = f"  dyadic [{dy['lo']:+.3f}, {dy['hi']:+.3f}]" if dy else ""
         logger.info(f"  NEGATIVE CONTROL [{name}]  raw cos {raw:+.3f} -> T = {m:+.3f} "
-                    f"CI [{lo:+.3f}, {hi:+.3f}]  ({n} pairs){tag}")
+                    f"drug-clustered [{lo:+.3f}, {hi:+.3f}]{dtxt}  ({n} pairs){tag}")
     out["negative_controls"] = neg_T
     logger.info("       Both must be ~0. If a negative control approaches T, then what T measures is "
                 "NOT drug identity -- it is a component shared by unrelated conditions (incomplete "
                 "generic removal, or plate/batch structure surviving a cell-line-scoped generic).")
 
     # ---- (4) DOSE: same drug, SAME line, different dose ----
-    dose_rows = transfer_pairs(kept_f, same_drug=True, cross_line=False, seed=args.seed)
-    dose_rows = [r for r in dose_rows if not r["same_dose"]]
+    dose_rows = transfer_pairs(kept_f, same_drug=True, cross_line=False, seed=args.seed,
+                               molar_of=getattr(args, "_molar_of", None))
+    n_all = len(dose_rows)
+    # same_dose is now True / False / None. Only False belongs in a DIFFERENT-dose arm; None means
+    # the concentration could not be resolved and the pair is dropped rather than assumed.
+    n_unres = sum(1 for r in dose_rows if r["same_dose"] is None)
+    dose_rows = [r for r in dose_rows if r["same_dose"] is False]
+    logger.info(f"  DOSE arm: {len(dose_rows)} different-dose pairs of {n_all} same-line pairs "
+                f"({n_unres} dropped for an unresolvable concentration)")
+    if getattr(args, "_molar_of", None) is None:
+        logger.warning("  DOSE arm has NO molar map: it would compare WELL identifiers, which is the "
+                       "defect that voided this arm. Skipping rather than reporting a void number.")
+        dose_rows = []
     if dose_rows:
         ci = clustered_ci([r["T"] for r in dose_rows], [r["cluster"] for r in dose_rows], rng, args.n_boot)
         m, lo, hi, n, ncl = ci
-        out["dose_transfer_same_line"] = {"T": m, "ci": [lo, hi], "n_pairs": n}
-        logger.info(f"  DOSE (same drug, same cell line, DIFFERENT dose)  T = {m:.3f} "
-                    f"CI [{lo:.3f}, {hi:.3f}]  ({n} pairs)")
+        out["dose_transfer_same_line"] = {"T": m, "ci": [lo, hi], "n_pairs": n,
+                                          "ci_dyadic": ([dy["lo"], dy["hi"]] if dy else None),
+                                          "dose_source": "molar, resolved via tahoe_design"}
+        dtxt = f"  dyadic [{dy['lo']:.3f}, {dy['hi']:.3f}]" if dy else ""
+        logger.info(f"  DOSE (same drug, same cell line, DIFFERENT MOLAR dose)  T = {m:.3f} "
+                    f"drug-clustered [{lo:.3f}, {hi:.3f}]{dtxt}  ({n} pairs)")
         logger.info("       an upper reference for cross-line T: if cross-line T is close to this, "
                     "changing the cell line costs about as much as changing the dose.")
 
@@ -750,9 +898,25 @@ def main():
         ap.error("--cache_dir required (or use --selftest)")
 
     rng = np.random.RandomState(args.seed)
-    results = {"args": vars(args)}
+    # a SNAPSHOT, and private keys excluded: `vars()` returns the live __dict__, so stashing the
+    # sample->molar map on args would otherwise serialise hundreds of entries into every report
+    results = {"args": {k: v for k, v in vars(args).items() if not k.startswith("_")}}
 
     # the corrected build (disjoint control halves) is the headline
+    # Resolve real concentrations before anything reads a "dose". Failure is non-fatal -- every arm
+    # except the dose arm is unaffected -- but the dose arm then refuses to report rather than
+    # silently comparing well identifiers, which is the defect that voided it.
+    args._molar_of = None
+    try:
+        import pandas as _pd
+        _m = _pd.read_parquet(os.path.join(args.cache_dir, "meta.parquet"))
+        _scol, _ = td.sample_column(_m)
+        if _scol is not None:
+            args._molar_of, results["dose_resolution"] = dose_molar_map(
+                _m[_scol].astype(str).values, args.repo if hasattr(args, "repo") else TAHOE_REPO)
+    except Exception as e:                                   # noqa: BLE001 -- diagnostic, not control flow
+        logger.warning(f"could not resolve molar doses ({e}); the dose arm will be skipped")
+
     kept = build_conditions(args.cache_dir, args.min_treated, args.min_control, args.seed,
                             split_controls=not args.shared_controls, loo_generic=args.loo_generic,
                             generic_scope=args.generic_scope,
@@ -772,6 +936,7 @@ def main():
                               same_dose_only=args.same_dose_only, seed=args.seed)
         if rows:
             ci = clustered_ci([r["T"] for r in rows], [r["cluster"] for r in rows], rng, args.n_boot)
+            dy = _dyadic(rows)
             m, lo, hi, n, _ = ci
             main_key = [k for k in results["main"] if k.startswith("T::repro-filtered")]
             base = results["main"][main_key[0]]["T"] if main_key else float("nan")
