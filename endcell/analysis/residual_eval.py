@@ -34,7 +34,7 @@ USAGE
       --n_conditions 200 --k_samples 4 --bf16 --out RESULTS/residual_eval.json
   python residual_eval.py --selftest
 """
-import argparse, json, os, sys, re, ast, logging
+import argparse, json, os, sys, re, ast, zlib, logging
 from collections import defaultdict
 import numpy as np
 
@@ -173,6 +173,11 @@ def main():
                     help="minimum scorable conditions before a split gets a verdict (a clustered CI over "
                          "a handful of points can exclude zero by chance)")
     ap.add_argument("--min_split_cell_lines", type=int, default=10)
+    ap.add_argument("--partner_policy", choices=["within_plate", "any_plate"],
+                    default="within_plate",
+                    help="scramble partners are always a DIFFERENT drug. within_plate also requires "
+                         "the same plate, so the swap differs from the target in the drug alone; "
+                         "any_plate reproduces the published cross-plate pool for comparison.")
     ap.add_argument("--n_conditions", type=int, default=200)
     ap.add_argument("--prompt_order", choices=["drug_first", "drug_last"], default="drug_first",
                     help="MUST match the order the checkpoint was trained on. drug_last places the "
@@ -280,11 +285,21 @@ def main():
     end_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(END)
     eos = [end_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
 
-    def generate(prompts):
+    def generate(prompts, tag=""):
+        """Sampled generation, seeded from `tag` so a rerun reproduces byte-for-byte.
+
+        Without this the sampler advanced from global torch state, so two runs of the same command
+        gave different generations and no reported number could be reproduced exactly -- including
+        the model-minus-scramble contrasts, whose two arms were drawn from different points of one
+        stream. `tag` is (condition, arm, replicate), so every arm of every condition gets its own
+        deterministic stream and the arms stay independent of each other's batch position.
+        """
         prev = tok.padding_side; tok.padding_side = "left"; outs = []
         try:
             for i in range(0, len(prompts), args.gen_batch_size):
                 enc = tok(prompts[i:i + args.gen_batch_size], return_tensors="pt", padding=True).to(dev)
+                gen = torch.Generator(device=dev)
+                gen.manual_seed((zlib.crc32(f"{args.seed}|{tag}|{i}".encode()) % (2 ** 31)) or 1)
                 with torch.no_grad():
                     g = model.generate(**enc, max_new_tokens=args.max_new_tokens,
                                        pad_token_id=tok.pad_token_id, eos_token_id=eos, do_sample=True,
@@ -319,11 +334,23 @@ def main():
     #   orth     = most ORTHOGONAL (cos~0, unrelated program)
     #   opposite = most ANTI-correlated   (sharpest test: the drug with the opposite signature)
     # If the model truly reads the drug, the gap should GROW from near -> orth -> opposite.
-    partners = {}
+    #
+    # TWO CONSTRAINTS ON THE PARTNER POOL, both required for the stratum labels to mean what they say.
+    #   DIFFERENT DRUG. `b != a` allowed the SAME drug at another dose or plate to be the partner. A
+    #     "scramble" that substitutes a drug for itself is not a scramble, an unchanged output is
+    #     correct rather than blind, and the `near` stratum -- the one the monotone-gradient argument
+    #     leans on -- was the stratum most likely to be contaminated that way, since a drug's own
+    #     other doses are usually its nearest neighbours.
+    #   SAME PLATE. Residuals retain plate structure, so a cross-plate partner differs from the target
+    #     in batch as well as in drug, and the gap would absorb both.
+    partners, n_no_pool = {}, 0
     for c, ks in by_cl.items():
         for a in ks:
-            cs = [(cos(kept[a]["residual"], kept[b]["residual"]), b) for b in ks if b != a]
+            pool = [b for b in ks if b[0] != a[0]
+                    and (args.partner_policy == "any_plate" or b[2] == a[2])]
+            cs = [(cos(kept[a]["residual"], kept[b]["residual"]), b) for b in pool]
             if len(cs) < 3:
+                n_no_pool += 1
                 continue
             partners[a] = {"near": max(cs)[1],
                            "orth": min(cs, key=lambda t: abs(t[0]))[1],
@@ -331,7 +358,9 @@ def main():
                            "cos_near": max(cs)[0],
                            "cos_orth": min(cs, key=lambda t: abs(t[0]))[0],
                            "cos_opposite": min(cs)[0]}
-    logger.info(f"stratified scramble partners built for {len(partners)} conditions")
+    logger.info(f"stratified scramble partners built for {len(partners)} conditions "
+                f"(policy={args.partner_policy}, different drug enforced); {n_no_pool} conditions "
+                f"have too few eligible partners and are skipped")
 
     # ---------------- BASELINES in residual space (model-vs-scramble alone says the model REACTS to the
     # drug token, not that it is any good). Each is a predictor of the drug-specific residual:
@@ -344,13 +373,26 @@ def main():
     #                 construction. Confirms the residual frame is leak-proof (control-copy scores 0.766
     #                 in full-profile space).
     #   generic     : predicting the average drug response -> residual = 0 -> chance by construction.
-    by_drug_all = defaultdict(list)
+    # TRAINING-ONLY BY DEFAULT. These lookups were fitted from the full cache, which means that on a
+    # held-out condition they could read residuals the model was never shown -- an ORACLE, not a
+    # baseline, and the bar the thesis says the model fails to clear. `by_drug_all` is retained so the
+    # oracle can still be reported, explicitly labelled, alongside the fair version.
+    by_drug_all, by_drug_train = defaultdict(list), defaultdict(list)
     for k in kept:
         by_drug_all[k[0]].append(k)
+        if not trained or k in trained:
+            by_drug_train[k[0]].append(k)
+    if trained:
+        logger.info(f"lookup baselines fitted from {sum(len(v) for v in by_drug_train.values())} "
+                    f"TRAINING conditions (oracle variants over all "
+                    f"{sum(len(v) for v in by_drug_all.values())} reported separately)")
+    else:
+        logger.warning("no --train_file given: the lookup baselines are ORACLES over the full cache "
+                       "and are labelled as such")
 
-    def bl_drug_lookup(key):
+    def bl_drug_lookup(key, pool=None):
         d, c = key[0], key[1]
-        oth = [kept[k2]["residual"] for k2 in by_drug_all[d] if k2[1] != c]
+        oth = [kept[k2]["residual"] for k2 in (pool or by_drug_train)[d] if k2[1] != c]
         return np.mean(np.stack(oth), 0) if oth else None
 
     rng_bl = np.random.RandomState(args.seed + 977)   # private: must not shift the generation stream
@@ -368,20 +410,21 @@ def main():
         full-sample estimate of what the ceiling estimates from a half, so it should MEET or EXCEED the
         ceiling; drug_lookup_1 < ceiling is conservative evidence that the residual IS cell-line-specific."""
         d, c = key[0], key[1]
-        lines = sorted({k2[1] for k2 in by_drug_all[d] if k2[1] != c})
+        lines = sorted({k2[1] for k2 in by_drug_train[d] if k2[1] != c})
         if not lines:
             return None
         pick = lines[rng_bl.randint(len(lines))]
-        v = [kept[k2]["residual"] for k2 in by_drug_all[d] if k2[1] == pick]
+        v = [kept[k2]["residual"] for k2 in by_drug_train[d] if k2[1] == pick]
         return np.mean(np.stack(v), 0) if v else None
 
-    def bl_moa_lookup(key):
+    def bl_moa_lookup(key, oracle=False):
         d, c = key[0], key[1]
         m = moa_of.get(d)
         if not m or m in ("unclear", "unknown", "nan", "None"):
             return None
         same = [kept[k2]["residual"] for k2 in by_cl.get(c, [])
-                if k2[0] != d and moa_of.get(k2[0]) == m]
+                if k2[0] != d and moa_of.get(k2[0]) == m
+                and (oracle or not trained or k2 in trained)]
         return np.mean(np.stack(same), 0) if same else None
 
     gen_stats = {"n": 0, "has_down": 0, "up_len": [], "dn_len": [], "valid_frac": [], "dup_frac": []}
@@ -430,7 +473,11 @@ def main():
 
     for n, key in enumerate(cond_list):
         d, c, p, ds = key
-        others = [k for k in by_cl[c] if k != key]
+        # NEGATIVES EXCLUDE SAME-DRUG SIBLINGS. The comparison set asks "is this prediction closer
+        # to its own truth than to OTHER DRUGS' truths". Leaving the drug's own other doses in the
+        # gallery asks a different and much harder question -- can you tell this drug's 0.5 uM from
+        # its own 5 uM -- and every arm was being scored against that instead.
+        others = [k for k in by_cl[c] if k[0] != key[0]]
         if len(others) < 3:
             continue
         rows = ctrl_rows.get(kept[key]["group"])
@@ -444,12 +491,13 @@ def main():
         if key not in partners:
             continue
         pinfo = partners[key]
-        arms = {"model": generate([prompt] * args.k_samples)}
+        arms = {"model": generate([prompt] * args.k_samples, tag=f"{key}|model")}
         for strat in ("near", "orth", "opposite"):
             bkey = pinfo[strat]
             sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"))
             if sp:
-                arms[f"scramble_{strat}"] = generate([sp] * args.k_samples)
+                arms[f"scramble_{strat}"] = generate([sp] * args.k_samples,
+                                                     tag=f"{key}|scramble_{strat}")
         # FIELD DECOMPOSITION: which part of the prompt is actually read? Run on the OPPOSITE
         # partner only -- the sharpest stratum -- to keep the generation cost to 1.5x.
         if args.field_decomp:
@@ -457,10 +505,12 @@ def main():
             for fld in ("drug", "moa"):
                 sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"), fields=fld)
                 if sp:                       # None when the swap would not change the prompt,
-                    arms[f"scramble_{fld}only"] = generate([sp] * args.k_samples)
+                    arms[f"scramble_{fld}only"] = generate([sp] * args.k_samples,
+                                                          tag=f"{key}|scramble_{fld}only")
         for g in arms.values():
             track(g)
-        row = {"drug": d, "cell_line": c, "plate": p, "trained": key in trained,
+        row = {"drug": d, "cell_line": c, "plate": p, "sample_id": ds,
+               "trained": key in trained,
                "split": split_of.get(tuple(map(str, key)), "unknown"),
                "repro_cos": kept[key]["repro_cos"],
                "swap_near": pinfo["near"][0], "swap_orth": pinfo["orth"][0],
@@ -496,6 +546,11 @@ def main():
         for bname, bvec in (("drug_lookup", bl_drug_lookup(key)),
                             ("drug_lookup_1", bl_drug_lookup_1(key)),
                             ("moa_lookup", bl_moa_lookup(key)),
+                            # ORACLES: fitted over the full cache, so on a held-out condition they
+                            # read residuals the model was never shown. Reported so the gap between
+                            # a fair lookup and an oracle one is visible instead of being the number.
+                            ("drug_lookup_oracle", bl_drug_lookup(key, by_drug_all)),
+                            ("moa_lookup_oracle", bl_moa_lookup(key, oracle=True)),
                             ("control_copy", -generic[c]),
                             ("generic", np.zeros(P, np.float32))):
             if bvec is None:
@@ -511,8 +566,16 @@ def main():
     report(recs, args, rng, gen_stats, pred_by_cl, kept)
 
 
-def _clustered_ci(recs, key_a, key_b, rng, n_boot):
-    pairs = [(r["cell_line"], r[key_a] - r[key_b]) for r in recs
+def _clustered_ci(recs, key_a, key_b, rng, n_boot, cluster="cell_line"):
+    """Clustered bootstrap. `cluster` selects the independence unit.
+
+    Every interval in the thesis resampled CELL LINES. But Tahoe assigns a treatment to a WELL that
+    carries many cell lines, so two conditions from one well are not two independent assignments of
+    that drug -- they are one assignment observed twice. Resampling cell lines treats them as
+    independent and produces intervals that are too narrow by whatever the well-level ICC is.
+    `cluster="sample_id"` resamples wells instead, which is the unit the design supports.
+    """
+    pairs = [(r.get(cluster, r["cell_line"]), r[key_a] - r[key_b]) for r in recs
              if r.get(key_a) is not None and r.get(key_b) is not None]
     if not pairs:
         return None
@@ -575,16 +638,31 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     # head-to-head against each baseline, clustered CI -- the "is the model any GOOD" question,
     # which is separate from "does the model react to the drug token" (model - scramble).
     logger.info("-" * 100)
-    logger.info("  model - BASELINE (clustered CI over cell lines). Positive => the model beats a")
-    logger.info("  predictor that needs no generation at all:")
+    logger.info("  model - BASELINE. Two intervals: clustered over CELL LINES (as previously")
+    logger.info("  reported) and over treated WELLS, which is the unit the design actually supports --")
+    logger.info("  one Tahoe well carries many cell lines, so lines within a well are not independent.")
+    logger.info("  `_oracle` rows are fitted over the FULL cache and are not baselines the model could")
+    logger.info("  fairly be asked to beat; they bound how much the fair lookups were inflated.")
     base_out = {}
-    for b in ("drug_lookup", "drug_lookup_1", "moa_lookup", "control_copy", "generic"):
+    for b in ("drug_lookup", "drug_lookup_1", "moa_lookup",
+              "drug_lookup_oracle", "moa_lookup_oracle", "control_copy", "generic"):
         r = _clustered_ci(recs, "model", b, rng, args.n_boot)
-        if r:
-            m, lo, hi, n, ncl = r
-            base_out[b] = {"gap": m, "ci": [lo, hi], "n": n}
-            logger.info(f"    model - {b:14s} {m:+.4f}  CI [{lo:+.4f}, {hi:+.4f}]  n={n}  "
-                        f"{'model WINS' if lo > 0 else ('model LOSES' if hi < 0 else 'tie')}")
+        if not r:
+            continue
+        m, lo, hi, n, ncl = r
+        base_out[b] = {"gap": m, "ci": [lo, hi], "n": n, "n_cell_lines": ncl}
+        w = _clustered_ci(recs, "model", b, rng, args.n_boot, cluster="sample_id")
+        if w:
+            _, wlo, whi, _, nw = w
+            base_out[b]["ci_by_well"] = [wlo, whi]
+            base_out[b]["n_wells"] = nw
+            widen = (whi - wlo) / max(1e-9, hi - lo)
+            base_out[b]["well_widening"] = round(widen, 3)
+            logger.info(f"    model - {b:20s} {m:+.4f}  line [{lo:+.4f}, {hi:+.4f}]  "
+                        f"well [{wlo:+.4f}, {whi:+.4f}] (x{widen:.2f})  n={n}  "
+                        f"{'model WINS' if wlo > 0 else ('model LOSES' if whi < 0 else 'tie')}")
+        else:
+            logger.info(f"    model - {b:20s} {m:+.4f}  line [{lo:+.4f}, {hi:+.4f}]  n={n}")
     means["vs_baselines"] = base_out
 
     # --- (0b) FIELD DECOMPOSITION: which part of the prompt does the model actually read? ---
@@ -623,22 +701,32 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     strat_out = {}
     for strat in ("near", "orth", "opposite"):
         r = _clustered_ci(recs, "model", f"scramble_{strat}", rng, args.n_boot)
+        rw = _clustered_ci(recs, "model", f"scramble_{strat}", rng, args.n_boot,
+                           cluster="sample_id")
         if r:
             m, lo, hi, n, ncl = r
             mc = np.mean([x[f"cos_{strat}"] for x in recs if x.get(f"cos_{strat}") is not None])
             strat_out[strat] = {"gap": m, "ci": [lo, hi], "n": n, "mean_cos": float(mc)}
-            flag = "CI excludes 0" if lo > 0 else "CI spans 0"
+            if rw:
+                _, wlo, whi, _, nw = rw
+                strat_out[strat]["ci_by_well"] = [wlo, whi]
+                strat_out[strat]["n_wells"] = nw
+            # the WELL interval is the one that decides, since lines inside a well are not
+            # independent assignments of the drug
+            dlo, dhi = (rw[1], rw[2]) if rw else (lo, hi)
+            flag = "CI excludes 0" if dlo > 0 else "CI spans 0"
             logger.info(f"    {strat:9s} (mean cos(A,B)={mc:+.2f})  gap = {m:+.4f}  "
-                        f"CI [{lo:+.4f}, {hi:+.4f}]  {flag}")
+                        f"line [{lo:+.4f}, {hi:+.4f}]  well [{dlo:+.4f}, {dhi:+.4f}]  {flag}")
     if len(strat_out) == 3:
         mono = strat_out["opposite"]["gap"] > strat_out["near"]["gap"]
         logger.info(f"    >>> gap grows with dissimilarity: {'YES' if mono else 'NO'} "
                     f"(near {strat_out['near']['gap']:+.4f} -> opposite {strat_out['opposite']['gap']:+.4f}). "
                     f"{'Consistent with genuine drug use.' if mono else 'A flat profile is a red flag.'}")
         best = strat_out["opposite"]
-        logger.info(f"    >>> HEADLINE (opposite-signature swap): {best['gap']:+.4f} "
-                    f"CI [{best['ci'][0]:+.4f}, {best['ci'][1]:+.4f}] -> "
-                    f"{'DRUG USE' if best['ci'][0] > 0 else 'NULL'}")
+        blo, bhi = best.get("ci_by_well", best["ci"])
+        logger.info(f"    >>> HEADLINE (opposite-signature swap, different drug, same plate): "
+                    f"{best['gap']:+.4f} well-clustered CI [{blo:+.4f}, {bhi:+.4f}] -> "
+                    f"{'DRUG USE' if blo > 0 else 'NULL'}")
 
     # --- (2) MODE COLLAPSE: are predictions for different drugs actually different? ---
     if pred_by_cl and kept:
