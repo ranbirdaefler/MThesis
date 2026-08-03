@@ -239,6 +239,65 @@ def crossed_bootstrap(rows, cluster_a, cluster_b, statistic, n_boot=2000, seed=0
             "n_undefined_resamples": n_empty, "boot_sd": float(np.std(boot))}
 
 
+def multiway_cluster_ci(values, node_sets, alpha=0.05):
+    """Fafchamps-Gubert generalised: each observation carries a SET of nodes, and two observations
+    are dependent if their sets intersect at all.
+
+    The two-node version was not enough, and the failure was instructive. The transfer coefficient T
+    is a SAME-DRUG statistic: every pair is (drug d in line c1, drug d in line c2). Using the two
+    conditions as nodes captures pairs that share a condition -- but two pairs of the SAME drug in
+    four different lines share no condition, while sharing the drug's main effect beta(d), which is
+    the dominant dependence in the estimate. The estimator therefore returned an interval NARROWER
+    than one-way clustering on the drug, and a dependence model that captures a superset of another's
+    dependence cannot be narrower. That is the diagnostic.
+
+    With node_sets = {drug, condition_1, condition_2} both channels are captured at once.
+
+        V = (1/N^2) * sum over pairs of observations whose node sets intersect of e_i * e_j
+    """
+    v = np.asarray(values, dtype=float)
+    n = len(v)
+    if n < 3 or len(node_sets) != n:
+        return None
+    m = float(v.mean())
+    e = v - m
+
+    holds = defaultdict(list)
+    for i, ns in enumerate(node_sets):
+        for nd in set(ns):
+            holds[nd].append(i)
+
+    # A node shared by EVERY observation makes the dependence graph one cluster, and a cluster-robust
+    # variance with G = 1 is undefined: the single cluster's deviations sum to zero, so V collapses to
+    # a floating-point residue and the interval comes out absurdly narrow rather than refusing. Catch
+    # it on the structure, not on the arithmetic, because whether the residue lands at exactly zero
+    # depends on accumulation order.
+    if any(len(ix) >= n for ix in holds.values()):
+        return {"point": m, "lo": float("nan"), "hi": float("nan"), "se": float("nan"),
+                "n": n, "n_nodes": len(holds),
+                "unit": "UNDEFINED: one node is shared by every observation, so there is a single "
+                        "cluster and a cluster-robust variance does not exist"}
+
+    total = 0.0
+    for i, ns in enumerate(node_sets):
+        nb = set()
+        for nd in set(ns):
+            nb.update(holds[nd])
+        total += e[i] * float(e[list(nb)].sum())
+    var = total / (n ** 2)
+
+    n_nodes = len(holds)
+    if var <= 0:
+        var = float((e ** 2).sum()) / (n ** 2)
+        unit = "multiway estimator non-positive; fell back to independent-sampling variance"
+    else:
+        unit = f"multiway (Fafchamps-Gubert) over {n_nodes} nodes"
+    z = Z95 if abs(alpha - 0.05) < 1e-12 else float(abs(_norm_ppf(alpha / 2)))
+    se = math.sqrt(var)
+    return {"point": m, "lo": m - z * se, "hi": m + z * se, "se": se,
+            "n": n, "n_nodes": n_nodes, "unit": unit}
+
+
 def dyadic_cluster_ci(values, member_a, member_b, alpha=0.05):
     """Fafchamps-Gubert dyadic-robust interval, for statistics computed over PAIRS.
 
@@ -254,35 +313,12 @@ def dyadic_cluster_ci(values, member_a, member_b, alpha=0.05):
     with e_d the deviation from the mean. Reduces to the ordinary variance when every dyad is
     node-disjoint, and grows as nodes are reused -- which is the behaviour the design requires.
     """
-    v = np.asarray(values, dtype=float)
-    n = len(v)
-    if n < 3 or len(member_a) != n or len(member_b) != n:
+    if len(member_a) != len(values) or len(member_b) != len(values):
         return None
-    m = float(v.mean())
-    e = v - m
-
-    holds = defaultdict(list)                    # node -> dyad indices
-    for i in range(n):
-        holds[member_a[i]].append(i)
-        holds[member_b[i]].append(i)
-
-    total = 0.0
-    for i in range(n):
-        nb = set(holds[member_a[i]])
-        nb.update(holds[member_b[i]])            # union: shares at least one node, self included
-        total += e[i] * float(e[list(nb)].sum())
-    var = total / (n ** 2)
-
-    n_nodes = len(holds)
-    if var <= 0:                                 # possible in finite samples, as for CGM
-        var = float((e ** 2).sum()) / (n ** 2)
-        unit = "dyadic estimator non-positive; fell back to independent-sampling variance"
-    else:
-        unit = f"dyadic (Fafchamps-Gubert) over {n_nodes} nodes"
-    z = Z95 if abs(alpha - 0.05) < 1e-12 else float(abs(_norm_ppf(alpha / 2)))
-    se = math.sqrt(var)
-    return {"point": m, "lo": m - z * se, "hi": m + z * se, "se": se,
-            "n": n, "n_nodes": n_nodes, "unit": unit}
+    out = multiway_cluster_ci(values, [{a, b} for a, b in zip(member_a, member_b)], alpha)
+    if out:
+        out["unit"] = out["unit"].replace("multiway", "dyadic")
+    return out
 
 
 # --------------------------------------------------------------------------- tests
@@ -506,6 +542,38 @@ def selftest():
     ib = [2 * i + 1 for i in range(k)]
     dj = dyadic_cluster_ci(iv, ia, ib)
     naive_dj = float(np.std(iv, ddof=0) / math.sqrt(k))
+    # OMITTING A REAL DEPENDENCE CHANNEL gives a too-narrow interval. This is the production failure:
+    # the transfer coefficient is a SAME-DRUG statistic, so two pairs of one drug share beta(drug)
+    # while sharing no condition, and leaving the drug out of the node set made the "robust" interval
+    # narrower than plain one-way clustering on the drug.
+    #
+    # Note the property being tested is NOT "more nodes always widen" -- that is false in general,
+    # because the estimator sums signed cross terms. It is "including a channel that carries REAL
+    # shared variance widens", which is the case that matters.
+    rng = np.random.RandomState(11)
+    n_drug, per = 8, 10
+    drug_eff = {d: rng.randn() for d in range(n_drug)}
+    mv, m_nodrug, m_drug = [], [], []
+    uid = 0
+    for d in range(n_drug):
+        for _ in range(per):
+            mv.append(drug_eff[d] + 0.25 * rng.randn())
+            m_nodrug.append({f"c{uid}", f"c{uid + 1}"})            # every observation node-disjoint
+            m_drug.append({f"c{uid}", f"c{uid + 1}", f"drug::{d}"})
+            uid += 2
+    without = multiway_cluster_ci(mv, m_nodrug)
+    with_ = multiway_cluster_ci(mv, m_drug)
+    check("omitting a real dependence channel understates the interval",
+          with_["se"] > 1.5 * without["se"])
+    check("the node count reflects the added channel", with_["n_nodes"] > without["n_nodes"])
+
+    # degenerate case: if EVERY observation shares one node there is a single cluster, its deviations
+    # sum to zero, the estimator is non-positive, and the fallback must be declared rather than silent
+    allshare = multiway_cluster_ci(mv, [{"one"} for _ in mv])
+    check("a single all-inclusive cluster is refused rather than given a number",
+          allshare is not None and "UNDEFINED" in allshare["unit"]
+          and not np.isfinite(allshare["se"]))
+
     check("dyadic reduces to the ordinary interval when no node is reused",
           abs(dj["se"] - naive_dj) < 0.02 * max(naive_dj, 1e-9) + 1e-9)
 

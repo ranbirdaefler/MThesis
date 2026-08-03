@@ -595,8 +595,14 @@ def _dyadic(rows):
     """
     if not rows or "node_a" not in rows[0]:
         return None
-    return inf.dyadic_cluster_ci([r["T"] for r in rows],
-                                 [r["node_a"] for r in rows], [r["node_b"] for r in rows])
+    # NODES = {drug, condition_1, condition_2}. The drug is essential and its omission was a real
+    # error: T is a SAME-DRUG statistic, so two pairs of one drug in four different cell lines share
+    # beta(drug) while sharing no condition. With conditions alone the estimator returned an interval
+    # NARROWER than one-way drug clustering, which is impossible for a dependence model that captures
+    # a superset -- that impossibility is how the omission was caught.
+    return inf.multiway_cluster_ci(
+        [r["T"] for r in rows],
+        [{"drug::" + str(r.get("drug", r.get("cluster"))), r["node_a"], r["node_b"]} for r in rows])
 
 
 def report(kept, args, rng):
@@ -673,6 +679,10 @@ def report(kept, args, rng):
             logger.info(f"       dyadic CI [{dy['lo']:.3f}, {dy['hi']:.3f}]  "
                         f"(x{(dy['hi'] - dy['lo']) / max(1e-9, hi - lo):.2f}, {dy['unit']})"
                         f"   <- quote this one")
+            if dy["hi"] - dy["lo"] < 0.9 * (hi - lo):
+                logger.warning("       the multiway interval is NARROWER than drug-clustered. A "
+                               "dependence model capturing a superset cannot be narrower; check "
+                               "that every dependence channel is in the node set.")
 
     kept_f = {k: v for k, v in kept.items() if v["repro_cos"] > args.repro_thr}
 
