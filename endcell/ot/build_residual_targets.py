@@ -345,14 +345,41 @@ def make_holdout_by_sample(conds, frac_combos, frac_drugs, seed):
     """Hold out whole treated WELLS. Cleaner -- no held-out condition shares a physical assignment
     with a training one -- but it answers a different question: an unseen well of a seen drug is a
     dose/replicate generalisation test, not cross-context transfer. Offered so the estimand is a
-    choice rather than an accident."""
+    choice rather than an accident.
+
+    NEVER TAKES A DRUG'S LAST TRAINING WELL. Without that guard a drug present in two wells could
+    lose both, which silently converts it into an unseen DRUG while it sits in the unseen_combo arm.
+    The two arms then measure the same thing and the unseen-drug control stops being a control.
+    """
     rng = np.random.RandomState(seed)
     drugs = sorted({k[0] for k in conds})
     n_d = int(round(frac_drugs * len(drugs)))
     ho_drugs = set(rng.choice(drugs, n_d, replace=False).tolist()) if n_d else set()
-    samples = sorted({k[3] for k in conds if k[0] not in ho_drugs})
+
+    wells_of = defaultdict(set)
+    for k in conds:
+        if k[0] not in ho_drugs:
+            wells_of[k[0]].add(k[3])
+    samples = sorted({s for ss in wells_of.values() for s in ss})
     n_s = int(round(frac_combos * len(samples)))
-    ho_samples = set(rng.choice(samples, min(n_s, len(samples)), replace=False).tolist()) if n_s else set()
+    remaining = {d: len(ss) for d, ss in wells_of.items()}
+    drug_of_well = {s: d for d, ss in wells_of.items() for s in ss}
+
+    ho_samples, n_blocked = set(), 0
+    for i in rng.permutation(len(samples)):
+        if len(ho_samples) >= n_s:
+            break
+        s = samples[i]
+        d = drug_of_well[s]
+        if remaining[d] <= 1:               # this is the drug's last training well
+            n_blocked += 1
+            continue
+        ho_samples.add(s)
+        remaining[d] -= 1
+    if n_blocked:
+        logger.info(f"sample holdout: {n_blocked} wells skipped because they were their drug's last "
+                    f"training well -- holding them out would have made the drug unseen")
+
     split = {}
     for k in conds:
         split[k] = ("unseen_drug" if k[0] in ho_drugs else
@@ -739,10 +766,20 @@ def run(args):
 
     logger.info("=== [2/4] split (assigned from metadata, before anything is fitted) ===")
     split, ho_drugs, ho_combos = None, [], []
-    if args.tier2_file or args.tier3_file:      # preferred: reuse the ORIGINAL held-out tiers
+    # THE TIER PATH IS CONDITION-LEVEL AND MUST NOT BE PROMOTED. A tier split holds out
+    # (drug, cell_line) pairs; a well spans many cell lines; so promoting it to the well level holds
+    # out every well containing ANY held-out pair. With 15% of pairs held out and N cell lines per
+    # well that is 1 - 0.85^N -- 80% of wells at N=10, essentially all of them at N=50. The training
+    # set would collapse and the run would burn an hour producing nothing usable. When the estimand
+    # is the well, the holdout is drawn at the well level from the start.
+    if (args.tier2_file or args.tier3_file) and args.split_unit == "condition":
         res = holdout_from_tiers(conds, args.tier2_file, args.tier3_file)
         if res:
             split, ho_drugs, ho_combos = res
+    elif args.tier2_file or args.tier3_file:
+        logger.info("--split_unit sample: the tier files define the unseen-DRUG set only; the "
+                    "unseen-well set is drawn at the well level rather than promoted from "
+                    "(drug, cell_line) pairs, which would hold out nearly every well")
     if split is None and (args.holdout_combos > 0 or args.holdout_drugs > 0):
         mk = make_holdout_by_sample if args.split_unit == "sample" else make_holdout
         split, ho_drugs, ho_combos = mk(conds, args.holdout_combos, args.holdout_drugs, args.seed)
@@ -779,6 +816,17 @@ def run(args):
         split = {k: "train" for k in conds}
     if args.split_unit == 'sample':
         split = enforce_sample_split(conds, split)
+    # A split that leaves almost nothing to train on is a construction error, not a result. Catch it
+    # here, in a one-hour CPU job, rather than after a twenty-hour GPU job on 40 examples.
+    frac_train = sum(1 for v in split.values() if v == "train") / max(1, len(split))
+    if frac_train < args.min_train_frac:
+        raise SystemExit(
+            f"REFUSING TO BUILD: only {frac_train:.1%} of conditions are training "
+            f"({sum(1 for v in split.values() if v == 'train')}/{len(split)}), below "
+            f"--min_train_frac {args.min_train_frac:.0%}. With --split_unit sample this usually "
+            f"means a condition-level holdout was promoted to the well level: a well spans many "
+            f"cell lines, so holding out (drug, cell_line) pairs and then promoting holds out "
+            f"nearly every well. Draw the holdout at the well level instead.")
     crossing = sample_crossing_report(conds, split)
     train_keys = [k for k in conds if split[k] == "train"]
     logger.info(f"fitting on {len(train_keys)} train conditions "
@@ -1034,6 +1082,10 @@ def main():
                          "format as training. Validating residual targets against ordinary "
                          "cell-sentence data measures a different output distribution and cannot "
                          "detect overfitting on the objective actually being trained.")
+    ap.add_argument("--min_train_frac", type=float, default=0.30,
+                    help="refuse to build if the split leaves less than this fraction of conditions "
+                         "for training. Catches a collapsed holdout in the CPU job instead of after "
+                         "the GPU one.")
     ap.add_argument("--min_plate_drugs", type=int, default=3,
                     help="a plate group with fewer OTHER training drugs than this cannot supply a "
                          "plate-scoped generic. At --shrink_k 0 the condition is dropped rather than "

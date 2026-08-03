@@ -23,6 +23,8 @@ import os
 import sys
 import types
 
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -101,6 +103,7 @@ def _args(cache_dir, meta_dir, out_dir, **over):
         shared_control_reliability=False,
         keep_combinations=False, no_require_sample_id=False, eval_repro_filter=False,
         min_plate_drugs=0, val_frac=0.0,
+        min_train_frac=0.05,
         tier2_file=None, tier3_file=None, holdout_combos=0.2, min_combo_conditions=1,
         holdout_drugs=0.15, split_unit="condition", prompt_order="drug_first",
         emit_fit_digest=os.path.join(out_dir, "fit.sha"), seed=42)
@@ -412,6 +415,57 @@ def test_sample_split_unit_is_honoured_even_when_tier_files_supply_the_split(tmp
     assert brt.sample_crossing_report(conds, promoted)["n_samples_crossing_split"] == 0
     # promotion never moves a condition INTO training
     assert all(not (split[k] != "train" and promoted[k] == "train") for k in split)
+
+
+def test_promoting_a_tier_split_to_wells_would_collapse_training_and_is_refused(tmp_path):
+    """A tier split holds out (drug, cell_line) PAIRS. A well spans many cell lines, so promoting
+    that split to the well level holds out every well containing any held-out pair -- 1 - 0.85^N for
+    N lines per well, i.e. essentially everything. The builder must draw at the well level instead,
+    and must refuse outright rather than emit a near-empty training set."""
+    cache = os.path.join(str(tmp_path), "cache_col")
+    meta_dir = os.path.join(str(tmp_path), "meta_col")
+    _write_cache(cache, meta_dir)
+    _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
+    conds, _, _, _, _ = brt.inventory(cache, N_CELLS, N_CELLS, conc)
+
+    # a condition-level holdout of a modest fraction of pairs...
+    cond_split, _, _ = brt.make_holdout(conds, 0.2, 0.0, 42)
+    frac_before = sum(1 for v in cond_split.values() if v == "train") / len(cond_split)
+    # ...becomes a near-total holdout once promoted to the well
+    promoted = brt.enforce_sample_split(conds, cond_split)
+    frac_after = sum(1 for v in promoted.values() if v == "train") / len(promoted)
+    assert frac_after < frac_before, "promotion must cost training data, or this proves nothing"
+    assert frac_after < 0.5, (
+        f"expected promotion to collapse the training set on a fixture where one well spans "
+        f"{len(LINES)} cell lines; got {frac_after:.0%} still training")
+
+    # drawing at the well level keeps a workable split
+    by_well, _, _ = brt.make_holdout_by_sample(conds, 0.2, 0.0, 42)
+    frac_well = sum(1 for v in by_well.values() if v == "train") / len(by_well)
+    assert frac_well > 0.5, f"well-level draw should retain most conditions; got {frac_well:.0%}"
+
+    # and the guard fires rather than shipping a collapsed build
+    with pytest.raises(SystemExit, match="REFUSING TO BUILD"):
+        _build(str(tmp_path), "collapse", split_unit="sample", min_train_frac=0.99)
+
+
+def test_sample_holdout_never_takes_a_drugs_last_training_well(tmp_path):
+    """A drug present in two wells could lose both, which silently converts it to an unseen DRUG
+    while it sits in the unseen_combo arm -- the two arms then measure the same thing."""
+    cache = os.path.join(str(tmp_path), "cache_last")
+    meta_dir = os.path.join(str(tmp_path), "meta_last")
+    _write_cache(cache, meta_dir)
+    _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
+    conds, _, _, _, _ = brt.inventory(cache, N_CELLS, N_CELLS, conc)
+
+    # every drug here has exactly two wells, so an unguarded draw at a high fraction would strip some
+    split, ho_drugs, _ = brt.make_holdout_by_sample(conds, 0.9, 0.0, 7)
+    train_wells = defaultdict(set)
+    for k, v in split.items():
+        if v == "train":
+            train_wells[k[0]].add(k[3])
+    for d in {k[0] for k in conds} - set(ho_drugs):
+        assert train_wells[d], f"drug {d} lost every training well and is now effectively unseen"
 
 
 def test_a_residual_format_validation_shard_is_written(tmp_path):
