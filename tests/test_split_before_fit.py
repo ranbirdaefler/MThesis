@@ -468,6 +468,30 @@ def test_sample_holdout_never_takes_a_drugs_last_training_well(tmp_path):
         assert train_wells[d], f"drug {d} lost every training well and is now effectively unseen"
 
 
+def test_auto_threshold_resolves_before_anything_reads_it(tmp_path):
+    """`--repro_thr auto` is a string until it is resolved against the run's null. Anything that
+    compares against it beforehand raises.
+
+    That is not hypothetical: the first version resolved it AFTER `scope_sensitivity`, which does
+    `cos > repro_thr`, so a cluster job with both flags died in stage 3. The local check missed it
+    because the fixture defaults `scope_sensitivity=False` -- so this test sets BOTH.
+    """
+    r = _build(str(tmp_path), "autothr", repro_thr="auto", scope_sensitivity=True)
+    rep = r["report"]
+    assert isinstance(rep["repro_thr"], float), "the resolved threshold must be numeric in the report"
+    cal = rep["reliability_calibration"]
+    assert rep["repro_thr"] == pytest.approx(cal["null_p95"]), "auto must resolve to the null's 95th"
+    assert cal["null_mean"] == pytest.approx(0.0, abs=0.15), (
+        "the null pairs unrelated conditions and must sit near zero, or it is not a null")
+    assert rep["scope_sensitivity"], "the sensitivity table must still be produced"
+    for row in rep["scope_sensitivity"]:
+        assert 0.0 <= row["retention"] <= 1.0
+
+    # auto99 is stricter than auto95, and both are numeric
+    r99 = _build(str(tmp_path), "autothr99", repro_thr="auto99", scope_sensitivity=True)
+    assert r99["report"]["repro_thr"] > rep["repro_thr"]
+
+
 def test_a_residual_format_validation_shard_is_written(tmp_path):
     """The retrain validated residual-format training against ordinary cell-sentence tier-1 data, so
     the validation loss measured a different output distribution than the one being trained."""

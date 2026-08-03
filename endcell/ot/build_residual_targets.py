@@ -897,7 +897,6 @@ def run(args):
     logger.info("=== [3/4] fit (train conditions only) ===")
     shifts, _, relprov = compute_shifts(conds, ctrl_rows, X, args.seed,
                                         shared_control=args.shared_control_reliability)
-    sens = scope_sensitivity(conds, shifts, train_keys, args.repro_thr) if args.scope_sensitivity else []
     gen = Generic(shifts, conds, train_keys, shrink_k=args.shrink_k,
                   min_plate_drugs=args.min_plate_drugs)
     fit_digest = gen.digest()
@@ -906,16 +905,28 @@ def run(args):
     # `--repro_thr auto` resolves against the run's own null instead of a number typed into a job
     # script. The threshold decides the training-set size, so it should be reproducible from the
     # data rather than inherited from a build that measured reliability on a different scale.
+    #
+    # RESOLVED BEFORE ANYTHING ELSE READS IT. The first version resolved it after
+    # `scope_sensitivity`, which compares `cos > repro_thr` -- so with `auto` still a string that
+    # comparison raised and the job died in stage 3. The local check missed it because the test
+    # fixture sets scope_sensitivity=False; `test_auto_threshold_resolves_before_anything_reads_it`
+    # now exercises both flags together.
     thr_req = args.repro_thr
     relcal = reliability_calibration(conds, shifts, gen, train_keys, args.generic_scope,
                                      -1.0 if isinstance(thr_req, str) else thr_req, args.seed)
     if isinstance(thr_req, str):
         key = {"auto": "null_p95", "auto95": "null_p95", "auto99": "null_p99"}[thr_req]
+        if not relcal:
+            raise SystemExit(f"--repro_thr {thr_req} could not be resolved: too few train conditions "
+                             f"to build a reliability null. Pass a numeric threshold.")
         args.repro_thr = float(relcal[key])
         logger.info(f"--repro_thr {thr_req} -> {args.repro_thr:+.4f} (the null's "
                     f"{'95th' if key.endswith('95') else '99th'} percentile). A condition is kept "
                     f"when its two independent halves agree more than two UNRELATED conditions' "
                     f"halves do, which is a validity line rather than a taste threshold.")
+
+    # after resolution, so the retention column means the same thing as the one the build uses
+    sens = scope_sensitivity(conds, shifts, train_keys, args.repro_thr) if args.scope_sensitivity else []
 
     logger.info("=== [4/4] transform ===")
     kept, relstats = transform(conds, shifts, gen, split, args.generic_scope, args.repro_thr,
