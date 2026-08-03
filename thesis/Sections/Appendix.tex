@@ -43,7 +43,7 @@ the reported channel results are gated on a clustered interval rather than on a 
 
 A predicted cell sentence lists only expressed genes, so some panel genes are unranked and a
 convention is required. Two were carried throughout: \texttt{worst} assigns absent genes the last
-rank $P$, \texttt{francesca} a fixed middle rank $P/2$. The choice does not matter --- spike-in
+rank $G$, \texttt{francesca} a fixed middle rank $G/2$. The choice does not matter --- spike-in
 $\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no ceiling or baseline in
 this thesis moves by more than $0.01$ between them. All figures in the body are quoted under
 \texttt{worst}.
@@ -110,6 +110,50 @@ weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early
 since it is one endpoint of the $\varepsilon$-ladder, the ladder's negative rests on the other two.}
 \label{tab:trainconfig}
 \end{table}
+
+\subsection{The identity test: failed designs and remaining guards}
+\label{sec:app-identity}
+
+The substitution test of Section~\ref{sec:res-mechanism} is the fourth design. The three that
+failed are recorded here with their algebra, because each produced results this thesis previously
+quoted as findings, and the constraints they teach are the surviving design.
+
+\emph{Failed design one: mismatched geometry.} The first test overwrote drug A's code with drug
+B's, inside a $\leq 10$-dimensional purified subspace, and compared the resulting KL against a
+random vector of identical norm drawn in the \emph{full} $2048$-dimensional stream. Roughly
+$99.5\%$ of the control's energy then lay in directions the intervention never touched, including
+the cell-line directions measured at $\approx 0.6$ variance share. ``The swap moves the output less
+than noise'' is exactly what that geometry predicts, whatever the readout does.
+
+\emph{Failed design two: ablate-then-add.} The second drew the control inside the subspace, which
+looked like a repair and was not. The hook ablates before adding, so what is delivered is (added
+$-$ removed), and an uncentred class mean shares its global-mean component with the thing removed.
+The substitution arm was then close to a restoration and the control arm a real displacement.
+Simulated with no model present, the control delivers $5.3\times$ the perturbation in $100\%$ of
+draws, with the predicted gap $2\langle \mu_B, u\rangle = 9.179$ against an observed $9.162$, where
+$\mu_B$ is the injected class mean and $u$ the cell's own component in the slab. The retracted
+result was geometry, not biology.
+
+\emph{Failed design three: the normaliser.} The third injected the displacement and scored
+$\Delta \log P(g_B)$ against a norm-matched random direction --- and was confounded the opposite
+way. A random direction inside the slab is off the class-mean manifold: it inflates the logsumexp
+normaliser (measured $+2.75$ nats) where the on-manifold displacement does not, so every target is
+depressed under the control arm whether or not it carries identity. With the scored target stripped
+of all identity information, $36\%$ of the effect still stood. Norm-matched is not
+disruption-matched. The same argument retires the simplest test of all, ``how far did the output
+move'': distance moved is exactly what norm-matching equalises, so that test has no power in
+precisely the world where the readout does read the drug.
+
+Three further guards from the surviving design are engineering rather than inference and are
+recorded here. A \emph{drug-proxy screen} refuses any context label that is a near-bijection with
+drug --- it caught the metadata field \texttt{dose\_float} holding a sample identifier in the
+residual builders, which, had it been orthogonalised against, would have deleted the drug axis by
+construction. An \emph{injected-norm diagnostic} reports the displacement against the cell's
+centred slab component ($0.69$--$1.40$: the injection is the size of the thing it displaces, so a
+null cannot be blamed on a whisper). And a \emph{selftest with teeth} runs three planted worlds ---
+drug inert, drug read, and drug inert behind a norm-sensitive readout --- through the actual
+headline code path; it separates them ($-0.042$, $+1.520$, $-0.010$), and it failed four times
+during development, each failure a real defect that the guard list now covers.
 
 \subsection{Calibration self-test}
 \label{sec:app-selftest}

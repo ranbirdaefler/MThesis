@@ -36,14 +36,9 @@
 
 \end{tikzpicture}
 \caption[NIR is a discrimination score]{\textbf{$\NIR$ asks whether a prediction resembles its own
-condition's truth more than it resembles the truths of the other drugs in the same comparison set.}
-The generic response --- the stress and cell-cycle program every compound triggers --- is present in
-every truth in equal measure, so it cancels in the comparison and only the drug-specific difference
-decides. Two consequences follow, and both matter downstream. Chance at $0.50$ is a statement about
-the \emph{comparison set}, not about the model: conditions are grouped by (cell line, plate) in the
-expression frame and by cell line in the residual frame, and the two are not interchangeable. And a
-predictor whose similarities are all identical --- the zero vector, which is what ``predict the
-average drug response'' becomes in residual space --- must score $0.50$ rather than $0$, which is why
-ties are counted at one half rather than dropped.}
+condition's truth more than it resembles the truths of the other conditions in the comparison set
+$J$.} Own truth ranked first gives $\NIR \to 1$; ranked at random gives $0.5$; and a predictor whose
+similarities are all identical --- the zero vector, which is what ``predict the average drug
+response'' becomes in residual space --- scores $0.5$ by the half-tie rule, not $0$.}
 \label{fig:nir}
 \end{figure}
