@@ -83,6 +83,18 @@ def nir(own, others):
     return float(np.mean([1.0 if own > x else (0.5 if own == x else 0.0) for x in o]))
 
 
+def two_way_ci(recs_vals, lines, wells):
+    """Two-way cluster-robust interval, so the gate carries the same estimator as everything
+    downstream of ERRATA defect 19. The channel arms are condition-level means over a crossed design
+    (about 48.6 cell lines per treated well), so a one-way clustered interval is too narrow -- and
+    the exposed row is `moa` under different-plate, which is barely positive already."""
+    try:
+        import inference as _inf
+    except ImportError:
+        return None
+    return _inf.two_way_cluster_ci(list(recs_vals), list(lines), list(wells))
+
+
 def clustered_ci(vals, clusters, rng, n_boot=2000):
     v = np.asarray(vals, float)
     cl = np.asarray(clusters)

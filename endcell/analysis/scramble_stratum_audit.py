@@ -39,6 +39,8 @@ import logging
 import os
 import sys
 
+import math
+
 import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -125,10 +127,34 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
         return None if not x or not y else float(np.mean(x) - np.mean(y))
 
     p = inf.permutation_p(rows, lab, stat, n_perm=n_perm, seed=seed)
-    if p is None:
-        return None
+
+    # CLUSTERED DIFFERENCE IS PRIMARY. The permutation above shuffles condition-level labels and so
+    # ignores the line/well clustering this register mandates everywhere else; it therefore reports a
+    # p that is too small. Combining the two arms' own cluster-robust standard errors gives the
+    # honest test. Kept side by side because the discrepancy is the point: an unclustered permutation
+    # on clustered data flatters the result, and that is worth showing rather than quietly fixing.
+    sub_a = [r for r in recs if r.get("split") == "train" and r.get(k) is not None
+             and r.get("model") is not None]
+    sub_b = [r for r in recs if r.get("split") == "unseen_combo" and r.get(k) is not None
+             and r.get("model") is not None]
+    ci_a = inf.two_way_cluster_ci(a, [r["cell_line"] for r in sub_a],
+                                  [r.get("sample_id", r["cell_line"]) for r in sub_a])
+    ci_b = inf.two_way_cluster_ci(b, [r["cell_line"] for r in sub_b],
+                                  [r.get("sample_id", r["cell_line"]) for r in sub_b])
+    clustered = None
+    if ci_a and ci_b:
+        sed = math.sqrt(ci_a["se"] ** 2 + ci_b["se"] ** 2)
+        d = float(np.mean(a) - np.mean(b))
+        z = d / sed if sed > 0 else float("nan")
+        pc = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z) / math.sqrt(2.0))))
+        clustered = {"difference": d, "se": sed, "z": z, "p": pc,
+                     "ci": [d - 1.96 * sed, d + 1.96 * sed]}
     return {"stratum": stratum, "train_gap": float(np.mean(a)), "unseen_combo_gap": float(np.mean(b)),
-            "difference": p["observed"], "p": p["p"], "n_train": len(a), "n_combo": len(b)}
+            "difference": (clustered["difference"] if clustered else (p or {}).get("observed")),
+            "clustered": clustered,
+            "p_permutation_unclustered": ((p or {}).get("p")),
+            "p": (clustered["p"] if clustered else (p or {}).get("p")),
+            "n_train": len(a), "n_combo": len(b)}
 
 
 def output_tracks_named_drug(recs, n_boot=1500, seed=5):
@@ -327,7 +353,14 @@ def report(recs):
         logger.info("MEMORISATION PREMIUM (neutral comparator): does the model do better on conditions")
         logger.info("it trained on than on held-out ones?")
         logger.info(f"    train {mp['train_gap']:+.4f}   unseen_combo {mp['unseen_combo_gap']:+.4f}   "
-                    f"difference {mp['difference']:+.4f}   permutation p = {mp['p']:.4f}")
+                    f"difference {mp['difference']:+.4f}")
+        if mp.get("clustered"):
+            c = mp["clustered"]
+            logger.info(f"    PRIMARY, cluster-robust: SE {c['se']:.4f}  z {c['z']:.2f}  "
+                        f"p {c['p']:.4f}   CI [{c['ci'][0]:+.4f}, {c['ci'][1]:+.4f}]")
+        if mp.get("p_permutation_unclustered") is not None:
+            logger.info(f"    secondary, permutation IGNORING clustering: p "
+                        f"{mp['p_permutation_unclustered']:.4f}  <- too small; shown for contrast")
         if mp["p"] < 0.05:
             logger.info("    -> a premium EXISTS. Any statement that there is none must be withdrawn.")
 
