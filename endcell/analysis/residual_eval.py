@@ -317,7 +317,9 @@ def main():
         _hm = json.load(open(truth_cfg["holdout"]))
         _sa = _hm.get("split_all")
         if _sa:
-            truth_split = {tuple(k.split("|")): v for k, v in _sa.items()}
+            # passed with the manifest's own string keys; build_residuals.normalise_split maps them
+            # onto condition keys in string space, because tuple(k.split("|")) is type-lossy
+            truth_split = dict(_sa)
             logger.info(f"split labels for the truth build: {len(truth_split)} conditions from "
                         f"split_all (the complete pre-filter assignment)")
         else:

@@ -665,6 +665,34 @@ def transform(conds, shifts, gen, split, scope, repro_thr, eval_filter=True):
     return kept, out
 
 
+def normalise_split(split, conds):
+    """Map a split dict onto `conds` keys regardless of how its keys are spelled.
+
+    THE MANIFEST STORES KEYS AS "|".join(map(str, k)), WHICH IS LOSSY. A caller that reconstructs
+    them with tuple(s.split("|")) gets a tuple of STRINGS, and a condition key whose cell-line or
+    plate element is an int (or a numpy scalar, straight out of parquet) then fails to match. Every
+    lookup falls through to the default and the split is silently uniform -- which is precisely the
+    defect this whole change exists to remove, reintroduced one layer up and invisible.
+
+    So comparison happens in the string space the manifest was written in, never in tuple space.
+    Returns (normalised, n_resolved). The caller is expected to refuse on a low resolution rate.
+    """
+    if not split:
+        return None, 0
+    by_str = {}
+    for k, v in split.items():
+        by_str["|".join(map(str, k)) if isinstance(k, tuple) else str(k)] = v
+    out, hit = {}, 0
+    for k in conds:
+        v = by_str.get("|".join(map(str, k)))
+        if v is None:
+            out[k] = "train"
+        else:
+            out[k] = v
+            hit += 1
+    return out, hit
+
+
 def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
                     generic_scope="cell_line", shrink_k=0.0, loo=False, split_controls=False,
                     train_keys=None, holdout=None, meta_dir=None, repo=TAHOE_REPO,
@@ -773,6 +801,23 @@ def build_residuals(cache_dir, min_treated, min_control, repro_thr, seed=0,
     # made eval_filter=False inert, because transform filter fires on s == "train" OR the flag.
     if split is None:
         split = {k: "train" for k in conds}
+    else:
+        split, n_hit = normalise_split(split, conds)
+        frac = n_hit / max(1, len(conds))
+        logger.info(f"split labels resolved for {n_hit}/{len(conds)} conditions ({frac:.1%})")
+        if frac < 0.5:
+            # Refuse rather than proceed: below half, whatever is happening is a key-format
+            # mismatch, and continuing would filter held-out truth exactly as the old code did
+            # while logging that it had not.
+            raise SystemExit(
+                f"REFUSING TO BUILD TRUTH: only {n_hit}/{len(conds)} conditions ({frac:.1%}) matched "
+                f"a split label. The remainder would default to 'train' and be reliability-filtered, "
+                f"silently reproducing the defect this path exists to fix. This almost always means "
+                f"the manifest was written from a different cache. Compare a manifest key with a "
+                f"condition key before rerunning.")
+        if frac < 1.0:
+            logger.warning(f"{len(conds) - n_hit} conditions have no split label and default to "
+                           f"'train'; they will be reliability-filtered")
     kept, _ = transform(conds, shifts, gen, split, generic_scope, repro_thr, eval_filter=eval_filter)
     gexp = gen.export(conds, generic_scope)
     if generic_scope == "cell_line":

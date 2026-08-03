@@ -261,7 +261,8 @@ def run(args):
         if tcfg["holdout"]:
             hm = json.load(open(tcfg["holdout"]))
             if hm.get("split_all"):
-                tcfg["split"] = {tuple(k.split("|")): v for k, v in hm["split_all"].items()}
+                # manifest string keys; build_residuals normalises them (tuple(...) is type-lossy)
+                tcfg["split"] = dict(hm["split_all"])
         logger.info(f"truth frame from {args.truth_from}: scope={tcfg['generic_scope']} "
                     f"loo={tcfg['loo']} split_controls={tcfg['split_controls']} "
                     f"repro_thr={tcfg['repro_thr']:.4f} eval_filter={tcfg['eval_filter']}")

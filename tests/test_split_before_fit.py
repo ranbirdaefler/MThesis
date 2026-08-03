@@ -742,3 +742,51 @@ def test_the_shim_defaults_still_reproduce_the_published_behaviour(tmp_path):
     kept, generic, ctrl, X, meta = brt.build_residuals(cache, N_CELLS, N_CELLS, -1.0,
                                                        meta_dir=meta_dir)
     assert kept and generic is not None
+
+
+def test_split_labels_survive_lossy_manifest_keys():
+    """The manifest stores keys as "|".join(map(str, k)), which is LOSSY.
+
+    A caller reconstructing them with tuple(s.split("|")) gets a tuple of STRINGS. If a real
+    condition key holds an int or a numpy scalar -- straight out of parquet, which is where these
+    come from -- nothing matches, every lookup falls through to the default "train", and transform's
+    filter fires on the `s == "train"` disjunct for every condition. That is the original defect,
+    reintroduced one layer up and completely invisible: the log would say the labels were applied.
+    """
+    conds = {("DrugA", 42, "p1", "smp_1"): {}, ("DrugB", 42, "p1", "smp_2"): {},
+             ("DrugC", 7, "p2", "smp_3"): {}}
+    manifest = {"DrugA|42|p1|smp_1": "train",
+                "DrugB|42|p1|smp_2": "unseen_combo",
+                "DrugC|7|p2|smp_3": "unseen_drug"}
+
+    # the naive reconstruction matches NOTHING, because 42 != "42"
+    naive = {tuple(k.split("|")): v for k, v in manifest.items()}
+    assert not any(k in naive for k in conds), "fixture does not reproduce the type mismatch"
+
+    norm, hit = brt.normalise_split(manifest, conds)
+    assert hit == 3
+    assert norm[("DrugA", 42, "p1", "smp_1")] == "train"
+    assert norm[("DrugB", 42, "p1", "smp_2")] == "unseen_combo"
+    assert norm[("DrugC", 7, "p2", "smp_3")] == "unseen_drug"
+
+    # tuple-keyed input works too, so either spelling is safe
+    norm2, hit2 = brt.normalise_split({k: v for k, v in zip(conds, ["train", "a", "b"])}, conds)
+    assert hit2 == 3 and norm2[("DrugC", 7, "p2", "smp_3")] == "b"
+
+    # and an unrelated manifest resolves nothing rather than silently defaulting everything
+    _, hit3 = brt.normalise_split({"X|1|p9|smp_9": "train"}, conds)
+    assert hit3 == 0
+
+
+def test_a_split_that_matches_almost_nothing_is_refused(tmp_path):
+    """Below half resolved, continuing would filter held-out truth while logging that it had not."""
+    b = _build(str(tmp_path), "mismatch", repro_thr=0.93)
+    cache = os.path.join(str(tmp_path), "cache_mismatch")
+    meta_dir = os.path.join(str(tmp_path), "meta")
+    ho = os.path.join(b["dir"], "holdout.json")
+    with pytest.raises(SystemExit) as e:
+        brt.build_residuals(cache, N_CELLS, N_CELLS, repro_thr=0.93, seed=0,
+                            generic_scope="plate", loo=True, split_controls=True,
+                            holdout=ho, meta_dir=meta_dir, eval_filter=False,
+                            split={"nonexistent|key|p|s": "train"})
+    assert "REFUSING TO BUILD TRUTH" in str(e.value)
