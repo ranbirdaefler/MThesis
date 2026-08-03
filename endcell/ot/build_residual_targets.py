@@ -365,6 +365,33 @@ def make_holdout_by_sample(conds, frac_combos, frac_drugs, seed):
     return split, sorted(ho_drugs), sorted({(k[0], k[1]) for k, v in split.items() if v == "unseen_combo"})
 
 
+def enforce_sample_split(conds, split):
+    """Promote a condition-level split to the treated WELL, so no well straddles the boundary.
+
+    `--split_unit sample` was only honoured on the random-split path: whenever tier files produced a
+    split it was silently ignored, and the estimand quietly reverted to condition-level leave-pairs-out
+    with wells shared across the boundary. The flag now applies to every split, because which of the
+    two estimands the thesis claims is a scientific decision and must not depend on which holdout
+    source happened to fire.
+
+    A well is held out if ANY of its conditions is, and it inherits the strictest label present
+    (unseen_drug > unseen_combo > train), so promotion never moves a condition INTO training.
+    """
+    rank = {"train": 0, "unseen_combo": 1, "unseen_drug": 2}
+    inv = {v: k for k, v in rank.items()}
+    worst = defaultdict(int)
+    for k, v in split.items():
+        worst[k[3]] = max(worst[k[3]], rank.get(v, 0))
+    out = {k: inv[worst[k[3]]] for k in split}
+    moved = sum(1 for k in split if out[k] != split[k])
+    n = defaultdict(int)
+    for v in out.values():
+        n[v] += 1
+    logger.info(f"split promoted to the treated well: {moved} conditions relabelled -> "
+                f"{n['train']} train | {n['unseen_combo']} unseen_combo | {n['unseen_drug']} unseen_drug")
+    return out
+
+
 def sample_crossing_report(conds, split):
     """How many held-out conditions sit in a well that also contributes training conditions.
 
@@ -459,9 +486,10 @@ class Generic:
     not, and the two splits would be scored against differently defined targets.
     """
 
-    def __init__(self, shifts, conds, train_keys, shrink_k=0.0, loo=True):
+    def __init__(self, shifts, conds, train_keys, shrink_k=0.0, loo=True, min_plate_drugs=3):
         self.shrink_k = float(shrink_k)
         self.loo = bool(loo)
+        self.min_plate_drugs = int(min_plate_drugs)
         self.fine, self.coarse = {}, {}      # (cell_line, plate) and cell_line
         for level, keyfn in (("fine", lambda k: (conds[k]["cell_line"], conds[k]["plate"])),
                              ("coarse", lambda k: conds[k]["cell_line"])):
@@ -490,20 +518,47 @@ class Generic:
             n -= 1
         return None if n <= 0 else tot / n
 
+    def _n_other(self, g, drug):
+        """Training drugs available to a plate group's generic, after leave-one-drug-out."""
+        s = self.fine.get(g)
+        if s is None:
+            return 0
+        return s["n_drugs"] - (1 if (self.loo and drug in s["drug_mean"]) else 0)
+
     def value(self, cell_line, plate, drug, half, scope="plate"):
+        """The generic for one condition, or None when the requested scope cannot supply one.
+
+        FAIL CLOSED AT PLATE SCOPE. An earlier version fell back to the cell-line generic whenever a
+        plate group had no other training drug. That made `--generic_scope plate --shrink_k 0` a lie:
+        an unreported subset of conditions silently received cell-line-scoped targets, which is the
+        contaminated frame this build exists to leave, and nothing in the output said which ones. A
+        plate group with fewer than `min_plate_drugs` other training drugs now yields None, the
+        condition is dropped, and the count is reported.
+
+        With `--shrink_k > 0` the blend toward the cell-line generic is the DECLARED estimator rather
+        than a hidden fallback, so a thin group is legitimate -- but then the frame is hierarchical,
+        not plate-scoped, and `report.json` names it that way.
+        """
         h = {"full": "f", "A": "A", "B": "B"}[half]
         coarse = self._loo(self.coarse, cell_line, drug, h)
         if scope == "cell_line":
             return coarse
-        fine = self._loo(self.fine, (cell_line, plate), drug, h)
-        if fine is None:
+        g = (cell_line, plate)
+        n = self._n_other(g, drug)
+        fine = self._loo(self.fine, g, drug, h)
+        if self.shrink_k <= 0:
+            return fine if n >= self.min_plate_drugs else None
+        if coarse is None:
+            return fine if n >= self.min_plate_drugs else None
+        if fine is None or n <= 0:
             return coarse
-        if self.shrink_k <= 0 or coarse is None:
-            return fine
-        n = self.fine[(cell_line, plate)]["n_drugs"] - (
-            self.loo and drug in self.fine[(cell_line, plate)]["drug_mean"])
         w = n / (n + self.shrink_k)
         return w * fine + (1.0 - w) * coarse
+
+    def frame_name(self, scope):
+        if scope == "cell_line":
+            return "cell_line"
+        return "plate" if self.shrink_k <= 0 else f"hierarchical(shrink_k={self.shrink_k:g})"
 
     def digest(self):
         """Hash of everything that was fitted. The poison test asserts this is unchanged when
@@ -521,11 +576,29 @@ class Generic:
 
     def export(self, conds, scope):
         """Group -> generic shift, for reconstruction. Averaged over drugs WITHOUT leave-one-out,
-        because evaluation reconstructs a profile for a condition whose drug it does not know."""
+        because evaluation reconstructs a profile for a condition whose drug it does not know.
+
+        Shrinkage is applied here too. It was not, which meant reconstruction used a pure plate mean
+        while the targets it was reconstructing had been built from a blended one -- two different
+        definitions of the same quantity, so `predicted_treated` would not have been the inverse of
+        the transform that produced the target.
+        """
+        if scope == "cell_line":
+            return {g: s["total"]["f"] / s["n_drugs"] for g, s in self.coarse.items()}
         out = {}
-        store = self.coarse if scope == "cell_line" else self.fine
-        for g, s in store.items():
-            out[g] = s["total"]["f"] / s["n_drugs"]
+        for g, s in self.fine.items():
+            fine = s["total"]["f"] / s["n_drugs"]
+            n = s["n_drugs"]
+            if self.shrink_k <= 0:
+                if n >= self.min_plate_drugs:
+                    out[g] = fine
+                continue
+            c = self.coarse.get(g[0])
+            if c is None:
+                out[g] = fine
+            else:
+                w = n / (n + self.shrink_k)
+                out[g] = w * fine + (1.0 - w) * (c["total"]["f"] / c["n_drugs"])
         return out
 
 
@@ -704,6 +777,8 @@ def run(args):
         logger.warning("NO HOLDOUT REQUESTED: the generic will be fitted on every condition, which "
                        "is only valid when nothing downstream is scored as held out")
         split = {k: "train" for k in conds}
+    if args.split_unit == 'sample':
+        split = enforce_sample_split(conds, split)
     crossing = sample_crossing_report(conds, split)
     train_keys = [k for k in conds if split[k] == "train"]
     logger.info(f"fitting on {len(train_keys)} train conditions "
@@ -713,14 +788,15 @@ def run(args):
     shifts, _, relprov = compute_shifts(conds, ctrl_rows, X, args.seed,
                                         shared_control=args.shared_control_reliability)
     sens = scope_sensitivity(conds, shifts, train_keys, args.repro_thr) if args.scope_sensitivity else []
-    gen = Generic(shifts, conds, train_keys, shrink_k=args.shrink_k)
+    gen = Generic(shifts, conds, train_keys, shrink_k=args.shrink_k,
+                  min_plate_drugs=args.min_plate_drugs)
     fit_digest = gen.digest()
     logger.info(f"generic scope={args.generic_scope} shrink_k={args.shrink_k} "
                 f"leave-one-drug-out=on  fit_digest={fit_digest[:16]}")
 
     logger.info("=== [4/4] transform ===")
     kept, relstats = transform(conds, shifts, gen, split, args.generic_scope, args.repro_thr,
-                               eval_filter=not args.no_eval_repro_filter)
+                               eval_filter=args.eval_repro_filter)
     if not kept:
         logger.error("no conditions survived the reliability filter"); return
 
@@ -729,8 +805,24 @@ def run(args):
     # written to a temp path and renamed only once the dose check passes, so "REFUSING TO WRITE"
     # is literally true and a failed run cannot leave a usable-looking training file behind
     tmp_path = out_path + ".partial"
+    # VALIDATION SHARD, in the SAME format as training. The retrain was validating residual-format
+    # training against ordinary cell-sentence tier-1 data, so the validation loss was measuring a
+    # different output distribution than the one being learned -- it could not detect overfitting on
+    # the actual objective and was not comparable across arms. Carved from TRAINING conditions and
+    # held out by WELL, so a validation condition never shares a treated well with a training one.
+    val_path = os.path.join(args.out_dir, "residual_val.jsonl")
+    tmp_val = val_path + ".partial"
+    train_samples = sorted({k[3] for k in kept if split[k] == "train"})
+    n_val_s = int(round(args.val_frac * len(train_samples)))
+    val_samples = set()
+    if n_val_s > 0:
+        vr = np.random.RandomState(args.seed + 11)
+        val_samples = {train_samples[i] for i in vr.choice(len(train_samples), n_val_s, replace=False)}
+    logger.info(f"validation shard: {len(val_samples)}/{len(train_samples)} training wells "
+                f"({args.val_frac:.1%}) -> {val_path}")
+    n_val = 0
     n_ex, n_cond, n_skipped_holdout, emitted_doses = 0, 0, 0, []
-    with open(tmp_path, "w") as out:
+    with open(tmp_path, "w") as out, open(tmp_val, "w") as out_val:
         for k, v in kept.items():
             d, c, p, sid = k
             info = conds[k]
@@ -753,23 +845,29 @@ def run(args):
                 ctrl_vec = np.asarray(X[ri].todense()).ravel()
                 prompt = format_prompt(cname, d, info["dose_display"], moa,
                                        expr_to_sentence(ctrl_vec, panel_genes), order=args.prompt_order)
-                out.write(json.dumps({
+                rec = json.dumps({
                     "prompt": prompt, "response": resp,
                     "metadata": {"drug": d, "cell_line_id": c, "plate": p,
                                  "sample_id": sid, "dose_molar": info["dose_molar"],
                                  "dose_raw": info["dose_raw"],
-                                 "target": "residual", "repro_cos": v["repro_cos"]}}) + "\n")
-                n_ex += 1
+                                 "target": "residual", "repro_cos": v["repro_cos"]}}) + "\n"
+                if sid in val_samples:
+                    out_val.write(rec); n_val += 1
+                else:
+                    out.write(rec); n_ex += 1
             n_cond += 1
             if n_cond % 200 == 0:
                 logger.info(f"  {n_cond} conditions, {n_ex} examples")
 
     # the defect this builder exists to prevent: never ship a dose field holding sample identifiers
     if td.looks_like_sample_id(emitted_doses):
-        os.remove(tmp_path)
+        for t in (tmp_path, tmp_val):
+            if os.path.exists(t):
+                os.remove(t)
         raise SystemExit("REFUSING TO WRITE: the emitted dose field holds sample identifiers. "
                          "This is the exact defect shared/tahoe_design.py was written to stop.")
     os.replace(tmp_path, out_path)
+    os.replace(tmp_val, val_path)
 
     # reconstruction assets: predicted_treated = control + generic_shift(group) + predicted_residual
     gexp = gen.export(conds, args.generic_scope)
@@ -786,10 +884,13 @@ def run(args):
     report = {"n_conditions_inventoried": len(conds), "n_conditions_kept": len(kept),
               "n_examples": n_ex, "k_up": args.k_up, "k_down": args.k_down,
               "repro_thr": args.repro_thr, "scope": args.generic_scope, "shrink_k": args.shrink_k,
+              "frame": gen.frame_name(args.generic_scope),
+              "min_plate_drugs": args.min_plate_drugs,
+              "n_validation_examples": n_val, "n_validation_wells": len(val_samples),
               "leave_one_drug_out": True, "drug_weighted_generic": True,
               "split_before_fit": True, "split_unit": args.split_unit,
               "reliability_controls": relprov,
-              "eval_repro_filter": not args.no_eval_repro_filter,
+              "eval_repro_filter": bool(args.eval_repro_filter),
               "fit_digest": fit_digest, "reliability_by_split": relstats,
               "scope_sensitivity": sens, "well_crossing": crossing,
               "inventory": notes, "down_token": DOWN, "end_token": END}
@@ -811,6 +912,7 @@ def run(args):
     logger.info(f"holdout manifest -> {args.out_dir}/holdout.json "
                 f"({n_skipped_holdout} conditions withheld from training)")
     logger.info(f"wrote {n_ex} examples from {n_cond} conditions -> {out_path}")
+    logger.info(f"wrote {n_val} validation examples ({len(val_samples)} wells) -> {val_path}")
     logger.info(f"reconstruction assets -> {args.out_dir}/reconstruction.npz")
     logger.info(f"NOTE: register '{DOWN}' as a special token in the trainer alongside '{END}'.")
 
@@ -917,9 +1019,23 @@ def main():
     ap.add_argument("--no_require_sample_id", action="store_true",
                     help="proceed even if no treatment identifier can be recovered (the dose and the "
                          "assignment unit are then both unavailable, and the report says so)")
-    ap.add_argument("--no_eval_repro_filter", action="store_true",
-                    help="apply the reliability filter to training conditions only, leaving held-out "
-                         "conditions unselected on their own outcome")
+    ap.add_argument("--eval_repro_filter", action="store_true",
+                    help="ALSO drop held-out conditions whose own residual fails the reliability "
+                         "threshold. OFF by default: that is selection on the outcome, and it makes "
+                         "the evaluation set unrepresentative of the conditions the split defined. "
+                         "The primary result uses the complete metadata-eligible holdout; "
+                         "repro_cos is written per example so a filtered SENSITIVITY can be computed "
+                         "afterwards and labelled as one.")
+    ap.add_argument("--val_frac", type=float, default=0.02,
+                    help="fraction of TRAINING wells carved into residual_val.jsonl, in the same "
+                         "format as training. Validating residual targets against ordinary "
+                         "cell-sentence data measures a different output distribution and cannot "
+                         "detect overfitting on the objective actually being trained.")
+    ap.add_argument("--min_plate_drugs", type=int, default=3,
+                    help="a plate group with fewer OTHER training drugs than this cannot supply a "
+                         "plate-scoped generic. At --shrink_k 0 the condition is dropped rather than "
+                         "silently falling back to the cell-line generic, which would put part of the "
+                         "build back in the contaminated frame without saying so.")
     ap.add_argument("--tier2_file", default=None,
                     help="eval_tier2_unseen_drugs.jsonl -> hold out THE SAME drugs the original "
                          "preprocessing held out, so tier-2 numbers are comparable to prior results")

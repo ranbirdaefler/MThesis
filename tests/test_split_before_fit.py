@@ -99,7 +99,8 @@ def _args(cache_dir, meta_dir, out_dir, **over):
         min_treated=N_CELLS, min_control=N_CELLS, repro_thr=-1.0, k_up=5, k_down=5, max_ctrl=3,
         generic_scope="plate", shrink_k=0.0, scope_sensitivity=False,
         shared_control_reliability=False,
-        keep_combinations=False, no_require_sample_id=False, no_eval_repro_filter=False,
+        keep_combinations=False, no_require_sample_id=False, eval_repro_filter=False,
+        min_plate_drugs=0, val_frac=0.0,
         tier2_file=None, tier3_file=None, holdout_combos=0.2, min_combo_conditions=1,
         holdout_drugs=0.15, split_unit="condition", prompt_order="drug_first",
         emit_fit_digest=os.path.join(out_dir, "fit.sha"), seed=42)
@@ -326,9 +327,107 @@ def test_dose_weighting_does_not_let_one_drug_count_twice():
         k = (d, "c", "p", f"smp_{i}")
         conds[k] = {"cell_line": "c", "plate": "p", "drug": d, "group": ("c", "p"), "n_cells": 9}
         shifts[k] = {h: np.full(3, v, np.float32) for h in ("full", "A", "B")}
-    g = brt.Generic(shifts, conds, list(conds))
+    g = brt.Generic(shifts, conds, list(conds), min_plate_drugs=0)
     # leave Z out: mean over {X, Y} = 3.0.  Condition-weighted it would be (6+6+0)/3 = 4.0.
     assert g.value("c", "p", "Z", "full", "plate")[0] == pytest.approx(3.0)
+
+
+def test_plate_scope_fails_closed_instead_of_falling_back_to_cell_line(tmp_path):
+    """`--generic_scope plate --shrink_k 0` used to fall back to the cell-line generic whenever a
+    plate group had no other training drug. That silently put an unreported subset of conditions in
+    the contaminated frame the rebuild exists to leave."""
+    conds, shifts = {}, {}
+    for i, (d, p, v) in enumerate([("X", "p1", 6.0), ("Y", "p1", 0.0), ("Z", "p1", 3.0),
+                                   ("W", "p2", 9.0)]):          # p2 holds one drug only
+        k = (d, "c", p, f"smp_{i}")
+        conds[k] = {"cell_line": "c", "plate": p, "drug": d, "group": ("c", p), "n_cells": 9}
+        shifts[k] = {h: np.full(3, v, np.float32) for h in ("full", "A", "B")}
+
+    strict = brt.Generic(shifts, conds, list(conds), shrink_k=0.0, min_plate_drugs=2)
+    assert strict.value("c", "p2", "W", "full", "plate") is None, (
+        "a plate with no other training drug must yield None, not the cell-line generic")
+    assert strict.value("c", "p1", "X", "full", "plate") is not None, "p1 has two other drugs"
+    assert strict.frame_name("plate") == "plate"
+
+    # with shrinkage the blend toward cell-line scope is DECLARED, so a thin group is legitimate --
+    # but the frame must then be named for what it is
+    shrunk = brt.Generic(shifts, conds, list(conds), shrink_k=5.0, min_plate_drugs=2)
+    assert shrunk.value("c", "p2", "W", "full", "plate") is not None
+    assert "hierarchical" in shrunk.frame_name("plate")
+
+
+def test_export_uses_the_same_frame_as_the_targets(tmp_path):
+    """reconstruction.npz must invert the transform that produced the target. Export ignored
+    shrinkage, so a shrunk build reconstructed with an unshrunk generic."""
+    conds, shifts = {}, {}
+    for i, (d, p, v) in enumerate([("X", "p1", 6.0), ("Y", "p1", 0.0), ("Z", "p2", 12.0)]):
+        k = (d, "c", p, f"smp_{i}")
+        conds[k] = {"cell_line": "c", "plate": p, "drug": d, "group": ("c", p), "n_cells": 9}
+        shifts[k] = {h: np.full(3, v, np.float32) for h in ("full", "A", "B")}
+    plain = brt.Generic(shifts, conds, list(conds), shrink_k=0.0, min_plate_drugs=0)
+    shrunk = brt.Generic(shifts, conds, list(conds), shrink_k=5.0, min_plate_drugs=0)
+    ep, es = plain.export(conds, "plate"), shrunk.export(conds, "plate")
+    assert not np.allclose(ep[("c", "p2")], es[("c", "p2")]), (
+        "shrinkage must reach the exported generic, or reconstruction uses a different definition "
+        "of the quantity than the targets did")
+
+
+def test_the_held_out_set_is_not_selected_on_its_own_outcome(tmp_path):
+    """Dropping held-out conditions for failing their own reliability threshold selects the
+    evaluation set on the outcome. Primary result keeps them; the filter is a labelled sensitivity."""
+    held = lambda r: r["report"]["holdout"]["n_unseen_combo"] + r["report"]["holdout"]["n_unseen_drug"]
+
+    # the guarantee: with the filter off, the held-out set is whatever the SPLIT assigned, and moving
+    # the reliability threshold cannot change it
+    loose = _build(str(tmp_path), "loose", repro_thr=-1.0)
+    tight = _build(str(tmp_path), "tight", repro_thr=0.93)
+    assert loose["report"]["eval_repro_filter"] is False, "unfiltered must be the default"
+    assert held(loose) == held(tight) > 0, (
+        "the held-out set moved when the reliability threshold moved, so it is still being selected "
+        "on its own outcome")
+    # and the training set DOES respond, which is what makes the check above meaningful
+    assert tight["report"]["holdout"]["n_train"] < loose["report"]["holdout"]["n_train"]
+
+    # opting in must actually filter, or the sensitivity arm is unavailable
+    on = _build(str(tmp_path), "filtered", repro_thr=0.93, eval_repro_filter=True)
+    assert held(on) < held(tight)
+
+
+def test_sample_split_unit_is_honoured_even_when_tier_files_supply_the_split(tmp_path):
+    """`--split_unit sample` was only honoured on the random-split path, so which estimand the
+    thesis claims depended on which holdout source happened to fire."""
+    cache = os.path.join(str(tmp_path), "cache_es")
+    meta_dir = os.path.join(str(tmp_path), "meta_es")
+    _write_cache(cache, meta_dir)
+    _, _, conc = brt.load_meta_maps(meta_dir=meta_dir)
+    conds, _, _, _, _ = brt.inventory(cache, N_CELLS, N_CELLS, conc)
+
+    # a split that straddles a well: one cell line held out, the rest training
+    split = {k: "train" for k in conds}
+    victim = next(k for k in conds)
+    split[victim] = "unseen_combo"
+    assert brt.sample_crossing_report(conds, split)["n_samples_crossing_split"] == 1
+
+    promoted = brt.enforce_sample_split(conds, split)
+    assert brt.sample_crossing_report(conds, promoted)["n_samples_crossing_split"] == 0
+    # promotion never moves a condition INTO training
+    assert all(not (split[k] != "train" and promoted[k] == "train") for k in split)
+
+
+def test_a_residual_format_validation_shard_is_written(tmp_path):
+    """The retrain validated residual-format training against ordinary cell-sentence tier-1 data, so
+    the validation loss measured a different output distribution than the one being trained."""
+    r = _build(str(tmp_path), "valshard", val_frac=0.25)
+    val = open(os.path.join(r["dir"], "residual_val.jsonl"), "rb").read().decode().splitlines()
+    assert val, "no validation shard was written"
+    train_samples = {json.loads(l)["metadata"]["sample_id"] for l in r["jsonl"].decode().splitlines()}
+    val_samples = {json.loads(l)["metadata"]["sample_id"] for l in val}
+    assert not (train_samples & val_samples), "a validation well also appears in training"
+    for l in val:
+        ex = json.loads(l)
+        assert ex["metadata"]["target"] == "residual"
+        assert brt.DOWN in ex["response"] or brt.END in ex["response"], (
+            "the shard must be in the residual signed-DE format, not plain cell sentences")
 
 
 # --------------------------------------------------------------------------- the unit and the dose

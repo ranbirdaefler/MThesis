@@ -142,7 +142,7 @@ echo "=== [2] retrain -- IDENTICAL recipe, prompt order is the only variable ===
 $PY train_c2s_tahoe_endcell.py --mode full \
     --model_name vandijklab/C2S-Scale-Pythia-1b-pt \
     --train_file "$TGT/residual.jsonl" \
-    --eval_file "$DATA/eval_tier1_seen_conditions.jsonl" \
+    --eval_file "$TGT/residual_val.jsonl" \
     --output_dir "$CKPT" \
     --num_epochs 1 --batch_size 1 --grad_accum 16 \
     --bf16 --gradient_checkpointing --max_length 8192 \
@@ -830,11 +830,20 @@ $PY tahoe_design.py --selftest
 $PY build_residual_targets.py --selftest
 
 $PY build_residual_targets.py --cache_dir "$D/ot_cache" --out_dir "$TGT" \
-    --generic_scope plate --shrink_k 0 --scope_sensitivity \
+    --generic_scope plate --shrink_k 0 --min_plate_drugs 3 --scope_sensitivity \
+    --split_unit sample --val_frac 0.02 \
     --tier2_file "$DATA/eval_tier2_unseen_drugs.jsonl" \
     --tier3_file "$DATA/eval_tier3_unseen_combos.jsonl" \
     --holdout_combos 0.15 --holdout_drugs 0.10 --min_combo_conditions 250 --seed 42 \
     --emit_fit_digest "$TGT/fit.sha"
+
+# the same build at condition level, so the estimand is a comparison rather than an assumption
+$PY build_residual_targets.py --cache_dir "$D/ot_cache" --out_dir "${TGT}_condition" \
+    --generic_scope plate --shrink_k 0 --min_plate_drugs 3 \
+    --split_unit condition --val_frac 0.02 \
+    --tier2_file "$DATA/eval_tier2_unseen_drugs.jsonl" \
+    --tier3_file "$DATA/eval_tier3_unseen_combos.jsonl" \
+    --holdout_combos 0.15 --holdout_drugs 0.10 --min_combo_conditions 250 --seed 42
 
 $PY -c "import json;r=json.load(open('$TGT/report.json'));print(json.dumps(r,indent=2)[:4000])"
 echo done
@@ -843,7 +852,7 @@ sbatch rebuild.sbatch
 ```
 
 ```bash
-LOG=$(ls -t logs/rebuild_*.out | head -1); grep -nE "SELFTEST|treatment identifier|inventory:|scope |reliability |well crossing|holdout|fit_digest|wrote |REFUSING" $LOG
+LOG=$(ls -t logs/rebuild_*.out | head -1); grep -nE "SELFTEST|treatment identifier|inventory:|scope |reliability |well crossing|promoted to the treated well|validation shard|holdout|fit_digest|wrote |REFUSING" $LOG
 ```
 
 **The gate.** Three numbers decide whether Step 5 runs:
@@ -871,9 +880,17 @@ is the release gate for the generalisation chapter.
 
 ## 10. `retrain.sbatch` — one clean arm on the repaired targets  (GPU, ~20 h)  **[Steps 5–6]**
 
-**Only submit this once section 9's gate has been read.** One arm, one seed, same recipe as
-`holdout2` so the comparison is to a checkpoint that differs in the targets and nothing else. Not
-three arms and not a seed sweep — the claim is checkpoint-specific and will be worded that way.
+**Two preconditions, both hard.** Section 9's gate must have been read, AND Step 6 must have
+landed. The second is not optional: `residual_eval.py` still draws scramble partners that can be
+the same drug at another dose, still admits same-drug siblings among the gallery negatives, and
+still fits `drug_lookup` / `moa_lookup` from the full cache, which makes them oracles. Training
+first and evaluating with that would burn the GPU slot and produce numbers we would have to
+discard — the checkpoint would be fine, the measurement would not be.
+
+One arm, one seed, same recipe as `holdout2` so the comparison is to a checkpoint that differs in
+the targets and nothing else. Not three arms and not a seed sweep — the claim is
+checkpoint-specific and will be worded that way. Note that one *generation* seed makes the eval
+exploratory; three make it inferential, and that wording follows whichever the queue allows.
 
 ```bash
 cd ~/tahoe && cat > retrain.sbatch <<'EOF'

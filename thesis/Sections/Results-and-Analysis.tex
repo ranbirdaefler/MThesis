@@ -414,13 +414,16 @@ predictions are not mode-collapsed. But the variation is uncorrelated with real 
 As predicted by Section~\ref{sec:res-mechanism}, denoising changes \emph{what is in} the target
 while the defect is the readout ignoring direction within it.
 
-\subsection{The repair: it was the tokenisation}
+\subsection{Changing what the tokens encode}
 \label{sec:res-encoding}
 
 Every target-side intervention changed \emph{what the target was} and none changed \emph{what its
-tokens encode}. That distinction turns out to be the whole story, and it is measurable rather than
-rhetorical: the question is not how good the target is but what fraction of its tokens carries drug
-identity at all.
+tokens encode}. That distinction is measurable rather than rhetorical: the question is not how good
+the target is but what fraction of its tokens carries drug identity at all. How much of the
+improvement it explains is not settled here. The comparison rests on a gene-\emph{set} overlap
+statistic that ignores rank order, and the residual targets it was measured on are being rebuilt
+with the generic fitted on training conditions only; both the size and the sign of the encoding
+effect are therefore provisional.
 
 \begin{table}[h]
 \centering
@@ -541,9 +544,15 @@ generations, \DOWN{} present in $93\%$, $98.9\%$ valid panel genes, $1.4\%$ dupl
 \label{tab:generalisation}
 \end{table}
 
-\paragraph{There is no memorisation premium.} Held-out pairings score \emph{as well as} trained ones
-($+0.1002$ vs $+0.0898$, intervals almost entirely overlapping). The model did not memorise
-pairings; it learned a drug representation that applies in cell lines where it never saw that drug.
+\paragraph{Held-out pairings score as well as trained ones} ($+0.1002$ vs $+0.0898$, intervals
+almost entirely overlapping), which is consistent with a drug representation that applies in cell
+lines where the drug was not observed rather than with memorised pairings. Two qualifications
+belong with the number. The targets these were measured against were built with the generic fitted
+over every condition, holdout included, so the held-out arm was scored against targets partly
+defined by the holdout. And a held-out (drug, cell line) pairing can share a treated well with a
+training condition of another cell line, because one Tahoe well carries many lines. Both are
+addressed in the rebuild; until it lands this is evidence for the claim, not a settled measurement
+of it.
 The \texttt{unseen\_drug} arm behaving as designed --- same model, same instrument, drug token
 carrying no learned information, no gap --- is what licenses attributing the transfer to having seen
 the drug.

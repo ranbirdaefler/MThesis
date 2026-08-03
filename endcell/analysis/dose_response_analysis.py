@@ -44,6 +44,13 @@ import argparse, json, os, sys, logging, csv as _csv
 from collections import defaultdict
 import numpy as np
 
+for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "shared"),
+           os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import tahoe_design as td
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -238,7 +245,11 @@ def load(eval_dir, sources, pidx, P, lm):
             if cl is None or plate is None or drug is None or dose is None:
                 continue
             g = (cl, plate)
-            groups[g][drug][round(float(dose), 6)].append(
+            # `round(x, 6)` sends every molar concentration to 0.0 -- 5e-8 and 5e-7 alike -- so a
+            # dose series collapsed into a single group the moment `dose_molar` started carrying
+            # real concentrations. molar_key normalises on significant figures instead, which is
+            # what makes 1000 nM and 1 uM one group and 0.05 uM and 5 uM two.
+            groups[g][drug][td.molar_key(float(dose))].append(
                 sentence_to_expr(ex["response"], pidx, P, lm))
             cs = control_from_prompt(ex["prompt"])
             if cs:
