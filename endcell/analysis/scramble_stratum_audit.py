@@ -131,6 +131,76 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
             "difference": p["observed"], "p": p["p"], "n_train": len(a), "n_combo": len(b)}
 
 
+def output_tracks_named_drug(recs, n_boot=1500, seed=5):
+    """Does the output resemble the drug the model was TOLD, whichever drug that is?
+
+    A COMPARATOR-FREE test, which is its whole advantage: it needs no null arm, so the failure
+    diagnosed above cannot touch it.
+
+    For each condition we have three generations, each produced after naming a different partner
+    drug P. For each we know cos(truth_target, truth_P) -- how alike the two drugs' real responses
+    are -- and the NIR of the generation scored against the TARGET's truth. Fit a straight line
+    through those points:
+
+        NIR  =  a + b * cos(truth_target, truth_P)
+
+    b is the slope. If the model ignores which drug it was told, the output does not move with the
+    partner and b = 0. If the model emits the NAMED drug's signature, then naming a drug whose real
+    response resembles the target's produces a generation that scores high, and naming an opposite
+    one produces a generation that scores low, so b > 0.
+
+    b > 0 therefore means the model holds a drug -> signature map. It does NOT mean the map is
+    precise enough to identify the target among its neighbours; that is what `model_vs_chance` asks.
+    """
+    out = {}
+    for sp in SPLITS:
+        sub = [r for r in recs if r.get("split") == sp]
+        pts, lines, wells = [], [], []
+        for r in sub:
+            for st in STRATA:
+                x, y = r.get("cos_" + st), r.get("scramble_" + st)
+                if x is not None and y is not None:
+                    pts.append((float(x), float(y)))
+                    lines.append(r["cell_line"]); wells.append(r.get("sample_id", r["cell_line"]))
+        if len(pts) < 30:
+            out[sp] = {"n_points": len(pts), "underpowered": True}
+            continue
+
+        def slope(ps):
+            a_ = np.array([p[0] for p in ps]); b_ = np.array([p[1] for p in ps])
+            if len(a_) < 3 or a_.std() < 1e-9:
+                return None
+            return float(np.polyfit(a_, b_, 1)[0])
+
+        ci = inf.crossed_bootstrap(pts, lines, wells, slope, n_boot=n_boot, seed=seed)
+        out[sp] = {"n_points": len(pts), "slope": slope(pts),
+                   "ci": ([ci["lo"], ci["hi"]] if ci else None),
+                   "excludes_zero": bool(ci and ci["lo"] > 0)}
+    return out
+
+
+def model_vs_chance(recs):
+    """The simplest statement available: told the TRUE drug, does the prediction beat chance?
+
+    NIR is the fraction of other drugs in the same cell line whose truth is LESS similar to the
+    prediction than the target's own truth, so 0.5 is chance by construction and no comparator arm
+    is required. This is the direct form of the generalisation question.
+    """
+    out = {}
+    for sp in SPLITS:
+        sub = [r for r in recs if r.get("split") == sp and r.get("model") is not None]
+        if len(sub) < 30:
+            out[sp] = {"n": len(sub), "underpowered": True}
+            continue
+        ci = inf.two_way_cluster_ci([r["model"] - CHANCE for r in sub],
+                                    [r["cell_line"] for r in sub],
+                                    [r.get("sample_id", r["cell_line"]) for r in sub])
+        out[sp] = {"n": len(sub), "nir": float(np.mean([r["model"] for r in sub])),
+                   "ci": ([CHANCE + ci["lo"], CHANCE + ci["hi"]] if ci else None),
+                   "above_chance": bool(ci and ci["lo"] > 0)}
+    return out
+
+
 def report(recs):
     out = {"n_records": len(recs)}
     neut = comparator_neutrality(recs)
@@ -201,6 +271,37 @@ def report(recs):
                     f"[{gen['ci_two_way'][0]:+.4f}, {gen['ci_two_way'][1]:+.4f}]  -> "
                     f"{'ESTABLISHED' if gen['excludes_zero'] else 'NOT ESTABLISHED'}")
         out["generalisation_established"] = bool(gen["excludes_zero"])
+
+    trk = output_tracks_named_drug(recs)
+    out["output_tracks_named_drug"] = trk
+    logger.info("-" * 100)
+    logger.info("DOES THE OUTPUT TRACK THE DRUG IT WAS TOLD?  Slope of NIR on cos(truth, partner truth).")
+    logger.info("Comparator-free: zero slope is the natural null, so the fault above cannot reach it.")
+    for sp in SPLITS:
+        d = trk.get(sp) or {}
+        if d.get("underpowered") or d.get("ci") is None:
+            logger.info(f"    {sp:14s} UNDERPOWERED ({d.get('n_points', 0)} points)")
+            continue
+        logger.info(f"    {sp:14s} {d['n_points']:5d} points   slope {d['slope']:+.3f}  "
+                    f"[{d['ci'][0]:+.3f}, {d['ci'][1]:+.3f}]"
+                    f"{'  EXCLUDES 0 -- the model holds a drug->signature map' if d['excludes_zero'] else ''}")
+
+    mvc = model_vs_chance(recs)
+    out["model_vs_chance"] = mvc
+    logger.info("-" * 100)
+    logger.info("TOLD THE TRUE DRUG, DOES IT BEAT CHANCE?  NIR against 0.500; no comparator at all.")
+    for sp in SPLITS:
+        d = mvc.get(sp) or {}
+        if d.get("underpowered") or d.get("ci") is None:
+            logger.info(f"    {sp:14s} UNDERPOWERED")
+            continue
+        logger.info(f"    {sp:14s} n={d['n']:4d}  NIR {d['nir']:.3f}  "
+                    f"[{d['ci'][0]:.4f}, {d['ci'][1]:.4f}]  "
+                    f"{'ABOVE chance' if d['above_chance'] else 'not distinguishable from chance'}")
+    logger.info("    -> a positive SLOPE with a chance-level NIR is coherent: the map exists but is")
+    logger.info("       coarse. It carries the drug MAIN EFFECT and not the drug x cell-line")
+    logger.info("       interaction, which Q17 measures at ~45% of the residual variance -- and which")
+    logger.info("       is what a per-cell-line discrimination test like NIR actually asks for.")
     logger.info("=" * 100)
     return out
 
@@ -246,6 +347,21 @@ def selftest():
     mp = memorisation_premium(recs)
     check("the planted memorisation premium is detected", mp is not None and mp["p"] < 0.05)
     check("the premium has the right sign", mp["difference"] > 0)
+
+    trk = output_tracks_named_drug(recs, n_boot=300)
+    check("a planted drug->signature map gives a positive slope on trained data",
+          trk["train"]["excludes_zero"])
+    mvc = model_vs_chance(recs)
+    check("a model above chance on trained data is detected", mvc["train"]["above_chance"])
+    check("a model at chance on held-out data is NOT called above chance",
+          not mvc["unseen_drug"]["above_chance"])
+
+    # a model that ignores the drug name entirely must give slope ~0
+    flat = [dict(r, scramble_near=0.5 + 0.02 * rng.randn(),
+                 scramble_orth=0.5 + 0.02 * rng.randn(),
+                 scramble_opposite=0.5 + 0.02 * rng.randn()) for r in recs]
+    check("a name-ignoring model gives a slope indistinguishable from zero",
+          not output_tracks_named_drug(flat, n_boot=300)["train"]["excludes_zero"])
 
     thin = [r for r in recs if r["split"] == "train"][:5]
     check("an underpowered cell is marked, not silently reported",
