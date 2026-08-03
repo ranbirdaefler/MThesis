@@ -55,3 +55,4 @@ thesis/*.toc
 thesis/main.pdf
 thesis/Sections/*.aux
 RESULTS_cluster/*.npz
+coda_errata/
