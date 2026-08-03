@@ -81,7 +81,11 @@ MANIFEST = [
          script="endcell/analysis/residual_eval.py",
          backs="Q15/Q16 at max_new_tokens=1400",
          note="the local copies are the 600-token runs with the opposite-sign gap the thesis says "
-              "was superseded; the 1400-token re-runs are the quoted ones"),
+              "was superseded; the 1400-token re-runs are the quoted ones. NOTE: re-running any of "
+              "these through build_residuals reproduces the published DEFINITIONS but not the "
+              "published REALISATION -- the half-split is now seeded per condition rather than "
+              "from one shared stream, so a different set of conditions clears the reliability "
+              "filter. Numbers will move; see ERRATA defect 22."),
     dict(id="residual_holdout2", quoted=True, files=["re_holdout2.json"],
          script="endcell/analysis/residual_eval.py",
          backs="unseen_combo gap +0.1002 [+0.0661,+0.1368]; model NIR 0.657 / 0.650"),
@@ -94,7 +98,7 @@ MANIFEST = [
          backs="the split-before-fit rebuild and its scope-sensitivity gate"),
     # ---- already committed, listed so the manifest is the whole ledger ---------------------
     dict(id="calibration", quoted=True, files=["calibration.json", "calibration_hi.json"],
-         script="endcell/analysis/nir_calibration.py",
+         script="endcell/analysis/calibration_eval.py",
          backs="the metric audit: NIR is the only calibrated metric, DRF within-plate +0.446"),
     dict(id="nir_benchmark", quoted=True, files=["nir_benchmark.json", "nir_benchmark_perdrug.json"],
          script="endcell/analysis/nir_benchmark.py", backs="NIR benchmark table"),
