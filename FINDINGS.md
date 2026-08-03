@@ -34,12 +34,16 @@ under an opposite-signature swap, with a monotone dissimilarity gradient and a m
 control that stays null. So the drug-blindness is **not** an inherent limit of the architecture or the
 data — it is a consequence of how the prediction target is tokenized.
 
-**(4) …and that drug use GENERALIZES to unseen contexts, but is beaten by a lookup table (Q16).** On a
-tier-aligned three-way holdout, conditions whose **(drug, cell_line) pairing was never trained on** score
-**+0.1002 [+0.0661, +0.1368]** (n=250, 38 cell lines) — statistically indistinguishable from the trained
-split's +0.0898, i.e. **no memorization premium**: the model learned a drug representation that applies in
-cell lines it never saw that drug in, rather than memorizing pairings. Held-out *drugs* stay null, the
-control firing as designed. But the model recovers only a small fraction of the signature: a numpy lookup
+**(4) …and that the drug use is a MAIN EFFECT, not an interaction — and is beaten by a lookup table (Q16, corrected).**
+⛔ This item previously read "drug use GENERALIZES to unseen contexts", on **+0.1002 [+0.0661, +0.1368]** for
+never-trained (drug, cell_line) pairings against the trained split's +0.0898. Both gaps were measured against
+`scramble_opposite`, which is not a null (see Q20's warning box, ERRATA Defect 25). Against the neutral
+comparator on rebuilt targets, held-out pairings score **+0.0449 [−0.0074, +0.0972]** — **transfer not
+established**, though not shown to be zero either (the interval reaches +0.097; a power limit at n=250) —
+and there **is** a memorization premium (+0.1008, cluster-robust p=0.015). What survives is comparator-free:
+the model emits the signature of the drug it is *named* (slope +0.374 on held-out pairings vs +0.390 on
+trained) while ranking at chance against other drugs in the same cell line. It learned the drug **main
+effect**, not the drug × cell-line **interaction**. And the model recovers only a small fraction of the signature: a numpy lookup
 of the drug's mean residual from other cell lines scores **0.963** against a **0.968** replicate ceiling,
 while the 1B model reaches **0.639** (`model − drug_lookup` −0.3245; −0.1936 even against a *single*
 other cell line). This is the pre-registered "honest partial" branch of `arm1b_objective_spec.md` §7 —
@@ -470,13 +474,23 @@ uses the *same* A on both arms, so that drift cancels.
 
 - **Answer — YES. Drug use transfers to unseen contexts, with NO memorization premium.** (n=570 conditions, stratified `train=200 / unseen_combo=250 / unseen_drug=120`; validity clean first: 9,120 generations, `[DOWN]` 93%, up-block 124 / down-block 103, valid panel genes 98.9%, duplicates 1.4%.)
 
-  | split | n (cell lines) | model NIR | **opposite-swap gap** | verdict |
-  |---|---|---|---|---|
-  | train | 200 (40) | 0.657 | **+0.0898 [+0.0530, +0.1269]** | uses drug |
-  | **`unseen_combo`** | **250 (38)** | **0.650** | **+0.1002 [+0.0661, +0.1368]** | **CROSS-CONTEXT TRANSFER: YES** |
-  | `unseen_drug` | 120 (36) | 0.586 | +0.0195 [−0.0452, +0.0860] | null (as designed) |
+  ⛔ **The table below is retracted — every gap in it is measured against `scramble_opposite`, which is not a null.** Kept as recorded, struck through in meaning, because the correction is only legible next to the original. Corrected values follow it.
 
-  **Memorization premium ≈ zero** (train +0.0898 vs unseen_combo +0.1002, CIs almost fully overlapping). Held-out (drug, cell_line) pairings score *as well as* trained ones → the model did **not** memorize pairings; it learned a drug representation that applies in cell lines it never saw that drug in. The `unseen_drug` null is the control firing correctly: same model, same instrument, drug token carrying no learned information → no gap.
+  | split | n (cell lines) | model NIR | **opposite-swap gap** | ~~verdict~~ RETRACTED |
+  |---|---|---|---|---|
+  | train | 200 (40) | 0.657 | **+0.0898 [+0.0530, +0.1269]** | ~~uses drug~~ |
+  | **`unseen_combo`** | **250 (38)** | **0.650** | **+0.1002 [+0.0661, +0.1368]** | ~~**CROSS-CONTEXT TRANSFER: YES**~~ |
+  | `unseen_drug` | 120 (36) | 0.586 | +0.0195 [−0.0452, +0.0860] | ~~null (as designed)~~ |
+
+  **Corrected — neutral comparator (`scramble_orth`), rebuilt targets, two-way cluster-robust:**
+
+  | split | n (cell lines) | model NIR | gap vs `orth` | verdict |
+  |---|---|---|---|---|
+  | train | 200 (35) | 0.635 | **+0.1457 [+0.0836, +0.2078]** | uses drug |
+  | **`unseen_combo`** | **250 (39)** | **0.545** | **+0.0449 [−0.0074, +0.0972]** | **transfer NOT ESTABLISHED** (not zero either — power limit) |
+  | `unseen_drug` | 120 (38) | 0.512 | +0.0097 [−0.0655, +0.0848] | control **passes** |
+
+  **The memorization premium is NOT zero.** The original reading (train +0.0898 vs unseen_combo +0.1002, "CIs almost fully overlapping") was never a test of a difference, and the gaps it compared were contaminated. Tested directly on the neutral comparator: train +0.1457 vs unseen_combo +0.0449, difference **+0.1008 [+0.0196, +0.1820], cluster-robust p=0.015**. A premium exists. And the `unseen_drug` row was *not* "the control firing correctly": under `opposite` it returns +0.0862 [-0.0028, +0.1753], nine times the neutral estimate, with an interval that only just contains zero. **It does not formally exclude zero** — an earlier version of this entry said it did, using a normal critical value; the correct reference for 25 well clusters is t(24) = 2.06, which widens the interval by 5% and carries the lower bound below zero. So the row is suggestive, not decisive. What actually exposed the comparator is the direct measurement: the scramble arm's own NIR tracks the named partner at 0.572 / 0.497 / 0.403 as the partner's true response goes from aligned to anti-aligned. That needs no control row. The `unseen_drug` arm fires cleanly only against `orth`.
 
 - **But the model loses to every drug-side lookup, and that is the pre-registered "honest partial" branch:**
 
@@ -496,12 +510,12 @@ uses the *same* A on both arms, so that drift cancels.
 - ⚠️ **RETRACTED before it entered this file: "`ceiling − drug_lookup = +0.004` ⇒ the drug residual is context-independent ⇒ the modelling target has vanished."** That reading is not supported by the comparison, for three reasons that all favour the lookup: (i) the **ceiling is scored against a HALF-sample truth** while every baseline is scored against the **FULL-sample** truth; (ii) `drug_lookup` averages ~38 conditions against the ceiling's single noisy half; (iii) **NIR near 0.96 is compressive** — a wide range of cosines collapses into a few thousandths. A lookup that merely *ties* a split-half ceiling in cosine is still compatible with much of the residual being cell-line-specific. The auto-verdict that asserted this has been removed from `residual_eval.py` and replaced by the caveats. *(Any log line reading "HEADROOM … has essentially vanished" predates the patch — ignore it.)*
 - **The two lookup arms genuinely disagree, and NIR cannot adjudicate — this is the open question.** `drug_lookup_1` sits **0.136 below the ceiling** despite using *more* cells than the ceiling's half-sample, which argues for real cell-line-specific structure. Yet averaging many lines recovers to 0.963 ≈ ceiling — and averaging can only remove **noise**, never the systematic miss of the target line's own interaction, so a large interaction should have left `drug_lookup` on a plateau well below the ceiling. Both readings survive in NIR because of the compression at (ii)–(iii) above. ➡️ **Resolvable only in cosine space:** a noise-corrected cross-cell-line transfer coefficient with control cells half-split and a same-plate/different-drug negative control. **That number sizes the entire remaining prize and nobody has computed it.**
 - **Caveats:**
-  - `unseen_drug` is **underpowered by construction**, so its null is uninformative: CI half-width ±0.087 against a maximum available MoA-channel effect of ~0.033. Report it as a *power* statement, never as evidence of absence.
+  - `unseen_drug` is **underpowered by construction**: CI half-width ±0.075 against a maximum available MoA-channel effect of ~0.033. (The ±0.087 previously quoted here came from the superseded pre-quota run at n=57; the quota'd run is n=120.) The direction of use matters — as a **control** the arm does its job, since the question is whether the point estimate sits at zero and it does; as **evidence of absence** it carries nothing. Never report it as the latter.
   - `unseen_drug` is also **not a clean tier-2 design** — the prompt contains `Mechanism: {moa}`, so a drug-level split hands the model the held-out drug's class label. Leave-one-MoA-out is the correct split. Mitigating: `moa_lookup` 0.529 says the leak is small.
   - Absolute numbers here are **cross-plate**; the `model − scramble` *difference* is leak-immune (both arms share the same control cell), but the absolute NIRs are not directly comparable to within-plate tables elsewhere in this file.
   - This model (`pythia_sft_residual_holdout2`) trained on 3,353 conditions vs Q15's 4,091, so its absolute gap (+0.09/+0.10) is **below** Q15's +0.143 — that is the holdout cost, not a regression.
   - Cache still covers 106 of ~1,100 Tahoe drugs.
-- **Status:** ✅ **the drug use generalizes.** The residual encoding produces a drug representation that transfers to unseen (drug, cell_line) pairings with no memorization premium — the first genuine generalization result in this project. It does **not** beat a per-drug lookup, which is the pre-registered honest-partial outcome. ➡️ Next: the noise-corrected transfer coefficient (decides whether headroom exists); the drug-side **channel gate** (`targets` and `pubchem_cid` columns exist in `drug_metadata.parquet` and **no script has ever read them** — `sar_gate.py` probes only for SMILES, so the SAR negative closed *structure*, not *target*). Artifacts: targets `/data/.../residual_targets_holdout2/`, model `checkpoints/pythia_sft_residual_holdout2/final`, results `RESULTS/re_holdout2_stratified.json`; logs `logs/arm1b_gen_609403.out`, `logs/re_eval2_610304.out`.
+- **Status:** ⛔ **SUPERSEDED — this answer is retracted. See Q20's corrected warning box and ERRATA Defect 25.** As originally recorded: *"the drug use generalizes* — the residual encoding produces a drug representation that transfers to unseen (drug, cell_line) pairings with no memorization premium, the first genuine generalization result in this project." Both halves fail on re-measurement, for the same single cause: every gap in this entry is measured against `scramble_opposite`, which is **not a null** (it sits at NIR 0.403, below chance, because the partner is an anti-correlated drug the model was trained on). Against the neutral `scramble_orth` stratum on the rebuilt targets: `unseen_combo` **+0.0449 [−0.0074, +0.0972]** — transfer **not established** (and not shown to be zero: the interval reaches +0.097, a power limit at n=250) — and train **+0.1457**, so the memorisation premium is **+0.1008 [+0.0196, +0.1820], cluster-robust p=0.015**, i.e. there is one. What survives is comparator-free and narrower: the model emits the signature of the drug it is *named* (+0.374 on held-out pairings vs +0.390 on trained) while ranking at chance against other drugs in the same cell line — it learned the drug **main effect**, not the drug × cell-line **interaction**. It still does **not** beat a per-drug lookup, which is the pre-registered honest-partial outcome, and the reason is now legible: the lookup *is* that main effect, measured directly. ➡️ Next: the noise-corrected transfer coefficient (decides whether headroom exists); the drug-side **channel gate** (`targets` and `pubchem_cid` columns exist in `drug_metadata.parquet` and **no script has ever read them** — `sar_gate.py` probes only for SMILES, so the SAR negative closed *structure*, not *target*). Artifacts: targets `/data/.../residual_targets_holdout2/`, model `checkpoints/pythia_sft_residual_holdout2/final`, results `RESULTS/re_holdout2_stratified.json`; logs `logs/arm1b_gen_609403.out`, `logs/re_eval2_610304.out`.
 
 ### Q17. How much of the drug-specific residual is a per-drug CONSTANT vs a drug × cell-line INTERACTION? (the headroom bound)
 - **Why:** Q16 left two numbers pointing opposite ways and NIR could not adjudicate. `drug_lookup_1` (one other cell line) sat **0.136 below** the ceiling, arguing for real cell-line-specific structure; yet `drug_lookup` (averaged over ~38 conditions) recovered to **0.963 ≈ ceiling 0.968**, and averaging removes only *noise*, never the systematic miss of the target line's own interaction — so a large interaction should have left it on a plateau. The tie-breaker matters enormously: if the residual is a per-drug constant, a lookup is the correct model and every conditional arm in this project failed for a **structural** reason; if not, there is a conditional target nobody has reached.
@@ -589,7 +603,7 @@ uses the *same* A on both arms, so that drift cancels.
 
   Roughly additive: the name carries about 79% of the combined effect. **The mechanism arm is powered to detect an effect the size of the name's** — a +0.081 effect would clear an interval of half-width 0.028 with room to spare — and it sees +0.009.
 - **The reading, and what it rules out.** The model is handed a field that demonstrably carries drug-transferable signal (Q18: +0.0780) and does not use it. So for unseen drugs the bottleneck is **not information availability** — it is the same readout failure Q13 localises, appearing in the place where it matters most. ➡️ **This closes the channel-conditioning arm before it was built.** Appending protein targets to a prompt whose `Mechanism:` field is already being ignored would change nothing; the ~2 GPU-weeks that arm would have cost were saved by a single 5-hour eval.
-- ⚠️ **Seed instability discovered in the same run — read this before quoting any interval in this file.** This run differs from the previous one *only* by the two added arms, which shift the sampling stream. Same checkpoint, same conditions, same seed. Yet:
+- ⚠️ **A swing discovered in the same run, first diagnosed as seed instability, actually the comparator — read this before quoting any interval in this file.** This run differs from the previous one *only* by the two added arms, which shift the sampling stream. Same checkpoint, same conditions, same seed. Yet:
 
   | | previous run | this run |
   |---|---|---|
@@ -598,7 +612,20 @@ uses the *same* A on both arms, so that drift cancels.
   | `drug_lookup_1` | 0.832 | **0.880** |
   | **`unseen_drug` gap** | **+0.0195 [−0.045, +0.086]** | **+0.1114 [+0.051, +0.173]** |
 
-  The `unseen_drug` arm moved from a clean null to a CI excluding zero, and the two intervals barely overlap. **Cause: the clustered bootstrap resamples cell lines but treats each condition's score as FIXED**, so it captures between-cell-line variance and *not* generation variance — and at `k_samples=4`, temperature 0.8, the latter is evidently large. Every interval in this file is conditional on one draw of generations. `train`, `unseen_combo` and the strata gradient are stable across both runs; **the `unseen_drug` null is not, and must not be quoted as a null until the seed replication lands** (`jobs/seeds.md`, three seeds).
+  The `unseen_drug` arm moved from a clean null to a large positive point estimate whose interval barely contains zero, and the two intervals barely overlap.
+
+  **⛔ The cause recorded here was wrong, and the correction matters more than the original entry.** This was attributed to the clustered bootstrap resampling cell lines while treating each condition's score as FIXED — capturing between-cell-line variance and not generation variance. That statement about the bootstrap is true and the caveat it implies still stands: every interval in this file is conditional on one draw of generations, and the three-seed job in `jobs/seeds.md` is still the right way to measure the missing component. But it is **not** why *this* arm moved.
+
+  **The real cause is that both figures are gaps against `scramble_opposite`, which is not a null** (ERRATA Defect 25). The comparator is the same model told a different drug's name, and the partner is drawn as the most anti-correlated drug in the cell line — a drug the model was mostly *trained* on. So `gap = (how much naming the TRUTH helps) + (how much naming a LIE hurts)`, and the second term is large, has nothing to do with the target, and **changes with which partner is drawn**. An arm that is partly a nuisance quantity moves when the draw moves. Measured against the neutral stratum instead, on the rebuilt targets:
+
+  | | vs `scramble_opposite` | vs `scramble_orth` (neutral) |
+  |---|---|---|
+  | `scramble` arm's own NIR | 0.403 — **below** chance | 0.497 — at chance |
+  | **`unseen_drug` gap** | **+0.0862 [−0.0028, +0.1753]** — 9x the neutral estimate | **+0.0097 [−0.0655, +0.0848]** — passes |
+
+  `unseen_drug` is drugs the model never saw in fine-tuning, so a large gap there indicts the comparator rather than reporting a finding. **Quote the arm against `scramble_orth`, where it is a clean null.** Two cautions on how hard to lean on this row. First, it does not formally exclude zero under the correct t(24) reference for 25 well clusters, so it corroborates the comparator diagnosis rather than proving it — the direct partner-tracking measurement (NIR 0.572 / 0.497 / 0.403) is what proves it. Second, "never saw" means absent from **fine-tuning**, not from pretraining, and the prompt supplies a mechanism string, so a strictly zero effect was never guaranteed here in the first place. A second, independent defect contributed the trigger: generation was **unseeded** (`do_sample` advanced from global torch state), so adding arms re-drew everything downstream; each call now seeds its own `torch.Generator` from (condition, arm, batch). `train`, `unseen_combo` and the strata gradient were stable across both runs — consistent with the diagnosis, since those arms' contaminating term is common to both runs rather than resampled.
+
+  ➡️ **Consequences beyond this arm:** against the neutral comparator `unseen_combo` is **+0.0449 [−0.0074, +0.0972]**, so *cross-context transfer is not established* (not shown to be zero — the interval reaches +0.097, a power limit at n=250), and there **is** a memorisation premium (train +0.1457 vs combo +0.0449, difference **+0.1008 [+0.0196, +0.1820], cluster-robust p=0.015** — an unclustered permutation gives p=0.0054 and is too small; quote the clustered one). Recompute with `endcell/analysis/scramble_stratum_audit.py` — it runs off the saved per-condition records, no GPU, because all three strata were generated in the same run.
 - **Status:** ✅ **the readout, not the information, is the unseen-drug bottleneck.** Artifacts: `RESULTS/field_decomp.json`; log `logs/fielddecomp_*.out`.
 
 ---

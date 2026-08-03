@@ -62,6 +62,96 @@ logger = logging.getLogger(__name__)
 Z95 = 1.959963984540054
 
 
+def _betacf(a, b, x, itmax=300, eps=3e-16):
+    """Continued fraction for the incomplete beta (Lentz). Used only by `_t_cdf`."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    if abs(d) < tiny:
+        d = tiny
+    d = 1.0 / d
+    h = d
+    for m in range(1, itmax + 1):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        de = d * c
+        h *= de
+        if abs(de - 1.0) < eps:
+            break
+    return h
+
+
+def _betai(a, b, x):
+    """Regularised incomplete beta I_x(a, b)."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    lbeta = math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+    front = math.exp(lbeta + a * math.log(x) + b * math.log1p(-x))
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _betacf(a, b, x) / a
+    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
+
+
+def _t_cdf(t, df):
+    """Student t CDF, exact to machine precision via the incomplete beta."""
+    x = df / (df + t * t)
+    p = 0.5 * _betai(df / 2.0, 0.5, x)
+    return 1.0 - p if t > 0 else p
+
+
+def _t_ppf(p, df):
+    """Inverse Student t by bisection on `_t_cdf`. No scipy in this stack, and the Cornish-Fisher
+    expansion is only good to ~1e-5 at the df we actually have (as low as 24)."""
+    if df is None or df <= 0 or not np.isfinite(df):
+        return _norm_ppf(p)
+    if df > 5000:                                   # the difference is below 2e-4; not worth iterating
+        return _norm_ppf(p)
+    lo, hi = -400.0, 400.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if _t_cdf(mid, df) < p:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def crit(alpha=0.05, df=None):
+    """The two-sided critical value: Student t on `df` when the cluster count is known, else normal.
+
+    A cluster-robust variance is asymptotic IN THE NUMBER OF CLUSTERS, not in the number of
+    observations. Our held-out splits have as few as 25 WELL clusters, where the normal 1.96
+    understates the interval by about 5%: t(24) = 2.064. Every analytic interval in this module now
+    takes the t, and every caller that hard-coded 1.96 has been routed through here.
+
+    Convention: df = G - 1 with G the SMALLER cluster count in a crossed design, which is the
+    Cameron-Gelbach-Miller small-sample recommendation. That is deliberately the conservative choice
+    -- the two groupings are not nested, so no exact df exists.
+    """
+    if df is None:
+        return Z95 if abs(alpha - 0.05) < 1e-12 else float(abs(_norm_ppf(alpha / 2)))
+    return float(abs(_t_ppf(alpha / 2.0, float(df))))
+
+
+
 # --------------------------------------------------------------------------- multiplicity
 def holm(pvalues):
     """Holm-Bonferroni adjusted p-values, order preserved.
@@ -192,20 +282,34 @@ def two_way_cluster_ci(values, cluster_a, cluster_b, alpha=0.05):
         if var <= 0:
             var = max(va, vb)
             unit = "two-way estimator non-positive; fell back to the wider one-way"
-    z = Z95 if abs(alpha - 0.05) < 1e-12 else float(abs(_norm_ppf(alpha / 2)))
+    # df = (smaller cluster count) - 1. With Ga=39 lines and Gb=25 wells the binding constraint is
+    # the wells, and t(24)=2.064 against 1.96 is a 5% wider interval -- which is the difference
+    # between a positive verdict and one that spans zero for at least one arm on record.
+    df = max(1, min(na, nb) - 1)
+    z = crit(alpha, df)
     se = math.sqrt(max(var, 0.0))
     return {"point": m, "lo": m - z * se, "hi": m + z * se, "se": se,
             "n": n, "n_clusters_a": na, "n_clusters_b": nb, "unit": unit,
+            "df": df, "crit": z,
             "var_a": va, "var_b": vb, "var_intersection": vab}
 
 
 def crossed_bootstrap(rows, cluster_a, cluster_b, statistic, n_boot=2000, seed=0, alpha=0.05):
     """Bootstrap for a crossed design when the statistic is NOT a mean (so CGM does not apply).
 
-    Resamples both groupings independently and keeps the observations whose BOTH labels were drawn.
-    That is the intersection form: it is conservative relative to either one-way bootstrap, which is
-    the direction we want given the design, and it degenerates gracefully to a one-way bootstrap when
-    one grouping is a singleton.
+    Resamples both groupings independently with replacement and weights each observation by the
+    PRODUCT OF ITS TWO DRAW MULTIPLICITIES. It degenerates gracefully to a one-way bootstrap when one
+    grouping is a singleton.
+
+    THIS PREVIOUSLY DISCARDED THE MULTIPLICITIES. It drew clusters with replacement and then wrote
+    `sa = {ka[t] for t in ...}` -- a SET -- so a cluster drawn three times counted once and a cluster
+    drawn zero times was simply absent. That is random cluster INCLUSION, i.e. a subsampler at rate
+    1 - (1-1/G)^G -> 1 - 1/e ~ 63% per margin, not a cluster bootstrap. It gets the between-cluster
+    variance wrong because it never lets a cluster speak more than once, which is precisely the
+    mechanism a cluster bootstrap uses to represent between-cluster variability.
+
+    Every slope interval in the stratum audit came through here, so the point estimates are unchanged
+    and the widths move.
     """
     rows = list(rows)
     ia, ib = _index_by(cluster_a), _index_by(cluster_b)
@@ -219,9 +323,18 @@ def crossed_bootstrap(rows, cluster_a, cluster_b, statistic, n_boot=2000, seed=0
     rng = np.random.RandomState(seed)
     boot, n_empty = [], 0
     for _ in range(n_boot):
-        sa = {ka[t] for t in rng.randint(0, len(ka), len(ka))}
-        sb = {kb[t] for t in rng.randint(0, len(kb), len(kb))}
-        sel = [i for i in range(len(rows)) if cluster_a[i] in sa and cluster_b[i] in sb]
+        ca, cb = defaultdict(int), defaultdict(int)
+        for t in rng.randint(0, len(ka), len(ka)):
+            ca[ka[t]] += 1
+        for t in rng.randint(0, len(kb), len(kb)):
+            cb[kb[t]] += 1
+        # multiplicity, not membership: an observation appears (times a) x (times b). In expectation
+        # each margin contributes 1, so the resample is the same size as the sample.
+        sel = []
+        for i in range(len(rows)):
+            reps = ca.get(cluster_a[i], 0) * cb.get(cluster_b[i], 0)
+            if reps:
+                sel.extend([i] * reps)
         if len(sel) < 3:
             n_empty += 1
             continue
@@ -288,14 +401,35 @@ def multiway_cluster_ci(values, node_sets, alpha=0.05):
 
     n_nodes = len(holds)
     if var <= 0:
-        var = float((e ** 2).sum()) / (n ** 2)
-        unit = "multiway estimator non-positive; fell back to independent-sampling variance"
+        # NOT the independent-sampling variance. These observations are dependent by construction --
+        # that is the whole reason this estimator exists -- so IID is the one fallback guaranteed to
+        # be too NARROW exactly when dependence is strongest. Fall back the way `two_way_cluster_ci`
+        # does: to the widest single-node one-way variance, which is conservative.
+        best = 0.0
+        for nd, ix in holds.items():
+            g = len(ix)
+            if g < 2:
+                continue
+            # one-way cluster variance treating this node's groups as the clustering
+            grp = defaultdict(list)
+            for i in range(n):
+                grp[nd if i in set(ix) else f"__not__{i}"].append(i)
+            ssum = sum(e[list(v)].sum() ** 2 for v in grp.values())
+            cand = (len(grp) / (len(grp) - 1)) * ssum / (n ** 2) if len(grp) > 1 else 0.0
+            best = max(best, cand)
+        if best > 0:
+            var, unit = best, "multiway non-positive; fell back to the widest one-way (conservative)"
+        else:
+            return {"point": m, "lo": float("nan"), "hi": float("nan"), "se": float("nan"),
+                    "n": n, "n_nodes": n_nodes,
+                    "unit": "UNDEFINED: multiway estimator non-positive and no usable one-way fallback"}
     else:
         unit = f"multiway (Fafchamps-Gubert) over {n_nodes} nodes"
-    z = Z95 if abs(alpha - 0.05) < 1e-12 else float(abs(_norm_ppf(alpha / 2)))
+    df = max(1, n_nodes - 1)
+    z = crit(alpha, df)
     se = math.sqrt(var)
     return {"point": m, "lo": m - z * se, "hi": m + z * se, "se": se,
-            "n": n, "n_nodes": n_nodes, "unit": unit}
+            "n": n, "n_nodes": n_nodes, "unit": unit, "df": df, "crit": z}
 
 
 def dyadic_cluster_ci(values, member_a, member_b, alpha=0.05):

@@ -40,6 +40,14 @@ import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        "shared"),
+           os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import inference as inf                                              # noqa: E402
+
 END, DOWN = "[END_CELL]", "[DOWN]"
 CTRL_MARKER = "Control cell:"
 
@@ -666,7 +674,11 @@ def _two_way_ci(recs, key_a, key_b):
     se = float(np.sqrt(max(v, 0.0)))
     n_line = len({r["cell_line"] for r in rows})
     n_well = len({r.get("sample_id") for r in rows})
-    return m, m - 1.96 * se, m + 1.96 * se, n, f"{n_line}L/{n_well}W:{note}"
+    # t, not 1.96: a cluster-robust variance is asymptotic in the CLUSTER COUNT, and the binding
+    # count here is the wells -- as few as 25 on unseen_drug, where t(24)=2.064 is 5% wider.
+    df = max(1, min(n_line, n_well) - 1)
+    z = inf.crit(0.05, df)
+    return m, m - z * se, m + z * se, n, f"{n_line}L/{n_well}W:{note}:t{df}"
 
 
 def _clustered_ci(recs, key_a, key_b, rng, n_boot, cluster="cell_line"):
@@ -724,6 +736,28 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
             elif a in ("control_copy", "generic"):
                 tag = "   <- must be ~0.50 (drug-agnostic by construction)"
             logger.info(f"    {a:18s} {means[a]:.3f}   (n={len(v)}){tag}")
+
+    # COMMON SUPPORT. Each arm above is averaged over its OWN non-null records, so `model` (every
+    # condition) and `drug_lookup` (only conditions with a lookup) are means over DIFFERENT SETS.
+    # Comparing their chance-to-ceiling coverage across unequal supports is not a comparison; on the
+    # 449 conditions where both exist the model reads 18.6% rather than 15.2%. The paired contrast
+    # further down needs none of this and is the number to quote.
+    common = [r for r in recs if r.get("drug_lookup") is not None and r.get("model") is not None
+              and r.get("ceiling") is not None]
+    if common:
+        cm = float(np.mean([r["model"] for r in common]))
+        cc = float(np.mean([r["ceiling"] for r in common]))
+        cl = float(np.mean([r["drug_lookup"] for r in common]))
+        span = cc - 0.5
+        means["common_support"] = {
+            "n": len(common), "model": cm, "ceiling": cc, "drug_lookup": cl,
+            "coverage_model": ((cm - 0.5) / span if span > 0 else None),
+            "coverage_lookup": ((cl - 0.5) / span if span > 0 else None)}
+        if span > 0:
+            logger.info(f"    -- on the {len(common)} conditions where BOTH model and lookup exist: "
+                        f"model {cm:.3f}, lookup {cl:.3f}, ceiling {cc:.3f}")
+            logger.info(f"       chance-to-ceiling coverage  model {(cm - 0.5) / span:.1%}   "
+                        f"lookup {(cl - 0.5) / span:.1%}   (quote the PAIRED gap, not this ratio)")
 
     # HEADROOM: what is left for ANY conditional model above a cross-cell-line lookup table. If this is
     # ~0 the task has collapsed to retrieval -- the drug residual carries no cell-line-specific component

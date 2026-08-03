@@ -55,14 +55,25 @@ the target as the drug-specific residual raises the differing fraction to $59\%$
 first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
 matched control that stays null.
 
-\paragraph{And the drug use appears to generalise.} On a holdout keyed at the (drug, cell line)
-level, pairings never seen in training score \ci{+0.1002}{+0.0661}{+0.1368}, indistinguishable from
-trained conditions, with held-out \emph{drugs} null as the control predicts. The natural reading is
-a drug representation that transfers rather than memorised pairings. It is stated as a reading
-rather than a result because the targets were built with the generic fitted over the holdout as
-well as the training set, and because a held-out pairing can share a treated well with a training
-condition of a different cell line. The rebuilt targets settle both; this thesis reports the
-number and the two reasons to hold it loosely.
+\paragraph{What that drug use amounts to: a main effect, not an interaction.} An earlier form of
+this paragraph claimed the drug use generalises, on a holdout keyed at the (drug, cell line) level
+where pairings never seen in training scored \ci{+0.1002}{+0.0661}{+0.1368} and held-out
+\emph{drugs} came out null. Two corrections have since removed that claim. The targets were rebuilt
+so the generic is fitted after the split rather than over the holdout, and the comparator was
+corrected: the scramble arm the gap was measured against is not a null but a different drug's
+learned signature, chosen to point away from the truth. The held-out-drug arm is what exposed it,
+by returning a positive result on a split where a positive result is impossible.
+
+Measured against the neutral comparator on the rebuilt targets, trained pairings score $+0.1457$ and
+held-out pairings $+0.0449$ \nolinebreak[3]$[-0.0074, +0.0972]$ --- so there \emph{is} a memorisation
+premium ($+0.1008$, cluster-robust $p = 0.015$), and cross-context transfer is not established. It is not shown to
+be zero either: the interval reaches $+0.097$, and at $n=250$ that is a limit of power. What does
+survive, on two tests that use no comparator at all and so cannot be reached by this defect, is that
+the model emits the signature of the drug it is named ($+0.374$ on held-out pairings against
+$+0.390$ on trained ones) while scoring at chance when ranked against other drugs in the same cell
+line. The map exists and is coarse: the model learned the drug main effect and not the drug
+$\times$ cell-line interaction --- which is also why the lookup below beats it, since the lookup
+\emph{is} that main effect, measured directly.
 
 \paragraph{But a lookup table wins --- and it is not the ceiling either.} A per-drug mean residual
 measured in other cell lines scores $0.963$ against a $0.968$ replicate ceiling; the model reaches

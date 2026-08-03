@@ -1,5 +1,24 @@
 # Seed replication — how much of the interval is generation noise?
 
+> **⚠️ Read first: the motivating example below has been explained, and it was not seed noise.**
+> The `unseen_drug` swing (+0.0195 → +0.1114) is a comparator artefact, not generation variance.
+> Both figures are gaps against `scramble_opposite`, which sits at NIR 0.403 — below chance — because
+> the swap partner is an anti-correlated drug the model was *trained* on. The gap therefore carries a
+> term measuring how far the **partner** was pushed, which is unrelated to the target and changes
+> with which partner is drawn. Against the neutral `scramble_orth` stratum the same control is
+> +0.0097 [−0.0655, +0.0848]. See ERRATA Defect 25 and `endcell/analysis/scramble_stratum_audit.py`,
+> which recomputes this from saved records with no GPU. A second defect supplied the trigger:
+> generation was unseeded (`do_sample` advanced from global torch state); each call now seeds its own
+> `torch.Generator` from (condition, arm, batch).
+>
+> **This job is still worth running**, for the reason in the last paragraph of "What each outcome
+> means" rather than the one in "Why": across-seed generation variance is a real component that no
+> interval in the thesis currently captures, and it is unmeasured either way. But it is **no longer
+> blocking any claim** — the `unseen_drug` arm is quotable now, against the neutral comparator — so
+> it is a precision job, not a correctness one. Priority accordingly. Also add
+> `--split_comparator scramble_orth` (now the default) if re-running the command below, and expect
+> the stream-shift sensitivity to be gone.
+
 ## Why
 
 Two runs of the **same checkpoint on the same conditions with the same seed**, differing only by the

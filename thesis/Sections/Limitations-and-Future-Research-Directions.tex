@@ -17,15 +17,28 @@ fraction of the task, not all of it. The filter might be expected to select \emp
 \paragraph{The intervals omit generation variance.} Every confidence interval in this thesis is a
 clustered bootstrap that resamples \emph{cell lines} while treating each condition's score as fixed.
 It therefore captures between-cell-line variance and not the variance introduced by sampling the
-model's output. With four generations per arm at temperature $0.8$ the second source is not
-negligible: two evaluations of the same checkpoint on the same conditions, differing only in that
-one carried two additional scramble arms and so consumed the sampling stream differently, returned
-$\gap$ on the held-out-drug split as \ci{+0.0195}{-0.045}{+0.086} and \ci{+0.1114}{+0.051}{+0.173}
-respectively. The headline arms were stable across the pair, and the held-out-drug arm --- the
-smallest, at $n=120$ --- was not. \todo{seed replication in flight; report the across-seed spread
-beside the within-seed interval and state which sources each captures} Until that lands the
-held-out-drug arm should be read as underdetermined rather than as a null, which weakens its use as
-the control licensing the transfer result.
+model's output. With four generations per arm at temperature $0.8$ that second source is not
+negligible, and it is not measured here. An across-seed replication --- three seeds, identical in
+every other respect --- would supply the missing component, and the honest form of every interval
+below would then be a point estimate with a seed spread beside it. \todo{run the three-seed
+replication and report the across-seed spread beside the within-seed interval, stating which
+sources each captures}
+
+\paragraph{A swing that looked like generation variance and was not.} Two evaluations of the same
+checkpoint on the same conditions, differing only in that one carried two additional scramble arms
+and so consumed the sampling stream differently, returned $\gap$ on the held-out-drug split as
+\ci{+0.0195}{-0.045}{+0.086} and \ci{+0.1114}{+0.051}{+0.173}. This was originally recorded as
+evidence of seed instability, and that diagnosis was wrong --- or rather, it named the trigger and
+missed the cause. Both figures are gaps against the \texttt{opposite} swap, which
+Section~\ref{sec:res-generalisation} shows is not a null: it contains a term measuring how far the
+\emph{partner} drug was pushed the wrong way, a quantity that has nothing to do with the target and
+that changes with which partner happens to be drawn. An arm whose value is partly a nuisance
+quantity will move when the draw moves. Against the neutral comparator the same control sits at
+$+0.0097$ \nolinebreak[3]$[-0.0655, +0.0848]$. Two mechanisms are involved and both are now
+addressed: generation was genuinely unseeded --- \texttt{do\_sample} advanced from global torch
+state, so the two arms of a contrast were drawn from different points of one stream --- and each
+call now seeds its own generator from (condition, arm, batch); and the comparator has been corrected.
+The general caution above stands regardless; this particular swing is no longer evidence for it.
 
 \paragraph{Pseudobulk resolution.} Residuals are condition-level pseudobulks over $\geq 40$ treated
 cells. The single-cell heterogeneity of the response is not modelled in this frame, and the
@@ -47,19 +60,27 @@ dominated by, which is why a drug-agnostic predictor scores so well on them.
 
 \subsection{Limitations of the unseen-drug evaluation}
 
-Two defects, both of which must be stated rather than papered over.
+Two defects, both of which must be stated rather than papered over. A third --- the comparator ---
+was found and corrected rather than merely stated, and Section~\ref{sec:res-generalisation} reports
+the arm against the neutral stratum throughout; the two below survive that correction.
 
 \paragraph{It is not a clean held-out-drug design.} The prompt contains
 \texttt{Mechanism: \{moa\}}, so holding out a drug still hands the model the held-out drug's class
 label. The correct design is leave-one-\emph{mechanism}-out. The leak is probably small ---
 \texttt{moa\_lookup} scores $0.529$, so the mechanism label carries little about the response --- but
-the design is wrong and no unseen-drug claim should be made until it is fixed.
+the design is wrong, and the arm's proper use is as an instrument control rather than as the basis
+for a positive unseen-drug claim.
 
 \paragraph{It is underpowered by construction.} The confidence interval half-width on the
-\texttt{unseen\_drug} gap is $\approx \pm 0.087$, against a maximum effect available through the
+\texttt{unseen\_drug} gap is $\approx \pm 0.075$, against a maximum effect available through the
 mechanism channel of $\approx 0.033$. The arm therefore \emph{cannot} detect the largest effect it
-could plausibly be measuring. Its null is a statement about power, not about absence, and is
-reported as such.
+could plausibly be measuring. This cuts both ways and the direction matters. As a \emph{control} it
+is doing the job asked of it: the question there is whether the point estimate sits at zero when the
+model has no drug knowledge, and $+0.0097$ does. As \emph{evidence of absence} it carries almost
+nothing, because an effect of the size the mechanism channel could deliver would sit comfortably
+inside the interval. The distinction is what licenses using the arm to validate the comparator in
+Section~\ref{sec:res-generalisation} while declining to use it to argue that unseen-drug transfer is
+zero.
 
 \subsection{Directions}
 

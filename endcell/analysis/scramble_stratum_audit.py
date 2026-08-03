@@ -111,7 +111,15 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
 
     `Results-and-Analysis.tex` and `Conclusions.tex` both state there is NO memorisation premium,
     on the strength of two overlapping intervals. Overlapping intervals are not a test of a
-    difference; this is."""
+    difference; this is.
+
+    BUT THE TWO ARMS ARE NOT COMPOSED OF THE SAME DRUGS, and that turns out to carry the effect.
+    `train` and `unseen_combo` are sampled by quota, so they contain different drug sets with only a
+    partial overlap -- a difference in WHICH DRUGS each arm contains is not a difference in training
+    exposure. `restricted_to_shared_drugs` below repeats the contrast on the drugs present in BOTH
+    arms. If the pooled difference survives there, exposure is the plausible explanation; if it
+    collapses, composition is, and the word "memorisation" is not licensed by this design.
+    """
     k = "scramble_" + stratum
     a = [r["model"] - r[k] for r in recs if r.get("split") == "train" and r.get(k) is not None
          and r.get("model") is not None]
@@ -143,13 +151,62 @@ def memorisation_premium(recs, stratum="orth", n_perm=5000, seed=3):
                                   [r.get("sample_id", r["cell_line"]) for r in sub_b])
     clustered = None
     if ci_a and ci_b:
+        # Var(a - b) = Va + Vb - 2Cov. Dropping the covariance is CONSERVATIVE here, because the
+        # two arms share cell lines and are therefore positively correlated -- an audit argued this
+        # inflates significance and it is the other way round. Left as the sum, and stated.
         sed = math.sqrt(ci_a["se"] ** 2 + ci_b["se"] ** 2)
         d = float(np.mean(a) - np.mean(b))
         z = d / sed if sed > 0 else float("nan")
         pc = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z) / math.sqrt(2.0))))
-        clustered = {"difference": d, "se": sed, "z": z, "p": pc,
-                     "ci": [d - 1.96 * sed, d + 1.96 * sed]}
+        dfp = max(1, min(ci_a.get("df", 1), ci_b.get("df", 1)))
+        tc = inf.crit(0.05, dfp)
+        clustered = {"difference": d, "se": sed, "z": z, "p": pc, "df": dfp,
+                     "covariance": "omitted; conservative because the arms are positively correlated",
+                     "ci": [d - tc * sed, d + tc * sed]}
+    # --- drug composition, and the same contrast restricted to drugs present in BOTH arms --------
+    def _arm(sp):
+        return [r for r in recs if r.get("split") == sp and r.get(k) is not None
+                and r.get("model") is not None]
+
+    ra, rb = _arm("train"), _arm("unseen_combo")
+    da = {r.get("drug") for r in ra if r.get("drug") is not None}
+    db = {r.get("drug") for r in rb if r.get("drug") is not None}
+    shared_drugs = da & db
+    restricted = None
+    sa = [r for r in ra if r.get("drug") in shared_drugs]
+    sb = [r for r in rb if r.get("drug") in shared_drugs]
+    if len(sa) >= 10 and len(sb) >= 10:
+        va = [r["model"] - r[k] for r in sa]
+        vb = [r["model"] - r[k] for r in sb]
+        ca = inf.two_way_cluster_ci(va, [r["cell_line"] for r in sa],
+                                    [r.get("sample_id", r["cell_line"]) for r in sa])
+        cb = inf.two_way_cluster_ci(vb, [r["cell_line"] for r in sb],
+                                    [r.get("sample_id", r["cell_line"]) for r in sb])
+        if ca and cb:
+            sd = math.sqrt(ca["se"] ** 2 + cb["se"] ** 2)
+            dd = float(np.mean(va) - np.mean(vb))
+            zz = dd / sd if sd > 0 else float("nan")
+            pp = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(zz) / math.sqrt(2.0))))
+            dfr = max(1, min(ca.get("df", 1), cb.get("df", 1)))
+            tr = inf.crit(0.05, dfr)
+            restricted = {"difference": dd, "se": sd, "z": zz, "p": pp, "df": dfr,
+                          "ci": [dd - tr * sd, dd + tr * sd],
+                          "n_train": len(va), "n_combo": len(vb),
+                          "train_gap": float(np.mean(va)), "unseen_combo_gap": float(np.mean(vb))}
+    composition = {
+        "n_drugs_train": len(da), "n_drugs_combo": len(db), "n_drugs_shared": len(shared_drugs),
+        "frac_train_obs_on_shared_drugs": (len(sa) / len(ra)) if ra else None,
+        "frac_combo_obs_on_shared_drugs": (len(sb) / len(rb)) if rb else None,
+        "train_only_gap": (float(np.mean([r["model"] - r[k] for r in ra
+                                          if r.get("drug") not in shared_drugs]))
+                           if len(ra) > len(sa) else None),
+        "combo_only_gap": (float(np.mean([r["model"] - r[k] for r in rb
+                                          if r.get("drug") not in shared_drugs]))
+                           if len(rb) > len(sb) else None)}
+
     return {"stratum": stratum, "train_gap": float(np.mean(a)), "unseen_combo_gap": float(np.mean(b)),
+            "drug_composition": composition,
+            "restricted_to_shared_drugs": restricted,
             "difference": (clustered["difference"] if clustered else (p or {}).get("observed")),
             "clustered": clustered,
             "p_permutation_unclustered": ((p or {}).get("p")),
@@ -228,14 +285,20 @@ def model_vs_chance(recs):
 
 
 def output_geometry(recs):
-    """Does the model CONFABULATE or HEDGE when it does not know the drug?
+    """How close does the output actually get to any real response?
 
     NIR at chance is ambiguous on its own: a confidently WRONG output -- a plausible-looking
     signature for the wrong drug -- also scores about 0.5, because it is equally unrelated to every
-    truth. The two cases are separated by the ABSOLUTE similarity between prediction and reality.
+    truth. So the absolute cosines are reported alongside.
 
-        confabulating : large cosines, pointing somewhere definite but wrong
-        hedging       : small cosines to everything, no commitment
+    WHAT THIS DOES NOT MEASURE. It was previously used to claim the model "HEDGES rather than
+    confabulating" on unseen drugs. It cannot support that. A near-zero MEAN cosine is equally
+    consistent with (i) genuine abstention, (ii) confident positive and negative alignments
+    cancelling, (iii) the four sampled generations per condition disagreeing and cancelling, and
+    (iv) a coherent signature pointing somewhere outside the measured truth library. Separating
+    those needs an abstention or confidence measure and per-generation consistency; neither is
+    computed anywhere in this pipeline. The distribution below is reported so the heterogeneity the
+    mean hides is visible.
     """
     out = {}
     for sp in SPLITS:
@@ -249,11 +312,24 @@ def output_geometry(recs):
         ci = inf.two_way_cluster_ci((own - oth).tolist(),
                                     [r["cell_line"] for r in sub],
                                     [r.get("sample_id", r["cell_line"]) for r in sub])
+        # `max_abs_cos` USED TO BE max(|mean(own)|, |mean(others)|) -- a maximum over two SCALARS,
+        # each already a split-level mean -- and was reported in prose as "the largest absolute
+        # cosine between any prediction and any real response". It is not: individual conditions
+        # reach |cos| above 0.4. The name is now what the quantity is, and the distribution the mean
+        # hides is reported next to it.
+        q = np.percentile(own, [5, 25, 50, 75, 95])
         out[sp] = {"n": len(sub), "cos_own": float(own.mean()), "cos_others": float(oth.mean()),
                    "difference": float((own - oth).mean()),
                    "ci": ([ci["lo"], ci["hi"]] if ci else None),
                    "excludes_zero": bool(ci and ci["lo"] > 0),
-                   "max_abs_cos": float(max(abs(own.mean()), abs(oth.mean())))}
+                   "max_abs_mean_cos": float(max(abs(own.mean()), abs(oth.mean()))),
+                   "cos_own_sd": float(own.std(ddof=1)),
+                   "cos_own_min": float(own.min()), "cos_own_max": float(own.max()),
+                   "cos_own_absmax": float(np.abs(own).max()),
+                   "cos_own_q05_q25_q50_q75_q95": [float(x) for x in q],
+                   "frac_abs_gt_0.1": float((np.abs(own) > 0.1).mean()),
+                   "frac_abs_gt_0.2": float((np.abs(own) > 0.2).mean()),
+                   "frac_abs_gt_0.3": float((np.abs(own) > 0.3).mean())}
     return out
 
 
@@ -335,7 +411,9 @@ def report(recs):
                      and not r.get("underpowered")), None)
     logger.info("-" * 100)
     logger.info("THE CONTROL.  unseen_drug conditions are drugs the model has NEVER seen, so the gap")
-    logger.info("must be zero. A positive value there is an instrument fault, not a finding.")
+    logger.info("should sit near zero. NOT a proof, though: 'unseen' means absent from FINE-TUNING,")
+    logger.info("not from pretraining, and the prompt still supplies a mechanism string, so a strictly")
+    logger.info("zero effect was never guaranteed. Read a large value as indicting the comparator.")
     if ctrl_opp:
         logger.info(f"    under `opposite`: {ctrl_opp['gap']:+.4f} "
                     f"[{ctrl_opp['ci_two_way'][0]:+.4f}, {ctrl_opp['ci_two_way'][1]:+.4f}]"
@@ -361,8 +439,30 @@ def report(recs):
         if mp.get("p_permutation_unclustered") is not None:
             logger.info(f"    secondary, permutation IGNORING clustering: p "
                         f"{mp['p_permutation_unclustered']:.4f}  <- too small; shown for contrast")
-        if mp["p"] < 0.05:
-            logger.info("    -> a premium EXISTS. Any statement that there is none must be withdrawn.")
+        cmpn = mp.get("drug_composition") or {}
+        if cmpn.get("n_drugs_shared") is not None:
+            logger.info(f"    DRUG COMPOSITION  train {cmpn['n_drugs_train']} drugs, "
+                        f"unseen_combo {cmpn['n_drugs_combo']} drugs, {cmpn['n_drugs_shared']} shared "
+                        f"({cmpn['frac_train_obs_on_shared_drugs']:.1%} / "
+                        f"{cmpn['frac_combo_obs_on_shared_drugs']:.1%} of observations)")
+            if cmpn.get("train_only_gap") is not None and cmpn.get("combo_only_gap") is not None:
+                logger.info(f"    {'':18s}drugs in ONE arm only: train {cmpn['train_only_gap']:+.4f}  "
+                            f"combo {cmpn['combo_only_gap']:+.4f}")
+        rr = mp.get("restricted_to_shared_drugs")
+        if rr:
+            logger.info(f"    RESTRICTED to the {cmpn.get('n_drugs_shared')} drugs in BOTH arms: "
+                        f"difference {rr['difference']:+.4f}  SE {rr['se']:.4f}  z {rr['z']:.2f}  "
+                        f"p {rr['p']:.4f}   CI [{rr['ci'][0]:+.4f}, {rr['ci'][1]:+.4f}]")
+        if mp["p"] < 0.05 and rr and rr["p"] >= 0.05:
+            logger.info("    -> THE POOLED DIFFERENCE DOES NOT SURVIVE DRUG MATCHING. The retraction of")
+            logger.info("       'there is no premium' STANDS -- overlapping intervals were never a test --")
+            logger.info("       but the replacement must be a condition-weighted TRAINING-EXPOSURE")
+            logger.info("       ADVANTAGE of unresolved generality, NOT 'a memorisation premium exists'.")
+            logger.info("       'Memorisation' is causal and this design cannot separate it from the")
+            logger.info("       fact that the two arms contain different drugs.")
+        elif mp["p"] < 0.05:
+            logger.info("    -> a premium EXISTS and SURVIVES drug matching. Any statement that there")
+            logger.info("       is none must be withdrawn.")
 
     gen = next((r for r in rows if r["split"] == "unseen_combo" and r["stratum"] == "orth"
                 and not r.get("underpowered")), None)
@@ -413,11 +513,24 @@ def report(recs):
         logger.info(f"    {sp:14s} {d['n']:4d} {d['cos_own']:+14.4f} {d['cos_others']:+17.4f} "
                     f"{d['difference']:+11.4f}  [{d['ci'][0]:+.4f}, {d['ci'][1]:+.4f}]"
                     f"{'  excl 0' if d['excludes_zero'] else '  spans 0'}")
-    worst = max((d.get("max_abs_cos", 0.0) for d in geo.values() if isinstance(d, dict)), default=0.0)
-    logger.info(f"    -> largest absolute cosine anywhere is {worst:.3f}. The output barely resembles")
-    logger.info("       ANY real response, so the drug effect is a faint TILT that moves a rank")
-    logger.info("       statistic, not a signature the model reproduces. On unseen drugs it commits to")
-    logger.info("       nothing: it HEDGES rather than confabulating.")
+    worst = max((d.get("cos_own_absmax", 0.0) for d in geo.values() if isinstance(d, dict)),
+                default=0.0)
+    for sp in SPLITS:
+        d = geo.get(sp) or {}
+        if d.get("underpowered") or "cos_own_absmax" not in d:
+            continue
+        logger.info(f"    {sp:14s} own-truth cosine: mean {d['cos_own']:+.4f}  sd {d['cos_own_sd']:.4f}  "
+                    f"median {d['cos_own_q05_q25_q50_q75_q95'][2]:+.4f}  "
+                    f"range [{d['cos_own_min']:+.4f}, {d['cos_own_max']:+.4f}]")
+        logger.info(f"    {'':14s} |cos| > 0.1: {d['frac_abs_gt_0.1']:.1%}   > 0.2: "
+                    f"{d['frac_abs_gt_0.2']:.1%}   > 0.3: {d['frac_abs_gt_0.3']:.1%}")
+    logger.info(f"    -> MEAN own-truth cosine is small, but the largest SINGLE condition reaches "
+                f"{worst:.3f}.")
+    logger.info("       Report the mean WITH the spread. The earlier phrasing 'the largest absolute")
+    logger.info("       cosine anywhere is 0.051' was a maximum over two split-level MEANS, not over")
+    logger.info("       conditions, and the reading built on it ('the model commits to nothing / it")
+    logger.info("       HEDGES rather than confabulating') is not measured by anything here -- see the")
+    logger.info("       docstring. Say: average directional agreement is weak and heterogeneous.")
 
     cmp_ = split_comparability(recs)
     out["split_comparability"] = cmp_
@@ -512,10 +625,23 @@ def selftest():
                  cos_pred_others=0.55 + 0.05 * rng.randn()) for r in recs]
     hedge = [dict(r, cos_pred_truth=0.01 + 0.01 * rng.randn(),
                   cos_pred_others=0.00 + 0.01 * rng.randn()) for r in recs]
-    check("a confabulating model is detected by LARGE absolute cosines",
-          output_geometry(conf)["train"]["max_abs_cos"] > 0.3)
-    check("a hedging model is detected by small absolute cosines",
-          output_geometry(hedge)["train"]["max_abs_cos"] < 0.1)
+    check("large absolute cosines are reported as large",
+          output_geometry(conf)["train"]["cos_own_absmax"] > 0.3)
+    check("small absolute cosines are reported as small",
+          output_geometry(hedge)["train"]["cos_own_absmax"] < 0.1)
+    # THE REGRESSION THAT MATTERS. A split whose MEAN cosine is ~0 but which contains one condition
+    # at 0.44 must not be summarised by a statistic that reads 0.00. The old `max_abs_cos` was
+    # max(|mean(own)|, |mean(others)|) and did exactly that, and prose called it "the largest
+    # absolute cosine between any prediction and any real response".
+    spike = [dict(r, cos_pred_truth=(0.44 if i == 0 else (-0.02 if i % 2 else 0.02)),
+                  cos_pred_others=0.0) for i, r in enumerate(recs)]
+    g = output_geometry(spike)["train"]
+    check("a near-zero mean does not hide a large single condition",
+          abs(g["cos_own"]) < 0.03 and g["cos_own_absmax"] > 0.4)
+    check("the max-over-means statistic is named for what it is",
+          "max_abs_mean_cos" in g and "max_abs_cos" not in g)
+    check("the spread is reported next to the mean",
+          g["cos_own_sd"] > 0 and len(g["cos_own_q05_q25_q50_q75_q95"]) == 5)
     check("a detection limit is reported for the control split",
           (detection_limit(recs) or {}).get("detectable_at_80pc_power", 0) > 0)
     check("split comparability reports a ceiling spread",

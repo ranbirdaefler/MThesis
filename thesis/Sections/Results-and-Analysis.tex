@@ -520,42 +520,111 @@ stratified scramble it scores \ci{+0.0263}{+0.0069}{+0.0476} with a monotone gra
 the drug, weakly. The original null was an underpowered instrument, not an absence of signal. The
 $\varepsilon$-ladder conclusion stands, but ``OT achieved nothing'' is withdrawn.
 
-\subsection{The drug use generalises}
+\subsection{What the drug use amounts to: a main effect, not an interaction}
 \label{sec:res-generalisation}
 
 A model that reads the drug token has cleared a low bar, because memorisation requires reading it
 too. Everything scored above came from conditions the model trained on, so the result so far shows
 that the token is consulted --- not that anything transferable was learned. Separating those two
-requires withholding data, and it requires withholding it at the right granularity.
+requires withholding data, and it requires withholding it at the right granularity. It also requires
+a comparator that is genuinely uninformative, which --- as this section turns out to show --- the one
+used up to here was not.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{lrrrl}
+\begin{tabular}{lrrll}
 \toprule
-Split & $n$ (cell lines) & model $\NIR$ & $\gap$ (opposite swap) & Verdict \\
+Split & $n$ (cell lines) & model $\NIR$ & $\gap$ vs \texttt{orth} (neutral) & $\gap$ vs \texttt{opposite} \\
 \midrule
-\texttt{train} & 200 (40) & 0.657 & \ci{+0.0898}{+0.0530}{+0.1269} & uses drug \\
-\textbf{\texttt{unseen\_combo}} & \textbf{250 (38)} & \textbf{0.650} & \ci{+0.1002}{+0.0661}{+0.1368} & \textbf{transfer} \\
-\texttt{unseen\_drug} & 120 (36) & 0.586 & \ci{+0.0195}{-0.0452}{+0.0860} & null (by design) \\
+\texttt{train} & 200 (35) & 0.635 & \ci{+0.1457}{+0.0836}{+0.2078} & \ci{+0.2627}{+0.2100}{+0.3155} \\
+\textbf{\texttt{unseen\_combo}} & \textbf{250 (39)} & \textbf{0.545} & \ci{+0.0449}{-0.0074}{+0.0972} & \ci{+0.1281}{+0.0768}{+0.1795} \\
+\texttt{unseen\_drug} & 120 (38) & 0.512 & \ci{+0.0097}{-0.0655}{+0.0848} & \ci{+0.0862}{-0.0028}{+0.1753} \\
 \bottomrule
 \end{tabular}
-\caption{Three-way holdout keyed at the (drug, cell line) level. Validity clean first: 9,120
-generations, \DOWN{} present in $93\%$, $98.9\%$ valid panel genes, $1.4\%$ duplicates.}
+\caption{Three-way holdout keyed at the (drug, cell line) level, on the rebuilt targets
+(split-before-fit, plate-scoped generic). \textbf{Only the \texttt{orth} column can carry a
+magnitude claim.} The comparator is the same model told a different drug's name, and the swap
+partner is itself a drug the model was mostly trained on: at \texttt{orth} the partner's true
+response is uncorrelated with the target's and the arm sits at chance ($0.497$), but at
+\texttt{opposite} it is anti-correlated and the arm sits \emph{below} chance ($0.403$). A gap
+measured against \texttt{opposite} therefore adds ``how much naming a lie hurts'' to ``how much
+naming the truth helps'', and the first term is large precisely because the model knows the partner.
+The \texttt{unseen\_drug} row is the control that proves it: those are drugs the model has never
+seen, so its gap must be zero, and it is zero only in the neutral column. Intervals are two-way
+cluster-robust over cell lines and wells.}
 \label{tab:generalisation}
 \end{table}
 
-\paragraph{Held-out pairings score as well as trained ones} ($+0.1002$ vs $+0.0898$, intervals
-almost entirely overlapping), which is consistent with a drug representation that applies in cell
-lines where the drug was not observed rather than with memorised pairings. Two qualifications
-belong with the number. The targets these were measured against were built with the generic fitted
-over every condition, holdout included, so the held-out arm was scored against targets partly
-defined by the holdout. And a held-out (drug, cell line) pairing can share a treated well with a
-training condition of another cell line, because one Tahoe well carries many lines. Both are
-addressed in the rebuild; until it lands this is evidence for the claim, not a settled measurement
-of it.
-The \texttt{unseen\_drug} arm behaving as designed --- same model, same instrument, drug token
-carrying no learned information, no gap --- is what licenses attributing the transfer to having seen
-the drug.
+\paragraph{The control passes, and the transfer claim does not survive it.} An earlier version of
+this table was measured against the \texttt{opposite} swap and read off as ``held-out pairings score
+as well as trained ones''. Two things have since changed it. The targets were rebuilt --- the generic
+is now fitted after the split rather than over every condition, and at plate rather than cell-line
+scope --- and the comparator was corrected to the neutral stratum. The rebuild alone lowers the
+absolute scores; the comparator is what changes the conclusion. \todo{This table is the only one in
+the chapter measured on the rebuilt targets and against the neutral comparator. Section~\ref{sec:res-lookup}
+onward still quotes the pre-rebuild run (model $\NIR$ $0.639$ against $0.635/0.545/0.512$ here) and
+still measures against \texttt{opposite}. Those sections need the same pass before submission; the
+lookup arms in particular were oracles fitted over the full cache and are refitted from training
+conditions only in the rebuild.}
+
+The \texttt{unseen\_drug} row shows the correction at work. Those are drugs held out of
+fine-tuning, so the model cannot be using \emph{learned} knowledge of them, and the gap should sit at
+zero. Against \texttt{opposite} it is $+0.0862$ \nolinebreak[3]$[-0.0028, +0.1753]$ --- an estimate
+nine times the neutral one, with an interval that only just contains zero. Against the neutral
+stratum the same conditions, the same generations and the same model give $+0.0097$
+\nolinebreak[3]$[-0.0655, +0.0848]$, sitting on zero as a control should.
+
+That contrast is suggestive rather than decisive, and it is worth being exact about why, because an
+earlier draft of this section rested the argument on the \texttt{opposite} interval excluding zero.
+It does not. Under a normal critical value it would, but a cluster-robust variance is asymptotic in
+the \emph{number of clusters} rather than the number of observations, and this arm has only $25$
+treatment wells. The correct reference distribution is $t_{24}$, whose critical value of $2.06$
+widens the interval by five per cent and carries the lower bound just below zero. The claim that the
+control fails outright does not survive that correction.
+
+What does not depend on the control at all is the direct measurement of the comparator itself: across
+the three strata the \texttt{scramble} arm's own $\NIR$ tracks the named partner, at $0.572$,
+$0.497$ and $0.403$ as the partner's true response moves from aligned to anti-aligned. A comparator
+whose score is a monotone function of which drug it was handed is an active treatment, not a null,
+and that is established without reference to the \texttt{unseen\_drug} row. The row corroborates it;
+it does not carry it.
+
+Read in that column, \texttt{train} clears zero at $+0.1457$ and \texttt{unseen\_combo} does not:
+$+0.0449$ \nolinebreak[3]$[-0.0074, +0.0972]$, spanning zero under well-clustering and under
+line-clustering alike ($[-0.0050, +0.0993]$). The difference between the two is $+0.1008$
+\nolinebreak[3]$[+0.0196, +0.1820]$, cluster-robust $p = 0.015$. (An unclustered permutation returns
+$p = 0.005$; it is quoted only for contrast, because ignoring the clustering this thesis mandates
+everywhere else flatters the result.) So there \emph{is} a memorisation premium, and transfer is
+\textbf{not established}. The precision matters: not established is not the same as shown to be zero.
+The interval reaches $+0.097$, so an effect of up to roughly $+0.1$ remains compatible with these
+data at $n=250$. This is a limit of power at the sample size the holdout affords, and it is reported
+as one.
+
+\paragraph{Two tests that need no comparator, and what they do establish.} A fault in the null arm
+cannot reach a measurement that has no null arm, so both of the following are immune to the defect
+above. First, does the output track the drug the model was \emph{told}? Each condition is generated
+three times, once per named partner; regressing the resulting $\NIR$ on
+$\cos(\text{truth}_{\text{target}}, \text{truth}_{\text{partner}})$ gives a slope of zero if the name
+is ignored and a positive slope if the model emits the named drug's signature. It gives
+\ci{+0.390}{+0.278}{+0.503} on \texttt{train} and \ci{+0.374}{+0.250}{+0.480} on
+\texttt{unseen\_combo} --- no degradation on held-out wells. Second, told the true drug, does the
+model beat chance at all, scored against $0.500$ with no comparator? On \texttt{train}, yes:
+$0.635$ \nolinebreak[3]$[0.577, 0.692]$. On \texttt{unseen\_combo}, not distinguishably:
+$0.545$ \nolinebreak[3]$[0.495, 0.594]$.
+
+Two instruments that fail in different ways agree, which is worth more than either alone --- though
+they are not independent, sharing the same generations and the same truths. A positive slope
+alongside a chance-level $\NIR$ is not a contradiction: it says the drug-to-signature map exists but
+is \emph{coarse}. The model knows roughly what a drug does and not what it does \emph{in this well},
+and $\NIR$ asks the second question, ranking against the $\approx 40$ other drugs measured in the
+same cell line. That is the drug main effect without the drug $\times$ cell-line interaction, which
+Section~\ref{sec:res-transfer} measures at $\approx 45\%$ of the residual variance. It is also
+why the lookup wins in the next section: \texttt{drug\_lookup} \emph{is} that main effect, estimated
+straight from data far more precisely than the model learned it.
+
+\textbf{The sentence the evidence supports}, then, is narrower than the one this section originally
+carried: re-encoding the target made the model read the drug and learn a drug-level average
+response. It learned the main effect and not the interaction.
 
 \paragraph{Two instrument defects, both of which would have concealed this.} A uniform condition
 sampler reproduces the pool's split proportions, so $250$ constructed held-out combinations yielded
@@ -845,11 +914,15 @@ prompt, retrain, and see whether unseen-drug performance rises. That arm assumes
 \emph{information availability}. Section~\ref{sec:res-mechanism} says it is the readout. Before
 spending two GPU-weeks discovering which, note that three facts already sit uneasily together --- the
 mechanism channel carries real signal, the prompt has always contained a \texttt{Mechanism:} field,
-and the model's unseen-drug gap is null --- and that the only thing currently reconciling them is
-that the unseen-drug arm is underpowered. That is true, and it is a dodge.
+and against the neutral comparator the model's held-out-drug gap is $+0.0097$
+\nolinebreak[3]$[-0.0655, +0.0848]$. Section~\ref{sec:res-generalisation} establishes that last
+number as a control that passes rather than as an underpowered shrug, but a passing control is not
+by itself an answer about the mechanism channel: the interval still reaches $+0.085$, which is wide
+enough to hide any effect the \texttt{Mechanism:} field could plausibly deliver. Appealing to it
+would be a dodge. The scramble can be made to answer directly instead.
 
-The scramble can settle it directly, because it has until now replaced the drug name \emph{and} the
-mechanism together. Decomposing it into single-span swaps costs one extra pair of generation arms:
+It has until now replaced the drug name \emph{and} the mechanism together. Decomposing it into
+single-span swaps costs one extra pair of generation arms:
 
 \begin{table}[h]
 \centering
