@@ -57,7 +57,7 @@ MANIFEST = [
          backs="the re-measurement that decides whether Q18's verdict survives"),
     # ---- Q17, transfer coefficient ---------------------------------------------------------
     dict(id="variance_decomposition", quoted=True,
-         files=["vardecomp_matched.json", "vardecomp_plate.json", "vardecomp_cellline.json"],
+         files=["vardecomp_*.json", "variance_decomp*.json"],
          script="endcell/analysis/variance_decomposition.py",
          backs="Q17 table: T=0.557 [0.513,0.601], same-plate null -0.018 vs +0.478, "
                "structure-matched null +0.000, shared-split bias, dose column",
@@ -118,15 +118,25 @@ def _match(dirpath, pattern):
 
 
 def scan(dirpath):
+    """Match every pattern independently and keep every hit.
+
+    The first version tried to build `found` and `missing` in one pass with an index-splice, and the
+    splice deleted an earlier hit whenever a later pattern in the same entry missed. So a multi-file
+    entry that was partly present reported ZERO files and, worse, `bundle()` then omitted the files
+    that did exist. That is exactly the failure mode this script is supposed to detect, produced by
+    the script itself.
+    """
     rows = []
     for m in MANIFEST:
         found, missing = [], []
         for pat in m["files"]:
             hits = _match(dirpath, pat)
-            (found if hits else missing).append(pat)
-            found[len(found) - 1:] = hits if hits else []
+            if hits:
+                found.extend(hits)
+            else:
+                missing.append(pat)
         rows.append({**m, "found": sorted(set(found)), "missing_patterns": missing,
-                     "ok": not missing})
+                     "ok": not missing, "partial": bool(found) and bool(missing)})
     return rows
 
 
@@ -136,7 +146,8 @@ def report(rows, dirpath):
     logger.info(f"ARTIFACT SCAN of {dirpath}")
     logger.info("=" * 100)
     for r in sorted(rows, key=lambda x: (x["ok"], not x["quoted"])):
-        mark = "ok  " if r["ok"] else ("MISS" if r["quoted"] else "----")
+        mark = ("ok  " if r["ok"] else
+                ("PART" if r.get("partial") else ("MISS" if r["quoted"] else "----")))
         logger.info(f"  {mark}  {r['id']:28s} {'[quoted]' if r['quoted'] else '        '} "
                     f"{len(r['found'])} file(s)")
         if not r["ok"]:
@@ -157,6 +168,8 @@ def report(rows, dirpath):
 
 
 def bundle(rows, dirpath, out):
+    """Every file found, including from entries that are only partly satisfied -- a partial entry's
+    files are exactly the ones most worth rescuing."""
     n = 0
     with tarfile.open(out, "w:gz") as tf:
         for r in rows:
