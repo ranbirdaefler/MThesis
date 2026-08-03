@@ -515,7 +515,9 @@ def main():
             logger.info(f"  {m.ljust(16)}     NA")
     logger.info("=" * 100)
     logger.info("  Read: de_delta / panel_tau should show DRF <= 0 (negative control saturates them);")
-    logger.info("        weighted_r2 / spearman / nir should show DRF > 0 (they reward the noise ceiling).")
+    logger.info("        nir should show DRF > 0. MEASURED ON REAL DATA: only NIR does. weighted_r2 (-0.163) and
+        spearman_expr (-0.650) come back NEGATIVE -- this docstring's original expectation for those
+        two was wrong, and the published claim was always that NIR alone is calibrated.")
     logger.info(f"-> {args.out}")
 
 
