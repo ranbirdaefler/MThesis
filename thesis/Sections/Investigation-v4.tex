@@ -800,7 +800,7 @@ ablating it costs $3.6$--$18.6\times$ the matched-dimension random null across l
 is real. It is also small beside the cell-line positive control, which the same ablation reads at
 $1.0$--$11.2\times$ the drug's: removing the drug subspace costs $9$--$37\%$ of what removing cell
 line costs at layers 2--9, rising to $98\%$ at layer 12 and $25\%$ at layer 16. In variance-share
-terms the gap is wider still, cell line carrying $15$--$20\times$ the purified drug slab. The
+terms the gap is wider still, cell line carrying $15$--$22\times$ the purified drug slab. The
 instrument is not the limit; the drug is a bit player.
 
 This is also where ablation reaches its limit as an instrument. It proves the slab carries
@@ -812,9 +812,9 @@ the next section's.
 
 \begin{claim}
 The drug representation is used, but at a bit player's weight: decodability rises monotonically
-with depth while the slab's causal share stays flat at $\approx 0.03$, roughly $5\%$ of the cell
-line's $\approx 0.6$. Ablation cannot say whether the slab's content is read --- that needs a
-substitution.
+with depth while the slab's variance share stays flat at $\approx 0.03$, roughly $5\%$ of the cell
+line's $\approx 0.6$, and ablating it costs $9$--$37\%$ of what ablating cell line costs at layers
+$2$--$9$. Ablation cannot say whether the slab's content is read --- that needs a substitution.
 \end{claim}
 
 \subsection{Is the drug's identity read?}
@@ -1194,8 +1194,9 @@ leave-one-drug-out generic & train/held-out target asymmetry (\S\ref{sec:methods
 \bottomrule
 \end{tabular}
 \caption{The five checks accompanying the transfer-coefficient estimate. The simulated null matters
-most: at $\kappa = 0$ the estimator does not return $1.0$, so the raw cosine would read $27\%$
-interaction where the truth is zero. The dose strata carry a molar-resolved dose --- an earlier
+most: at $\kappa = 0$ the \emph{uncorrected} cross-line cosine is only $0.734$, which read naively
+reports $27\%$ interaction where the truth is zero, while the disattenuated estimator recovers the
+truth to within $0.001$. That recovery is what licenses the reference column below. The dose strata carry a molar-resolved dose --- an earlier
 cache carried the well identifier in the dose field, so what was labelled dose transfer compared
 physical samples rather than concentrations.}
 \label{tab:tcontrols}
@@ -1550,7 +1551,7 @@ ceiling (split-half replicate) & a real replicate & $0.958$ & \\
 \texttt{drug\_lookup} (training-only) & drug's mean residual, other lines & $0.941$ & the bar to beat \\
 \texttt{drug\_lookup\_1} & the same, from one other cell line & $0.859$ & no averaging advantage \\
 model & control cell $+$ drug & $0.569$ & \\
-\texttt{moa\_lookup} & drugs sharing this drug's MoA & --- & mechanism-leak check \\
+\texttt{moa\_lookup} ($n = 118$) & drugs sharing this drug's MoA & $0.565$ & mechanism-leak check \\
 \texttt{control\_copy} & nothing (copies the control) & $0.511$ & drug-agnostic \\
 \texttt{generic} & nothing (predicts the average) & $0.500$ & the zero vector \\
 \texttt{random} & nothing & $0.521$ & floor \\
@@ -1561,8 +1562,9 @@ fitted from training conditions only. Ceiling and model rows by split: $0.962$/$
 $0.635$/$0.545$/$0.512$ (train / unseen-combination / unseen-drug). \texttt{drug\_lookup} is the
 pre-registered win condition: a
 lookup can reproduce a memorised average, so only a model that tailors the response to the control
-cell's state can beat it. \texttt{moa\_lookup} was scored on the earlier target build only
-($0.529$, $n = 143$). The paired comparison on the common support ($n = 449$) is model $-$
+cell's state can beat it. \texttt{moa\_lookup} is scored on the $118$ conditions that have a
+training-drug MoA partner, so that row does not sit on the $n = 570$ support the rest of the ladder
+does. The paired comparison on the common support ($n = 449$) is model $-$
 \texttt{drug\_lookup} $= \ci{-0.3559}{-0.3988}{-0.3130}$, and of the distance from chance to the
 replicate ceiling the model covers $18.6\%$ against the lookup's $96.3\%$.}
 \label{tab:baselines}
@@ -1572,8 +1574,10 @@ replicate ceiling the model covers $18.6\%$ against the lookup's $96.3\%$.}
 
 The pre-registered interpretation, written before the result, anticipated three branches; the middle
 one fired. The model reads and transfers the drug, but recovers only a small fraction of its
-signature. On the earlier build it also beat \texttt{moa\_lookup}, so its prompt response is not
-reducible to the \texttt{Mechanism:} field --- though at that level the bar is low.
+signature. Whether its prompt response is reducible to the \texttt{Mechanism:} field is not settled
+here: the model does beat \texttt{moa\_lookup} on the $118$ conditions where that comparison exists,
+$\gap = \ci{+0.0413}{-0.0610}{+0.1436}$ two-way clustered, but the interval spans zero, so the
+comparison is uninformative rather than favourable.
 
 This is DrEval's finding, in transcriptomic space. DrEval reports that deep learning models barely
 outperform a naive predictor of mean drug and cell-line effects~\cite{dreval}, and our
@@ -1726,7 +1730,7 @@ field's contribution unresolved.
 \begin{tabular}{lrrl}
 \toprule
 \multicolumn{4}{l}{Panel A: the channel is available --- metadata-neighbour retrieval, plate-matched} \\
-Channel & Coverage & $n$ & Gap against a count-matched random null \\
+Channel & Coverage & $n$ & Gap against a plate-matched random null \\
 \midrule
 protein target & $54\%$ & $877$ & \ci{+0.0973}{+0.0741}{+0.1183} \\
 mechanism (MoA) & $32\%$ & $1033$ & \ci{+0.0749}{+0.0538}{+0.0948} \\
