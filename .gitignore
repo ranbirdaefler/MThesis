@@ -57,3 +57,5 @@ thesis/Sections/*.aux
 RESULTS_cluster/*.npz
 coda_errata/
 thesis/Sections/*.bak
+thesis/.chk/
+thesis/.build*/
