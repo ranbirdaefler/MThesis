@@ -1,0 +1,414 @@
+{
+  "n_records": 570,
+  "comparator_neutrality": {
+    "near": {
+      "mean_nir": 0.5717707008349234,
+      "mean_partner_cos": 0.25617330093917096,
+      "verdict": "above chance -- the partner is a partly CORRECT answer"
+    },
+    "orth": {
+      "mean_nir": 0.4965154686258725,
+      "mean_partner_cos": 0.000695146678861005,
+      "verdict": "at chance -- a neutral null"
+    },
+    "opposite": {
+      "mean_nir": 0.40284408111452596,
+      "mean_partner_cos": -0.24310861628731353,
+      "verdict": "below chance -- the partner is an actively WRONG answer"
+    }
+  },
+  "split_table": [
+    {
+      "split": "train",
+      "stratum": "near",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.577420026630159,
+      "gap": 0.057461522974621426,
+      "ci_line": [
+        0.01456435157524247,
+        0.09933640180758602
+      ],
+      "ci_two_way": [
+        0.001807785549125182,
+        0.11311526040011767
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "train",
+      "stratum": "orth",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.489177265613206,
+      "gap": 0.14570428399157448,
+      "ci_line": [
+        0.09326271743571513,
+        0.1924204327034188
+      ],
+      "ci_two_way": [
+        0.08127278749258762,
+        0.21013578049056134
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "train",
+      "stratum": "opposite",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.3721441312418846,
+      "gap": 0.26273741836289594,
+      "ci_line": [
+        0.21895864482693758,
+        0.3016141508201712
+      ],
+      "ci_two_way": [
+        0.20806326165917777,
+        0.3174115750666141
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "near",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.5832959262493278,
+      "gap": -0.038609212236605565,
+      "ci_line": [
+        -0.08512900951012756,
+        0.01004752441973044
+      ],
+      "ci_two_way": [
+        -0.10366236983801422,
+        0.026443945364803094
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "orth",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.49975042216564114,
+      "gap": 0.04493629184708106,
+      "ci_line": [
+        -0.0050191996267909,
+        0.09925984820618894
+      ],
+      "ci_two_way": [
+        -0.009548424640932252,
+        0.09942100833509437
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "opposite",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.4165403088858172,
+      "gap": 0.128146405126905,
+      "ci_line": [
+        0.08342654818441773,
+        0.17461207667792297
+      ],
+      "ci_two_way": [
+        0.07466412067298822,
+        0.1816286895808218
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "near",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.5383442715628545,
+      "gap": -0.026641169526960908,
+      "ci_line": [
+        -0.0929930904829734,
+        0.038179108092625196
+      ],
+      "ci_two_way": [
+        -0.10397026601812202,
+        0.0506879269642002
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "orth",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.5020063204391316,
+      "gap": 0.009696781596761853,
+      "ci_line": [
+        -0.055747044414840456,
+        0.07430127456284837
+      ],
+      "ci_two_way": [
+        -0.06943766961005972,
+        0.08883123280358342
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "opposite",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.42547685637873817,
+      "gap": 0.08622624565715539,
+      "ci_line": [
+        0.02190727460812898,
+        0.14625178662423763
+      ],
+      "ci_two_way": [
+        -0.002817910064055587,
+        0.17527040137836636
+      ],
+      "excludes_zero": false
+    }
+  ],
+  "control_passes_under_orth": true,
+  "memorisation_premium": {
+    "stratum": "orth",
+    "train_gap": 0.14570428399157448,
+    "unseen_combo_gap": 0.04493629184708106,
+    "drug_composition": {
+      "n_drugs_train": 68,
+      "n_drugs_combo": 29,
+      "n_drugs_shared": 20,
+      "frac_train_obs_on_shared_drugs": 0.225,
+      "frac_combo_obs_on_shared_drugs": 0.644,
+      "train_only_gap": 0.16942342462210566,
+      "combo_only_gap": 0.08642588304949322
+    },
+    "restricted_to_shared_drugs": {
+      "difference": 0.04200396982989791,
+      "se": 0.058986380250727416,
+      "z": 0.712096074574434,
+      "p": 0.48505827126964673,
+      "df": 19,
+      "ci": [
+        -0.08145594291734978,
+        0.1654638825771456
+      ],
+      "n_train": 45,
+      "n_combo": 161,
+      "train_gap": 0.06400502181974492,
+      "unseen_combo_gap": 0.02200105198984701
+    },
+    "difference": 0.10076799214449342,
+    "clustered": {
+      "difference": 0.10076799214449342,
+      "se": 0.041435765355017175,
+      "z": 2.43190855245762,
+      "p": 0.021201092183930292,
+      "df": 30,
+      "covariance": "omitted; conservative because the arms are positively correlated",
+      "ci": [
+        0.016144869854180816,
+        0.18539111443480602
+      ]
+    },
+    "p_permutation_unclustered": 0.005398920215956809,
+    "p": 0.021201092183930292,
+    "n_train": 200,
+    "n_combo": 250
+  },
+  "generalisation_established": false,
+  "output_tracks_named_drug": {
+    "train": {
+      "n_points": 600,
+      "slope": 0.38998026326642476,
+      "ci": [
+        0.2249634688149343,
+        0.5420153543529719
+      ],
+      "excludes_zero": true
+    },
+    "unseen_combo": {
+      "n_points": 750,
+      "slope": 0.3736695079739089,
+      "ci": [
+        0.21449924267612186,
+        0.5075400868037364
+      ],
+      "excludes_zero": true
+    },
+    "unseen_drug": {
+      "n_points": 360,
+      "slope": 0.23818699045609915,
+      "ci": [
+        0.033125097975714106,
+        0.4196155739736835
+      ],
+      "excludes_zero": true
+    }
+  },
+  "model_vs_chance": {
+    "train": {
+      "n": 200,
+      "nir": 0.6348815496047804,
+      "ci": [
+        0.5752053551867304,
+        0.6945577440228305
+      ],
+      "above_chance": true
+    },
+    "unseen_combo": {
+      "n": 250,
+      "nir": 0.5446867140127222,
+      "ci": [
+        0.4930210546661265,
+        0.596352373359318
+      ],
+      "above_chance": false
+    },
+    "unseen_drug": {
+      "n": 120,
+      "nir": 0.5117031020358935,
+      "ci": [
+        0.44206745547939474,
+        0.5813387485923924
+      ],
+      "above_chance": false
+    }
+  },
+  "output_geometry": {
+    "train": {
+      "n": 200,
+      "cos_own": 0.051107174886856226,
+      "cos_others": -0.0072986433881376996,
+      "difference": 0.05840581827499392,
+      "ci": [
+        0.0324773305969257,
+        0.08433430595306214
+      ],
+      "excludes_zero": true,
+      "max_abs_mean_cos": 0.051107174886856226,
+      "cos_own_sd": 0.11405628799384551,
+      "cos_own_min": -0.18185289204120636,
+      "cos_own_max": 0.43951091170310974,
+      "cos_own_absmax": 0.43951091170310974,
+      "cos_own_q05_q25_q50_q75_q95": [
+        -0.10556210651993751,
+        -0.025515585206449032,
+        0.029952763579785824,
+        0.10276543535292149,
+        0.27979193925857543
+      ],
+      "frac_abs_gt_0.1": 0.32,
+      "frac_abs_gt_0.2": 0.105,
+      "frac_abs_gt_0.3": 0.03
+    },
+    "unseen_combo": {
+      "n": 250,
+      "cos_own": 0.008510133826668606,
+      "cos_others": -0.005286332922454445,
+      "difference": 0.013796466749123052,
+      "ci": [
+        -0.0013437640893515148,
+        0.02893669758759762
+      ],
+      "excludes_zero": false,
+      "max_abs_mean_cos": 0.008510133826668606,
+      "cos_own_sd": 0.08489055602585051,
+      "cos_own_min": -0.22895915806293488,
+      "cos_own_max": 0.25103938579559326,
+      "cos_own_absmax": 0.25103938579559326,
+      "cos_own_q05_q25_q50_q75_q95": [
+        -0.13313256278634072,
+        -0.050028374418616295,
+        0.008411094080656767,
+        0.0702088475227356,
+        0.14258283153176307
+      ],
+      "frac_abs_gt_0.1": 0.216,
+      "frac_abs_gt_0.2": 0.028,
+      "frac_abs_gt_0.3": 0.0
+    },
+    "unseen_drug": {
+      "n": 120,
+      "cos_own": -0.0037300274261118224,
+      "cos_others": -0.006626437140041364,
+      "difference": 0.002896409713929542,
+      "ci": [
+        -0.01926265937371365,
+        0.025055478801572738
+      ],
+      "excludes_zero": false,
+      "max_abs_mean_cos": 0.006626437140041364,
+      "cos_own_sd": 0.08517710900137121,
+      "cos_own_min": -0.2794438898563385,
+      "cos_own_max": 0.31942376494407654,
+      "cos_own_absmax": 0.31942376494407654,
+      "cos_own_q05_q25_q50_q75_q95": [
+        -0.13204124718904495,
+        -0.04665432125329971,
+        -0.007610361324623227,
+        0.04871647339314222,
+        0.12183430716395377
+      ],
+      "frac_abs_gt_0.1": 0.2,
+      "frac_abs_gt_0.2": 0.03333333333333333,
+      "frac_abs_gt_0.3": 0.008333333333333333
+    }
+  },
+  "split_comparability": {
+    "train": {
+      "n": 200,
+      "ceiling": 0.9623347756010705,
+      "mean_condition_reproducibility": 0.21577545322477817
+    },
+    "unseen_combo": {
+      "n": 250,
+      "ceiling": 0.9549344861248015,
+      "mean_condition_reproducibility": 0.20359106060862542
+    },
+    "unseen_drug": {
+      "n": 120,
+      "ceiling": 0.9555025902397997,
+      "mean_condition_reproducibility": 0.25449886415153744
+    },
+    "max_ceiling_spread": 0.0074002894762690286
+  },
+  "detection_limit": {
+    "split": "unseen_drug",
+    "n": 120,
+    "observed": 0.5117031020358935,
+    "half_width": 0.06963564655649883,
+    "detectable_at_80pc_power": 0.09947949508071262
+  },
+  "source": "re_repaired.json"
+}

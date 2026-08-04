@@ -1,0 +1,181 @@
+{
+  "n_conditions": 6602,
+  "n_groups": 125,
+  "K": 200,
+  "scopes": {
+    "plate": {
+      "full": {
+        "divergence_mean": 34.594876910336524,
+        "divergence_median": 34.0,
+        "K": 200,
+        "ceiling_retrieval": 0.741986901358855,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "shift": {
+        "divergence_mean": 111.4231960024091,
+        "divergence_median": 111.0,
+        "K": 200,
+        "ceiling_retrieval": 0.741986901358855,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "residual": {
+        "divergence_mean": 120.29533990815328,
+        "divergence_median": 120.0,
+        "K": 200,
+        "ceiling_retrieval": 0.7467191685912737,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "reliability": {
+        "mean_cos": 0.12901971154515549,
+        "median_cos": 0.10830941796302795,
+        "frac_reproducible": 0.1932747652226598,
+        "n": 6602,
+        "thr": 0.2
+      }
+    },
+    "cellline": {
+      "full": {
+        "divergence_mean": 34.594876910336524,
+        "divergence_median": 34.0,
+        "K": 200,
+        "ceiling_retrieval": 0.741986901358855,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "shift": {
+        "divergence_mean": 111.4231960024091,
+        "divergence_median": 111.0,
+        "K": 200,
+        "ceiling_retrieval": 0.741986901358855,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "residual": {
+        "divergence_mean": 118.24622167432057,
+        "divergence_median": 118.0,
+        "K": 200,
+        "ceiling_retrieval": 0.7432424792001652,
+        "n_ceiling": 6602,
+        "n_pairs": 212528,
+        "baselines": {
+          "control": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "loo_mean": {
+            "retrieval_nir": 0.45234171439044724,
+            "n": 6602
+          },
+          "generic": {
+            "retrieval_nir": 0.5,
+            "n": 6602
+          },
+          "knn_ctrl": {
+            "retrieval_nir": 0.4893363112414195,
+            "n": 6602
+          }
+        }
+      },
+      "reliability": {
+        "mean_cos": 0.23948201261488747,
+        "median_cos": 0.22853180021047592,
+        "frac_reproducible": 0.616934262344744,
+        "n": 6602,
+        "thr": 0.2
+      }
+    }
+  }
+}

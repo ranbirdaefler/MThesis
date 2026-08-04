@@ -1,0 +1,164 @@
+{
+  "test2": {
+    "n": 183,
+    "all": {
+      "ceiling": 0.7415565469567399,
+      "model": 0.5164384501173315,
+      "linear": 0.5019545340905033,
+      "mean": 0.301367140663187
+    },
+    "binned": {
+      "UNWINNABLE  (ceiling < 0.6 ~ chance: inert/redundant drug)": {
+        "n": 47,
+        "ceiling": 0.3692689350699363,
+        "model": 0.3631520475074918,
+        "linear": 0.47293854803241536,
+        "mean": 0.11515462704448938
+      },
+      "MARGINAL    (0.6 <= ceiling < 0.8)": {
+        "n": 33,
+        "ceiling": 0.6732624129682953,
+        "model": 0.43205128205128207,
+        "linear": 0.5680146106616695,
+        "mean": 0.19090337766808352
+      },
+      "IDENTIFIABLE (ceiling >= 0.8)": {
+        "n": 103,
+        "ceiling": 0.9333160050178896,
+        "model": 0.6134213381643421,
+        "linear": 0.4940299595068299,
+        "mean": 0.4217292020118976
+      }
+    },
+    "n_identifiable": 103,
+    "identifiable": {
+      "ceiling": 0.9333160050178896,
+      "model": 0.6134213381643421,
+      "linear": 0.4940299595068299,
+      "model_minus_linear": 0.1193913786575123,
+      "ci_naive": [
+        0.04062235499128704,
+        0.19453674300190577
+      ],
+      "ci_clustered": [
+        0.0766684853137059,
+        0.20361430286400276
+      ],
+      "n_celllines": 8,
+      "n_drugs": 103
+    },
+    "verdict": "MODEL BEATS LINEAR on identifiable drugs (clustered CI excludes 0) -> the drug-blind claim does NOT hold on winnable drugs; the aggregate was diluted by unwinnable ones.",
+    "corr_model_vs": {
+      "snr": 0.03357463888956755,
+      "isolation": 0.051766084857915076,
+      "effect_size": -0.19671680361378271,
+      "ceiling_nir": 0.10755949545202448
+    }
+  },
+  "test3": {
+    "per_cellline": [
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0459",
+        "n_drugs": 35,
+        "mantel_spearman": -0.09050359212222618,
+        "cv_model": 0.040277289737239215,
+        "cv_real": 0.0768709099384004
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0480",
+        "n_drugs": 19,
+        "mantel_spearman": -0.1845921232630139,
+        "cv_model": 0.040759907638609774,
+        "cv_real": 0.08971254683886433
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1285",
+        "n_drugs": 7,
+        "mantel_spearman": -0.016883116883116882,
+        "cv_model": 0.02894122571267617,
+        "cv_real": 0.09655025166594085
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0546",
+        "n_drugs": 46,
+        "mantel_spearman": 0.029670461215327085,
+        "cv_model": 0.041400076008787895,
+        "cv_real": 0.07000669766454211
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0428",
+        "n_drugs": 6,
+        "mantel_spearman": 0.035714285714285705,
+        "cv_model": 0.03879648029065459,
+        "cv_real": 0.040860446696180885
+      },
+      {
+        "tier": "tier3_unseen_combos",
+        "cell_line": "CVCL_0293",
+        "n_drugs": 6,
+        "mantel_spearman": 0.25,
+        "cv_model": 0.030864128281048404,
+        "cv_real": 0.08635874255265148
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0480",
+        "n_drugs": 14,
+        "mantel_spearman": 0.030896639592291768,
+        "cv_model": 0.03441923127802916,
+        "cv_real": 0.07695431535111477
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_1285",
+        "n_drugs": 8,
+        "mantel_spearman": 0.07936507936507936,
+        "cv_model": 0.02900353885802623,
+        "cv_real": 0.05781974636149203
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0131",
+        "n_drugs": 9,
+        "mantel_spearman": 0.17039897039897042,
+        "cv_model": 0.04472315721125572,
+        "cv_real": 0.056497284095030784
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0546",
+        "n_drugs": 18,
+        "mantel_spearman": 0.00046908715639365793,
+        "cv_model": 0.03704800753583396,
+        "cv_real": 0.07747710396569304
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0459",
+        "n_drugs": 6,
+        "mantel_spearman": -0.2071428571428571,
+        "cv_model": 0.032765759581633455,
+        "cv_real": 0.07102133952421906
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0359",
+        "n_drugs": 9,
+        "mantel_spearman": -0.1734877734877735,
+        "cv_model": 0.0412542796419463,
+        "cv_real": 0.06642958540138905
+      }
+    ],
+    "mantel_mean": -0.006341244954719968,
+    "mantel_median": 0.015069774185860372,
+    "cv_model_mean": 0.03668775681464507,
+    "cv_real_mean": 0.07221324750462656,
+    "n_celllines": 12,
+    "moa_level_nir": 0.50390625
+  }
+}

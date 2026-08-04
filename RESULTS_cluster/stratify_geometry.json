@@ -1,0 +1,183 @@
+{
+  "test2": {
+    "n": 183,
+    "all": {
+      "ceiling": 0.7415565469567399,
+      "model": 0.5184317512909606,
+      "scramble": 0.48291399155532416,
+      "linear": 0.5019545340905033,
+      "control": 0.5468407427423821,
+      "mean": 0.301367140663187
+    },
+    "binned": {
+      "UNWINNABLE  (ceiling < 0.6 ~ chance: inert/redundant drug)": {
+        "n": 47,
+        "ceiling": 0.3692689350699363,
+        "model": 0.3122381685898582,
+        "linear": 0.47293854803241536,
+        "mean": 0.11515462704448938
+      },
+      "MARGINAL    (0.6 <= ceiling < 0.8)": {
+        "n": 33,
+        "ceiling": 0.6732624129682953,
+        "model": 0.44899066075536664,
+        "linear": 0.5680146106616695,
+        "mean": 0.19090337766808352
+      },
+      "IDENTIFIABLE (ceiling >= 0.8)": {
+        "n": 103,
+        "ceiling": 0.9333160050178896,
+        "model": 0.6347682015300519,
+        "linear": 0.4940299595068299,
+        "mean": 0.4217292020118976
+      }
+    },
+    "n_identifiable": 103,
+    "identifiable": {
+      "ceiling": 0.9333160050178896,
+      "model": 0.6347682015300519,
+      "linear": 0.4940299595068299,
+      "model_minus_linear": 0.14073824202322202,
+      "ci_naive": [
+        0.06807879755088493,
+        0.2197516777435395
+      ],
+      "ci_clustered": [
+        0.05901591409703344,
+        0.22680424195659138
+      ],
+      "n_celllines": 8,
+      "n_drugs": 103
+    },
+    "verdict": "MODEL BEATS LINEAR on identifiable drugs (clustered CI excludes 0) -> the drug-blind claim does NOT hold on winnable drugs; the aggregate was diluted by unwinnable ones.",
+    "corr_model_vs": {
+      "snr": -0.0069710223247467975,
+      "isolation": 0.01994799923146097,
+      "effect_size": -0.25644936182897754,
+      "ceiling_nir": 0.16490473087118396
+    },
+    "scramble_arm": {
+      "n": 70,
+      "model": 0.622016806722689,
+      "scramble": 0.5457516339869279,
+      "model_minus_scramble": 0.07626517273576097,
+      "ci_clustered": [
+        0.032828282828282845,
+        0.13843137254901958
+      ],
+      "n_celllines": 5,
+      "verdict": "CAUSAL: lying about the drug DEGRADES the prediction -> the model genuinely USES the drug token. The +model-linear gap is real drug knowledge."
+    },
+    "control_copy_identifiable": 0.658889844212517,
+    "control_copy_ci_clustered": [
+      0.1073510485275191,
+      0.19724715845286425
+    ]
+  },
+  "test3": {
+    "per_cellline": [
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0459",
+        "n_drugs": 35,
+        "mantel_spearman": -0.0333643809364299,
+        "cv_model": 0.038741946438889646,
+        "cv_real": 0.0768709099384004
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0480",
+        "n_drugs": 19,
+        "mantel_spearman": 0.19736002111983106,
+        "cv_model": 0.04929325525969055,
+        "cv_real": 0.08971254683886433
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1285",
+        "n_drugs": 7,
+        "mantel_spearman": -0.45454545454545453,
+        "cv_model": 0.03235882496348941,
+        "cv_real": 0.09655025166594085
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0546",
+        "n_drugs": 46,
+        "mantel_spearman": 0.1706316934809072,
+        "cv_model": 0.0362808795770673,
+        "cv_real": 0.07000669766454211
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0428",
+        "n_drugs": 6,
+        "mantel_spearman": 0.22142857142857136,
+        "cv_model": 0.02858222795572692,
+        "cv_real": 0.040860446696180885
+      },
+      {
+        "tier": "tier3_unseen_combos",
+        "cell_line": "CVCL_0293",
+        "n_drugs": 6,
+        "mantel_spearman": 0.2571428571428571,
+        "cv_model": 0.03386827841133527,
+        "cv_real": 0.08635874255265148
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0480",
+        "n_drugs": 14,
+        "mantel_spearman": -0.061761426978818285,
+        "cv_model": 0.040433537248853374,
+        "cv_real": 0.07695431535111477
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_1285",
+        "n_drugs": 8,
+        "mantel_spearman": -0.30322933771209637,
+        "cv_model": 0.029901914438220042,
+        "cv_real": 0.05781974636149203
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0131",
+        "n_drugs": 9,
+        "mantel_spearman": 0.2885456885456885,
+        "cv_model": 0.03762949608185602,
+        "cv_real": 0.056497284095030784
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0546",
+        "n_drugs": 18,
+        "mantel_spearman": -0.05829748167209466,
+        "cv_model": 0.03226646344999059,
+        "cv_real": 0.07747710396569304
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0459",
+        "n_drugs": 6,
+        "mantel_spearman": 0.03214285714285714,
+        "cv_model": 0.02927748529259184,
+        "cv_real": 0.07102133952421906
+      },
+      {
+        "tier": "tier4_dose_interpolation",
+        "cell_line": "CVCL_0359",
+        "n_drugs": 9,
+        "mantel_spearman": -0.12046332046332048,
+        "cv_model": 0.055837894016513345,
+        "cv_real": 0.06642958540138905
+      }
+    ],
+    "mantel_mean": 0.01129919054604151,
+    "mantel_median": -0.0006107618967863791,
+    "cv_model_mean": 0.03703935026118536,
+    "cv_real_mean": 0.07221324750462656,
+    "n_celllines": 12,
+    "moa_level_nir": 0.5143229166666665
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "n_celllines": 25,
+  "n_drugs": 803,
+  "mean_cells_per_drug": 120.7775854239859,
+  "mean_degs_per_drug": 115.91791667266185,
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": 0.03214078366997702,
+        "n": 803,
+        "m_pos": 0.8974077153027725,
+        "m_neg": 0.8940008185423475,
+        "m_perfect": 1.0
+      },
+      "spearman_expr": {
+        "drf": -0.46996361316438723,
+        "n": 803,
+        "m_pos": 0.8948375211940757,
+        "m_neg": 0.9284591279238937,
+        "m_perfect": 0.9999999999999999
+      },
+      "de_delta": {
+        "drf": -0.5210280822190331,
+        "n": 803,
+        "m_pos": 0.8943269948999246,
+        "m_neg": 0.930525276728679,
+        "m_perfect": 1.0
+      },
+      "panel_tau": {
+        "drf": -0.22805158809207424,
+        "n": 803,
+        "m_pos": 0.7310265650669427,
+        "m_neg": 0.7809754593852691,
+        "m_perfect": 1.0
+      },
+      "nir": {
+        "drf": 0.7980331597464985,
+        "n": 803,
+        "m_pos": 0.881394437050919,
+        "m_neg": 0.41274734604843316,
+        "m_perfect": 1.0
+      }
+    }
+  },
+  "config": {
+    "out": "RESULTS/calibration_hi.json",
+    "selftest": false,
+    "num_shards": 20,
+    "rows_per_shard": 150000,
+    "shard_seed": 7,
+    "cells_per_drug": 150,
+    "max_cells_total": 500000,
+    "min_cells_per_drug": 100,
+    "n_celllines": 25,
+    "min_drugs_per_cl": 6,
+    "held_out_drugs_file": null,
+    "de_k": 50,
+    "deg_pool_cap": 400,
+    "panel_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json",
+    "seed": 42,
+    "collect_controls": true
+  }
+}

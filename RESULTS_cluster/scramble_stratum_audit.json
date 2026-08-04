@@ -1,0 +1,346 @@
+{
+  "n_records": 570,
+  "comparator_neutrality": {
+    "near": {
+      "mean_nir": 0.5717707008349234,
+      "mean_partner_cos": 0.25617330093917096,
+      "verdict": "above chance -- the partner is a partly CORRECT answer"
+    },
+    "orth": {
+      "mean_nir": 0.4965154686258725,
+      "mean_partner_cos": 0.000695146678861005,
+      "verdict": "at chance -- a neutral null"
+    },
+    "opposite": {
+      "mean_nir": 0.40284408111452596,
+      "mean_partner_cos": -0.24310861628731353,
+      "verdict": "below chance -- the partner is an actively WRONG answer"
+    }
+  },
+  "split_table": [
+    {
+      "split": "train",
+      "stratum": "near",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.577420026630159,
+      "gap": 0.057461522974621426,
+      "ci_line": [
+        0.01456435157524247,
+        0.09933640180758602
+      ],
+      "ci_two_way": [
+        0.0037872133829854257,
+        0.11113583256625742
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "train",
+      "stratum": "orth",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.489177265613206,
+      "gap": 0.14570428399157448,
+      "ci_line": [
+        0.09326271743571513,
+        0.1924204327034188
+      ],
+      "ci_two_way": [
+        0.08356441251989326,
+        0.2078441554632557
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "train",
+      "stratum": "opposite",
+      "n": 200,
+      "n_cell_lines": 35,
+      "n_wells": 113,
+      "underpowered": false,
+      "model_nir": 0.6348815496047804,
+      "scramble_nir": 0.3721441312418846,
+      "gap": 0.26273741836289594,
+      "ci_line": [
+        0.21895864482693758,
+        0.3016141508201712
+      ],
+      "ci_two_way": [
+        0.21000784889767285,
+        0.31546698782811905
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "near",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.5832959262493278,
+      "gap": -0.038609212236605565,
+      "ci_line": [
+        -0.08512900951012756,
+        0.01004752441973044
+      ],
+      "ci_two_way": [
+        -0.10104057176749198,
+        0.02382214729428085
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "orth",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.49975042216564114,
+      "gap": 0.04493629184708106,
+      "ci_line": [
+        -0.0050191996267909,
+        0.09925984820618894
+      ],
+      "ci_two_way": [
+        -0.007352560061437481,
+        0.0972251437555996
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_combo",
+      "stratum": "opposite",
+      "n": 250,
+      "n_cell_lines": 39,
+      "n_wells": 31,
+      "underpowered": false,
+      "model_nir": 0.5446867140127222,
+      "scramble_nir": 0.4165403088858172,
+      "gap": 0.128146405126905,
+      "ci_line": [
+        0.08342654818441773,
+        0.17461207667792297
+      ],
+      "ci_two_way": [
+        0.07681958484042417,
+        0.17947322541338584
+      ],
+      "excludes_zero": true
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "near",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.5383442715628545,
+      "gap": -0.026641169526960908,
+      "ci_line": [
+        -0.0929930904829734,
+        0.038179108092625196
+      ],
+      "ci_two_way": [
+        -0.10007609840260508,
+        0.04679375934868325
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "orth",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.5020063204391316,
+      "gap": 0.009696781596761853,
+      "ci_line": [
+        -0.055747044414840456,
+        0.07430127456284837
+      ],
+      "ci_two_way": [
+        -0.06545258726532376,
+        0.08484615045884746
+      ],
+      "excludes_zero": false
+    },
+    {
+      "split": "unseen_drug",
+      "stratum": "opposite",
+      "n": 120,
+      "n_cell_lines": 38,
+      "n_wells": 25,
+      "underpowered": false,
+      "model_nir": 0.5117031020358935,
+      "scramble_nir": 0.42547685637873817,
+      "gap": 0.08622624565715539,
+      "ci_line": [
+        0.02190727460812898,
+        0.14625178662423763
+      ],
+      "ci_two_way": [
+        0.0016662088936801045,
+        0.17078628242063068
+      ],
+      "excludes_zero": true
+    }
+  ],
+  "control_passes_under_orth": true,
+  "memorisation_premium": {
+    "stratum": "orth",
+    "train_gap": 0.14570428399157448,
+    "unseen_combo_gap": 0.04493629184708106,
+    "difference": 0.10076799214449342,
+    "clustered": {
+      "difference": 0.10076799214449342,
+      "se": 0.041435765355017175,
+      "z": 2.43190855245762,
+      "p": 0.015019498858555025,
+      "ci": [
+        0.01955389204865976,
+        0.18198209224032708
+      ]
+    },
+    "p_permutation_unclustered": 0.005398920215956809,
+    "p": 0.015019498858555025,
+    "n_train": 200,
+    "n_combo": 250
+  },
+  "generalisation_established": false,
+  "output_tracks_named_drug": {
+    "train": {
+      "n_points": 600,
+      "slope": 0.38998026326642476,
+      "ci": [
+        0.27754538465443995,
+        0.5033799724757657
+      ],
+      "excludes_zero": true
+    },
+    "unseen_combo": {
+      "n_points": 750,
+      "slope": 0.3736695079739089,
+      "ci": [
+        0.24976365769284298,
+        0.4799644741142328
+      ],
+      "excludes_zero": true
+    },
+    "unseen_drug": {
+      "n_points": 360,
+      "slope": 0.23818699045609915,
+      "ci": [
+        0.08051279509590566,
+        0.3791301907340362
+      ],
+      "excludes_zero": true
+    }
+  },
+  "model_vs_chance": {
+    "train": {
+      "n": 200,
+      "nir": 0.6348815496047804,
+      "ci": [
+        0.5773278491236035,
+        0.6924352500859575
+      ],
+      "above_chance": true
+    },
+    "unseen_combo": {
+      "n": 250,
+      "nir": 0.5446867140127222,
+      "ci": [
+        0.49510330449044915,
+        0.5942701235349954
+      ],
+      "above_chance": false
+    },
+    "unseen_drug": {
+      "n": 120,
+      "nir": 0.5117031020358935,
+      "ci": [
+        0.44557419346044563,
+        0.5778320106113415
+      ],
+      "above_chance": false
+    }
+  },
+  "output_geometry": {
+    "train": {
+      "n": 200,
+      "cos_own": 0.051107174886856226,
+      "cos_others": -0.0072986433881376996,
+      "difference": 0.05840581827499392,
+      "ci": [
+        0.03339952509048649,
+        0.08341211145950135
+      ],
+      "excludes_zero": true,
+      "max_abs_cos": 0.051107174886856226
+    },
+    "unseen_combo": {
+      "n": 250,
+      "cos_own": 0.008510133826668606,
+      "cos_others": -0.005286332922454445,
+      "difference": 0.013796466749123052,
+      "ci": [
+        -0.00073357652178117,
+        0.028326510020027274
+      ],
+      "excludes_zero": false,
+      "max_abs_cos": 0.008510133826668606
+    },
+    "unseen_drug": {
+      "n": 120,
+      "cos_own": -0.0037300274261118224,
+      "cos_others": -0.006626437140041364,
+      "difference": 0.002896409713929542,
+      "ci": [
+        -0.01814676466982343,
+        0.023939584097682515
+      ],
+      "excludes_zero": false,
+      "max_abs_cos": 0.006626437140041364
+    }
+  },
+  "split_comparability": {
+    "train": {
+      "n": 200,
+      "ceiling": 0.9623347756010705,
+      "mean_condition_reproducibility": 0.21577545322477817
+    },
+    "unseen_combo": {
+      "n": 250,
+      "ceiling": 0.9549344861248015,
+      "mean_condition_reproducibility": 0.20359106060862542
+    },
+    "unseen_drug": {
+      "n": 120,
+      "ceiling": 0.9555025902397997,
+      "mean_condition_reproducibility": 0.25449886415153744
+    },
+    "max_ceiling_spread": 0.0074002894762690286
+  },
+  "detection_limit": {
+    "split": "unseen_drug",
+    "n": 120,
+    "observed": 0.5117031020358935,
+    "half_width": 0.06612890857544795,
+    "detectable_at_80pc_power": 0.09446986939349708
+  },
+  "source": "re_repaired.json"
+}

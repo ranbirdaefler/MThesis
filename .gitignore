@@ -60,3 +60,5 @@ thesis/Sections/*.bak
 thesis/.chk/
 thesis/.build*/
 thesis/main_v4.pdf
+RESULTS_cluster/*.npz
+RESULTS_cluster/*.npy

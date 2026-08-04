@@ -1,0 +1,633 @@
+{
+  "test2": {
+    "n": 606,
+    "all": {
+      "ceiling": 0.5764187728296639,
+      "model": 0.4977117949890227,
+      "scramble": 0.48885043266231387,
+      "linear": 0.49956829016234955,
+      "control": 0.5035149348268161,
+      "mean": 0.18011426142614262
+    },
+    "binned": {
+      "UNWINNABLE  (ceiling < 0.6 ~ chance: inert/redundant drug)": {
+        "n": 296,
+        "ceiling": 0.2867220710970711,
+        "model": 0.285961935961936,
+        "linear": 0.47524630962130965,
+        "mean": 0.04533583908583908
+      },
+      "MARGINAL    (0.6 <= ceiling < 0.8)": {
+        "n": 106,
+        "ceiling": 0.6891437964551174,
+        "model": 0.5694107517220726,
+        "linear": 0.5078742274496991,
+        "mean": 0.18446663399493587
+      },
+      "IDENTIFIABLE (ceiling >= 0.8)": {
+        "n": 204,
+        "ceiling": 0.9381902003225534,
+        "model": 0.7677013482160542,
+        "linear": 0.5305431768667063,
+        "mean": 0.37341358260475904
+      }
+    },
+    "n_identifiable": 204,
+    "identifiable": {
+      "ceiling": 0.9381902003225534,
+      "model": 0.7677013482160542,
+      "linear": 0.5305431768667063,
+      "model_minus_linear": 0.23715817134934777,
+      "ci_naive": [
+        0.18853675940073003,
+        0.2875803288487111
+      ],
+      "ci_clustered": [
+        0.1899484175369235,
+        0.2859632548884353
+      ],
+      "n_celllines": 40,
+      "n_drugs": 204
+    },
+    "verdict": "MODEL BEATS LINEAR on identifiable drugs (clustered CI excludes 0) -> the drug-blind claim does NOT hold on winnable drugs; the aggregate was diluted by unwinnable ones.",
+    "corr_model_vs": {},
+    "scramble_arm": {
+      "n": 204,
+      "model": 0.7677013482160542,
+      "scramble": 0.7541723254958549,
+      "model_minus_scramble": 0.013529022720199194,
+      "ci_clustered": [
+        -0.016375577271889354,
+        0.041935753108340475
+      ],
+      "n_celllines": 40,
+      "verdict": "NULL: swapping the drug changes nothing -> the model does NOT use the drug. The model-linear gap must come from something else (plate/control leakage)."
+    },
+    "control_copy_identifiable": 0.7655147412500354,
+    "control_copy_ci_clustered": [
+      0.22645784743513508,
+      0.30890560269245504
+    ]
+  },
+  "test3": {
+    "per_cellline": [
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_C466~plate4",
+        "n_drugs": 7,
+        "mantel_spearman": -0.3038961038961039,
+        "cv_model": 0.03543061093907746,
+        "cv_real": 0.047558728245389134
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0293~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": -0.17041847041847047,
+        "cv_model": 0.03780070722020905,
+        "cv_real": 0.07869613411159576
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1517~plate4",
+        "n_drugs": 9,
+        "mantel_spearman": 0.027541827541827543,
+        "cv_model": 0.04159774406126305,
+        "cv_real": 0.07379479931062566
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0459~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": -0.137950937950938,
+        "cv_model": 0.034420704176072375,
+        "cv_real": 0.07919918344146813
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0332~plate4",
+        "n_drugs": 5,
+        "mantel_spearman": 0.05454545454545454,
+        "cv_model": 0.03977529453180808,
+        "cv_real": 0.034585822172613544
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0359~plate4",
+        "n_drugs": 9,
+        "mantel_spearman": 0.1722007722007722,
+        "cv_model": 0.030643064389642035,
+        "cv_real": 0.11049515372288503
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0480~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": 0.21789321789321794,
+        "cv_model": 0.045814555423640935,
+        "cv_real": 0.07578846180240478
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1478~plate4",
+        "n_drugs": 10,
+        "mantel_spearman": -0.011067193675889328,
+        "cv_model": 0.04067158730857449,
+        "cv_real": 0.091300951282616
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1547~plate4",
+        "n_drugs": 8,
+        "mantel_spearman": 0.3333333333333333,
+        "cv_model": 0.031314201899007105,
+        "cv_real": 0.0660597733275657
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0399~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": -0.03376623376623377,
+        "cv_model": 0.03756040977257156,
+        "cv_real": 0.09427749785458443
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0504~plate4",
+        "n_drugs": 10,
+        "mantel_spearman": 0.03596837944664032,
+        "cv_model": 0.03673922167670903,
+        "cv_real": 0.08561766052150287
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1119~plate4",
+        "n_drugs": 6,
+        "mantel_spearman": 0.049999999999999996,
+        "cv_model": 0.027032561705671445,
+        "cv_real": 0.07590026210194382
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1550~plate4",
+        "n_drugs": 7,
+        "mantel_spearman": 0.10909090909090909,
+        "cv_model": 0.037721127513084915,
+        "cv_real": 0.06423121076408887
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1285~plate4",
+        "n_drugs": 8,
+        "mantel_spearman": -0.30103995621237,
+        "cv_model": 0.03507212351942983,
+        "cv_real": 0.063145181109689
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1495~plate4",
+        "n_drugs": 4,
+        "mantel_spearman": -0.028571428571428574,
+        "cv_model": 0.040203790141738895,
+        "cv_real": 0.04505977732285161
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0546~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": 0.0022366522366522373,
+        "cv_model": 0.03350611521327609,
+        "cv_real": 0.0964376125250421
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0371~plate4",
+        "n_drugs": 10,
+        "mantel_spearman": 0.23504611330698283,
+        "cv_model": 0.053575708533929955,
+        "cv_real": 0.08769953898389567
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1635~plate4",
+        "n_drugs": 4,
+        "mantel_spearman": -0.8857142857142858,
+        "cv_model": 0.01223183588931903,
+        "cv_real": 0.030787873041521547
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0179~plate4",
+        "n_drugs": 5,
+        "mantel_spearman": 0.19999999999999998,
+        "cv_model": 0.034597194924724135,
+        "cv_real": 0.03954237919274345
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0023~plate4",
+        "n_drugs": 11,
+        "mantel_spearman": 0.46695526695526707,
+        "cv_model": 0.03779904054699132,
+        "cv_real": 0.07035937556173959
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0366~plate4",
+        "n_drugs": 4,
+        "mantel_spearman": 0.14285714285714288,
+        "cv_model": 0.03427763847158918,
+        "cv_real": 0.07220879792268543
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1381~plate4",
+        "n_drugs": 5,
+        "mantel_spearman": 0.0303030303030303,
+        "cv_model": 0.021577962321051244,
+        "cv_real": 0.06312136223038982
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0131~plate4",
+        "n_drugs": 7,
+        "mantel_spearman": 0.04675324675324675,
+        "cv_model": 0.033262488416515724,
+        "cv_real": 0.03441674540024896
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0320~plate4",
+        "n_drugs": 7,
+        "mantel_spearman": 0.7038961038961039,
+        "cv_model": 0.03318050165678936,
+        "cv_real": 0.07482401364279212
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1098~plate4",
+        "n_drugs": 8,
+        "mantel_spearman": 0.014230979748221127,
+        "cv_model": 0.037607711657023216,
+        "cv_real": 0.0654655267328157
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1056~plate4",
+        "n_drugs": 9,
+        "mantel_spearman": -0.4728442728442729,
+        "cv_model": 0.04837013936680994,
+        "cv_real": 0.09201843336496321
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1717~plate4",
+        "n_drugs": 7,
+        "mantel_spearman": -0.0961038961038961,
+        "cv_model": 0.035686130942878896,
+        "cv_real": 0.08118050482330554
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0397~plate4",
+        "n_drugs": 4,
+        "mantel_spearman": 0.08571428571428573,
+        "cv_model": 0.019756310397461594,
+        "cv_real": 0.05907879499205188
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0152~plate4",
+        "n_drugs": 8,
+        "mantel_spearman": 0.4477285166940339,
+        "cv_model": 0.023093001140837368,
+        "cv_real": 0.09487766655216485
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1097~plate4",
+        "n_drugs": 10,
+        "mantel_spearman": -0.12384716732542818,
+        "cv_model": 0.03287151102081867,
+        "cv_real": 0.07791644639435408
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1666~plate4",
+        "n_drugs": 6,
+        "mantel_spearman": -0.028571428571428564,
+        "cv_model": 0.0315383534992561,
+        "cv_real": 0.04921218909762809
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0399~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": -0.22990777338603424,
+        "cv_model": 0.016798290334317057,
+        "cv_real": 0.09078724277343102
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1056~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": 0.3779354973384825,
+        "cv_model": 0.0273470700071335,
+        "cv_real": 0.07883767242596385
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0023~plate7",
+        "n_drugs": 8,
+        "mantel_spearman": 0.0782703886152162,
+        "cv_model": 0.045177867579154145,
+        "cv_real": 0.05946656019208007
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0371~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": 0.06883116883116883,
+        "cv_model": 0.05082087662659516,
+        "cv_real": 0.06449218589364086
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0480~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": 0.27990815154994264,
+        "cv_model": 0.035825112226102754,
+        "cv_real": 0.11057838983110277
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0397~plate7",
+        "n_drugs": 8,
+        "mantel_spearman": -0.06513409961685823,
+        "cv_model": 0.03459733346455076,
+        "cv_real": 0.060549191427627394
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0428~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": 0.1085272936019205,
+        "cv_model": 0.033799479399468896,
+        "cv_real": 0.10989961086673222
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0459~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": -0.026322930800542748,
+        "cv_model": 0.028199250967613665,
+        "cv_real": 0.12756433310960047
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0334~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": 0.007953240789061686,
+        "cv_model": 0.05291925074220809,
+        "cv_real": 0.095680680122576
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0320~plate7",
+        "n_drugs": 9,
+        "mantel_spearman": -0.3348777348777349,
+        "cv_model": 0.036638950792610314,
+        "cv_real": 0.06201438052366111
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0546~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": -0.21970566746686152,
+        "cv_model": 0.03767159539581532,
+        "cv_real": 0.07687175952580587
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1285~plate7",
+        "n_drugs": 12,
+        "mantel_spearman": 0.1088612879657656,
+        "cv_model": 0.044515392520863194,
+        "cv_real": 0.14270146166942071
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0293~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": 0.05844155844155843,
+        "cv_model": 0.031156514676831882,
+        "cv_real": 0.08107985336317172
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1119~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": 0.2602108036890646,
+        "cv_model": 0.03311935519497098,
+        "cv_real": 0.07051209533659941
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0069~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": -0.04025974025974026,
+        "cv_model": 0.029993732400712157,
+        "cv_real": 0.06198695269073182
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1055~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": 0.16363636363636364,
+        "cv_model": 0.048168517403772336,
+        "cv_real": 0.057350788174639525
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1550~plate7",
+        "n_drugs": 11,
+        "mantel_spearman": 0.1696969696969697,
+        "cv_model": 0.03355636316176573,
+        "cv_real": 0.10765650566567132
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1731~plate7",
+        "n_drugs": 6,
+        "mantel_spearman": 0.47857142857142854,
+        "cv_model": 0.04419660298559637,
+        "cv_real": 0.0491280263614793
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0504~plate7",
+        "n_drugs": 5,
+        "mantel_spearman": 0.4787878787878787,
+        "cv_model": 0.05127663926931649,
+        "cv_real": 0.04385026187852284
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0366~plate7",
+        "n_drugs": 4,
+        "mantel_spearman": -0.5428571428571429,
+        "cv_model": 0.03955911051068855,
+        "cv_real": 0.05705211347372155
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0332~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": -0.10395256916996047,
+        "cv_model": 0.03696193409572871,
+        "cv_real": 0.0669034866697853
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0359~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": -0.13610013175230565,
+        "cv_model": 0.06006239837045834,
+        "cv_real": 0.06134400157129021
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1666~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": -0.11948051948051949,
+        "cv_model": 0.0250062650404701,
+        "cv_real": 0.0563902532879022
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1547~plate7",
+        "n_drugs": 5,
+        "mantel_spearman": 0.4424242424242424,
+        "cv_model": 0.042991678528266464,
+        "cv_real": 0.06651816059816062
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1381~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": 0.4830039525691699,
+        "cv_model": 0.03900858061488633,
+        "cv_real": 0.0847309779747768
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1635~plate7",
+        "n_drugs": 10,
+        "mantel_spearman": -0.2193675889328063,
+        "cv_model": 0.035132514339300196,
+        "cv_real": 0.07957243568348575
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1693~plate7",
+        "n_drugs": 9,
+        "mantel_spearman": 0.11608751608751611,
+        "cv_model": 0.03919090091058003,
+        "cv_real": 0.07593637791118978
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1495~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": -0.0961038961038961,
+        "cv_model": 0.03378665482567457,
+        "cv_real": 0.0877433133514558
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0131~plate7",
+        "n_drugs": 7,
+        "mantel_spearman": 0.18441558441558442,
+        "cv_model": 0.044519907646203935,
+        "cv_real": 0.038963531841220644
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1097~plate10",
+        "n_drugs": 4,
+        "mantel_spearman": 0.7142857142857143,
+        "cv_model": 0.02168728358243329,
+        "cv_real": 0.01856721129483852
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0371~plate10",
+        "n_drugs": 7,
+        "mantel_spearman": -0.22467532467532467,
+        "cv_model": 0.03696339235011452,
+        "cv_real": 0.058677250428312816
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1635~plate10",
+        "n_drugs": 4,
+        "mantel_spearman": 0.6,
+        "cv_model": 0.024263028083809257,
+        "cv_real": 0.015960374799796263
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0334~plate10",
+        "n_drugs": 10,
+        "mantel_spearman": 0.03926218708827404,
+        "cv_model": 0.036895395340690945,
+        "cv_real": 0.08954753182362377
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0359~plate10",
+        "n_drugs": 10,
+        "mantel_spearman": -0.10658761528326745,
+        "cv_model": 0.0533519699279402,
+        "cv_real": 0.08339098726397615
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0069~plate10",
+        "n_drugs": 5,
+        "mantel_spearman": -0.34545454545454546,
+        "cv_model": 0.019809405627688945,
+        "cv_real": 0.051714299170084264
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0546~plate10",
+        "n_drugs": 12,
+        "mantel_spearman": 0.24316877152698052,
+        "cv_model": 0.036858003592765046,
+        "cv_real": 0.05338758192257963
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_1056~plate10",
+        "n_drugs": 12,
+        "mantel_spearman": -0.12919319486483669,
+        "cv_model": 0.03488303785533747,
+        "cv_real": 0.11816945177080938
+      },
+      {
+        "tier": "tier2_unseen_drugs",
+        "cell_line": "CVCL_0131~plate10",
+        "n_drugs": 8,
+        "mantel_spearman": 0.1713191023535851,
+        "cv_model": 0.042742313822396114,
+        "cv_real": 0.08474453180032299
+      }
+    ],
+    "mantel_mean": 0.05037858673550561,
+    "mantel_median": 0.03926218708827404,
+    "cv_model_mean": 0.036147555340472516,
+    "cv_real_mean": 0.07210405336260806,
+    "n_celllines": 69
+  }
+}

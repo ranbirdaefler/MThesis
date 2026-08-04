@@ -1,0 +1,54 @@
+{
+  "cross_plate": {
+    "n_groups": 50,
+    "spikein": {
+      "rank": [
+        0.62,
+        400
+      ],
+      "expr": [
+        0.7075,
+        400
+      ]
+    },
+    "ceiling": {
+      "ceiling_nir_mean": 0.6251164433380667,
+      "ceiling_nir_median": 0.68,
+      "frac_identifiable": 0.3697334479793637,
+      "n_drugs": 1163,
+      "frac_at_chance": 0.4307824591573517,
+      "drf_nir": {
+        "drf": 0.37640954360558926,
+        "m_perfect": 1.0,
+        "m_neg": 0.39883050996401787,
+        "m_pos": 0.6251164433380667
+      }
+    }
+  },
+  "same_plate": {
+    "n_groups": 385,
+    "spikein": {
+      "rank": [
+        0.575,
+        400
+      ],
+      "expr": [
+        0.6625,
+        400
+      ]
+    },
+    "ceiling": {
+      "ceiling_nir_mean": 0.5750649567533335,
+      "ceiling_nir_median": 0.6,
+      "frac_identifiable": 0.34468937875751504,
+      "n_drugs": 998,
+      "frac_at_chance": 0.49498997995991983,
+      "drf_nir": {
+        "drf": 0.4933403424254998,
+        "m_perfect": 1.0,
+        "m_neg": 0.16130081230281634,
+        "m_pos": 0.5750649567533335
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "n_drugs": 96,
+  "n_conditions": 4079,
+  "noise_ceiling_retrieval": 0.8046031817056283,
+  "n_reproducible": 1585,
+  "featurizers": {
+    "morgan": {
+      "unsup_all": 0.012447096440607434,
+      "sup_all": {
+        "n_drugs": 96,
+        "retrieval_nir": 0.49959555729777005,
+        "n_pred": 4079
+      },
+      "unsup_repro": 0.1157632519213879,
+      "sup_repro": {
+        "n_drugs": 89,
+        "retrieval_nir": 0.48367037474537466,
+        "n_pred": 1585
+      }
+    },
+    "molformer": {
+      "unsup_all": -0.016262612212869003,
+      "sup_all": {
+        "n_drugs": 96,
+        "retrieval_nir": 0.4738369814276863,
+        "n_pred": 4079
+      },
+      "unsup_repro": -0.01736259979486802,
+      "sup_repro": {
+        "n_drugs": 89,
+        "retrieval_nir": 0.46770250072736885,
+        "n_pred": 1585
+      }
+    }
+  }
+}

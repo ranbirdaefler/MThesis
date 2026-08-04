@@ -1,0 +1,93 @@
+{
+  "args": {
+    "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache",
+    "min_treated": 40,
+    "min_control": 20,
+    "repro_thr": 0.2,
+    "same_dose_only": false,
+    "shared_controls": false,
+    "loo_generic": false,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/variance_decomp.json",
+    "selftest": false
+  },
+  "main": {
+    "scope": {
+      "residual_over_shift": 0.8871581038364853,
+      "generic_over_shift": 0.4598696676581815,
+      "mean_residual_norm": 2.8440604209899902,
+      "mean_shift_norm": 3.201853603255232
+    },
+    "T::repro-filtered (cos>0.2, the training set)": {
+      "T": 0.5148551193483627,
+      "ci": [
+        0.4716766315761832,
+        0.559858645614644
+      ],
+      "n_pairs": 2461,
+      "n_drugs": 74,
+      "mean_r_between": 0.21950880190431266,
+      "mean_reliability": 0.42767407633441357
+    },
+    "T::ALL conditions (no reliability filter)": {
+      "T": 0.5219919620821871,
+      "ci": [
+        0.48677219912340997,
+        0.559858842176853
+      ],
+      "n_pairs": 4088,
+      "n_drugs": 94,
+      "mean_r_between": 0.11566114858664267,
+      "mean_reliability": 0.22777288587156042
+    },
+    "negative_control_diff_drug_same_plate": {
+      "T": 0.4826341813209281,
+      "ci": [
+        0.44673200625383064,
+        0.519735651870642
+      ],
+      "n_pairs": 3388
+    },
+    "dose_transfer_same_line": {
+      "T": 0.46543805615483413,
+      "ci": [
+        0.34888273683463,
+        0.5447811635909008
+      ],
+      "n_pairs": 234
+    },
+    "simulated_null": {
+      "kappa_frac=0.0": {
+        "T_hat": 1.0010933021170687,
+        "T_true": 1.0
+      },
+      "kappa_frac=0.25": {
+        "T_hat": 0.7465571752348703,
+        "T_true": 0.75
+      },
+      "kappa_frac=0.5": {
+        "T_hat": 0.49397172710969295,
+        "T_true": 0.5
+      }
+    },
+    "verdict": {
+      "T": 0.5148551193483627,
+      "ci": [
+        0.4716766315761832,
+        0.559858645614644
+      ],
+      "T_null": 1.0010933021170687,
+      "interaction_frac": 0.486238182768706
+    }
+  },
+  "shared_control_build": {
+    "T": 0.2697793562880031,
+    "ci": [
+      0.24895189310470228,
+      0.29159493825707533
+    ],
+    "n_pairs": 5431,
+    "bias_vs_split": 0.2450757630603596
+  }
+}

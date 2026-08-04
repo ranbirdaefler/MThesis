@@ -1,0 +1,65 @@
+{
+  "n_celllines": 61,
+  "n_drugs": 655,
+  "mean_cells_per_drug": 53.06260279418427,
+  "mean_degs_per_drug": 128.7329347672043,
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": -0.08061995633992122,
+        "n": 655,
+        "m_pos": 0.7763763024606778,
+        "m_neg": 0.7930598114283031,
+        "m_perfect": 1.0
+      },
+      "spearman_expr": {
+        "drf": -0.41469887158245916,
+        "n": 655,
+        "m_pos": 0.7897141441984875,
+        "m_neg": 0.8513564547017061,
+        "m_perfect": 0.9999999999999998
+      },
+      "de_delta": {
+        "drf": -0.4481486068458704,
+        "n": 655,
+        "m_pos": 0.8343456951623835,
+        "m_neg": 0.8856095955522005,
+        "m_perfect": 1.0
+      },
+      "panel_tau": {
+        "drf": -0.2305596442002268,
+        "n": 655,
+        "m_pos": 0.6233488454642022,
+        "m_neg": 0.6939188146539672,
+        "m_perfect": 1.0
+      },
+      "nir": {
+        "drf": 0.4458605154054407,
+        "n": 655,
+        "m_pos": 0.5974622399640072,
+        "m_neg": 0.2735804409777569,
+        "m_perfect": 1.0
+      }
+    }
+  },
+  "config": {
+    "out": "RESULTS/drf_sameplate.json",
+    "selftest": false,
+    "num_shards": 12,
+    "rows_per_shard": 150000,
+    "shard_seed": 7,
+    "cells_per_drug": 150,
+    "max_cells_total": 500000,
+    "min_cells_per_drug": 40,
+    "n_celllines": 200,
+    "min_drugs_per_cl": 3,
+    "same_plate_only": true,
+    "held_out_drugs_file": null,
+    "de_k": 50,
+    "deg_pool_cap": 400,
+    "panel_file": null,
+    "seed": 42,
+    "collect_controls": true,
+    "same_plate": true
+  }
+}

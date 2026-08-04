@@ -1,0 +1,1907 @@
+{
+  "config": {
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_ot_T2/final",
+    "tier": "tier2_unseen_drugs",
+    "same_plate_only": false,
+    "n_drugs": 40,
+    "n_bins": 5,
+    "min_cells": 8,
+    "min_drugs_per_cl": 4,
+    "k_samples": 8,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 8,
+    "bf16": true,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/scramble_sweep_T2.json"
+  },
+  "bins": [
+    {
+      "bin": 0,
+      "dist_range": [
+        2.75122776517959,
+        4.03333627627518
+      ],
+      "n": 40,
+      "mean_dist": 3.5398128783573872,
+      "model_minus_scramble": -0.000750596288052073,
+      "ci95": [
+        -0.02753269317365164,
+        0.04006333007298705
+      ],
+      "model_nir": 0.5229108815397799,
+      "scramble_nir": 0.5236614778278319
+    },
+    {
+      "bin": 1,
+      "dist_range": [
+        4.03333627627518,
+        4.597874017148488
+      ],
+      "n": 40,
+      "mean_dist": 4.338430608448402,
+      "model_minus_scramble": 0.031166038129269956,
+      "ci95": [
+        -0.0067626273371843935,
+        0.07498101354324989
+      ],
+      "model_nir": 0.6068225510043337,
+      "scramble_nir": 0.5756565128750637
+    },
+    {
+      "bin": 2,
+      "dist_range": [
+        4.597874017148488,
+        4.931121900571107
+      ],
+      "n": 40,
+      "mean_dist": 4.750280792988312,
+      "model_minus_scramble": 0.016655744251713088,
+      "ci95": [
+        -0.02937905985365048,
+        0.06886554192018314
+      ],
+      "model_nir": 0.523282924961305,
+      "scramble_nir": 0.5066271807095919
+    },
+    {
+      "bin": 3,
+      "dist_range": [
+        4.931121900571107,
+        5.31867503418137
+      ],
+      "n": 40,
+      "mean_dist": 5.103802022629931,
+      "model_minus_scramble": 0.042515497723928986,
+      "ci95": [
+        -0.022331768916501238,
+        0.10665456475658217
+      ],
+      "model_nir": 0.46952034712665175,
+      "scramble_nir": 0.4270048494027227
+    },
+    {
+      "bin": 4,
+      "dist_range": [
+        5.31867503418137,
+        6.2504683525617155
+      ],
+      "n": 40,
+      "mean_dist": 5.700243269695903,
+      "model_minus_scramble": -0.005104133346780405,
+      "ci95": [
+        -0.03258982246114599,
+        0.029188414941257613
+      ],
+      "model_nir": 0.4497848740160485,
+      "scramble_nir": 0.45488900736282895
+    }
+  ],
+  "n_pairs": 200,
+  "trend_corr": 0.011636372155272585,
+  "records": [
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Verteporfin",
+      "swap_to": "palbociclib",
+      "dist": 4.603870827457805,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Verteporfin",
+      "swap_to": "Vemurafenib",
+      "dist": 4.849371174819372,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Verteporfin",
+      "swap_to": "Estrone sulfate (potassium)",
+      "dist": 5.052718355733542,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Verteporfin",
+      "swap_to": "Erdafitinib",
+      "dist": 5.1789715937930465,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Verteporfin",
+      "swap_to": "Anethole trithione",
+      "dist": 5.380939630330403,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Aprepitant",
+      "swap_to": "palbociclib",
+      "dist": 4.211713138398375,
+      "model_nir": 0.25,
+      "scramble_nir": 0.1875,
+      "model_minus_scramble": 0.0625
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Aprepitant",
+      "swap_to": "Azithromycin (hydrate)",
+      "dist": 4.415669060599953,
+      "model_nir": 0.25,
+      "scramble_nir": 0.1875,
+      "model_minus_scramble": 0.0625
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Aprepitant",
+      "swap_to": "Volasertib",
+      "dist": 4.590780377455884,
+      "model_nir": 0.25,
+      "scramble_nir": 0.1875,
+      "model_minus_scramble": 0.0625
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Aprepitant",
+      "swap_to": "AT7519",
+      "dist": 4.7437033961718535,
+      "model_nir": 0.25,
+      "scramble_nir": 0.125,
+      "model_minus_scramble": 0.125
+    },
+    {
+      "cell_line": "CVCL_C466",
+      "drug": "Aprepitant",
+      "swap_to": "Anethole trithione",
+      "dist": 5.062528558377851,
+      "model_nir": 0.25,
+      "scramble_nir": 0.3125,
+      "model_minus_scramble": -0.0625
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Vemurafenib",
+      "swap_to": "Anastrozole",
+      "dist": 3.8407865480687544,
+      "model_nir": 0.8611111111111112,
+      "scramble_nir": 0.8333333333333334,
+      "model_minus_scramble": 0.02777777777777779
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Vemurafenib",
+      "swap_to": "HI-TOPK-032",
+      "dist": 4.272052886703672,
+      "model_nir": 0.8611111111111112,
+      "scramble_nir": 0.9444444444444444,
+      "model_minus_scramble": -0.08333333333333326
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Vemurafenib",
+      "swap_to": "Berbamine",
+      "dist": 4.62354620300871,
+      "model_nir": 0.8611111111111112,
+      "scramble_nir": 0.8333333333333334,
+      "model_minus_scramble": 0.02777777777777779
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Vemurafenib",
+      "swap_to": "(R)-Verapamil (hydrochloride)",
+      "dist": 4.816347722229643,
+      "model_nir": 0.8611111111111112,
+      "scramble_nir": 0.8888888888888888,
+      "model_minus_scramble": -0.02777777777777768
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Vemurafenib",
+      "swap_to": "DTP3",
+      "dist": 5.567777690303421,
+      "model_nir": 0.8611111111111112,
+      "scramble_nir": 0.9166666666666666,
+      "model_minus_scramble": -0.05555555555555547
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Aliskiren",
+      "swap_to": "Anethole trithione",
+      "dist": 3.8262386917658278,
+      "model_nir": 0.9722222222222222,
+      "scramble_nir": 0.9722222222222222,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Aliskiren",
+      "swap_to": "Berbamine",
+      "dist": 4.3976157198649695,
+      "model_nir": 0.9722222222222222,
+      "scramble_nir": 0.9722222222222222,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Aliskiren",
+      "swap_to": "palbociclib",
+      "dist": 4.694747081071426,
+      "model_nir": 0.9722222222222222,
+      "scramble_nir": 0.9722222222222222,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Aliskiren",
+      "swap_to": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "dist": 4.886044988309605,
+      "model_nir": 0.9722222222222222,
+      "scramble_nir": 0.9722222222222222,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0293",
+      "drug": "Aliskiren",
+      "swap_to": "Valdecoxib",
+      "dist": 5.60892024551297,
+      "model_nir": 0.9722222222222222,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": -0.02777777777777779
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Valdecoxib",
+      "swap_to": "Vemurafenib",
+      "dist": 4.729734952583972,
+      "model_nir": 0.15384615384615385,
+      "scramble_nir": 0.19230769230769232,
+      "model_minus_scramble": -0.038461538461538464
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Valdecoxib",
+      "swap_to": "Berbamine",
+      "dist": 5.344743809434348,
+      "model_nir": 0.15384615384615385,
+      "scramble_nir": 0.23076923076923078,
+      "model_minus_scramble": -0.07692307692307693
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Valdecoxib",
+      "swap_to": "Verteporfin",
+      "dist": 5.451983908477006,
+      "model_nir": 0.15384615384615385,
+      "scramble_nir": 0.23076923076923078,
+      "model_minus_scramble": -0.07692307692307693
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Valdecoxib",
+      "swap_to": "Erdafitinib",
+      "dist": 5.589106960882551,
+      "model_nir": 0.15384615384615385,
+      "scramble_nir": 0.15384615384615385,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Valdecoxib",
+      "swap_to": "Anethole trithione",
+      "dist": 6.250468351561715,
+      "model_nir": 0.15384615384615385,
+      "scramble_nir": 0.15384615384615385,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Almonertinib (hydrochloride)",
+      "swap_to": "Vemurafenib",
+      "dist": 4.695172244865244,
+      "model_nir": 0.46153846153846156,
+      "scramble_nir": 0.6153846153846154,
+      "model_minus_scramble": -0.15384615384615385
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Almonertinib (hydrochloride)",
+      "swap_to": "Berbamine",
+      "dist": 5.375623828641241,
+      "model_nir": 0.46153846153846156,
+      "scramble_nir": 0.5,
+      "model_minus_scramble": -0.038461538461538436
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Almonertinib (hydrochloride)",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 5.558404815588181,
+      "model_nir": 0.46153846153846156,
+      "scramble_nir": 0.5,
+      "model_minus_scramble": -0.038461538461538436
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Almonertinib (hydrochloride)",
+      "swap_to": "Ixazomib",
+      "dist": 5.898496074075891,
+      "model_nir": 0.46153846153846156,
+      "scramble_nir": 0.4230769230769231,
+      "model_minus_scramble": 0.03846153846153849
+    },
+    {
+      "cell_line": "CVCL_1517",
+      "drug": "Almonertinib (hydrochloride)",
+      "swap_to": "Ataluren",
+      "dist": 6.162615455633919,
+      "model_nir": 0.46153846153846156,
+      "scramble_nir": 0.46153846153846156,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Carbamazepine",
+      "swap_to": "Canagliflozin (hemihydrate)",
+      "dist": 2.75122776517959,
+      "model_nir": 0.8163265306122449,
+      "scramble_nir": 0.673469387755102,
+      "model_minus_scramble": 0.1428571428571429
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Carbamazepine",
+      "swap_to": "Fenofibrate",
+      "dist": 3.058562497500926,
+      "model_nir": 0.8163265306122449,
+      "scramble_nir": 0.8775510204081632,
+      "model_minus_scramble": -0.061224489795918324
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Carbamazepine",
+      "swap_to": "Valdecoxib",
+      "dist": 3.1741219061198613,
+      "model_nir": 0.8163265306122449,
+      "scramble_nir": 0.7551020408163265,
+      "model_minus_scramble": 0.061224489795918435
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Carbamazepine",
+      "swap_to": "TAK-901",
+      "dist": 3.4407692771283416,
+      "model_nir": 0.8163265306122449,
+      "scramble_nir": 0.7551020408163265,
+      "model_minus_scramble": 0.061224489795918435
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Carbamazepine",
+      "swap_to": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "dist": 4.018093124920421,
+      "model_nir": 0.8163265306122449,
+      "scramble_nir": 0.8571428571428571,
+      "model_minus_scramble": -0.04081632653061218
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Tetracycline (hydrochloride)",
+      "swap_to": "Verteporfin",
+      "dist": 2.893147089909356,
+      "model_nir": 0.42857142857142855,
+      "scramble_nir": 0.3877551020408163,
+      "model_minus_scramble": 0.040816326530612235
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Tetracycline (hydrochloride)",
+      "swap_to": "Fenofibrate",
+      "dist": 3.1666451500548747,
+      "model_nir": 0.42857142857142855,
+      "scramble_nir": 0.6122448979591837,
+      "model_minus_scramble": -0.18367346938775514
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Tetracycline (hydrochloride)",
+      "swap_to": "Valdecoxib",
+      "dist": 3.3364677651584462,
+      "model_nir": 0.42857142857142855,
+      "scramble_nir": 0.4489795918367347,
+      "model_minus_scramble": -0.020408163265306145
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Tetracycline (hydrochloride)",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 3.6450075893277827,
+      "model_nir": 0.42857142857142855,
+      "scramble_nir": 0.1836734693877551,
+      "model_minus_scramble": 0.24489795918367344
+    },
+    {
+      "cell_line": "CVCL_0459",
+      "drug": "Tetracycline (hydrochloride)",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 3.830627748270125,
+      "model_nir": 0.42857142857142855,
+      "scramble_nir": 0.6122448979591837,
+      "model_minus_scramble": -0.18367346938775514
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Omeprazole",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 4.791823404098398,
+      "model_nir": 0.5416666666666666,
+      "scramble_nir": 0.5833333333333334,
+      "model_minus_scramble": -0.04166666666666674
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Omeprazole",
+      "swap_to": "Fenofibrate",
+      "dist": 5.039987741152169,
+      "model_nir": 0.5416666666666666,
+      "scramble_nir": 0.5416666666666666,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Omeprazole",
+      "swap_to": "Dexmedetomidine",
+      "dist": 5.171485678807667,
+      "model_nir": 0.5416666666666666,
+      "scramble_nir": 0.3333333333333333,
+      "model_minus_scramble": 0.20833333333333331
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Omeprazole",
+      "swap_to": "Almonertinib (hydrochloride)",
+      "dist": 5.339204412388754,
+      "model_nir": 0.5416666666666666,
+      "scramble_nir": 0.375,
+      "model_minus_scramble": 0.16666666666666663
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Omeprazole",
+      "swap_to": "Mozavaptan",
+      "dist": 5.739065456507029,
+      "model_nir": 0.5416666666666666,
+      "scramble_nir": 0.6666666666666666,
+      "model_minus_scramble": -0.125
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Canagliflozin",
+      "swap_to": "Benztropine (mesylate)",
+      "dist": 4.352055427397909,
+      "model_nir": 0.7083333333333334,
+      "scramble_nir": 0.25,
+      "model_minus_scramble": 0.45833333333333337
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Canagliflozin",
+      "swap_to": "Aprepitant",
+      "dist": 4.602603110276891,
+      "model_nir": 0.7083333333333334,
+      "scramble_nir": 0.25,
+      "model_minus_scramble": 0.45833333333333337
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Canagliflozin",
+      "swap_to": "Verteporfin",
+      "dist": 4.799136476781358,
+      "model_nir": 0.7083333333333334,
+      "scramble_nir": 0.4166666666666667,
+      "model_minus_scramble": 0.2916666666666667
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Canagliflozin",
+      "swap_to": "Ataluren",
+      "dist": 4.98401838377843,
+      "model_nir": 0.7083333333333334,
+      "scramble_nir": 0.25,
+      "model_minus_scramble": 0.45833333333333337
+    },
+    {
+      "cell_line": "CVCL_0332",
+      "drug": "Canagliflozin",
+      "swap_to": "Omeprazole",
+      "dist": 5.203222731169038,
+      "model_nir": 0.7083333333333334,
+      "scramble_nir": 0.3333333333333333,
+      "model_minus_scramble": 0.37500000000000006
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "DTP3",
+      "swap_to": "Sivelestat (sodium tetrahydrate)",
+      "dist": 3.5632771767802827,
+      "model_nir": 0.9032258064516129,
+      "scramble_nir": 0.9032258064516129,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "DTP3",
+      "swap_to": "Benztropine (mesylate)",
+      "dist": 3.910837467911368,
+      "model_nir": 0.9032258064516129,
+      "scramble_nir": 0.8064516129032258,
+      "model_minus_scramble": 0.09677419354838712
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "DTP3",
+      "swap_to": "Canagliflozin (hemihydrate)",
+      "dist": 4.174589506633668,
+      "model_nir": 0.9032258064516129,
+      "scramble_nir": 0.9032258064516129,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "DTP3",
+      "swap_to": "Mozavaptan",
+      "dist": 4.43258064984553,
+      "model_nir": 0.9032258064516129,
+      "scramble_nir": 0.8064516129032258,
+      "model_minus_scramble": 0.09677419354838712
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "DTP3",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 4.7398971358557365,
+      "model_nir": 0.9032258064516129,
+      "scramble_nir": 0.9354838709677419,
+      "model_minus_scramble": -0.032258064516129004
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "Budesonide",
+      "swap_to": "Fenofibrate",
+      "dist": 4.187730084667754,
+      "model_nir": 0.16129032258064516,
+      "scramble_nir": 0.12903225806451613,
+      "model_minus_scramble": 0.03225806451612903
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "Budesonide",
+      "swap_to": "Naproxen",
+      "dist": 4.50453870584164,
+      "model_nir": 0.16129032258064516,
+      "scramble_nir": 0.12903225806451613,
+      "model_minus_scramble": 0.03225806451612903
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "Budesonide",
+      "swap_to": "Ataluren",
+      "dist": 4.714388926339323,
+      "model_nir": 0.16129032258064516,
+      "scramble_nir": 0.1935483870967742,
+      "model_minus_scramble": -0.03225806451612903
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "Budesonide",
+      "swap_to": "Valdecoxib",
+      "dist": 4.885920150146776,
+      "model_nir": 0.16129032258064516,
+      "scramble_nir": 0.2903225806451613,
+      "model_minus_scramble": -0.12903225806451615
+    },
+    {
+      "cell_line": "CVCL_0334",
+      "drug": "Budesonide",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 5.509263349776534,
+      "model_nir": 0.16129032258064516,
+      "scramble_nir": 0.16129032258064516,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Baicalin",
+      "swap_to": "Tolcapone",
+      "dist": 4.093719539416843,
+      "model_nir": 0.8947368421052632,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": -0.10526315789473684
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Baicalin",
+      "swap_to": "DTP3",
+      "dist": 4.670964677938339,
+      "model_nir": 0.8947368421052632,
+      "scramble_nir": 0.8947368421052632,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Baicalin",
+      "swap_to": "Budesonide",
+      "dist": 4.970141920319986,
+      "model_nir": 0.8947368421052632,
+      "scramble_nir": 0.868421052631579,
+      "model_minus_scramble": 0.02631578947368418
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Baicalin",
+      "swap_to": "Volasertib",
+      "dist": 5.235756893665066,
+      "model_nir": 0.8947368421052632,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": -0.10526315789473684
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Baicalin",
+      "swap_to": "Cabozantinib (S-malate)",
+      "dist": 5.484249658743917,
+      "model_nir": 0.8947368421052632,
+      "scramble_nir": 0.8947368421052632,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Carbamazepine",
+      "dist": 4.548174590061753,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Naproxen",
+      "dist": 4.964186283598382,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Estrone sulfate (potassium)",
+      "dist": 5.1591785579289935,
+      "model_nir": 0.0,
+      "scramble_nir": 0.02631578947368421,
+      "model_minus_scramble": -0.02631578947368421
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Baicalin",
+      "dist": 5.484249658743917,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0359",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Volasertib",
+      "dist": 6.212791164205544,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Aliskiren",
+      "swap_to": "Valdecoxib",
+      "dist": 3.7015002420764525,
+      "model_nir": 0.7755102040816326,
+      "scramble_nir": 0.7755102040816326,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Aliskiren",
+      "swap_to": "Delamanid",
+      "dist": 3.9027286101822245,
+      "model_nir": 0.7755102040816326,
+      "scramble_nir": 0.6122448979591837,
+      "model_minus_scramble": 0.16326530612244894
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Aliskiren",
+      "swap_to": "Berbamine (dihydrochloride)",
+      "dist": 4.1609081656667835,
+      "model_nir": 0.7755102040816326,
+      "scramble_nir": 0.6530612244897959,
+      "model_minus_scramble": 0.12244897959183676
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Aliskiren",
+      "swap_to": "Ixazomib",
+      "dist": 4.497244797844729,
+      "model_nir": 0.7755102040816326,
+      "scramble_nir": 0.8367346938775511,
+      "model_minus_scramble": -0.061224489795918435
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Aliskiren",
+      "swap_to": "HI-TOPK-032",
+      "dist": 5.109852354456782,
+      "model_nir": 0.7755102040816326,
+      "scramble_nir": 0.6530612244897959,
+      "model_minus_scramble": 0.12244897959183676
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Erdafitinib",
+      "swap_to": "Naproxen",
+      "dist": 3.564836869543369,
+      "model_nir": 0.5714285714285714,
+      "scramble_nir": 0.5306122448979592,
+      "model_minus_scramble": 0.04081632653061218
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Erdafitinib",
+      "swap_to": "Omeprazole",
+      "dist": 3.883880998467093,
+      "model_nir": 0.5714285714285714,
+      "scramble_nir": 0.5306122448979592,
+      "model_minus_scramble": 0.04081632653061218
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Erdafitinib",
+      "swap_to": "DTP3",
+      "dist": 4.03714706411387,
+      "model_nir": 0.5714285714285714,
+      "scramble_nir": 0.6122448979591837,
+      "model_minus_scramble": -0.04081632653061229
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Erdafitinib",
+      "swap_to": "Tolcapone",
+      "dist": 4.357122492355963,
+      "model_nir": 0.5714285714285714,
+      "scramble_nir": 0.4897959183673469,
+      "model_minus_scramble": 0.08163265306122447
+    },
+    {
+      "cell_line": "CVCL_0480",
+      "drug": "Erdafitinib",
+      "swap_to": "Anastrozole",
+      "dist": 4.964526569620594,
+      "model_nir": 0.5714285714285714,
+      "scramble_nir": 0.6326530612244898,
+      "model_minus_scramble": -0.061224489795918435
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Aprepitant",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 4.260591316900292,
+      "model_nir": 0.52,
+      "scramble_nir": 0.44,
+      "model_minus_scramble": 0.08000000000000002
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Aprepitant",
+      "swap_to": "palbociclib",
+      "dist": 4.80823053769727,
+      "model_nir": 0.52,
+      "scramble_nir": 0.4,
+      "model_minus_scramble": 0.12
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Aprepitant",
+      "swap_to": "AT7519",
+      "dist": 4.991389250173814,
+      "model_nir": 0.52,
+      "scramble_nir": 0.48,
+      "model_minus_scramble": 0.040000000000000036
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Aprepitant",
+      "swap_to": "Canagliflozin (hemihydrate)",
+      "dist": 5.183625650233578,
+      "model_nir": 0.52,
+      "scramble_nir": 0.44,
+      "model_minus_scramble": 0.08000000000000002
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Aprepitant",
+      "swap_to": "Erdafitinib",
+      "dist": 5.7444823381862395,
+      "model_nir": 0.52,
+      "scramble_nir": 0.4,
+      "model_minus_scramble": 0.12
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Tolcapone",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 4.641371199097982,
+      "model_nir": 0.12,
+      "scramble_nir": 0.28,
+      "model_minus_scramble": -0.16000000000000003
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Tolcapone",
+      "swap_to": "Azithromycin (hydrate)",
+      "dist": 5.011052787792845,
+      "model_nir": 0.12,
+      "scramble_nir": 0.04,
+      "model_minus_scramble": 0.07999999999999999
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Tolcapone",
+      "swap_to": "Saquinavir",
+      "dist": 5.250611073511886,
+      "model_nir": 0.12,
+      "scramble_nir": 0.24,
+      "model_minus_scramble": -0.12
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Tolcapone",
+      "swap_to": "Lipoic acid",
+      "dist": 5.436405326950454,
+      "model_nir": 0.12,
+      "scramble_nir": 0.16,
+      "model_minus_scramble": -0.04000000000000001
+    },
+    {
+      "cell_line": "CVCL_1478",
+      "drug": "Tolcapone",
+      "swap_to": "Erdafitinib",
+      "dist": 5.642992722732454,
+      "model_nir": 0.12,
+      "scramble_nir": 0.16,
+      "model_minus_scramble": -0.04000000000000001
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Anethole trithione",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 4.251664673981567,
+      "model_nir": 0.75,
+      "scramble_nir": 0.7,
+      "model_minus_scramble": 0.050000000000000044
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Anethole trithione",
+      "swap_to": "Carbamazepine",
+      "dist": 4.6114992972817825,
+      "model_nir": 0.75,
+      "scramble_nir": 0.7,
+      "model_minus_scramble": 0.050000000000000044
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Anethole trithione",
+      "swap_to": "Canagliflozin",
+      "dist": 4.969542148533646,
+      "model_nir": 0.75,
+      "scramble_nir": 0.65,
+      "model_minus_scramble": 0.09999999999999998
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Anethole trithione",
+      "swap_to": "Tolcapone",
+      "dist": 5.172310796047821,
+      "model_nir": 0.75,
+      "scramble_nir": 0.6,
+      "model_minus_scramble": 0.15000000000000002
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Anethole trithione",
+      "swap_to": "Eplerenone",
+      "dist": 5.567630884228136,
+      "model_nir": 0.75,
+      "scramble_nir": 0.7,
+      "model_minus_scramble": 0.050000000000000044
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Clonidine (hydrochloride)",
+      "swap_to": "Anethole trithione",
+      "dist": 4.251664673981567,
+      "model_nir": 0.95,
+      "scramble_nir": 0.95,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Clonidine (hydrochloride)",
+      "swap_to": "Volasertib",
+      "dist": 4.711606103041966,
+      "model_nir": 0.95,
+      "scramble_nir": 0.75,
+      "model_minus_scramble": 0.19999999999999996
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Clonidine (hydrochloride)",
+      "swap_to": "Tolcapone",
+      "dist": 5.313215043501034,
+      "model_nir": 0.95,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": 0.1499999999999999
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Clonidine (hydrochloride)",
+      "swap_to": "Sonidegib",
+      "dist": 5.526714571259867,
+      "model_nir": 0.95,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": 0.1499999999999999
+    },
+    {
+      "cell_line": "CVCL_1547",
+      "drug": "Clonidine (hydrochloride)",
+      "swap_to": "Eplerenone",
+      "dist": 6.161121178355551,
+      "model_nir": 0.95,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": 0.1499999999999999
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "HI-TOPK-032",
+      "dist": 3.8251492258990063,
+      "model_nir": 0.29545454545454547,
+      "scramble_nir": 0.25,
+      "model_minus_scramble": 0.04545454545454547
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Almonertinib (hydrochloride)",
+      "dist": 4.411086850290447,
+      "model_nir": 0.29545454545454547,
+      "scramble_nir": 0.22727272727272727,
+      "model_minus_scramble": 0.0681818181818182
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Saquinavir",
+      "dist": 4.713081117615055,
+      "model_nir": 0.29545454545454547,
+      "scramble_nir": 0.38636363636363635,
+      "model_minus_scramble": -0.09090909090909088
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Eplerenone",
+      "dist": 4.931436109782422,
+      "model_nir": 0.29545454545454547,
+      "scramble_nir": 0.2727272727272727,
+      "model_minus_scramble": 0.022727272727272763
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Cabozantinib (S-malate)",
+      "swap_to": "Aliskiren",
+      "dist": 5.5588941854986,
+      "model_nir": 0.29545454545454547,
+      "scramble_nir": 0.2727272727272727,
+      "model_minus_scramble": 0.022727272727272763
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Saquinavir",
+      "swap_to": "Lipoic acid",
+      "dist": 3.5939166254310657,
+      "model_nir": 1.0,
+      "scramble_nir": 0.9318181818181818,
+      "model_minus_scramble": 0.06818181818181823
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Saquinavir",
+      "swap_to": "Estrone sulfate (potassium)",
+      "dist": 4.048854265019277,
+      "model_nir": 1.0,
+      "scramble_nir": 0.9545454545454546,
+      "model_minus_scramble": 0.045454545454545414
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Saquinavir",
+      "swap_to": "Naproxen",
+      "dist": 4.260574663480267,
+      "model_nir": 1.0,
+      "scramble_nir": 0.9772727272727273,
+      "model_minus_scramble": 0.022727272727272707
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Saquinavir",
+      "swap_to": "Budesonide",
+      "dist": 4.583353871892671,
+      "model_nir": 1.0,
+      "scramble_nir": 0.9318181818181818,
+      "model_minus_scramble": 0.06818181818181823
+    },
+    {
+      "cell_line": "CVCL_0399",
+      "drug": "Saquinavir",
+      "swap_to": "Eplerenone",
+      "dist": 4.986243195049219,
+      "model_nir": 1.0,
+      "scramble_nir": 0.9772727272727273,
+      "model_minus_scramble": 0.022727272727272707
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Proglumide",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 4.131488029822526,
+      "model_nir": 0.6,
+      "scramble_nir": 0.4,
+      "model_minus_scramble": 0.19999999999999996
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Proglumide",
+      "swap_to": "Carbamazepine",
+      "dist": 4.364931657981626,
+      "model_nir": 0.6,
+      "scramble_nir": 0.4,
+      "model_minus_scramble": 0.19999999999999996
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Proglumide",
+      "swap_to": "Fenofibrate",
+      "dist": 4.383949862209264,
+      "model_nir": 0.6,
+      "scramble_nir": 0.6,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Proglumide",
+      "swap_to": "Ataluren",
+      "dist": 4.744700914789758,
+      "model_nir": 0.6,
+      "scramble_nir": 0.6,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Proglumide",
+      "swap_to": "Dexmedetomidine",
+      "dist": 5.004299568649763,
+      "model_nir": 0.6,
+      "scramble_nir": 0.4,
+      "model_minus_scramble": 0.19999999999999996
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Proglumide",
+      "dist": 4.131488029822526,
+      "model_nir": 0.6,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": -0.20000000000000007
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Carbamazepine",
+      "dist": 4.357926620786891,
+      "model_nir": 0.6,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": -0.20000000000000007
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Fenofibrate",
+      "dist": 4.737307838527579,
+      "model_nir": 0.6,
+      "scramble_nir": 0.6,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Dexmedetomidine",
+      "dist": 4.86615151596683,
+      "model_nir": 0.6,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": -0.20000000000000007
+    },
+    {
+      "cell_line": "CVCL_0099",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Ataluren",
+      "dist": 4.8800957454354315,
+      "model_nir": 0.6,
+      "scramble_nir": 0.8,
+      "model_minus_scramble": -0.20000000000000007
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Berbamine",
+      "swap_to": "AT7519",
+      "dist": 3.827094328550919,
+      "model_nir": 1.0,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Berbamine",
+      "swap_to": "Budesonide",
+      "dist": 4.1504050570558295,
+      "model_nir": 1.0,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Berbamine",
+      "swap_to": "Benztropine (mesylate)",
+      "dist": 4.42380965108754,
+      "model_nir": 1.0,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Berbamine",
+      "swap_to": "Sivelestat (sodium tetrahydrate)",
+      "dist": 4.6195223815869,
+      "model_nir": 1.0,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Berbamine",
+      "swap_to": "Tolcapone",
+      "dist": 4.893899216834402,
+      "model_nir": 1.0,
+      "scramble_nir": 1.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Mozavaptan",
+      "swap_to": "Budesonide",
+      "dist": 4.3656481976915895,
+      "model_nir": 0.058823529411764705,
+      "scramble_nir": 0.029411764705882353,
+      "model_minus_scramble": 0.029411764705882353
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Mozavaptan",
+      "swap_to": "Berbamine",
+      "dist": 4.661377179849249,
+      "model_nir": 0.058823529411764705,
+      "scramble_nir": 0.029411764705882353,
+      "model_minus_scramble": 0.029411764705882353
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Mozavaptan",
+      "swap_to": "Aliskiren",
+      "dist": 4.9319405077813645,
+      "model_nir": 0.058823529411764705,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.058823529411764705
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Mozavaptan",
+      "swap_to": "TAK-901",
+      "dist": 5.220480401861424,
+      "model_nir": 0.058823529411764705,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.058823529411764705
+    },
+    {
+      "cell_line": "CVCL_0504",
+      "drug": "Mozavaptan",
+      "swap_to": "HI-TOPK-032",
+      "dist": 5.90564540377784,
+      "model_nir": 0.058823529411764705,
+      "scramble_nir": 0.029411764705882353,
+      "model_minus_scramble": 0.029411764705882353
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "DTP3",
+      "swap_to": "Volasertib",
+      "dist": 4.369713119747556,
+      "model_nir": 0.717948717948718,
+      "scramble_nir": 0.7692307692307693,
+      "model_minus_scramble": -0.05128205128205132
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "DTP3",
+      "swap_to": "palbociclib",
+      "dist": 4.838999631161069,
+      "model_nir": 0.717948717948718,
+      "scramble_nir": 0.7692307692307693,
+      "model_minus_scramble": -0.05128205128205132
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "DTP3",
+      "swap_to": "Estrone sulfate (potassium)",
+      "dist": 4.966496635442935,
+      "model_nir": 0.717948717948718,
+      "scramble_nir": 0.6666666666666666,
+      "model_minus_scramble": 0.05128205128205132
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "DTP3",
+      "swap_to": "Vitamin K4",
+      "dist": 5.1448258801897735,
+      "model_nir": 0.717948717948718,
+      "scramble_nir": 0.5897435897435898,
+      "model_minus_scramble": 0.1282051282051282
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "DTP3",
+      "swap_to": "Delamanid",
+      "dist": 5.623399589611434,
+      "model_nir": 0.717948717948718,
+      "scramble_nir": 0.8461538461538461,
+      "model_minus_scramble": -0.1282051282051282
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "Eplerenone",
+      "swap_to": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "dist": 3.9144025175936257,
+      "model_nir": 0.1794871794871795,
+      "scramble_nir": 0.10256410256410256,
+      "model_minus_scramble": 0.07692307692307693
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "Eplerenone",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 4.434732357942026,
+      "model_nir": 0.1794871794871795,
+      "scramble_nir": 0.20512820512820512,
+      "model_minus_scramble": -0.025641025641025633
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "Eplerenone",
+      "swap_to": "(R)-Verapamil (hydrochloride)",
+      "dist": 4.652190839174395,
+      "model_nir": 0.1794871794871795,
+      "scramble_nir": 0.23076923076923078,
+      "model_minus_scramble": -0.051282051282051294
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "Eplerenone",
+      "swap_to": "Sonidegib",
+      "dist": 4.9309124277635625,
+      "model_nir": 0.1794871794871795,
+      "scramble_nir": 0.2564102564102564,
+      "model_minus_scramble": -0.0769230769230769
+    },
+    {
+      "cell_line": "CVCL_1119",
+      "drug": "Eplerenone",
+      "swap_to": "Erdafitinib",
+      "dist": 5.431806232979705,
+      "model_nir": 0.1794871794871795,
+      "scramble_nir": 0.28205128205128205,
+      "model_minus_scramble": -0.10256410256410256
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "AT7519",
+      "swap_to": "Tolcapone",
+      "dist": 4.242130323566055,
+      "model_nir": 0.9714285714285714,
+      "scramble_nir": 0.8857142857142857,
+      "model_minus_scramble": 0.08571428571428574
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "AT7519",
+      "swap_to": "Verteporfin",
+      "dist": 4.540957105592322,
+      "model_nir": 0.9714285714285714,
+      "scramble_nir": 0.8571428571428571,
+      "model_minus_scramble": 0.11428571428571432
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "AT7519",
+      "swap_to": "Ixazomib",
+      "dist": 4.768785556164429,
+      "model_nir": 0.9714285714285714,
+      "scramble_nir": 0.6857142857142857,
+      "model_minus_scramble": 0.2857142857142857
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "AT7519",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 5.0729804043369695,
+      "model_nir": 0.9714285714285714,
+      "scramble_nir": 0.9714285714285714,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "AT7519",
+      "swap_to": "Lipoic acid",
+      "dist": 5.8629546441083535,
+      "model_nir": 0.9714285714285714,
+      "scramble_nir": 0.9142857142857143,
+      "model_minus_scramble": 0.05714285714285716
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Canagliflozin",
+      "dist": 3.3812164024131723,
+      "model_nir": 0.6571428571428571,
+      "scramble_nir": 0.6285714285714286,
+      "model_minus_scramble": 0.02857142857142858
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Dexmedetomidine",
+      "dist": 3.928285241348586,
+      "model_nir": 0.6571428571428571,
+      "scramble_nir": 0.5714285714285714,
+      "model_minus_scramble": 0.08571428571428574
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Proglumide",
+      "dist": 4.4281145661409305,
+      "model_nir": 0.6571428571428571,
+      "scramble_nir": 0.42857142857142855,
+      "model_minus_scramble": 0.2285714285714286
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "AT7519",
+      "dist": 4.749525150207899,
+      "model_nir": 0.6571428571428571,
+      "scramble_nir": 0.5142857142857142,
+      "model_minus_scramble": 0.1428571428571429
+    },
+    {
+      "cell_line": "CVCL_1550",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Volasertib",
+      "dist": 5.723018479603797,
+      "model_nir": 0.6571428571428571,
+      "scramble_nir": 0.5428571428571428,
+      "model_minus_scramble": 0.11428571428571432
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 3.0386240798116027,
+      "model_nir": 0.27906976744186046,
+      "scramble_nir": 0.2558139534883721,
+      "model_minus_scramble": 0.023255813953488358
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Omeprazole",
+      "dist": 3.5264878795162042,
+      "model_nir": 0.27906976744186046,
+      "scramble_nir": 0.32558139534883723,
+      "model_minus_scramble": -0.04651162790697677
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Aprepitant",
+      "dist": 3.933892110562107,
+      "model_nir": 0.27906976744186046,
+      "scramble_nir": 0.23255813953488372,
+      "model_minus_scramble": 0.046511627906976744
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Carbamazepine",
+      "dist": 4.502282666387103,
+      "model_nir": 0.27906976744186046,
+      "scramble_nir": 0.2558139534883721,
+      "model_minus_scramble": 0.023255813953488358
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "DTP3",
+      "dist": 4.840217301066064,
+      "model_nir": 0.27906976744186046,
+      "scramble_nir": 0.20930232558139536,
+      "model_minus_scramble": 0.0697674418604651
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Verteporfin",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 3.3288457056604144,
+      "model_nir": 0.32558139534883723,
+      "scramble_nir": 0.5813953488372093,
+      "model_minus_scramble": -0.2558139534883721
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Verteporfin",
+      "swap_to": "Mozavaptan",
+      "dist": 3.6978147941259505,
+      "model_nir": 0.32558139534883723,
+      "scramble_nir": 0.27906976744186046,
+      "model_minus_scramble": 0.04651162790697677
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Verteporfin",
+      "swap_to": "Vitamin K4",
+      "dist": 3.954910866721208,
+      "model_nir": 0.32558139534883723,
+      "scramble_nir": 0.5581395348837209,
+      "model_minus_scramble": -0.2325581395348837
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Verteporfin",
+      "swap_to": "Valdecoxib",
+      "dist": 4.513720029201881,
+      "model_nir": 0.32558139534883723,
+      "scramble_nir": 0.2558139534883721,
+      "model_minus_scramble": 0.06976744186046513
+    },
+    {
+      "cell_line": "CVCL_1285",
+      "drug": "Verteporfin",
+      "swap_to": "Volasertib",
+      "dist": 5.054639385521832,
+      "model_nir": 0.32558139534883723,
+      "scramble_nir": 0.5348837209302325,
+      "model_minus_scramble": -0.20930232558139528
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Vemurafenib",
+      "swap_to": "Fenofibrate",
+      "dist": 4.669841592270292,
+      "model_nir": 0.47619047619047616,
+      "scramble_nir": 0.5238095238095238,
+      "model_minus_scramble": -0.04761904761904767
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Vemurafenib",
+      "swap_to": "Verteporfin",
+      "dist": 5.011586858574128,
+      "model_nir": 0.47619047619047616,
+      "scramble_nir": 0.6666666666666666,
+      "model_minus_scramble": -0.19047619047619047
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Vemurafenib",
+      "swap_to": "DTP3",
+      "dist": 5.272166463730206,
+      "model_nir": 0.47619047619047616,
+      "scramble_nir": 0.7619047619047619,
+      "model_minus_scramble": -0.2857142857142857
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Vemurafenib",
+      "swap_to": "Proglumide",
+      "dist": 5.523811879397822,
+      "model_nir": 0.47619047619047616,
+      "scramble_nir": 0.6190476190476191,
+      "model_minus_scramble": -0.1428571428571429
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Vemurafenib",
+      "swap_to": "Docetaxel (Trihydrate)",
+      "dist": 5.925161329143245,
+      "model_nir": 0.47619047619047616,
+      "scramble_nir": 0.7619047619047619,
+      "model_minus_scramble": -0.2857142857142857
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Lipoic acid",
+      "swap_to": "Fenofibrate",
+      "dist": 4.997250100227493,
+      "model_nir": 0.6666666666666666,
+      "scramble_nir": 0.7142857142857143,
+      "model_minus_scramble": -0.04761904761904767
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Lipoic acid",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 5.296845143584957,
+      "model_nir": 0.6666666666666666,
+      "scramble_nir": 0.7619047619047619,
+      "model_minus_scramble": -0.09523809523809523
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Lipoic acid",
+      "swap_to": "Vemurafenib",
+      "dist": 5.572196647954806,
+      "model_nir": 0.6666666666666666,
+      "scramble_nir": 0.42857142857142855,
+      "model_minus_scramble": 0.23809523809523808
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Lipoic acid",
+      "swap_to": "Sonidegib",
+      "dist": 5.772426798186836,
+      "model_nir": 0.6666666666666666,
+      "scramble_nir": 0.5714285714285714,
+      "model_minus_scramble": 0.09523809523809523
+    },
+    {
+      "cell_line": "CVCL_1495",
+      "drug": "Lipoic acid",
+      "swap_to": "Canagliflozin",
+      "dist": 6.15453060111755,
+      "model_nir": 0.6666666666666666,
+      "scramble_nir": 0.9047619047619048,
+      "model_minus_scramble": -0.23809523809523814
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Ixazomib",
+      "swap_to": "Proglumide",
+      "dist": 3.118219971847509,
+      "model_nir": 0.08163265306122448,
+      "scramble_nir": 0.22448979591836735,
+      "model_minus_scramble": -0.14285714285714285
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Ixazomib",
+      "swap_to": "Volasertib",
+      "dist": 3.51498693872659,
+      "model_nir": 0.08163265306122448,
+      "scramble_nir": 0.14285714285714285,
+      "model_minus_scramble": -0.061224489795918366
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Ixazomib",
+      "swap_to": "Lipoic acid",
+      "dist": 3.5746094341454233,
+      "model_nir": 0.08163265306122448,
+      "scramble_nir": 0.16326530612244897,
+      "model_minus_scramble": -0.08163265306122448
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Ixazomib",
+      "swap_to": "Almonertinib (hydrochloride)",
+      "dist": 3.688148614262764,
+      "model_nir": 0.08163265306122448,
+      "scramble_nir": 0.02040816326530612,
+      "model_minus_scramble": 0.061224489795918366
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Ixazomib",
+      "swap_to": "Fenofibrate",
+      "dist": 3.9399426594638114,
+      "model_nir": 0.08163265306122448,
+      "scramble_nir": 0.1836734693877551,
+      "model_minus_scramble": -0.10204081632653063
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Berbamine",
+      "swap_to": "Berbamine (dihydrochloride)",
+      "dist": 2.983086980396687,
+      "model_nir": 0.46938775510204084,
+      "scramble_nir": 0.46938775510204084,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Berbamine",
+      "swap_to": "Azithromycin (hydrate)",
+      "dist": 3.106579639455912,
+      "model_nir": 0.46938775510204084,
+      "scramble_nir": 0.4489795918367347,
+      "model_minus_scramble": 0.020408163265306145
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Berbamine",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 3.239715469655291,
+      "model_nir": 0.46938775510204084,
+      "scramble_nir": 0.42857142857142855,
+      "model_minus_scramble": 0.04081632653061229
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Berbamine",
+      "swap_to": "Verteporfin",
+      "dist": 3.371755054439988,
+      "model_nir": 0.46938775510204084,
+      "scramble_nir": 0.5918367346938775,
+      "model_minus_scramble": -0.1224489795918367
+    },
+    {
+      "cell_line": "CVCL_0546",
+      "drug": "Berbamine",
+      "swap_to": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "dist": 3.5960740759025676,
+      "model_nir": 0.46938775510204084,
+      "scramble_nir": 0.42857142857142855,
+      "model_minus_scramble": 0.04081632653061229
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Canagliflozin (hemihydrate)",
+      "swap_to": "Tetracycline (hydrochloride)",
+      "dist": 4.384631223348601,
+      "model_nir": 0.40540540540540543,
+      "scramble_nir": 0.32432432432432434,
+      "model_minus_scramble": 0.08108108108108109
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Canagliflozin (hemihydrate)",
+      "swap_to": "RMC-6236",
+      "dist": 4.696428795191236,
+      "model_nir": 0.40540540540540543,
+      "scramble_nir": 0.35135135135135137,
+      "model_minus_scramble": 0.05405405405405406
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Canagliflozin (hemihydrate)",
+      "swap_to": "Volasertib",
+      "dist": 4.819029593115898,
+      "model_nir": 0.40540540540540543,
+      "scramble_nir": 0.35135135135135137,
+      "model_minus_scramble": 0.05405405405405406
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Canagliflozin (hemihydrate)",
+      "swap_to": "TAK-901",
+      "dist": 5.016029527329922,
+      "model_nir": 0.40540540540540543,
+      "scramble_nir": 0.24324324324324326,
+      "model_minus_scramble": 0.16216216216216217
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Canagliflozin (hemihydrate)",
+      "swap_to": "Sonidegib",
+      "dist": 5.6193560297917795,
+      "model_nir": 0.40540540540540543,
+      "scramble_nir": 0.24324324324324326,
+      "model_minus_scramble": 0.16216216216216217
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "(R)-Verapamil (hydrochloride)",
+      "dist": 4.66882907466748,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Naproxen",
+      "dist": 5.110525050395816,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "DTP3",
+      "dist": 5.22828263655679,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Estrone sulfate (potassium)",
+      "dist": 5.314557049183393,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_0371",
+      "drug": "Docetaxel (Trihydrate)",
+      "swap_to": "Sonidegib",
+      "dist": 6.174639602382044,
+      "model_nir": 0.0,
+      "scramble_nir": 0.0,
+      "model_minus_scramble": 0.0
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Saquinavir",
+      "swap_to": "Canagliflozin",
+      "dist": 4.742809939593044,
+      "model_nir": 0.7727272727272727,
+      "scramble_nir": 0.36363636363636365,
+      "model_minus_scramble": 0.40909090909090906
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Saquinavir",
+      "swap_to": "Clonidine (hydrochloride)",
+      "dist": 5.129740412195559,
+      "model_nir": 0.7727272727272727,
+      "scramble_nir": 0.6818181818181818,
+      "model_minus_scramble": 0.09090909090909094
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Saquinavir",
+      "swap_to": "Azithromycin (hydrate)",
+      "dist": 5.291818905344448,
+      "model_nir": 0.7727272727272727,
+      "scramble_nir": 0.3181818181818182,
+      "model_minus_scramble": 0.45454545454545453
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Saquinavir",
+      "swap_to": "Valdecoxib",
+      "dist": 5.682776801636216,
+      "model_nir": 0.7727272727272727,
+      "scramble_nir": 0.5454545454545454,
+      "model_minus_scramble": 0.2272727272727273
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Saquinavir",
+      "swap_to": "Sonidegib",
+      "dist": 6.03980168222377,
+      "model_nir": 0.7727272727272727,
+      "scramble_nir": 0.5909090909090909,
+      "model_minus_scramble": 0.18181818181818177
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Canagliflozin",
+      "dist": 4.509863317136425,
+      "model_nir": 0.18181818181818182,
+      "scramble_nir": 0.5454545454545454,
+      "model_minus_scramble": -0.3636363636363636
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Proglumide",
+      "dist": 4.897546299478491,
+      "model_nir": 0.18181818181818182,
+      "scramble_nir": 0.5,
+      "model_minus_scramble": -0.3181818181818182
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Benztropine (mesylate)",
+      "dist": 5.18161429726263,
+      "model_nir": 0.18181818181818182,
+      "scramble_nir": 0.3181818181818182,
+      "model_minus_scramble": -0.13636363636363635
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Azithromycin (hydrate)",
+      "dist": 5.335146974173279,
+      "model_nir": 0.18181818181818182,
+      "scramble_nir": 0.6818181818181818,
+      "model_minus_scramble": -0.49999999999999994
+    },
+    {
+      "cell_line": "CVCL_1635",
+      "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+      "swap_to": "Sonidegib",
+      "dist": 6.066912413729036,
+      "model_nir": 0.18181818181818182,
+      "scramble_nir": 0.2727272727272727,
+      "model_minus_scramble": -0.09090909090909088
+    }
+  ]
+}

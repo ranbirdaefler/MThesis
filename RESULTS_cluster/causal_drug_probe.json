@@ -1,0 +1,52 @@
+{
+  "noise_floor": 0.8046173696211815,
+  "by_layer_scale": {
+    "L4_s1.0": {
+      "output_change_rand": 0.8757530750640437,
+      "effect_toward_A": 0.012562580266621978,
+      "output_change_drug": 0.8872633216131695
+    },
+    "L12_s1.0": {
+      "output_change_rand": 0.8780950051876886,
+      "effect_toward_A": -0.003796744452516489,
+      "output_change_drug": 0.8747176855202915
+    },
+    "L4_s2.0": {
+      "effect_toward_A": 0.0,
+      "output_change_drug": 0.900719350924313
+    },
+    "L8_s1.0": {
+      "effect_toward_A": -0.026080561891319663,
+      "output_change_drug": 0.8990480094405111,
+      "output_change_rand": 0.9097152859181135
+    },
+    "L8_s4.0": {
+      "output_change_rand": 0.7228245067055856
+    },
+    "L8_s2.0": {
+      "effect_toward_A": 0.0,
+      "output_change_drug": 0.745999745999619
+    },
+    "L4_s4.0": {
+      "effect_toward_A": 0.0,
+      "output_change_drug": 0.7953859670884178
+    }
+  },
+  "config": {
+    "out": "RESULTS/causal_drug_probe.json",
+    "selftest": false,
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final",
+    "tier": "tier2_unseen_drugs",
+    "n_contexts": 4,
+    "n_pairs": 8,
+    "layers": "4,8,12",
+    "scales": "1,2,4",
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "topn": 100,
+    "max_new_tokens": 1200,
+    "bf16": true,
+    "seed": 42
+  }
+}

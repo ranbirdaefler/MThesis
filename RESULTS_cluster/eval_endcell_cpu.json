@@ -1,0 +1,294 @@
+{
+  "config": {
+    "out": "RESULTS/eval_endcell_cpu.json",
+    "selftest": false,
+    "mode": "baselines,ceiling",
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "scram_dir": null,
+    "train_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+    "model_path": null,
+    "tiers": "tier1_seen_conditions,tier2_unseen_drugs,tier3_unseen_combos",
+    "scram_tiers": "tier1_seen_conditions,tier2_unseen_drugs",
+    "max_eval": 400,
+    "max_train": 200000,
+    "francesca_rank": null,
+    "panel_file": null,
+    "do_sample": false,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 48,
+    "bf16": false,
+    "seed": 42
+  },
+  "conventions": {
+    "worst": 946,
+    "francesca": 473
+  },
+  "baselines": {
+    "worst": {
+      "tier1_seen_conditions": {
+        "control": null,
+        "global": {
+          "mean": 0.09762272468155583,
+          "ci_low": 0.08148521118114324,
+          "ci_high": 0.11376023818196843,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.16124520649501142,
+          "ci_low": 0.14682817392009745,
+          "ci_high": 0.1756622390699254,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.09793449907862868,
+          "ci_low": 0.08121111827593985,
+          "ci_high": 0.11465787988131751,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.16369519831287946,
+          "ci_low": 0.14784736492877476,
+          "ci_high": 0.17954303169698416,
+          "n": 400
+        }
+      },
+      "tier2_unseen_drugs": {
+        "control": null,
+        "global": {
+          "mean": 0.055758411186482955,
+          "ci_low": 0.03934850049125524,
+          "ci_high": 0.07216832188171067,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.1423269668611482,
+          "ci_low": 0.12707944194658666,
+          "ci_high": 0.15757449177570976,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.052035111665925324,
+          "ci_low": 0.035707269344692524,
+          "ci_high": 0.06836295398715812,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.120104473535025,
+          "ci_low": 0.10304502580410661,
+          "ci_high": 0.13716392126594337,
+          "n": 400
+        }
+      },
+      "tier3_unseen_combos": {
+        "control": null,
+        "global": {
+          "mean": 0.05136303734834957,
+          "ci_low": 0.03407404489165938,
+          "ci_high": 0.06865202980503976,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.10701388803037025,
+          "ci_low": 0.09120361799578079,
+          "ci_high": 0.12282415806495971,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.06314751883876349,
+          "ci_low": 0.04540990186086645,
+          "ci_high": 0.08088513581666053,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.0967716722164554,
+          "ci_low": 0.08037391578017167,
+          "ci_high": 0.11316942865273913,
+          "n": 400
+        }
+      }
+    },
+    "francesca": {
+      "tier1_seen_conditions": {
+        "control": null,
+        "global": {
+          "mean": 0.09612359549529226,
+          "ci_low": 0.08022370230111008,
+          "ci_high": 0.11202348868947444,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.16386430423730894,
+          "ci_low": 0.1494676004835445,
+          "ci_high": 0.1782610079910734,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.09662760832117157,
+          "ci_low": 0.08014070344208751,
+          "ci_high": 0.11311451320025562,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.1664091658455456,
+          "ci_low": 0.15055864732905505,
+          "ci_high": 0.18225968436203616,
+          "n": 400
+        }
+      },
+      "tier2_unseen_drugs": {
+        "control": null,
+        "global": {
+          "mean": 0.05557789913538709,
+          "ci_low": 0.03941117971023654,
+          "ci_high": 0.07174461856053764,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.14499155510701717,
+          "ci_low": 0.1297656383209172,
+          "ci_high": 0.16021747189311714,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.05257744668919852,
+          "ci_low": 0.03641580251331261,
+          "ci_high": 0.06873909086508442,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.12281345820320774,
+          "ci_low": 0.1057689283834892,
+          "ci_high": 0.1398579880229263,
+          "n": 400
+        }
+      },
+      "tier3_unseen_combos": {
+        "control": null,
+        "global": {
+          "mean": 0.05209887328511678,
+          "ci_low": 0.03505593383713164,
+          "ci_high": 0.06914181273310192,
+          "n": 400
+        },
+        "cellline": {
+          "mean": 0.10908693688529439,
+          "ci_low": 0.09325802955498322,
+          "ci_high": 0.12491584421560556,
+          "n": 400
+        },
+        "moa": {
+          "mean": 0.06442178875207943,
+          "ci_low": 0.04693252000125203,
+          "ci_high": 0.08191105750290684,
+          "n": 400
+        },
+        "moa_cellline": {
+          "mean": 0.09903262062712889,
+          "ci_low": 0.08267857257270085,
+          "ci_high": 0.11538666868155693,
+          "n": 400
+        }
+      }
+    }
+  },
+  "ceiling": {
+    "tier1_seen_conditions": {
+      "worst": {
+        "cell_vs_cell_de50": {
+          "mean": 0.7608605359451012,
+          "ci_low": 0.7601025419375511,
+          "ci_high": 0.7616185299526512,
+          "n": 24979
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.8711003699447354,
+          "ci_low": 0.8702670304441092,
+          "ci_high": 0.8719337094453615,
+          "n": 18571
+        },
+        "n_conditions": 4325
+      },
+      "francesca": {
+        "cell_vs_cell_de50": {
+          "mean": 0.7688989868907389,
+          "ci_low": 0.7681817905171445,
+          "ci_high": 0.7696161832643332,
+          "n": 24979
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.8751649533288076,
+          "ci_low": 0.87436034085915,
+          "ci_high": 0.8759695657984652,
+          "n": 18571
+        },
+        "n_conditions": 4325
+      }
+    },
+    "tier2_unseen_drugs": {
+      "worst": {
+        "cell_vs_cell_de50": {
+          "mean": 0.7576869197136747,
+          "ci_low": 0.7568125780879461,
+          "ci_high": 0.7585612613394034,
+          "n": 19249
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.9103250873250396,
+          "ci_low": 0.909782981062193,
+          "ci_high": 0.9108671935878861,
+          "n": 17295
+        },
+        "n_conditions": 2188
+      },
+      "francesca": {
+        "cell_vs_cell_de50": {
+          "mean": 0.7642571482634111,
+          "ci_low": 0.7634226587363978,
+          "ci_high": 0.7650916377904243,
+          "n": 19249
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.9129890644145097,
+          "ci_low": 0.9124650080730691,
+          "ci_high": 0.9135131207559503,
+          "n": 17295
+        },
+        "n_conditions": 2188
+      }
+    },
+    "tier3_unseen_combos": {
+      "worst": {
+        "cell_vs_cell_de50": {
+          "mean": 0.7570897617047522,
+          "ci_low": 0.7532100197979708,
+          "ci_high": 0.7609695036115336,
+          "n": 958
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.9379890713204397,
+          "ci_low": 0.9366999991828941,
+          "ci_high": 0.9392781434579853,
+          "n": 1139
+        },
+        "n_conditions": 99
+      },
+      "francesca": {
+        "cell_vs_cell_de50": {
+          "mean": 0.768177093376724,
+          "ci_low": 0.7643753953391819,
+          "ci_high": 0.7719787914142662,
+          "n": 958
+        },
+        "cell_vs_consensus_de50": {
+          "mean": 0.9394431082660659,
+          "ci_low": 0.9381780184978189,
+          "ci_high": 0.9407081980343129,
+          "n": 1139
+        },
+        "n_conditions": 99
+      }
+    }
+  }
+}

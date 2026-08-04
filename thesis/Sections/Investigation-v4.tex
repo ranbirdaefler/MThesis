@@ -1773,11 +1773,11 @@ mechanism (MoA) & & $874$ & \ci{+0.0604}{+0.0094}{+0.1114} \\
 \begin{tabular}{lrrl}
 \toprule
 \multicolumn{4}{l}{Panel B: is it read? --- one span swapped, every other byte identical} \\
-Span swapped & $\gap$ & $n$ & Status \\
+Span swapped & $\gap$ & $n$ & Reading \\
 \midrule
-drug name, mechanism kept & --- & --- & pending the corrected re-run \\
-mechanism, drug name kept & --- & --- & pending \\
-both spans (the standard arm) & --- & --- & pending \\
+drug name, mechanism kept & \ci{+0.1026}{+0.0625}{+0.1427} & $1394$ & read \\
+\textbf{mechanism, drug name kept} & $+0.0303$ [$-0.0078$, $+0.0685$] & $738$ & \textbf{not detected} \\
+both spans (the standard arm) & \ci{+0.1139}{+0.0781}{+0.1496} & $1394$ & read \\
 \bottomrule
 \end{tabular}
 \caption{Availability and use are different questions, and only the first is currently answered.
@@ -1788,11 +1788,14 @@ removes the last shared batch structure, target and mechanism survive and \emph{
 does not} --- $+0.0183$ \nolinebreak[3]$[-0.0033, +0.0399]$. Chemistry's apparent signal is a
 co-plating artefact. Intervals here are two-way cluster-robust over cell line and treatment well;
 under the one-way cell-line interval this table previously carried, every row looked significant. Panel B asks whether the model uses
-the field it is already handed, and is deliberately empty: the arms exist and are implemented, but
-the only run that scored them used the \texttt{opposite}-signature comparator that
-\S\ref{sec:res-generalisation} shows inflates every gap read against it. Panel B is measured against
-the neutral comparator in the corrected evaluation. The mechanism row will carry fewer conditions
-than the others by construction, for the reason given above.}
+the field it is already handed, and the answer is that it uses one span and not the other. Swapping
+the drug name moves the output by $+0.1026$; swapping the mechanism, with the name left in place,
+moves it by $+0.0303$ with an interval containing zero. The name therefore carries about nine tenths
+of the combined effect. Both intervals are clustered on the drug and the treatment well; the mechanism
+row also fails to clear zero clustered on cell line and well, so the reading does not depend on that
+choice. The mechanism row carries fewer conditions by construction: where a swap partner happens to
+share the target's mechanism, swapping only the mechanism reproduces the model's own prompt byte for
+byte and the gap is zero by definition, so those conditions are dropped rather than scored.}
 \label{tab:fieldattribution}
 \end{table}
 

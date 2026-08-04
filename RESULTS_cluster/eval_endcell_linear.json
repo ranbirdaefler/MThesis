@@ -1,0 +1,348 @@
+{
+  "config": {
+    "out": "RESULTS/eval_endcell_linear.json",
+    "selftest": false,
+    "mode": "linear",
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "scram_dir": null,
+    "train_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+    "model_path": null,
+    "tiers": "tier1_seen_conditions,tier2_unseen_drugs,tier3_unseen_combos",
+    "scram_tiers": "tier1_seen_conditions,tier2_unseen_drugs",
+    "max_eval": 400,
+    "max_train": 200000,
+    "max_linear_fit": 40000,
+    "ridge_lambda": 0.1,
+    "francesca_rank": null,
+    "panel_file": null,
+    "do_sample": false,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 48,
+    "bf16": false,
+    "seed": 42
+  },
+  "conventions": {
+    "worst": 946,
+    "francesca": 473
+  },
+  "linear": {
+    "worst": {
+      "tier1_seen_conditions": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9484109008919995,
+            "ci_low": 0.9466885578983042,
+            "ci_high": 0.9501332438856949,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2799422104662479,
+            "ci_low": 0.26703403347208926,
+            "ci_high": 0.29285038746040654,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.27267054932511925,
+            "ci_low": 0.2671641397732582,
+            "ci_high": 0.2781769588769803,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.960948821838631,
+            "ci_low": 0.9599950163643435,
+            "ci_high": 0.9619026273129184,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2493784597418258,
+            "ci_low": 0.23551485930462726,
+            "ci_high": 0.2632420601790243,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.2758898133381987,
+            "ci_low": 0.27029306139998593,
+            "ci_high": 0.2814865652764114,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9999136799254861,
+            "ci_low": 0.9999093438266297,
+            "ci_high": 0.9999180160243425,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      },
+      "tier2_unseen_drugs": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9456693725987632,
+            "ci_low": 0.9437798349475418,
+            "ci_high": 0.9475589102499845,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2851941142604078,
+            "ci_low": 0.2716160640771304,
+            "ci_high": 0.2987721644436852,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.26503793423874344,
+            "ci_low": 0.25919475888681176,
+            "ci_high": 0.27088110959067513,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.9606336481700066,
+            "ci_low": 0.9596236050874257,
+            "ci_high": 0.9616436912525875,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2651550424547597,
+            "ci_low": 0.25139804707084024,
+            "ci_high": 0.2789120378386791,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.2680556878434042,
+            "ci_low": 0.2620074914456912,
+            "ci_high": 0.27410388424111726,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9999134349203441,
+            "ci_low": 0.9999083420190651,
+            "ci_high": 0.9999185278216232,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      },
+      "tier3_unseen_combos": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9461911684609864,
+            "ci_low": 0.9445089249295818,
+            "ci_high": 0.947873411992391,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2731450718722545,
+            "ci_low": 0.260452978102531,
+            "ci_high": 0.28583716564197803,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.2607165844253681,
+            "ci_low": 0.25477489188583624,
+            "ci_high": 0.26665827696489997,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.9600099908449599,
+            "ci_low": 0.9591235323478109,
+            "ci_high": 0.9608964493421088,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.24103872447653976,
+            "ci_low": 0.22726704991077512,
+            "ci_high": 0.2548103990423044,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.26506732123496607,
+            "ci_low": 0.2591012812449784,
+            "ci_high": 0.27103336122495375,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9999154572046549,
+            "ci_low": 0.9999103970815567,
+            "ci_high": 0.9999205173277531,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      }
+    },
+    "francesca": {
+      "tier1_seen_conditions": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9496477432812483,
+            "ci_low": 0.9480076465448706,
+            "ci_high": 0.9512878400176261,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.27989977740377237,
+            "ci_low": 0.2669321900801555,
+            "ci_high": 0.2928673647273892,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.273063169888476,
+            "ci_low": 0.2675529081382938,
+            "ci_high": 0.2785734316386582,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.9617543962276237,
+            "ci_low": 0.9608283635714151,
+            "ci_high": 0.9626804288838323,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2484804983928567,
+            "ci_low": 0.23450105788466075,
+            "ci_high": 0.2624599389010527,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.2761949125088931,
+            "ci_low": 0.27058360610777216,
+            "ci_high": 0.28180621891001406,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9996337037780944,
+            "ci_low": 0.9996142232070971,
+            "ci_high": 0.9996531843490916,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      },
+      "tier2_unseen_drugs": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9472745546482529,
+            "ci_low": 0.9454803357567669,
+            "ci_high": 0.949068773539739,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2864074393761803,
+            "ci_low": 0.2727667665923658,
+            "ci_high": 0.3000481121599948,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.2655431821144399,
+            "ci_low": 0.2596639198536315,
+            "ci_high": 0.27142244437524826,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.9616004130133561,
+            "ci_low": 0.9606168713731708,
+            "ci_high": 0.9625839546535414,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2635572784318831,
+            "ci_low": 0.2496877981465923,
+            "ci_high": 0.27742675871717387,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.26819527690175193,
+            "ci_low": 0.2621312302427364,
+            "ci_high": 0.2742593235607675,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9996319523293482,
+            "ci_low": 0.9996089416522154,
+            "ci_high": 0.999654963006481,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      },
+      "tier3_unseen_combos": {
+        "ridge": {
+          "de_pearson_k50": {
+            "mean": 0.9477436250349848,
+            "ci_low": 0.9461559074132233,
+            "ci_high": 0.9493313426567462,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2724967309873453,
+            "ci_low": 0.2597581000405368,
+            "ci_high": 0.2852353619341538,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.26124238205081185,
+            "ci_low": 0.2552836233467942,
+            "ci_high": 0.2672011407548295,
+            "n": 400
+          }
+        },
+        "revert_mean": {
+          "de_pearson_k50": {
+            "mean": 0.9608537921393859,
+            "ci_low": 0.9599832516493721,
+            "ci_high": 0.9617243326293997,
+            "n": 400
+          },
+          "de_partial_k50": {
+            "mean": 0.2375646405676574,
+            "ci_low": 0.22371950921131098,
+            "ci_high": 0.25140977192400377,
+            "n": 400
+          },
+          "panel_tau": {
+            "mean": 0.26529613736727586,
+            "ci_low": 0.2593182990467558,
+            "ci_high": 0.27127397568779593,
+            "n": 400
+          }
+        },
+        "revert_center": {
+          "de_pearson_k50": {
+            "mean": 0.9996410202947721,
+            "ci_low": 0.9996183650582928,
+            "ci_high": 0.9996636755312514,
+            "n": 400
+          },
+          "de_partial_k50": null,
+          "panel_tau": null
+        }
+      }
+    }
+  }
+}

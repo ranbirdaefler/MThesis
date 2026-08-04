@@ -1,0 +1,53 @@
+{
+  "panel_size": 946,
+  "n_cells": 695183,
+  "treated_expressed_count": {
+    "mean": 128.2494580563679,
+    "median": 113.0,
+    "p10": 66.0,
+    "p90": 212.0
+  },
+  "control_expressed_count": {
+    "mean": 116.57278011689009,
+    "median": 103.0,
+    "p10": 59.0,
+    "p90": 193.0
+  },
+  "genes_turned_ON_ctrl_to_treat": {
+    "mean": 92.31765304962866,
+    "median": 81.0,
+    "p10": 45.0,
+    "p90": 155.0
+  },
+  "genes_turned_OFF_ctrl_to_treat": {
+    "mean": 80.64097511015085,
+    "median": 70.0,
+    "p10": 39.0,
+    "p90": 135.0
+  },
+  "same_drug_expressed_jaccard": {
+    "mean": 0.158910618757061,
+    "median": 0.14789957742977877,
+    "p10": 0.09320998132744865,
+    "p90": 0.23727012932495925
+  },
+  "diff_drug_expressed_jaccard": {
+    "mean": 0.15975652057401266,
+    "median": 0.15261044176706828,
+    "p10": 0.0935701438848921,
+    "p90": 0.23731277082124946
+  },
+  "same_drug_symdiff_genes": {
+    "mean": 167.95388349514562,
+    "median": 165.0,
+    "p10": 110.1,
+    "p90": 232.90000000000003
+  },
+  "diff_drug_symdiff_genes": {
+    "mean": 173.36188077246013,
+    "median": 165.0,
+    "p10": 114.0,
+    "p90": 243.80000000000018
+  },
+  "frac_pairs_union_lt_panel": 1.0
+}

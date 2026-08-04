@@ -1,0 +1,138 @@
+{
+  "tiers": {
+    "tier2_unseen_drugs": {
+      "n_drugs": 268,
+      "agg": {
+        "model_nir_rank": [
+          0.3909245600371368,
+          268
+        ],
+        "model_nir_expr": [
+          0.5200409755076593,
+          268
+        ],
+        "linear_nir_rank": [
+          0.35907138126491644,
+          268
+        ],
+        "linear_nir_expr": [
+          0.5036016977604025,
+          268
+        ],
+        "mean_nir_rank": [
+          0.2016804915495121,
+          268
+        ],
+        "mean_nir_expr": [
+          0.3215627247717056,
+          268
+        ],
+        "ceiling_nir_rank": [
+          0.5340648028881508,
+          268
+        ],
+        "ceiling_nir_expr": [
+          0.6914868700875844,
+          268
+        ]
+      }
+    },
+    "tier3_unseen_combos": {
+      "n_drugs": 27,
+      "agg": {
+        "model_nir_rank": [
+          0.5228395061728395,
+          27
+        ],
+        "model_nir_expr": [
+          0.5129629629629628,
+          27
+        ],
+        "linear_nir_rank": [
+          0.5290123456790123,
+          27
+        ],
+        "linear_nir_expr": [
+          0.5,
+          27
+        ],
+        "mean_nir_rank": [
+          0.06851851851851852,
+          27
+        ],
+        "mean_nir_expr": [
+          0.08641975308641975,
+          27
+        ],
+        "ceiling_nir_rank": [
+          0.7771604938271606,
+          27
+        ],
+        "ceiling_nir_expr": [
+          0.7969135802469135,
+          27
+        ]
+      }
+    },
+    "tier4_dose_interpolation": {
+      "n_drugs": 271,
+      "agg": {
+        "model_nir_rank": [
+          0.3624794269017591,
+          271
+        ],
+        "model_nir_expr": [
+          0.5107456332086757,
+          271
+        ],
+        "linear_nir_rank": [
+          0.3466845750736683,
+          271
+        ],
+        "linear_nir_expr": [
+          0.49971362876781406,
+          271
+        ],
+        "mean_nir_rank": [
+          0.18106642772685866,
+          271
+        ],
+        "mean_nir_expr": [
+          0.28679735549733154,
+          271
+        ],
+        "ceiling_nir_rank": [
+          0.45395381476964997,
+          271
+        ],
+        "ceiling_nir_expr": [
+          0.6279123164639198,
+          271
+        ]
+      }
+    }
+  },
+  "config": {
+    "out": "RESULTS/nir_benchmark.json",
+    "selftest": false,
+    "temp_sweep": false,
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final",
+    "train_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+    "tiers": "tier2_unseen_drugs,tier3_unseen_combos,tier4_dose_interpolation",
+    "tier": "tier2_unseen_drugs",
+    "temps": "0,0.5,0.8,1.0",
+    "k_samples": 8,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 48,
+    "min_cells": 15,
+    "min_drugs_per_cl": 4,
+    "n_celllines": 20,
+    "max_fit": 40000,
+    "ridge_lambda": 0.1,
+    "bf16": true,
+    "seed": 42
+  }
+}

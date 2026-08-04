@@ -1,0 +1,278 @@
+{
+  "config": {
+    "out": "RESULTS/ot_T2_validity.json",
+    "selftest": false,
+    "mode": "model",
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "scram_dir": null,
+    "train_file": null,
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_ot_T2/final",
+    "tiers": "tier1_seen_conditions",
+    "scram_tiers": "tier1_seen_conditions,tier2_unseen_drugs",
+    "max_eval": 200,
+    "max_train": 200000,
+    "max_linear_fit": 40000,
+    "ridge_lambda": 0.1,
+    "francesca_rank": null,
+    "panel_file": null,
+    "do_sample": false,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 48,
+    "bf16": true,
+    "seed": 42
+  },
+  "conventions": {
+    "worst": 946,
+    "francesca": 473
+  },
+  "model": {
+    "tier1_seen_conditions": {
+      "n_total": 200,
+      "n_scored": 200,
+      "conventions": {
+        "worst": {
+          "de_pearson_k20": {
+            "mean": 0.7256525217049246,
+            "ci_low": 0.7110313675041637,
+            "ci_high": 0.7402736759056854,
+            "n": 200
+          },
+          "de_spearman_k20": {
+            "mean": 0.7279699248120299,
+            "ci_low": 0.7107513906826196,
+            "ci_high": 0.7451884589414403,
+            "n": 200
+          },
+          "de_partial_k20": {
+            "mean": 0.22420375046571198,
+            "ci_low": 0.1940341923893995,
+            "ci_high": 0.25437330854202445,
+            "n": 200
+          },
+          "de_pearson_k50": {
+            "mean": 0.7309829171263291,
+            "ci_low": 0.720527299762277,
+            "ci_high": 0.7414385344903812,
+            "n": 200
+          },
+          "de_spearman_k50": {
+            "mean": 0.7624672268907563,
+            "ci_low": 0.7502433231895811,
+            "ci_high": 0.7746911305919315,
+            "n": 200
+          },
+          "de_partial_k50": {
+            "mean": 0.24218510471676433,
+            "ci_low": 0.2220517968123425,
+            "ci_high": 0.26231841262118616,
+            "n": 200
+          },
+          "de_pearson_k100": {
+            "mean": 0.737063922953098,
+            "ci_low": 0.7297113857414211,
+            "ci_high": 0.7444164601647748,
+            "n": 200
+          },
+          "de_spearman_k100": {
+            "mean": 0.7655147914791479,
+            "ci_low": 0.7538577031004756,
+            "ci_high": 0.7771718798578202,
+            "n": 200
+          },
+          "de_partial_k100": {
+            "mean": 0.2512534691874803,
+            "ci_low": 0.2356577292315285,
+            "ci_high": 0.26684920914343213,
+            "n": 200
+          },
+          "de_pearson_k200": {
+            "mean": 0.6970732828329335,
+            "ci_low": 0.6898174793910307,
+            "ci_high": 0.7043290862748363,
+            "n": 200
+          },
+          "de_spearman_k200": {
+            "mean": 0.7417175129378236,
+            "ci_low": 0.7296279831194433,
+            "ci_high": 0.7538070427562039,
+            "n": 200
+          },
+          "de_partial_k200": {
+            "mean": 0.2732023334441998,
+            "ci_low": 0.26138012268608357,
+            "ci_high": 0.28502454420231604,
+            "n": 200
+          },
+          "panel_tau": {
+            "mean": 0.3150881555593316,
+            "ci_low": 0.3049536323253751,
+            "ci_high": 0.32522267879328814,
+            "n": 200
+          }
+        },
+        "francesca": {
+          "de_pearson_k20": {
+            "mean": 0.735344887905624,
+            "ci_low": 0.7212035697076151,
+            "ci_high": 0.7494862061036329,
+            "n": 200
+          },
+          "de_spearman_k20": {
+            "mean": 0.7279699248120299,
+            "ci_low": 0.7107513906826196,
+            "ci_high": 0.7451884589414403,
+            "n": 200
+          },
+          "de_partial_k20": {
+            "mean": 0.23106213089896577,
+            "ci_low": 0.20071473214762103,
+            "ci_high": 0.2614095296503105,
+            "n": 200
+          },
+          "de_pearson_k50": {
+            "mean": 0.739012174411859,
+            "ci_low": 0.7287906158268018,
+            "ci_high": 0.7492337329969161,
+            "n": 200
+          },
+          "de_spearman_k50": {
+            "mean": 0.7624672268907563,
+            "ci_low": 0.7502433231895811,
+            "ci_high": 0.7746911305919315,
+            "n": 200
+          },
+          "de_partial_k50": {
+            "mean": 0.24987518535166456,
+            "ci_low": 0.22967049569873998,
+            "ci_high": 0.27007987500458913,
+            "n": 200
+          },
+          "de_pearson_k100": {
+            "mean": 0.7412493375304178,
+            "ci_low": 0.7338580491300882,
+            "ci_high": 0.7486406259307473,
+            "n": 200
+          },
+          "de_spearman_k100": {
+            "mean": 0.7655147914791479,
+            "ci_low": 0.7538577031004756,
+            "ci_high": 0.7771718798578202,
+            "n": 200
+          },
+          "de_partial_k100": {
+            "mean": 0.2576854381969493,
+            "ci_low": 0.2419775300099267,
+            "ci_high": 0.27339334638397184,
+            "n": 200
+          },
+          "de_pearson_k200": {
+            "mean": 0.6964796455205476,
+            "ci_low": 0.6891518143396453,
+            "ci_high": 0.7038074767014499,
+            "n": 200
+          },
+          "de_spearman_k200": {
+            "mean": 0.7418638565964151,
+            "ci_low": 0.729812023605244,
+            "ci_high": 0.7539156895875861,
+            "n": 200
+          },
+          "de_partial_k200": {
+            "mean": 0.2896707529961138,
+            "ci_low": 0.27795006948200146,
+            "ci_high": 0.3013914365102261,
+            "n": 200
+          },
+          "panel_tau": {
+            "mean": 0.3150881555593316,
+            "ci_low": 0.3049536323253751,
+            "ci_high": 0.32522267879328814,
+            "n": 200
+          }
+        }
+      },
+      "validity": {
+        "recall": {
+          "mean": 0.3550761372735029,
+          "ci_low": 0.34526510520288484,
+          "ci_high": 0.36488716934412097,
+          "n": 200
+        },
+        "precision": {
+          "mean": 0.4514016490896258,
+          "ci_low": 0.4319632182287647,
+          "ci_high": 0.47084007995048693,
+          "n": 200
+        },
+        "f1": {
+          "mean": 0.3844452965401595,
+          "ci_low": 0.3746337617844844,
+          "ci_high": 0.39425683129583466,
+          "n": 200
+        },
+        "hallucination_rate": {
+          "mean": 0.0008828364034401549,
+          "ci_low": 0.0003629852593432031,
+          "ci_high": 0.0014026875475371067,
+          "n": 200
+        },
+        "len_ratio": {
+          "mean": 0.8722863662194166,
+          "ci_low": 0.8241119767749923,
+          "ci_high": 0.9204607556638409,
+          "n": 200
+        },
+        "n_pred_genes": {
+          "mean": 103.09,
+          "ci_low": 99.8731641353497,
+          "ci_high": 106.30683586465031,
+          "n": 200
+        },
+        "n_true_genes": {
+          "mean": 135.605,
+          "ci_low": 127.4599342746574,
+          "ci_high": 143.75006572534258,
+          "n": 200
+        },
+        "emits_end_cell_rate": 1.0,
+        "degenerate_rate": 0.0
+      },
+      "breakdown_by_drug": {
+        "Adagrasib": {
+          "mean_de": 0.7275657777808882,
+          "n": 8
+        }
+      },
+      "breakdown_by_moa": {
+        "RAS inhibitor": {
+          "mean_de": 0.7275657777808882,
+          "n": 8
+        },
+        "unclear": {
+          "mean_de": 0.733090907515171,
+          "n": 137
+        },
+        "Cyclooxygenase inhibitor": {
+          "mean_de": 0.750612015589017,
+          "n": 9
+        },
+        "DNA synthesis/repair inhibitor": {
+          "mean_de": 0.7523595178462278,
+          "n": 13
+        }
+      },
+      "breakdown_by_dose": {
+        "0.05 uM": {
+          "mean_de": 0.7302760942401295,
+          "n": 130
+        },
+        "5.0 uM": {
+          "mean_de": 0.7357275815972415,
+          "n": 64
+        }
+      }
+    }
+  }
+}

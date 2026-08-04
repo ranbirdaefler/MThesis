@@ -1,0 +1,24 @@
+{
+  "train_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+  "out": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train_consensus.jsonl",
+  "group_keys": [
+    "drug",
+    "cell_line_id",
+    "dose_float"
+  ],
+  "n_examples": 675183,
+  "n_conditions": 30815,
+  "cells_per_condition": {
+    "min": 1,
+    "median": 24.0,
+    "mean": 21.910855103034237,
+    "p90": 30.0,
+    "max": 349
+  },
+  "n_denoise_conditions": 29816,
+  "frac_examples_denoised": 0.9985204011356921,
+  "emit": "per_cell",
+  "min_cells": 2,
+  "consensus_len_mean": 110.83264019318487,
+  "single_cell_len_mean": 128.2068797242296
+}

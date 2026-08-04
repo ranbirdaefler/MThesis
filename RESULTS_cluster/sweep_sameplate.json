@@ -1,0 +1,55 @@
+{
+  "cell_sweep": {
+    "4": {
+      "ceiling_nir": 0.5458259516427834,
+      "n_groups": 202,
+      "n_drugs": 1748
+    },
+    "6": {
+      "ceiling_nir": 0.5531674407357468,
+      "n_groups": 183,
+      "n_drugs": 1422
+    },
+    "8": {
+      "ceiling_nir": 0.5789697365039831,
+      "n_groups": 146,
+      "n_drugs": 998
+    },
+    "12": {
+      "ceiling_nir": 0.6211672042554396,
+      "n_groups": 68,
+      "n_drugs": 415
+    },
+    "16": {
+      "ceiling_nir": 0.62752970623341,
+      "n_groups": 27,
+      "n_drugs": 174
+    },
+    "20": {
+      "ceiling_nir": 0.6703334936668269,
+      "n_groups": 15,
+      "n_drugs": 98
+    }
+  },
+  "same_plate_only": true,
+  "config": {
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "tiers": "tier2_unseen_drugs",
+    "train_file": null,
+    "min_cells": 8,
+    "n_celllines": 30,
+    "min_drugs_per_cl": 3,
+    "identifiable_nir": 0.8,
+    "same_plate_only": true,
+    "cell_sweep": "4,6,8,12,16,20",
+    "snr_reliable_cells": 20,
+    "drug_features": null,
+    "out": "RESULTS/sweep_sameplate.json",
+    "csv": null,
+    "profiles": null,
+    "panel_file": null,
+    "linear_model": null,
+    "seed": 42,
+    "selftest": false
+  }
+}

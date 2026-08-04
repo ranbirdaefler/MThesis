@@ -1,0 +1,171 @@
+{
+  "args": {
+    "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache",
+    "min_treated": 40,
+    "min_control": 20,
+    "repro_thr": 0.2,
+    "same_dose_only": false,
+    "shared_controls": false,
+    "loo_generic": false,
+    "generic_scope": "plate",
+    "project_generic": false,
+    "kappa_structure": true,
+    "min_neg_margin": 0.15,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/vardecomp_matched.json",
+    "selftest": false
+  },
+  "dose_resolution": {
+    "n_samples": 298,
+    "n_with_molar": 298,
+    "n_combination": 0,
+    "unresolved_reasons": {}
+  },
+  "main": {
+    "scope": {
+      "residual_over_shift": 0.7856985648360972,
+      "generic_over_shift": 0.6198830390722383,
+      "mean_residual_norm": 2.5232841968536377,
+      "mean_shift_norm": 3.2014072913378837,
+      "residual_energy_share": 0.6211205563374411,
+      "generic_energy_share": 0.38993489697995193,
+      "cross_energy_share": -0.011055451267510967,
+      "energy_shares_sum": 1.000000002049882
+    },
+    "T::repro-filtered (cos>0.2, the training set)": {
+      "T": 0.5532717521206881,
+      "ci": [
+        0.5141263321176428,
+        0.5919504205555811
+      ],
+      "n_pairs": 2855,
+      "n_drugs": 77,
+      "mean_r_between": 0.24019472146341375,
+      "mean_reliability": 0.43593364083685066,
+      "ci_dyadic": [
+        0.5140194551873243,
+        0.592524049054052
+      ],
+      "dyadic_unit": "multiway (Fafchamps-Gubert) over 1335 nodes",
+      "dyadic_widening": 1.009
+    },
+    "T::ALL conditions (no reliability filter)": {
+      "T": 0.5971621626344928,
+      "ci": [
+        0.561447899938601,
+        0.6331756116410165
+      ],
+      "n_pairs": 4171,
+      "n_drugs": 94,
+      "mean_r_between": 0.13976237072870232,
+      "mean_reliability": 0.244566675221124,
+      "ci_dyadic": [
+        0.5625538998298661,
+        0.6317704254391195
+      ],
+      "dyadic_unit": "multiway (Fafchamps-Gubert) over 4309 nodes",
+      "dyadic_widening": 0.965
+    },
+    "negative_controls": {
+      "diff_drug_same_plate": {
+        "T": -0.01732139352858793,
+        "ci": [
+          -0.02983580301756903,
+          -0.004238289555048301
+        ],
+        "n_pairs": 4210,
+        "raw_cos": -0.007594330809403677,
+        "ci_dyadic": [
+          -0.050247511520599974,
+          0.015604724463424108
+        ]
+      },
+      "diff_drug_cross_line": {
+        "T": -0.00767580128737779,
+        "ci": [
+          -0.02833635709726308,
+          0.014226011555502524
+        ],
+        "n_pairs": 4000,
+        "raw_cos": -0.0032402183839960797,
+        "ci_dyadic": [
+          -0.03550242762643857,
+          0.020150825051682992
+        ]
+      }
+    },
+    "dose_transfer_same_line": {
+      "T": 0.7068660688487965,
+      "ci": [
+        0.6192694416424719,
+        0.7727461884227539
+      ],
+      "n_pairs": 363,
+      "ci_dyadic": [
+        0.6321485343190892,
+        0.7815836033785039
+      ],
+      "dose_source": "molar, resolved via tahoe_design"
+    },
+    "simulated_null": {
+      "kappa_frac=0.0": {
+        "T_hat": 1.0010393525909203,
+        "T_true": 1.0
+      },
+      "kappa_frac=0.25": {
+        "T_hat": 0.7465358213143157,
+        "T_true": 0.75
+      },
+      "kappa_frac=0.5": {
+        "T_hat": 0.4939719419528086,
+        "T_true": 0.5
+      }
+    },
+    "kappa_structure": {
+      "same_cell_line": {
+        "disattenuated": -0.014943480662876369,
+        "ci": [
+          -0.02513466311319489,
+          -0.004977021597929883
+        ],
+        "n_pairs": 4000,
+        "n_clusters": 38,
+        "raw_cos": -0.004680571484531811
+      },
+      "different_cell_lines": {
+        "disattenuated": 0.0003467323128654023,
+        "ci": [
+          -0.007126914945280213,
+          0.008066994997230842
+        ],
+        "n_pairs": 3884,
+        "n_clusters": 42,
+        "raw_cos": -0.00015225315432047608
+      },
+      "n_conditions": 1282,
+      "mean_kappa_reliability": 0.32577562011642336,
+      "excess_within_line": -0.015290212975741771
+    },
+    "verdict": {
+      "T": 0.5532717521206881,
+      "ci": [
+        0.5141263321176428,
+        0.5919504205555811
+      ],
+      "T_null": 1.0010393525909203,
+      "verdict": "REAL_INTERACTION",
+      "negative_control": -0.00767580128737779,
+      "interaction_frac": 0.4477676004702321
+    }
+  },
+  "shared_control_build": {
+    "T": 0.5532717527754575,
+    "ci": [
+      0.5139985086431841,
+      0.5903645612394844
+    ],
+    "n_pairs": 2855,
+    "bias_vs_split": -6.547693498504259e-10
+  }
+}

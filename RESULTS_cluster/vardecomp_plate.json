@@ -1,0 +1,102 @@
+{
+  "args": {
+    "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache",
+    "min_treated": 40,
+    "min_control": 20,
+    "repro_thr": 0.2,
+    "same_dose_only": false,
+    "shared_controls": false,
+    "loo_generic": false,
+    "generic_scope": "plate",
+    "project_generic": false,
+    "min_neg_margin": 0.15,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/vardecomp_plate.json",
+    "selftest": false
+  },
+  "main": {
+    "scope": {
+      "residual_over_shift": 0.7856985637590155,
+      "generic_over_shift": 0.6198830411708555,
+      "mean_residual_norm": 2.5232841968536377,
+      "mean_shift_norm": 3.2014072940078253,
+      "orthogonality": 1.0015772178242082
+    },
+    "T::repro-filtered (cos>0.2, the training set)": {
+      "T": 0.5487993248485895,
+      "ci": [
+        0.5072647964664262,
+        0.5900259552999216
+      ],
+      "n_pairs": 2863,
+      "n_drugs": 78,
+      "mean_r_between": 0.23829247840896234,
+      "mean_reliability": 0.43504863633564517
+    },
+    "T::ALL conditions (no reliability filter)": {
+      "T": 0.6015349193370946,
+      "ci": [
+        0.5651848942391419,
+        0.6366897329901362
+      ],
+      "n_pairs": 4166,
+      "n_drugs": 94,
+      "mean_r_between": 0.14046313267727156,
+      "mean_reliability": 0.24417997795801205
+    },
+    "negative_controls": {
+      "diff_drug_same_plate": {
+        "T": -0.01433888600195919,
+        "ci": [
+          -0.026826488295474592,
+          -0.002461386735112394
+        ],
+        "n_pairs": 4201,
+        "raw_cos": -0.006666975660715196
+      }
+    },
+    "dose_transfer_same_line": {
+      "T": 0.7047181161630414,
+      "ci": [
+        0.6241144519170361,
+        0.7754693415074438
+      ],
+      "n_pairs": 366
+    },
+    "simulated_null": {
+      "kappa_frac=0.0": {
+        "T_hat": 1.0010383505054947,
+        "T_true": 1.0
+      },
+      "kappa_frac=0.25": {
+        "T_hat": 0.7465354231316408,
+        "T_true": 0.75
+      },
+      "kappa_frac=0.5": {
+        "T_hat": 0.4939719581190065,
+        "T_true": 0.5
+      }
+    },
+    "verdict": {
+      "T": 0.5487993248485895,
+      "ci": [
+        0.5072647964664262,
+        0.5900259552999216
+      ],
+      "T_null": 1.0010383505054947,
+      "verdict": "REAL_INTERACTION",
+      "negative_control": -0.01433888600195919,
+      "interaction_frac": 0.4522390256569052
+    }
+  },
+  "shared_control_build": {
+    "T": 0.5487993248829557,
+    "ci": [
+      0.5064675955659467,
+      0.5893830647530476
+    ],
+    "n_pairs": 2863,
+    "bias_vs_split": -3.436617657115448e-11
+  }
+}

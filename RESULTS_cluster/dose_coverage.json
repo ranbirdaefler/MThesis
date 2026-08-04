@@ -1,0 +1,24 @@
+{
+  "cap": 60,
+  "cap_inferred": true,
+  "n_groups": 39704,
+  "n_cap_hit": 10157,
+  "frac_cap_hit": 0.2558,
+  "n_multi_dose_drugs": 325,
+  "n_total_drugs": 379,
+  "dose_count_per_group_all": {
+    "1": 38759,
+    "2": 941,
+    "3": 4
+  },
+  "dose_count_per_group_caphit": {
+    "1": 10116,
+    "2": 41
+  },
+  "at_risk_groups": 10116,
+  "frac_caphit_at_risk": 0.996,
+  "tier4_n_drugs": 60,
+  "tier4_drugs_with_ge2_train_doses": 60,
+  "tier4_drugs_missing_train_doses": [],
+  "total_rows": 1416447
+}

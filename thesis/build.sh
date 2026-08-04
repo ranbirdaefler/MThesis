@@ -1,11 +1,11 @@
 #!/bin/sh
-# Build the thesis WITHOUT touching main_v4.pdf, which carries hand annotations.
+# Build the thesis. Writes thesis.pdf from main_v4.tex via -jobname.
 #
-# -jobname keeps one source file (main_v4.tex) and writes main_v5.pdf. Do NOT run
-# `latexmk main_v4.tex` bare -- it would overwrite the annotated copy.
+# Do NOT rename main_v4.tex casually -- Sections/*.tex and the annotated PDF reference this build.
+# thesis_annotated.pdf (hand markup) is never written by this script.
 set -e
 cd "$(dirname "$0")"
-latexmk -pdf -interaction=nonstopmode -jobname=main_v5 main_v4.tex
+latexmk -pdf -interaction=nonstopmode -jobname=thesis main_v4.tex
 echo "---"
-echo "errors: $(grep -cE '^! ' main_v5.log)"
-grep -E "Output written" main_v5.log | tail -1
+echo "errors: $(grep -cE '^! ' thesis.log)"
+grep -E "Output written" thesis.log | tail -1

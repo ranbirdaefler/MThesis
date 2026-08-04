@@ -1,0 +1,59 @@
+{
+  "selftest": true,
+  "passed": true,
+  "unit_checks": {
+    "perfect_weighted_r2_is_1": true,
+    "perfect_de_delta_is_1": true,
+    "perfect_spearman_is_1": true,
+    "perfect_panel_tau_is_1": true,
+    "perfect_nir_is_1": true,
+    "zero_shift_de_delta_none": true,
+    "flat_true_weighted_r2_none": true,
+    "nir_no_others_none": true,
+    "de_delta_exploit_neg_high": true,
+    "nir_robust_neg_not_high": true
+  },
+  "unit_diag": {
+    "de_delta_mean_baseline": 0.9999999999999999,
+    "nir_mean_baseline": 0.0
+  },
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": 0.8448107768645777,
+        "n": 8,
+        "m_pos": 0.8174724131822586,
+        "m_neg": -0.1761614829301834,
+        "m_perfect": 1.0
+      },
+      "spearman_expr": {
+        "drf": 0.5256443942513735,
+        "n": 8,
+        "m_pos": 0.5350660004125025,
+        "m_neg": 0.01986190538690867,
+        "m_perfect": 0.9999999999999999
+      },
+      "de_delta": {
+        "drf": 0.9476781974090962,
+        "n": 8,
+        "m_pos": 0.985114446502579,
+        "m_neg": 0.7154999873798518,
+        "m_perfect": 1.0
+      },
+      "panel_tau": {
+        "drf": 0.37387254482060656,
+        "n": 8,
+        "m_pos": 0.3817167919799499,
+        "m_neg": 0.012528195488721805,
+        "m_perfect": 1.0
+      },
+      "nir": {
+        "drf": 1.0,
+        "n": 8,
+        "m_pos": 1.0,
+        "m_neg": 0.03571428571428571,
+        "m_perfect": 1.0
+      }
+    }
+  }
+}

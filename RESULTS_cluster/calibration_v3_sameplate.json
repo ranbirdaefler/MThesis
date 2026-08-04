@@ -1,0 +1,121 @@
+{
+  "n_celllines": 25,
+  "n_drugs": 335,
+  "mean_cells_per_drug": 49.668528491116724,
+  "mean_degs_per_drug": 153.03782645459117,
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": -0.12205466639814119,
+        "n": 335,
+        "m_pos": 0.7596908412762542,
+        "m_neg": 0.785831148944684,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.15090507675896414,
+          -0.09191708491736915
+        ],
+        "boot_sd": 0.015410171995353184,
+        "n_cell_lines": 335,
+        "p_one_sided": 1.0,
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "spearman_expr": {
+        "drf": -0.49486417869158356,
+        "n": 335,
+        "m_pos": 0.7885290710729299,
+        "m_neg": 0.8585350214812391,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.5141949146230756,
+          -0.47378778028424573
+        ],
+        "boot_sd": 0.010403538122248243,
+        "n_cell_lines": 335,
+        "p_one_sided": 1.0,
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "de_delta": {
+        "drf": -0.5000830228116453,
+        "n": 335,
+        "m_pos": 0.8276763282284861,
+        "m_neg": 0.8851239103762917,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.5403888083009024,
+          -0.45952413733106595
+        ],
+        "boot_sd": 0.020756583812488873,
+        "n_cell_lines": 335,
+        "p_one_sided": 1.0,
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "panel_tau": {
+        "drf": -0.24717987694760532,
+        "n": 335,
+        "m_pos": 0.6119412331264077,
+        "m_neg": 0.68885100373545,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.25576828815758634,
+          -0.23730359697877954
+        ],
+        "boot_sd": 0.004648113648188738,
+        "n_cell_lines": 335,
+        "p_one_sided": 1.0,
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "nir": {
+        "drf": 0.5193880837173863,
+        "n": 335,
+        "m_pos": 0.6530043827014853,
+        "m_neg": 0.2780128716274458,
+        "m_perfect": 1.0,
+        "ci": [
+          0.47932445784547595,
+          0.5569411943867006
+        ],
+        "boot_sd": 0.019394540721603584,
+        "n_cell_lines": 335,
+        "p_one_sided": 0.0004997501249375312,
+        "p_holm": 0.002498750624687656,
+        "calibrated": true
+      }
+    },
+    "multiplicity": {
+      "method": "Holm across the metric family",
+      "n_tests": 5,
+      "family": [
+        "weighted_r2",
+        "spearman_expr",
+        "de_delta",
+        "panel_tau",
+        "nir"
+      ]
+    }
+  },
+  "config": {
+    "out": "RESULTS/calibration_v3_sameplate.json",
+    "selftest": false,
+    "num_shards": 12,
+    "rows_per_shard": 150000,
+    "shard_seed": 7,
+    "cells_per_drug": 60,
+    "max_cells_total": 500000,
+    "min_cells_per_drug": 40,
+    "n_celllines": 25,
+    "min_drugs_per_cl": 6,
+    "same_plate_only": true,
+    "held_out_drugs_file": null,
+    "de_k": 50,
+    "deg_pool_cap": 400,
+    "panel_file": null,
+    "seed": 42,
+    "collect_controls": true,
+    "same_plate": true
+  }
+}

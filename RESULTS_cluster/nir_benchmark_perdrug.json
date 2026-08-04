@@ -1,0 +1,5404 @@
+{
+  "tiers": {
+    "tier2_unseen_drugs": {
+      "n_drugs": 113,
+      "agg": {
+        "model_nir_rank": [
+          0.389854820984441,
+          113
+        ],
+        "model_nir_expr": [
+          0.5388455087049568,
+          113
+        ],
+        "scramble_nir_rank": [
+          0.33041240094858004,
+          113
+        ],
+        "scramble_nir_expr": [
+          0.48291399155532416,
+          113
+        ],
+        "linear_nir_rank": [
+          0.3553068425010122,
+          113
+        ],
+        "linear_nir_expr": [
+          0.502059112730638,
+          113
+        ],
+        "control_nir_rank": [
+          0.4284111284631847,
+          113
+        ],
+        "control_nir_expr": [
+          0.5716871999537279,
+          113
+        ],
+        "mean_nir_rank": [
+          0.21462201399733938,
+          113
+        ],
+        "mean_nir_expr": [
+          0.3613685002024408,
+          113
+        ],
+        "ceiling_nir_rank": [
+          0.5457458499624038,
+          113
+        ],
+        "ceiling_nir_expr": [
+          0.7794898490369597,
+          113
+        ]
+      },
+      "rows": [
+        {
+          "drug": "Tolcapone",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.7941176470588235
+          },
+          "linear": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 0.5294117647058824
+          },
+          "mean": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.5294117647058824
+          },
+          "model": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.3235294117647059
+          },
+          "scramble": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.17647058823529413
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Aliskiren",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.9117647058823529,
+            "nir_expr": 0.8235294117647058
+          },
+          "linear": {
+            "nir_rank": 0.2647058823529412,
+            "nir_expr": 0.7058823529411765
+          },
+          "mean": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.14705882352941177
+          },
+          "control": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.20588235294117646
+          },
+          "model": {
+            "nir_rank": 0.5588235294117647,
+            "nir_expr": 0.5588235294117647
+          },
+          "scramble": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.20588235294117646
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Almonertinib (hydrochloride)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.38235294117647056,
+            "nir_expr": 0.8529411764705882
+          },
+          "linear": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.2647058823529412
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.38235294117647056
+          },
+          "control": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.38235294117647056
+          },
+          "model": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.5
+          },
+          "scramble": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.6470588235294118
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Azithromycin (hydrate)",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.4411764705882353
+          },
+          "mean": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.8235294117647058
+          },
+          "control": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.5882352941176471
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.5
+          },
+          "scramble": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.7058823529411765
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Clonidine (hydrochloride)",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.9705882352941176,
+            "nir_expr": 0.9411764705882353
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.9411764705882353
+          },
+          "mean": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.14705882352941177
+          },
+          "control": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.11764705882352941
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.4117647058823529
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Baicalin",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.4411764705882353
+          },
+          "linear": {
+            "nir_rank": 0.8529411764705882,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.7058823529411765,
+            "nir_expr": 0.08823529411764706
+          },
+          "control": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.058823529411764705
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.14705882352941177
+          },
+          "scramble": {
+            "nir_rank": 0.3235294117647059,
+            "nir_expr": 0.29411764705882354
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Anethole trithione",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.3235294117647059
+          },
+          "linear": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.9705882352941176
+          },
+          "mean": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.08823529411764706
+          },
+          "scramble": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Fenofibrate",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.8235294117647058
+          },
+          "linear": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.38235294117647056
+          },
+          "mean": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.7058823529411765,
+            "nir_expr": 0.6764705882352942
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.8529411764705882
+          },
+          "scramble": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.5294117647058824
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Verteporfin",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.3235294117647059,
+            "nir_expr": 0.9117647058823529
+          },
+          "linear": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.5294117647058824
+          },
+          "model": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.7352941176470589
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.20588235294117646
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dexmedetomidine",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.6176470588235294
+          },
+          "linear": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.6176470588235294
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14705882352941177
+          },
+          "control": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.6176470588235294
+          },
+          "model": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.7058823529411765
+          },
+          "scramble": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.7647058823529411
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Mozavaptan",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.8529411764705882,
+            "nir_expr": 0.9411764705882353
+          },
+          "linear": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.35294117647058826
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 0.9117647058823529,
+            "nir_expr": 0.9411764705882353
+          },
+          "model": {
+            "nir_rank": 0.7352941176470589,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.5
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Eplerenone",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.8823529411764706
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3235294117647059
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.9117647058823529
+          },
+          "scramble": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.3235294117647059
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Sivelestat (sodium tetrahydrate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.9705882352941176
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.14705882352941177
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.6470588235294118
+          },
+          "control": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.9411764705882353
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.38235294117647056
+          },
+          "scramble": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.5294117647058824
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Tetracycline (hydrochloride)",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.6176470588235294
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14705882352941177
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.29411764705882354
+          },
+          "control": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.6470588235294118
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.058823529411764705
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.11764705882352941
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine (dihydrochloride)",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.9411764705882353
+          },
+          "linear": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.29411764705882354
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.38235294117647056,
+            "nir_expr": 0.5
+          },
+          "model": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.4117647058823529
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.17647058823529413
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Budesonide",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.7058823529411765
+          },
+          "linear": {
+            "nir_rank": 0.2647058823529412,
+            "nir_expr": 0.8823529411764706
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.029411764705882353
+          },
+          "model": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.5
+          },
+          "scramble": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.029411764705882353
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Valdecoxib",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.9117647058823529
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.5294117647058824
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.38235294117647056
+          },
+          "model": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.35294117647058826
+          },
+          "scramble": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.47058823529411764
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Canagliflozin (hemihydrate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.8823529411764706
+          },
+          "linear": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.11764705882352941
+          },
+          "mean": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.9411764705882353
+          },
+          "control": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.8823529411764706
+          },
+          "model": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.9705882352941176
+          },
+          "scramble": {
+            "nir_rank": 0.5588235294117647,
+            "nir_expr": 0.8529411764705882
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Omeprazole",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.7647058823529411
+          },
+          "linear": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.5294117647058824
+          },
+          "mean": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.8529411764705882
+          },
+          "control": {
+            "nir_rank": 0.9705882352941176,
+            "nir_expr": 0.9705882352941176
+          },
+          "model": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.7352941176470589
+          },
+          "scramble": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.7941176470588235
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Carbamazepine",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.7647058823529411
+          },
+          "linear": {
+            "nir_rank": 0.6764705882352942,
+            "nir_expr": 0.6470588235294118
+          },
+          "mean": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.9117647058823529
+          },
+          "model": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.7941176470588235
+          },
+          "scramble": {
+            "nir_rank": 0.38235294117647056,
+            "nir_expr": 0.38235294117647056
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Abiraterone acetate",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.08823529411764706
+          },
+          "mean": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.7058823529411765
+          },
+          "control": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.5588235294117647
+          },
+          "model": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.35294117647058826
+          },
+          "scramble": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.35294117647058826
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Proglumide",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.5
+          },
+          "linear": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.058823529411764705
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.14705882352941177
+          },
+          "control": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.6470588235294118
+          },
+          "model": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.5588235294117647
+          },
+          "scramble": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.14705882352941177
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Delamanid",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.6176470588235294
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.20588235294117646
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.35294117647058826
+          },
+          "model": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.20588235294117646
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.058823529411764705
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Citalopram (hydrobromide)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6764705882352942,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.23529411764705882
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.7058823529411765
+          },
+          "control": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.4117647058823529
+          },
+          "model": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.6470588235294118
+          },
+          "scramble": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.8823529411764706
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Vitamin K4",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.8529411764705882
+          },
+          "linear": {
+            "nir_rank": 0.8529411764705882,
+            "nir_expr": 0.8235294117647058
+          },
+          "mean": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 0.7058823529411765
+          },
+          "control": {
+            "nir_rank": 0.6764705882352942,
+            "nir_expr": 0.35294117647058826
+          },
+          "model": {
+            "nir_rank": 0.5588235294117647,
+            "nir_expr": 0.9117647058823529
+          },
+          "scramble": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.6176470588235294
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Aprepitant",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9705882352941176,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.6764705882352942,
+            "nir_expr": 0.5588235294117647
+          },
+          "mean": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 1.0
+          },
+          "control": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.8235294117647058
+          },
+          "model": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.9411764705882353
+          },
+          "scramble": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.8823529411764706
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Estrone sulfate (potassium)",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.5588235294117647,
+            "nir_expr": 0.9705882352941176
+          },
+          "linear": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.029411764705882353
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.5588235294117647
+          },
+          "control": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.8529411764705882,
+            "nir_expr": 0.8529411764705882
+          },
+          "scramble": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 0.7352941176470589
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Sonidegib",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.7941176470588235
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.8529411764705882
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.08823529411764706
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.029411764705882353
+          },
+          "model": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.08823529411764706
+          },
+          "scramble": {
+            "nir_rank": 0.2647058823529412,
+            "nir_expr": 0.058823529411764705
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "DTP3",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.7352941176470589
+          },
+          "linear": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.7647058823529411
+          },
+          "mean": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.14705882352941177
+          },
+          "control": {
+            "nir_rank": 0.3235294117647059,
+            "nir_expr": 0.2647058823529412
+          },
+          "model": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.7352941176470589
+          },
+          "scramble": {
+            "nir_rank": 0.20588235294117646,
+            "nir_expr": 0.5588235294117647
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Erdafitinib",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.6764705882352942
+          },
+          "mean": {
+            "nir_rank": 0.5588235294117647,
+            "nir_expr": 0.5588235294117647
+          },
+          "control": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.6176470588235294
+          },
+          "model": {
+            "nir_rank": 0.9117647058823529,
+            "nir_expr": 0.9411764705882353
+          },
+          "scramble": {
+            "nir_rank": 0.7058823529411765,
+            "nir_expr": 0.9411764705882353
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "palbociclib",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.8235294117647058,
+            "nir_expr": 0.8823529411764706
+          },
+          "linear": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 0.9117647058823529
+          },
+          "mean": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 0.8235294117647058,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.8823529411764706
+          },
+          "scramble": {
+            "nir_rank": 0.2647058823529412,
+            "nir_expr": 0.6764705882352942
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "TAK-901",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.6176470588235294
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.5882352941176471
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.058823529411764705
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Vemurafenib",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.6176470588235294,
+            "nir_expr": 0.7941176470588235
+          },
+          "linear": {
+            "nir_rank": 0.2647058823529412,
+            "nir_expr": 0.7647058823529411
+          },
+          "mean": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.20588235294117646
+          },
+          "control": {
+            "nir_rank": 0.6764705882352942,
+            "nir_expr": 0.8823529411764706
+          },
+          "model": {
+            "nir_rank": 0.14705882352941177,
+            "nir_expr": 0.2647058823529412
+          },
+          "scramble": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.7352941176470589
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Anastrozole",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.9705882352941176,
+            "nir_expr": 0.9705882352941176
+          },
+          "linear": {
+            "nir_rank": 0.7941176470588235,
+            "nir_expr": 0.7941176470588235
+          },
+          "mean": {
+            "nir_rank": 0.7058823529411765,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.6176470588235294
+          },
+          "model": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.7352941176470589
+          },
+          "scramble": {
+            "nir_rank": 0.7058823529411765,
+            "nir_expr": 0.5
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "HI-TOPK-032",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.4411764705882353,
+            "nir_expr": 0.7352941176470589
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4117647058823529
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3235294117647059
+          },
+          "control": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.6176470588235294
+          },
+          "model": {
+            "nir_rank": 0.08823529411764706,
+            "nir_expr": 0.20588235294117646
+          },
+          "scramble": {
+            "nir_rank": 0.029411764705882353,
+            "nir_expr": 0.38235294117647056
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Naproxen",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.6111111111111112
+          },
+          "mean": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.3333333333333333
+          },
+          "model": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.2222222222222222
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Canagliflozin",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.3888888888888889,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.1111111111111111
+          },
+          "control": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.9444444444444444
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dexmedetomidine",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.3888888888888889
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2222222222222222
+          },
+          "control": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.6666666666666666
+          },
+          "model": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.5
+          },
+          "scramble": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.8333333333333334
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6111111111111112,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.2222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4444444444444444
+          },
+          "control": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.8888888888888888
+          },
+          "model": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.5555555555555556
+          },
+          "scramble": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.16666666666666666
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Mozavaptan",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.1111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.2777777777777778
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2222222222222222
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Tetracycline (hydrochloride)",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.05555555555555555
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.7222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.3888888888888889,
+            "nir_expr": 0.9444444444444444
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine (dihydrochloride)",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.7222222222222222
+          },
+          "linear": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.5555555555555556
+          },
+          "mean": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.16666666666666666
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "model": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.3333333333333333
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Valdecoxib",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.9444444444444444
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.7222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.16666666666666666
+          },
+          "control": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.8888888888888888
+          },
+          "model": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.8333333333333334
+          },
+          "scramble": {
+            "nir_rank": 0.9444444444444444,
+            "nir_expr": 0.9444444444444444
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Ataluren",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.8333333333333334
+          },
+          "linear": {
+            "nir_rank": 0.7222222222222222,
+            "nir_expr": 0.6666666666666666
+          },
+          "mean": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.6111111111111112
+          },
+          "control": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.7777777777777778
+          },
+          "scramble": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.8333333333333334
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Benztropine (mesylate)",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.8333333333333334
+          },
+          "linear": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.3333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4444444444444444
+          },
+          "control": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.3888888888888889
+          },
+          "model": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.9444444444444444
+          },
+          "scramble": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.9444444444444444
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Carbamazepine",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.8333333333333334
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.7222222222222222,
+            "nir_expr": 0.9444444444444444
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.8888888888888888
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Abiraterone acetate",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.8333333333333334
+          },
+          "linear": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.4444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2777777777777778
+          },
+          "control": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.1111111111111111
+          },
+          "model": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.6666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.2777777777777778,
+            "nir_expr": 0.3888888888888889
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Proglumide",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.6666666666666666
+          },
+          "linear": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.2222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.2777777777777778
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Delamanid",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.8333333333333334
+          },
+          "linear": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.5
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.9444444444444444
+          },
+          "model": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.7777777777777778
+          },
+          "scramble": {
+            "nir_rank": 0.05555555555555555,
+            "nir_expr": 0.2777777777777778
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Vitamin K4",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.7222222222222222,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.7222222222222222,
+            "nir_expr": 0.8888888888888888
+          },
+          "mean": {
+            "nir_rank": 0.3888888888888889,
+            "nir_expr": 0.05555555555555555
+          },
+          "control": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.05555555555555555
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Aprepitant",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.8888888888888888,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.7222222222222222,
+            "nir_expr": 0.7777777777777778
+          },
+          "mean": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.6666666666666666
+          },
+          "model": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.7777777777777778
+          },
+          "scramble": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.7222222222222222
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Estrone sulfate (potassium)",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.8333333333333334
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2777777777777778
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2777777777777778
+          },
+          "control": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.3888888888888889
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.5555555555555556
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3888888888888889
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Sonidegib",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.9444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.05555555555555555
+          },
+          "control": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.6666666666666666
+          },
+          "model": {
+            "nir_rank": 0.9444444444444444,
+            "nir_expr": 0.1111111111111111
+          },
+          "scramble": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.1111111111111111
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "DTP3",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.9444444444444444,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.6111111111111112,
+            "nir_expr": 0.05555555555555555
+          },
+          "model": {
+            "nir_rank": 0.6111111111111112,
+            "nir_expr": 0.0
+          },
+          "scramble": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Anethole trithione",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.16666666666666666
+          },
+          "model": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dexmedetomidine",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.16666666666666666
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.6666666666666666
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.8333333333333334
+          },
+          "model": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.3333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.3333333333333333
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Docetaxel (Trihydrate)",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.6666666666666666
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.3333333333333333
+          },
+          "model": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.8333333333333334
+          },
+          "scramble": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.6666666666666666
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine (dihydrochloride)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "linear": {
+            "nir_rank": 0.16666666666666666,
+            "nir_expr": 0.3333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 0.8333333333333334
+          },
+          "model": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.5
+          },
+          "scramble": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.8333333333333334
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Budesonide",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.8333333333333334
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.16666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Benztropine (mesylate)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.5
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3333333333333333
+          },
+          "control": {
+            "nir_rank": 0.8333333333333334,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.8333333333333334
+          },
+          "scramble": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Tolcapone",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.5777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.6444444444444445
+          },
+          "mean": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.37777777777777777
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.3111111111111111
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.3111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.6444444444444445
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Aliskiren",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.9333333333333333
+          },
+          "linear": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.5333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.28888888888888886,
+            "nir_expr": 0.8444444444444444
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.35555555555555557
+          },
+          "model": {
+            "nir_rank": 0.8444444444444444,
+            "nir_expr": 0.8666666666666667
+          },
+          "scramble": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.6888888888888889
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Saquinavir",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.2
+          },
+          "mean": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.4222222222222222
+          },
+          "control": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.26666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.5555555555555556
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Almonertinib (hydrochloride)",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.8666666666666667,
+            "nir_expr": 0.8888888888888888
+          },
+          "linear": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 0.5777777777777777
+          },
+          "mean": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.7333333333333333
+          },
+          "control": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 0.4222222222222222
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.28888888888888886
+          },
+          "scramble": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.7555555555555555
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Azithromycin (hydrate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.7111111111111111,
+            "nir_expr": 0.4222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 0.8888888888888888
+          },
+          "control": {
+            "nir_rank": 0.5777777777777777,
+            "nir_expr": 0.8222222222222222
+          },
+          "model": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.8222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.6222222222222222,
+            "nir_expr": 0.7111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Clonidine (hydrochloride)",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.8666666666666667,
+            "nir_expr": 0.9111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.7111111111111111,
+            "nir_expr": 0.4444444444444444
+          },
+          "control": {
+            "nir_rank": 0.9777777777777777,
+            "nir_expr": 0.5333333333333333
+          },
+          "model": {
+            "nir_rank": 0.7111111111111111,
+            "nir_expr": 0.8222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.4666666666666667,
+            "nir_expr": 0.26666666666666666
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.8666666666666667,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.8444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.13333333333333333
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.13333333333333333
+          },
+          "model": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.2222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.17777777777777778
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Baicalin",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.3111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.28888888888888886,
+            "nir_expr": 0.7777777777777778
+          },
+          "mean": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.13333333333333333
+          },
+          "control": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.13333333333333333
+          },
+          "model": {
+            "nir_rank": 0.35555555555555557,
+            "nir_expr": 0.3333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6222222222222222
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Lipoic acid",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.5555555555555556
+          },
+          "linear": {
+            "nir_rank": 0.28888888888888886,
+            "nir_expr": 0.28888888888888886
+          },
+          "mean": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4888888888888889
+          },
+          "control": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.7333333333333333
+          },
+          "model": {
+            "nir_rank": 0.6222222222222222,
+            "nir_expr": 0.7333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.4666666666666667
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Anethole trithione",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.7333333333333333,
+            "nir_expr": 0.7111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.8222222222222222,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.022222222222222223
+          },
+          "model": {
+            "nir_rank": 0.8444444444444444,
+            "nir_expr": 0.8
+          },
+          "scramble": {
+            "nir_rank": 0.9777777777777777,
+            "nir_expr": 0.2222222222222222
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Naproxen",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.8666666666666667
+          },
+          "linear": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.08888888888888889
+          },
+          "mean": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.4666666666666667
+          },
+          "control": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.9777777777777777
+          },
+          "model": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.4888888888888889
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.06666666666666667
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Fenofibrate",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.6222222222222222,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.37777777777777777,
+            "nir_expr": 0.8888888888888888
+          },
+          "mean": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.044444444444444446
+          },
+          "control": {
+            "nir_rank": 0.37777777777777777,
+            "nir_expr": 0.08888888888888889
+          },
+          "model": {
+            "nir_rank": 0.26666666666666666,
+            "nir_expr": 0.37777777777777777
+          },
+          "scramble": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.7333333333333333
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Canagliflozin",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.08888888888888889
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.022222222222222223
+          },
+          "control": {
+            "nir_rank": 0.28888888888888886,
+            "nir_expr": 0.9111111111111111
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.022222222222222223
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Verteporfin",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.3111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.1111111111111111
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.28888888888888886
+          },
+          "scramble": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.17777777777777778
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dexmedetomidine",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.8222222222222222
+          },
+          "linear": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.28888888888888886
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.9777777777777777
+          },
+          "model": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.6888888888888889
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.1111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Mozavaptan",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.8444444444444444
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.044444444444444446
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.15555555555555556
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.6888888888888889
+          },
+          "model": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.1111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.6
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Docetaxel (Trihydrate)",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.26666666666666666,
+            "nir_expr": 0.5111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.7333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4444444444444444
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.4444444444444444
+          },
+          "model": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.7333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.6888888888888889,
+            "nir_expr": 0.8222222222222222
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Eplerenone",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.6444444444444445
+          },
+          "linear": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.4444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.2
+          },
+          "control": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.15555555555555556
+          },
+          "model": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.022222222222222223
+          },
+          "scramble": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.26666666666666666
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Sivelestat (sodium tetrahydrate)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.35555555555555557
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.022222222222222223
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.08888888888888889
+          },
+          "control": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.4222222222222222
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.022222222222222223
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Tetracycline (hydrochloride)",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.9555555555555556
+          },
+          "linear": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.1111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.7333333333333333
+          },
+          "control": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.15555555555555556
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.3111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine (dihydrochloride)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9777777777777777,
+            "nir_expr": 0.9555555555555556
+          },
+          "linear": {
+            "nir_rank": 0.7111111111111111,
+            "nir_expr": 0.7111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8666666666666667
+          },
+          "control": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.9777777777777777
+          },
+          "scramble": {
+            "nir_rank": 0.7333333333333333,
+            "nir_expr": 0.9555555555555556
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Budesonide",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.4888888888888889
+          },
+          "linear": {
+            "nir_rank": 0.6888888888888889,
+            "nir_expr": 0.9555555555555556
+          },
+          "mean": {
+            "nir_rank": 0.6888888888888889,
+            "nir_expr": 0.15555555555555556
+          },
+          "control": {
+            "nir_rank": 0.37777777777777777,
+            "nir_expr": 0.06666666666666667
+          },
+          "model": {
+            "nir_rank": 0.8222222222222222,
+            "nir_expr": 0.7555555555555555
+          },
+          "scramble": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.1111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Valdecoxib",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.5333333333333333
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.5111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.5333333333333333
+          },
+          "control": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.9555555555555556
+          },
+          "model": {
+            "nir_rank": 0.6222222222222222,
+            "nir_expr": 0.7111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.4222222222222222
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Ataluren",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.4
+          },
+          "linear": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.4888888888888889
+          },
+          "mean": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.24444444444444444
+          },
+          "control": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.5777777777777777
+          },
+          "model": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.2222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.5111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Canagliflozin (hemihydrate)",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.8444444444444444,
+            "nir_expr": 0.9555555555555556
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.7111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 0.9111111111111111
+          },
+          "control": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.9111111111111111
+          },
+          "model": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.8666666666666667
+          },
+          "scramble": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.5777777777777777
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Omeprazole",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.4888888888888889,
+            "nir_expr": 0.3111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.5555555555555556
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.26666666666666666
+          },
+          "control": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.13333333333333333
+          },
+          "model": {
+            "nir_rank": 0.37777777777777777,
+            "nir_expr": 0.4888888888888889
+          },
+          "scramble": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.3111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Cabozantinib (S-malate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.8222222222222222,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.4666666666666667,
+            "nir_expr": 0.26666666666666666
+          },
+          "mean": {
+            "nir_rank": 0.35555555555555557,
+            "nir_expr": 0.9555555555555556
+          },
+          "control": {
+            "nir_rank": 0.7333333333333333,
+            "nir_expr": 0.9111111111111111
+          },
+          "model": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.5111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.7111111111111111,
+            "nir_expr": 0.6888888888888889
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Benztropine (mesylate)",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.6666666666666666
+          },
+          "linear": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.24444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.4222222222222222
+          },
+          "control": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.6444444444444445
+          },
+          "scramble": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.17777777777777778
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Carbamazepine",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.24444444444444444,
+            "nir_expr": 0.8444444444444444
+          },
+          "linear": {
+            "nir_rank": 0.4444444444444444,
+            "nir_expr": 0.4
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.7333333333333333
+          },
+          "control": {
+            "nir_rank": 0.5111111111111111,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.7777777777777778
+          },
+          "scramble": {
+            "nir_rank": 0.7555555555555555,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Abiraterone acetate",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.8444444444444444
+          },
+          "linear": {
+            "nir_rank": 0.26666666666666666,
+            "nir_expr": 0.17777777777777778
+          },
+          "mean": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.6888888888888889
+          },
+          "control": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.7555555555555555
+          },
+          "model": {
+            "nir_rank": 0.4888888888888889,
+            "nir_expr": 0.6666666666666666
+          },
+          "scramble": {
+            "nir_rank": 0.28888888888888886,
+            "nir_expr": 0.5111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Proglumide",
+          "n_cells": 38,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.4666666666666667,
+            "nir_expr": 0.13333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 1.0
+          },
+          "control": {
+            "nir_rank": 0.8444444444444444,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.35555555555555557,
+            "nir_expr": 0.8
+          },
+          "scramble": {
+            "nir_rank": 0.35555555555555557,
+            "nir_expr": 0.7333333333333333
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Delamanid",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.8
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.15555555555555556
+          },
+          "mean": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.4666666666666667
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6888888888888889
+          },
+          "model": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.8222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.2
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Citalopram (hydrobromide)",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.2
+          },
+          "linear": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.3333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.24444444444444444
+          },
+          "control": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.4
+          },
+          "model": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.2222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4888888888888889
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Vitamin K4",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.6444444444444445
+          },
+          "linear": {
+            "nir_rank": 0.24444444444444444,
+            "nir_expr": 0.4666666666666667
+          },
+          "mean": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.4222222222222222
+          },
+          "control": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.3111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.4888888888888889
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Aprepitant",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.5111111111111111
+          },
+          "linear": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.35555555555555557
+          },
+          "mean": {
+            "nir_rank": 0.08888888888888889,
+            "nir_expr": 0.4666666666666667
+          },
+          "control": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.4444444444444444
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.7333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.7333333333333333
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Estrone sulfate (potassium)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9777777777777777,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.6222222222222222,
+            "nir_expr": 0.3111111111111111
+          },
+          "mean": {
+            "nir_rank": 0.5333333333333333,
+            "nir_expr": 0.8666666666666667
+          },
+          "control": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.8666666666666667
+          },
+          "model": {
+            "nir_rank": 0.4222222222222222,
+            "nir_expr": 0.5111111111111111
+          },
+          "scramble": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.7777777777777778
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Sonidegib",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9777777777777777,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.8
+          },
+          "mean": {
+            "nir_rank": 0.6666666666666666,
+            "nir_expr": 0.6888888888888889
+          },
+          "control": {
+            "nir_rank": 0.7777777777777778,
+            "nir_expr": 0.8888888888888888
+          },
+          "model": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.8222222222222222
+          },
+          "scramble": {
+            "nir_rank": 0.5777777777777777,
+            "nir_expr": 0.7555555555555555
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "DTP3",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.5111111111111111,
+            "nir_expr": 0.8222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.26666666666666666,
+            "nir_expr": 0.17777777777777778
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.9777777777777777
+          },
+          "model": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.5333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.4
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Erdafitinib",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4444444444444444
+          },
+          "linear": {
+            "nir_rank": 0.24444444444444444,
+            "nir_expr": 0.4222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.28888888888888886
+          },
+          "control": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.7777777777777778
+          },
+          "model": {
+            "nir_rank": 0.13333333333333333,
+            "nir_expr": 0.5333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.3333333333333333
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "palbociclib",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.6222222222222222
+          },
+          "mean": {
+            "nir_rank": 0.17777777777777778,
+            "nir_expr": 0.4444444444444444
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6222222222222222
+          },
+          "model": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.4888888888888889
+          },
+          "scramble": {
+            "nir_rank": 0.3111111111111111,
+            "nir_expr": 0.6
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Volasertib",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.8222222222222222
+          },
+          "linear": {
+            "nir_rank": 0.9333333333333333,
+            "nir_expr": 0.9333333333333333
+          },
+          "mean": {
+            "nir_rank": 0.7555555555555555,
+            "nir_expr": 0.35555555555555557
+          },
+          "control": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 0.9111111111111111
+          },
+          "model": {
+            "nir_rank": 0.6444444444444445,
+            "nir_expr": 0.9333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.5111111111111111,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "TAK-901",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.3333333333333333,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.6
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.022222222222222223
+          },
+          "control": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.08888888888888889
+          },
+          "scramble": {
+            "nir_rank": 0.06666666666666667,
+            "nir_expr": 0.2
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Vemurafenib",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.9111111111111111,
+            "nir_expr": 0.8444444444444444
+          },
+          "mean": {
+            "nir_rank": 0.6888888888888889,
+            "nir_expr": 0.7111111111111111
+          },
+          "control": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.4
+          },
+          "model": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 0.9333333333333333,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "AT7519",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.5555555555555556,
+            "nir_expr": 0.9333333333333333
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.7777777777777778
+          },
+          "mean": {
+            "nir_rank": 0.2222222222222222,
+            "nir_expr": 0.6
+          },
+          "control": {
+            "nir_rank": 0.9555555555555556,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.15555555555555556,
+            "nir_expr": 0.3333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.35555555555555557,
+            "nir_expr": 0.9111111111111111
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Anastrozole",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.8888888888888888,
+            "nir_expr": 0.9777777777777777
+          },
+          "linear": {
+            "nir_rank": 0.8222222222222222,
+            "nir_expr": 0.9777777777777777
+          },
+          "mean": {
+            "nir_rank": 0.6888888888888889,
+            "nir_expr": 0.24444444444444444
+          },
+          "control": {
+            "nir_rank": 0.8444444444444444,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.9333333333333333,
+            "nir_expr": 0.9555555555555556
+          },
+          "scramble": {
+            "nir_rank": 0.5111111111111111,
+            "nir_expr": 0.6222222222222222
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "HI-TOPK-032",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.022222222222222223,
+            "nir_expr": 0.35555555555555557
+          },
+          "linear": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.6666666666666666
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.044444444444444446
+          },
+          "control": {
+            "nir_rank": 0.1111111111111111,
+            "nir_expr": 0.1111111111111111
+          },
+          "model": {
+            "nir_rank": 0.044444444444444446,
+            "nir_expr": 0.13333333333333333
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.044444444444444446
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Naproxen",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.8
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.8
+          },
+          "scramble": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Verteporfin",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.2,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4
+          },
+          "scramble": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Berbamine (dihydrochloride)",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.2
+          },
+          "linear": {
+            "nir_rank": 0.8,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.2
+          },
+          "model": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.8
+          },
+          "scramble": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Ataluren",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.8
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "scramble": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        },
+        {
+          "drug": "Proglumide",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.6
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.8
+          },
+          "scramble": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0428",
+          "tier": "tier2_unseen_drugs"
+        }
+      ]
+    },
+    "tier3_unseen_combos": {
+      "n_drugs": 6,
+      "agg": {
+        "model_nir_rank": [
+          0.46666666666666673,
+          6
+        ],
+        "model_nir_expr": [
+          0.39999999999999997,
+          6
+        ],
+        "scramble_nir_rank": [
+          null,
+          0
+        ],
+        "scramble_nir_expr": [
+          null,
+          0
+        ],
+        "linear_nir_rank": [
+          0.5,
+          6
+        ],
+        "linear_nir_expr": [
+          0.5000000000000001,
+          6
+        ],
+        "control_nir_rank": [
+          0.5666666666666667,
+          6
+        ],
+        "control_nir_expr": [
+          0.6000000000000001,
+          6
+        ],
+        "mean_nir_rank": [
+          0.10000000000000002,
+          6
+        ],
+        "mean_nir_expr": [
+          0.09999999999999999,
+          6
+        ],
+        "ceiling_nir_rank": [
+          0.8333333333333331,
+          6
+        ],
+        "ceiling_nir_expr": [
+          0.9666666666666667,
+          6
+        ]
+      },
+      "rows": [
+        {
+          "drug": "Sinomenine",
+          "n_cells": 112,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.8
+          },
+          "mean": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.6
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.6
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        },
+        {
+          "drug": "Betamethasone dipropionate",
+          "n_cells": 65,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.4
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        },
+        {
+          "drug": "Bisoprolol (hemifumarate)",
+          "n_cells": 65,
+          "ceiling": {
+            "nir_rank": 0.8,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        },
+        {
+          "drug": "Perindopril (erbumine)",
+          "n_cells": 85,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.6
+          },
+          "model": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.4
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        },
+        {
+          "drug": "Voriconazole",
+          "n_cells": 71,
+          "ceiling": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.2
+          },
+          "model": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.4
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        },
+        {
+          "drug": "PH-797804",
+          "n_cells": 68,
+          "ceiling": {
+            "nir_rank": 0.6,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.2
+          },
+          "cell_line": "CVCL_0293",
+          "tier": "tier3_unseen_combos"
+        }
+      ]
+    },
+    "tier4_dose_interpolation": {
+      "n_drugs": 64,
+      "agg": {
+        "model_nir_rank": [
+          0.3891374939398836,
+          64
+        ],
+        "model_nir_expr": [
+          0.49349168754040074,
+          64
+        ],
+        "scramble_nir_rank": [
+          null,
+          0
+        ],
+        "scramble_nir_expr": [
+          null,
+          0
+        ],
+        "linear_nir_rank": [
+          0.3458925036360698,
+          64
+        ],
+        "linear_nir_expr": [
+          0.501953125,
+          64
+        ],
+        "control_nir_rank": [
+          0.41621409381060115,
+          64
+        ],
+        "control_nir_expr": [
+          0.4979875363606981,
+          64
+        ],
+        "mean_nir_rank": [
+          0.13164340255332901,
+          64
+        ],
+        "mean_nir_expr": [
+          0.21430540966386555,
+          64
+        ],
+        "ceiling_nir_rank": [
+          0.4645687722204266,
+          64
+        ],
+        "ceiling_nir_expr": [
+          0.6534764867485456,
+          64
+        ]
+      },
+      "rows": [
+        {
+          "drug": "Adenine",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 0.07692307692307693
+          },
+          "linear": {
+            "nir_rank": 0.7692307692307693,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.3076923076923077,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.7692307692307693,
+            "nir_expr": 0.15384615384615385
+          },
+          "model": {
+            "nir_rank": 0.38461538461538464,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.46153846153846156
+          },
+          "mean": {
+            "nir_rank": 0.9230769230769231,
+            "nir_expr": 1.0
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Amsacrine",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.38461538461538464,
+            "nir_expr": 0.8461538461538461
+          },
+          "linear": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.8461538461538461
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.46153846153846156
+          },
+          "model": {
+            "nir_rank": 0.15384615384615385,
+            "nir_expr": 0.23076923076923078
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "8-Hydroxyquinoline",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.9230769230769231,
+            "nir_expr": 0.8461538461538461
+          },
+          "linear": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 0.7692307692307693
+          },
+          "mean": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.15384615384615385
+          },
+          "control": {
+            "nir_rank": 0.46153846153846156,
+            "nir_expr": 0.38461538461538464
+          },
+          "model": {
+            "nir_rank": 0.6153846153846154,
+            "nir_expr": 0.23076923076923078
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Sodium Salicylate",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.23076923076923078
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.38461538461538464
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.15384615384615385
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.07692307692307693
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Diammonium Glycyrrhizinate",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 0.9230769230769231
+          },
+          "linear": {
+            "nir_rank": 0.38461538461538464,
+            "nir_expr": 0.23076923076923078
+          },
+          "mean": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.46153846153846156
+          },
+          "control": {
+            "nir_rank": 0.5384615384615384,
+            "nir_expr": 0.8461538461538461
+          },
+          "model": {
+            "nir_rank": 0.8461538461538461,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "S-Adenosyl-L-methionine (disulfate tosylate)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.5384615384615384
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.07692307692307693
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.6153846153846154
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pentamidine (isethionate)",
+          "n_cells": 28,
+          "ceiling": {
+            "nir_rank": 0.8461538461538461,
+            "nir_expr": 0.8461538461538461
+          },
+          "linear": {
+            "nir_rank": 0.6153846153846154,
+            "nir_expr": 0.5384615384615384
+          },
+          "mean": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.8461538461538461
+          },
+          "control": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 0.9230769230769231
+          },
+          "model": {
+            "nir_rank": 0.6153846153846154,
+            "nir_expr": 0.9230769230769231
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenosine",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.5384615384615384
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.07692307692307693
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.15384615384615385
+          },
+          "control": {
+            "nir_rank": 0.15384615384615385,
+            "nir_expr": 0.5384615384615384
+          },
+          "model": {
+            "nir_rank": 0.38461538461538464,
+            "nir_expr": 0.8461538461538461
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Norepinephrine (hydrochloride)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.6923076923076923,
+            "nir_expr": 0.07692307692307693
+          },
+          "mean": {
+            "nir_rank": 0.15384615384615385,
+            "nir_expr": 0.6923076923076923
+          },
+          "control": {
+            "nir_rank": 0.46153846153846156,
+            "nir_expr": 0.6923076923076923
+          },
+          "model": {
+            "nir_rank": 0.7692307692307693,
+            "nir_expr": 0.9230769230769231
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Demeclocycline",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.6153846153846154
+          },
+          "linear": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.3076923076923077
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.38461538461538464
+          },
+          "control": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.23076923076923078
+          },
+          "model": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.07692307692307693
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Mitoxantrone (dihydrochloride)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.6923076923076923
+          },
+          "linear": {
+            "nir_rank": 0.15384615384615385,
+            "nir_expr": 0.6153846153846154
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.15384615384615385
+          },
+          "model": {
+            "nir_rank": 0.23076923076923078,
+            "nir_expr": 0.5384615384615384
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Triclosan",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.5384615384615384,
+            "nir_expr": 0.8461538461538461
+          },
+          "linear": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.6923076923076923
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.15384615384615385
+          },
+          "control": {
+            "nir_rank": 0.38461538461538464,
+            "nir_expr": 0.6153846153846154
+          },
+          "model": {
+            "nir_rank": 0.5384615384615384,
+            "nir_expr": 0.7692307692307693
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Medroxyprogesterone acetate",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.3076923076923077,
+            "nir_expr": 0.5384615384615384
+          },
+          "linear": {
+            "nir_rank": 0.15384615384615385,
+            "nir_expr": 0.9230769230769231
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.5384615384615384,
+            "nir_expr": 0.38461538461538464
+          },
+          "model": {
+            "nir_rank": 0.07692307692307693,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0480",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenine",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.14285714285714285
+          },
+          "linear": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.42857142857142855
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14285714285714285
+          },
+          "model": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.42857142857142855
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.8571428571428571,
+            "nir_expr": 0.8571428571428571
+          },
+          "mean": {
+            "nir_rank": 0.7142857142857143,
+            "nir_expr": 0.14285714285714285
+          },
+          "control": {
+            "nir_rank": 0.8571428571428571,
+            "nir_expr": 0.8571428571428571
+          },
+          "model": {
+            "nir_rank": 0.7142857142857143,
+            "nir_expr": 0.8571428571428571
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Amsacrine",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.7142857142857143,
+            "nir_expr": 0.14285714285714285
+          },
+          "control": {
+            "nir_rank": 0.7142857142857143,
+            "nir_expr": 0.5714285714285714
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "S-Adenosyl-L-methionine (disulfate tosylate)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.2857142857142857
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14285714285714285
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.42857142857142855
+          },
+          "model": {
+            "nir_rank": 0.14285714285714285,
+            "nir_expr": 0.2857142857142857
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pentamidine (isethionate)",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.5714285714285714,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.14285714285714285,
+            "nir_expr": 0.14285714285714285
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14285714285714285
+          },
+          "control": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.42857142857142855
+          },
+          "model": {
+            "nir_rank": 0.14285714285714285,
+            "nir_expr": 0.7142857142857143
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Sulfisoxazole",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.42857142857142855
+          },
+          "linear": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.5714285714285714
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.8571428571428571,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.8571428571428571
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Ciclopirox",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.2857142857142857,
+            "nir_expr": 0.0
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.7142857142857143
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Triclosan",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.14285714285714285,
+            "nir_expr": 0.5714285714285714
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.14285714285714285
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_1285",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.5
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.75
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.875
+          },
+          "model": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.375
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Amsacrine",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.875,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.75
+          },
+          "mean": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.5
+          },
+          "control": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.875
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "8-Hydroxyquinoline",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.375,
+            "nir_expr": 0.625
+          },
+          "linear": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.125
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Chlorhexidine (diacetate)",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.75
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.5
+          },
+          "mean": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.125
+          },
+          "control": {
+            "nir_rank": 0.75,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.875,
+            "nir_expr": 0.875
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Retinoic acid",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.125
+          },
+          "linear": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.875
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.125
+          },
+          "model": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.125
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "S-Adenosyl-L-methionine (disulfate tosylate)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.25
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenosine",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.625
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.375
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.375
+          },
+          "model": {
+            "nir_rank": 0.875,
+            "nir_expr": 0.875
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Norepinephrine (hydrochloride)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.75,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.25
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.375
+          },
+          "control": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.625
+          },
+          "model": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.5
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Docetaxel",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.5
+          },
+          "linear": {
+            "nir_rank": 0.375,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.375,
+            "nir_expr": 0.625
+          },
+          "model": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0131",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Selinexor",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.5294117647058824
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.4117647058823529
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.4117647058823529
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.11764705882352941
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenine",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.8823529411764706
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.23529411764705882
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.8823529411764706
+          },
+          "model": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.5294117647058824
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.9411764705882353
+          },
+          "linear": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.8235294117647058
+          },
+          "mean": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.7058823529411765
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Amsacrine",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.8235294117647058
+          },
+          "linear": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.8235294117647058,
+            "nir_expr": 0.29411764705882354
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Chlorhexidine (diacetate)",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.7647058823529411
+          },
+          "linear": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.5882352941176471
+          },
+          "mean": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.5882352941176471
+          },
+          "control": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7647058823529411
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7647058823529411
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Raltitrexed",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.23529411764705882
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.35294117647058826
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.058823529411764705
+          },
+          "control": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.7058823529411765
+          },
+          "model": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.17647058823529413
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Sodium Salicylate",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.4117647058823529
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.17647058823529413
+          },
+          "mean": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.47058823529411764
+          },
+          "model": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.11764705882352941
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Diammonium Glycyrrhizinate",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.23529411764705882
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.11764705882352941
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "S-Adenosyl-L-methionine (disulfate tosylate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.058823529411764705
+          },
+          "mean": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.8235294117647058
+          },
+          "control": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.8235294117647058
+          },
+          "model": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7647058823529411
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Idarubicin (hydrochloride)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.9411764705882353
+          },
+          "linear": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.8823529411764706
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.29411764705882354
+          },
+          "model": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.8823529411764706
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pentamidine (isethionate)",
+          "n_cells": 22,
+          "ceiling": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.5882352941176471
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.5294117647058824
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.23529411764705882
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.11764705882352941
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenosine",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.8823529411764706
+          },
+          "linear": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7647058823529411
+          },
+          "mean": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.6470588235294118
+          },
+          "control": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.7058823529411765
+          },
+          "model": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 0.9411764705882353
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Norepinephrine (hydrochloride)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.47058823529411764
+          },
+          "mean": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.8235294117647058
+          },
+          "control": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.8235294117647058
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Ciclopirox",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.23529411764705882,
+            "nir_expr": 0.11764705882352941
+          },
+          "mean": {
+            "nir_rank": 0.29411764705882354,
+            "nir_expr": 0.8235294117647058
+          },
+          "control": {
+            "nir_rank": 0.8235294117647058,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.5882352941176471
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Demeclocycline",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.4117647058823529
+          },
+          "linear": {
+            "nir_rank": 0.17647058823529413,
+            "nir_expr": 0.6470588235294118
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.29411764705882354
+          },
+          "model": {
+            "nir_rank": 0.11764705882352941,
+            "nir_expr": 0.47058823529411764
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Docetaxel",
+          "n_cells": 25,
+          "ceiling": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7058823529411765
+          },
+          "linear": {
+            "nir_rank": 0.6470588235294118,
+            "nir_expr": 0.7058823529411765
+          },
+          "mean": {
+            "nir_rank": 0.4117647058823529,
+            "nir_expr": 0.5294117647058824
+          },
+          "control": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.6470588235294118
+          },
+          "model": {
+            "nir_rank": 0.9411764705882353,
+            "nir_expr": 0.8823529411764706
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Berberine (chloride hydrate)",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.8823529411764706,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.9411764705882353
+          },
+          "mean": {
+            "nir_rank": 0.5294117647058824,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.5882352941176471,
+            "nir_expr": 0.058823529411764705
+          },
+          "model": {
+            "nir_rank": 0.7647058823529411,
+            "nir_expr": 0.8823529411764706
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Medroxyprogesterone acetate",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.35294117647058826,
+            "nir_expr": 0.5882352941176471
+          },
+          "linear": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.29411764705882354
+          },
+          "mean": {
+            "nir_rank": 0.058823529411764705,
+            "nir_expr": 0.11764705882352941
+          },
+          "control": {
+            "nir_rank": 0.47058823529411764,
+            "nir_expr": 0.47058823529411764
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.058823529411764705
+          },
+          "cell_line": "CVCL_0546",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Adenine",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.8
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.8,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.4,
+            "nir_expr": 0.6
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.6
+          },
+          "control": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.8
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Chlorhexidine (diacetate)",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4
+          },
+          "linear": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.4
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 0.8
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.6
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "S-Adenosyl-L-methionine (disulfate tosylate)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.4
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pentamidine (isethionate)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.2
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.2
+          },
+          "model": {
+            "nir_rank": 0.2,
+            "nir_expr": 0.6
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Berberine (chloride hydrate)",
+          "n_cells": 23,
+          "ceiling": {
+            "nir_rank": 0.6,
+            "nir_expr": 0.6
+          },
+          "linear": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.8,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.8,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0459",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Gallic acid",
+          "n_cells": 27,
+          "ceiling": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.625
+          },
+          "linear": {
+            "nir_rank": 0.75,
+            "nir_expr": 0.875
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.75,
+            "nir_expr": 0.75
+          },
+          "model": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.625
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Amsacrine",
+          "n_cells": 26,
+          "ceiling": {
+            "nir_rank": 0.875,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.625,
+            "nir_expr": 1.0
+          },
+          "mean": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.0
+          },
+          "model": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.625
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "8-Hydroxyquinoline",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.375
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.25
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.25
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Chlorhexidine (diacetate)",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.25
+          },
+          "linear": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.75
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "model": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.125
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pasireotide (acetate)",
+          "n_cells": 20,
+          "ceiling": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.5
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.625
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.375
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Pentamidine (isethionate)",
+          "n_cells": 30,
+          "ceiling": {
+            "nir_rank": 0.875,
+            "nir_expr": 1.0
+          },
+          "linear": {
+            "nir_rank": 0.875,
+            "nir_expr": 0.5
+          },
+          "mean": {
+            "nir_rank": 0.375,
+            "nir_expr": 0.875
+          },
+          "control": {
+            "nir_rank": 0.875,
+            "nir_expr": 0.875
+          },
+          "model": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Norepinephrine (hydrochloride)",
+          "n_cells": 24,
+          "ceiling": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.875
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.375,
+            "nir_expr": 0.625
+          },
+          "model": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.5
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Ciclopirox",
+          "n_cells": 29,
+          "ceiling": {
+            "nir_rank": 0.625,
+            "nir_expr": 0.875
+          },
+          "linear": {
+            "nir_rank": 0.5,
+            "nir_expr": 0.25
+          },
+          "mean": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.375
+          },
+          "control": {
+            "nir_rank": 1.0,
+            "nir_expr": 1.0
+          },
+          "model": {
+            "nir_rank": 0.25,
+            "nir_expr": 0.375
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        },
+        {
+          "drug": "Demeclocycline",
+          "n_cells": 21,
+          "ceiling": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.125
+          },
+          "linear": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.375
+          },
+          "mean": {
+            "nir_rank": 0.0,
+            "nir_expr": 0.0
+          },
+          "control": {
+            "nir_rank": 0.125,
+            "nir_expr": 0.5
+          },
+          "model": {
+            "nir_rank": 0.375,
+            "nir_expr": 0.5
+          },
+          "cell_line": "CVCL_0359",
+          "tier": "tier4_dose_interpolation"
+        }
+      ]
+    }
+  },
+  "config": {
+    "out": "RESULTS/nir_benchmark_perdrug.json",
+    "selftest": false,
+    "temp_sweep": false,
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "scram_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big_scram",
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final",
+    "train_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+    "tiers": "tier2_unseen_drugs,tier3_unseen_combos,tier4_dose_interpolation",
+    "tier": "tier2_unseen_drugs",
+    "temps": "0,0.5,0.8,1.0",
+    "k_samples": 8,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_new_tokens": 1200,
+    "gen_batch_size": 48,
+    "min_cells": 20,
+    "min_drugs_per_cl": 6,
+    "n_celllines": 20,
+    "max_fit": 40000,
+    "ridge_lambda": 0.1,
+    "bf16": true,
+    "profiles": "RESULTS/nir_profiles.npz",
+    "seed": 42
+  }
+}

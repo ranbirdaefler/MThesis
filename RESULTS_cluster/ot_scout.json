@@ -1,0 +1,44 @@
+{
+  "repo": "tahoebio/Tahoe-100M",
+  "scvi_tools": "NOT importable: ModuleNotFoundError",
+  "repo_files": {
+    "scvi_like_files": [],
+    "n_files": 4427,
+    "expression_shards": 3388,
+    "listing_error": null
+  },
+  "row": {
+    "columns": [
+      "genes",
+      "expressions",
+      "drug",
+      "sample",
+      "BARCODE_SUB_LIB_ID",
+      "cell_line_id",
+      "moa-fine",
+      "canonical_smiles",
+      "pubchem_cid",
+      "plate"
+    ],
+    "embedding_field": null,
+    "n_genes_in_row": 1879,
+    "error": null
+  },
+  "genes": {
+    "n_genes_metadata": 62710,
+    "panel_size": 946,
+    "panel_in_metadata": 946,
+    "error": null,
+    "gene_metadata_columns": [
+      "gene_symbol",
+      "ensembl_id",
+      "token_id"
+    ],
+    "panel_symbol_columns_used": [
+      "gene_symbol"
+    ]
+  },
+  "scvi_model_path": null,
+  "scvi_model_path_exists": false,
+  "scvi_verdict": "NONE found (proceed with PCA only; revisit scVI if a model/embedding surfaces)"
+}
