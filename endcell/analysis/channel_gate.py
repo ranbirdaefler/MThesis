@@ -312,13 +312,38 @@ def run(args):
     truth = {k: signed_rank(kept[k]["residual"], P, args.k_sig) for k in kept}
 
     recs = []
+    # THE PARTNER POOL MUST BE TRAINING CONDITIONS ONLY.
+    #
+    # The chapter says these predictions average "only drugs present in training". They did not: the
+    # pool was every retained condition in the cell line, so a held-out condition's own residual
+    # could enter the prediction made for it, and the gate reported a retrieval score partly built
+    # from the answer. residual_eval.py:519-522 already does this correctly for its lookup arms and
+    # is the pattern mirrored here.
+    #
+    # `train_keys` is None when no holdout was supplied, in which case the old behaviour is kept and
+    # the run says so -- an unrestricted pool is correct only when reproducing a published number.
+    train_keys = None
+    if tcfg.get("split"):
+        _norm, _hit = brt.normalise_split(tcfg["split"], kept)
+        if _norm:
+            train_keys = {k for k, v in _norm.items() if v == "train"}
+            logger.info(f"partner pool restricted to {len(train_keys)} TRAINING conditions of "
+                        f"{len(kept)} retained ({len(train_keys)/max(1,len(kept)):.1%})")
+    if train_keys is None:
+        logger.warning("=" * 96)
+        logger.warning("NO TRAINING SPLIT AVAILABLE: the partner pool is every retained condition, "
+                       "so a held-out condition can contribute to the prediction made for it. Pass "
+                       "--truth_from and --holdout. Do not quote these numbers as training-only.")
+        logger.warning("=" * 96)
+
     for c, keys in by_cl.items():
         if len(keys) < args.min_drugs:
             continue
         drug_of = {k: k[0] for k in keys}
         for key in keys:
             d = drug_of[key]
-            others = [k2 for k2 in keys if k2[0] != d]
+            others = [k2 for k2 in keys if k2[0] != d
+                      and (train_keys is None or k2 in train_keys)]
             if len(others) < 3:
                 continue
             oth_truth = [truth[k2] for k2 in others]
@@ -471,7 +496,17 @@ def run(args):
             v["live"], v["verdict"] = None, (
                 f"UNTESTABLE -- plate-matched null spans only {pm['n_cell_lines']} cell lines")
         else:
-            v["live"] = bool(pm["ci"][0] > args.min_margin)
+            # THREE STATES, not two. Failing to clear the margin is not evidence of equivalence: an
+            # interval that spans the margin is INCONCLUSIVE, and calling it "closed" asserts a null
+            # the data does not support. Equivalence needs the whole interval inside the margin.
+            _lo, _hi = pm["ci"][0], pm["ci"][1]
+            if _lo > args.min_margin:
+                v["verdict"] = "live"
+            elif _hi < args.min_margin:
+                v["verdict"] = "equivalent"
+            else:
+                v["verdict"] = "inconclusive"
+            v["live"] = v["verdict"] == "live"
             v["verdict"] = "LIVE" if v["live"] else "closed"
         verdicts[ch] = v
         logger.info(f"  {ch:8s}  -> {v['verdict']}")

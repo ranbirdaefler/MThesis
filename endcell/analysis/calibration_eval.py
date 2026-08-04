@@ -172,7 +172,7 @@ def deg_pvalues(drug_cells, other_cells):
 
 
 # ----------------------------------------------------------------- core: DRF per cell line
-def calibrate_cellline(drugs, ctrl_vec, de_k, rng, deg_pool_cap):
+def calibrate_cellline(drugs, ctrl_vec, de_k, rng, deg_pool_cap, group_id=None):
     """drugs: {drug: [cell vecs]}. Returns (rows, diag). Half-splits each drug, builds DEG weights +
     interpolated duplicate. The DEG t-test's 'other-drug' pool is CAPPED at deg_pool_cap cells so the
     test isn't 30-vs-6000 (wildly over-powered -> flags nearly all genes as DEG, distorting the
@@ -212,7 +212,10 @@ def calibrate_cellline(drugs, ctrl_vec, de_k, rng, deg_pool_cap):
 
         other_truths = [gt[dd] for dd in others]
         preds = {"perfect": gt[d], "neg_mean": mean_baseline, "pos_interp": interp_dup}
-        row = {}
+        # THE ROW MUST KNOW WHICH CLUSTER IT BELONGS TO. Without these the aggregator had nothing to
+        # cluster on and fell back to one-row-per-cluster, which treats every drug as an independent
+        # cell line -- 1820 "clusters" over 25 real ones.
+        row = {"drug": d, "group": group_id}
         for name, pred in preds.items():
             row[name] = {
                 "weighted_r2": m_weighted_r2(pred, gt[d], w),
@@ -263,7 +266,17 @@ def aggregate_drf(all_rows, n_boot=2000, seed=0):
         differently from it.
     """
     out = {"neg_mean": {}}
-    clusters = list(range(len(all_rows)))            # one row per cell line; the cell line is the unit
+    # THE CLUSTER IS THE GROUP THE ROWS WERE COMPUTED WITHIN, not the row.
+    #
+    # This previously assigned every row its own cluster with the comment "one row per cell line".
+    # That comment was false: `calibrate_cellline` returns one row per DRUG within a group, and the
+    # main loop extends one pooled list, so 25 cell lines produced 1820 rows and the artifact
+    # reported n_cell_lines = 1820. The interval was therefore roughly sqrt(1820/25) ~ 8.5x too
+    # narrow, and the one-sided p sat at the resampling floor 1/(n_boot+1) for every metric.
+    def _cluster_of(r):
+        g = r.get("group")
+        return str(g) if g is not None else "__ungrouped__"
+
     pvals, keys = [], []
     for m in METRICS:
         usable = [r for r in all_rows
@@ -277,24 +290,41 @@ def aggregate_drf(all_rows, n_boot=2000, seed=0):
         mf = float(np.mean([r["perfect"][m] for r in usable]))
         rec = {"drf": _drf_of(usable, m), "n": len(usable),
                "m_pos": mp, "m_neg": mn, "m_perfect": mf}
-        ci = inf.cluster_bootstrap(usable, list(range(len(usable))),
+        labs = [_cluster_of(r) for r in usable]
+        ci = inf.cluster_bootstrap(usable, labs,
                                    lambda rs, _m=m: _drf_of(rs, _m), n_boot=n_boot, seed=seed)
         if ci:
             rec["ci"] = [ci["lo"], ci["hi"]]
             rec["boot_sd"] = ci["boot_sd"]
-            rec["n_cell_lines"] = ci["n_clusters"]
-            # one-sided bootstrap p against DRF <= 0
+            rec["n_clusters"] = ci["n_clusters"]
+            rec["n_rows"] = len(usable)
+            rec["cluster_unit"] = "cell line (or cell line x plate under --same_plate_only)"
+            # ONE-SIDED p AGAINST DRF <= 0, BY CLUSTER AND WITH THE NULL IMPOSED.
+            #
+            # The previous version resampled the OBSERVED distribution and counted draws at or below
+            # zero. That is not a null test: with a clearly positive statistic no draw ever lands
+            # below zero and the p is pinned at the Monte Carlo floor 1/(n_boot+1) -- which is what
+            # the artifact reported for every metric. Recentring the bootstrap distribution on zero
+            # gives the fraction of null draws at least as extreme as the observation.
             rng = np.random.RandomState(seed + 17)
+            groups = {}
+            for r, lab in zip(usable, labs):
+                groups.setdefault(lab, []).append(r)
+            gk = sorted(groups)
             draws = []
-            idx = np.arange(len(usable))
             for _ in range(n_boot):
-                sel = rng.randint(0, len(idx), len(idx))
-                v = _drf_of([usable[i] for i in sel], m)
+                sel = rng.randint(0, len(gk), len(gk))
+                rs = [x for t in sel for x in groups[gk[t]]]
+                v = _drf_of(rs, m)
                 if v is not None:
                     draws.append(v)
             if draws:
-                p = (sum(1 for d in draws if d <= 0) + 1) / (len(draws) + 1)
+                obs = rec["drf"]
+                centred = [d - float(np.mean(draws)) for d in draws]   # impose H0: DRF = 0
+                p = (sum(1 for d in centred if d >= obs) + 1) / (len(centred) + 1)
                 rec["p_one_sided"] = float(p)
+                rec["p_note"] = ("cluster bootstrap with the null imposed by recentring; "
+                                 f"floor is {1/(len(centred)+1):.2}")
                 pvals.append(p); keys.append(m)
         out["neg_mean"][m] = rec
 
@@ -403,7 +433,7 @@ def selftest(args):
             v[rng.rand(P) < 0.5] = 0.0                                  # heavy dropout
             cells.append(v.astype(np.float32))
         drugs[f"d{d}"] = cells
-    rows, _ = calibrate_cellline(drugs, ctrl, args.de_k, rng, args.deg_pool_cap)
+    rows, _ = calibrate_cellline(drugs, ctrl, args.de_k, rng, args.deg_pool_cap, group_id="selftest")
     drf = aggregate_drf(rows)
     r2 = drf["neg_mean"]["weighted_r2"]
     nir = drf["neg_mean"]["nir"]
@@ -482,7 +512,10 @@ def main():
         drugs = {d: s["vecs"] for d, s in dd.items() if len(s["vecs"]) >= args.min_cells_per_drug}
         if len(drugs) < args.min_drugs_per_cl:
             continue
-        rows, (nd, nc) = calibrate_cellline(drugs, ctrl_by_cl[cl], args.de_k, rng, args.deg_pool_cap)
+        # `cl` is the cell line, or the (cell line, plate) pair under --same_plate_only. Either
+        # way it is the group the rows were computed within, and therefore the cluster.
+        rows, (nd, nc) = calibrate_cellline(drugs, ctrl_by_cl[cl], args.de_k, rng,
+                                            args.deg_pool_cap, group_id=cl)
         all_rows.extend(rows)
         diag_degs.append(nd); diag_cells.append(nc)
         used_cls += 1
