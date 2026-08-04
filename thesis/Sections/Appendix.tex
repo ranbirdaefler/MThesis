@@ -11,6 +11,7 @@ directions, since an estimator that only ever returns the answer one hopes for i
 
 \begin{table}[h]
 \centering
+\small
 \begin{tabular}{llrr}
 \toprule
 Estimator & Planted truth & Recovered & \\
@@ -94,15 +95,17 @@ is quoted.
 
 \begin{table}[h]
 \centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{llll}
 \toprule
 Arm & Target & Training & Note \\
 \midrule
 single cell & the observed treated cell & 1 epoch & \\
 consensus & group pseudobulk & \textbf{$\approx 60\%$ of an epoch} & tier-1 $\NIR$ unscoreable \\
-optimal transport (T2) & barycentric, $\varepsilon = 0.5$ & 1 epoch, 23{,}842 steps & \\
+optimal transport (T2) & barycentric, $\varepsilon{=}0.5$ & 1 epoch, 23{,}842 steps & \\
 residual & signed residual signature & 1 epoch, 15{,}340 steps & \\
-residual (holdout) & as above, 738 conditions withheld & 1 epoch & \\
+residual (holdout) & as above, 738 withheld & 1 epoch & \\
 \bottomrule
 \end{tabular}
 \caption{Learning rate $10^{-5}$, batch size 1, gradient accumulation 16, maximum length 8192, bf16,
