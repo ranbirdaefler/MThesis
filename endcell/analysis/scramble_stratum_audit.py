@@ -563,8 +563,9 @@ def report(recs):
 
     logger.info("    -> a positive SLOPE with a chance-level NIR is coherent: the map exists but is")
     logger.info("       coarse. It carries the drug MAIN EFFECT and not the drug x cell-line")
-    logger.info("       interaction, which Q17 measures at ~45% of the residual variance -- and which")
-    logger.info("       is what a per-cell-line discrimination test like NIR actually asks for.")
+    logger.info("       interaction. Q17 measures ~45% of the residual as NOT SHARED across contexts,")
+    logger.info("       but that figure mixes cell line, dose, well and estimator and is not a clean")
+    logger.info("       interaction share -- which is what a per-cell-line test like NIR asks for.")
     logger.info("=" * 100)
     return out
 

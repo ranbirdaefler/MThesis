@@ -1348,10 +1348,12 @@ drug-and-mechanism prompt. What that response is worth is the question the rest 
 answers.
 
 \begin{claim}
-Re-encoding the target produced the first non-null drug effect in the project: the gap grows with
-swap dissimilarity while controls stay flat, and the comparator-free slope of retrieval against the
-named drug's truth is \ci{+0.390}{+0.225}{+0.542}. Sensitivity is established; fidelity is the next
-question.
+Re-encoding the target produced the first non-null drug effect in the project. On trained
+conditions the model beats the neutral comparator by \ci{+0.0898}{+0.0291}{+0.1506} and beats chance
+outright by \ci{+0.0981}{+0.0407}{+0.1554}, both clustered on the drug, the axis the claim rides on.
+The comparator-free slope of retrieval against the named drug's truth is
+\ci{+0.3728}{+0.2797}{+0.4660} --- zero is its natural null, so no comparator defect can reach it.
+Sensitivity is established; fidelity is the next question.
 \end{claim}
 
 \subsection{Sensitivity is not fidelity}
@@ -1513,11 +1515,24 @@ clear zero. But the evaluated population is not the full held-out population, an
 above should be read as applying to the reproducible subset.
 
 \begin{claim}
-The sentence the evidence supports is narrower than the one this section originally carried:
-re-encoding the target made the model respond to the combined drug-and-mechanism prompt and learn a
-drug-level average response. It learned the main effect and not the interaction, and its
-generalisation to unseen wells is a power-limited open question rather than a result in either
-direction.
+Re-encoding the target made the model respond to the combined drug-and-mechanism prompt. That
+much is established and survives every stress: on trained conditions it holds clustered on the cell
+line and on the drug, it holds against chance with no comparator at all, and the comparator-free
+slope excludes zero on all three splits under both clusterings
+(\ci{+0.373}{+0.280}{+0.466}, \ci{+0.337}{+0.223}{+0.450}, \ci{+0.342}{+0.215}{+0.469}).
+
+Transfer to held-out combinations is not established. The gap there is $+0.0332$, which excludes
+zero clustered on cell line and well \nolinebreak[3]$[+0.0069, +0.0594]$ and does not clustered on
+drug and well \nolinebreak[3]$[-0.0031, +0.0695]$ --- and drug is the axis a claim about
+transferring a \emph{drug} signature has to generalise across. The split is also weaker than its
+name: $30$ of its $34$ drugs and $39$ of its $42$ cell lines appear in training, and $82\%$ of its
+conditions recombine a seen drug with a seen cell line. The effect is a majority tilt rather than a
+uniform one, positive for $20$ of $34$ drugs (sign test $p = 0.39$).
+
+What the slope on \emph{unseen drugs} adds is the sharper reading: at
+\ci{+0.342}{+0.215}{+0.469} the model tracks the named drug just as well on compounds held out of
+fine-tuning entirely. Re-encoding did not teach the model about drugs. It changed the target so that
+drug knowledge the model already had could reach the output.
 \end{claim}
 
 \subsection{A lookup table wins}
@@ -1600,12 +1615,14 @@ thousandths. The two coverage figures are also distances to a split-half ceiling
 inflated by an unknown amount, and the ordering is what carries the claim.
 
 \begin{claim}
-The pre-registered middle branch fired: the model reads and transfers the drug, but recovers only a
-small fraction of its signature. The honest summary is the paired gap on common support, $-0.3559$
-\nolinebreak[3]$[-0.3988, -0.3130]$ --- $18.6\%$ of the chance-to-ceiling distance covered, against
-the lookup's $96.3\%$) and it is DrEval's finding replicated in transcriptomic space: the
-additive drug main effect, measured against a proper within-condition ceiling, reaches $0.941$ of
-$0.958$ where a $1$B-parameter model reaches $0.569$.
+The model reads the drug and recovers a small fraction of its signature. The honest summary is
+the paired gap on common support ($n = 1192$), $-0.3631$
+\nolinebreak[3]$[-0.3982, -0.3280]$: the model covers $13.9\%$ of the distance from chance to the
+within-well bar where a training-only lookup covers all of it and more. That the lookup exceeds the
+bar it is measured against is a property of the bar, not a headroom estimate --- the bar is a single
+noisy half-sample while the lookup averages many cell lines, and $\NIR$ compresses near its top.
+This is DrEval's finding replicated in transcriptomic space: the additive drug main effect reaches
+$0.913$ where a $1$B-parameter model reaches $0.549$.
 \end{claim}
 
 \subsection{What is closed and open for unseen drugs}

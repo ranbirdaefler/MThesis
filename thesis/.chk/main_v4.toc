@@ -1,0 +1,64 @@
+\contentsline {section}{Acknowledgements}{1}{section*.1}%
+\contentsline {section}{\numberline {1}Introduction}{4}{section.1}%
+\contentsline {section}{\numberline {2}Literature review}{8}{section.2}%
+\contentsline {subsection}{\numberline {2.1}From text foundation models to single-cell foundation models}{8}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Cell sentences, and the model this thesis fine-tunes}{8}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}The dispute: do these models beat uninformative baselines?}{10}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Six ways a drug-response benchmark can mislead}{11}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Connectivity mapping and signature transfer}{12}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Decodable, used, and the global workspace}{12}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Optimal transport for state matching}{13}{subsection.2.7}%
+\contentsline {section}{\numberline {3}The investigation}{16}{section.3}%
+\contentsline {subsection}{\numberline {3.1}The atlas, the model and the rules of measurement}{16}{subsection.3.1}%
+\contentsline {paragraph}{Vocabulary.}{19}{section*.5}%
+\contentsline {paragraph}{Ceilings.}{20}{section*.6}%
+\contentsline {paragraph}{Rules of measurement.}{20}{section*.8}%
+\contentsline {subsection}{\numberline {3.2}The metric is the first result}{21}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}The model is drug-blind}{26}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Is the drug represented at all?}{31}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Is the representation used?}{32}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Is the drug's identity read?}{35}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}No fix that keeps the encoding works}{37}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}The residual frame: predicting only what makes this drug different}{38}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}How much signal is there to encode}{42}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}Re-encoding produces prompt sensitivity}{45}{subsection.3.10}%
+\contentsline {subsection}{\numberline {3.11}Sensitivity is not fidelity}{47}{subsection.3.11}%
+\contentsline {subsection}{\numberline {3.12}A lookup table wins}{51}{subsection.3.12}%
+\contentsline {subsection}{\numberline {3.13}What is closed and open for unseen drugs}{53}{subsection.3.13}%
+\contentsline {subsection}{\numberline {3.14}Which part of the prompt is read remains unresolved}{55}{subsection.3.14}%
+\contentsline {subsection}{\numberline {3.15}The investigation in one table}{56}{subsection.3.15}%
+\contentsline {section}{\numberline {4}Limitations and Future Research Directions}{58}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Limitations of scope}{58}{subsection.4.1}%
+\contentsline {paragraph}{Drug coverage.}{58}{section*.31}%
+\contentsline {paragraph}{Only reproducible conditions.}{58}{section*.32}%
+\contentsline {paragraph}{The intervals omit generation variance.}{58}{section*.33}%
+\contentsline {paragraph}{A swing that looked like generation variance and was not.}{58}{section*.34}%
+\contentsline {paragraph}{Pseudobulk resolution.}{59}{section*.35}%
+\contentsline {paragraph}{Cross-plate absolutes.}{59}{section*.36}%
+\contentsline {paragraph}{Frame coverage.}{59}{section*.37}%
+\contentsline {subsection}{\numberline {4.2}Limitations of the unseen-drug evaluation}{59}{subsection.4.2}%
+\contentsline {paragraph}{It is not a clean held-out-drug design.}{59}{section*.38}%
+\contentsline {paragraph}{It is underpowered by construction.}{60}{section*.39}%
+\contentsline {subsection}{\numberline {4.3}Directions}{60}{subsection.4.3}%
+\contentsline {paragraph}{The arm this work closed rather than opened.}{60}{section*.40}%
+\contentsline {paragraph}{Two channel questions that do remain open.}{60}{section*.41}%
+\contentsline {paragraph}{Unseen cell lines.}{60}{section*.42}%
+\contentsline {paragraph}{Objectives that were considered and rejected.}{61}{section*.43}%
+\contentsline {paragraph}{One model size, and the smallest one.}{61}{section*.44}%
+\contentsline {paragraph}{The starting checkpoint was never prepared for this task.}{62}{section*.45}%
+\contentsline {paragraph}{Generality.}{62}{section*.46}%
+\contentsline {section}{\numberline {5}Conclusions}{63}{section.5}%
+\contentsline {paragraph}{The evaluation had to be fixed first.}{63}{section*.47}%
+\contentsline {paragraph}{The model is drug-blind, and the representation is not the reason.}{63}{section*.48}%
+\contentsline {paragraph}{The bottleneck appears to be the tokenisation, and it is repairable.}{64}{section*.49}%
+\contentsline {paragraph}{What that drug use amounts to: a main effect, not an interaction.}{64}{section*.50}%
+\contentsline {paragraph}{But a lookup table wins --- and it is not the ceiling either.}{65}{section*.51}%
+\contentsline {paragraph}{Where the opportunity actually is.}{65}{section*.52}%
+\contentsline {paragraph}{A note on method.}{66}{section*.53}%
+\contentsline {section}{\numberline {A}Appendix}{71}{section.A}%
+\contentsline {subsection}{\numberline {A.1}Estimator validation against planted ground truth}{71}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}Absent-gene convention}{71}{subsection.A.2}%
+\contentsline {subsection}{\numberline {A.3}Swap-distance sweep}{71}{subsection.A.3}%
+\contentsline {subsection}{\numberline {A.4}Training configuration}{72}{subsection.A.4}%
+\contentsline {subsection}{\numberline {A.5}The identity test: failed designs and remaining guards}{72}{subsection.A.5}%
+\contentsline {subsection}{\numberline {A.6}Calibration self-test}{74}{subsection.A.6}%
