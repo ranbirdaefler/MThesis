@@ -1,6 +1,6 @@
 % ---------------------------------------------------------------------------
-% Investigation-v4.tex -- merged Methods + Results, told in timeline order.
-% Replaces Sections/Methods.tex and Sections/Results-and-Analysis.tex.
+% Investigation-v4.tex -- the investigation, told in the order it happened.
+% Supersedes Sections/Methods.tex and Sections/Results-and-Analysis.tex.
 % All legacy \label{}s are preserved at the anchors where their content lives,
 % so cross-references from the other chapters continue to resolve.
 % Revision 5: verdict-first shape, notation block, ceiling taxonomy, cuts.
@@ -24,16 +24,24 @@
  \par\addvspace{1.4\baselineskip}%
 }
 
-This chapter merges what is conventionally split into Methods and Results, and the merger is not
-cosmetic. Nearly every instrument in this investigation was invented in response to the measurement
-that came before it, so a methods chapter would describe tools whose motivation lives three sections
-away, and a results chapter would quote numbers whose meaning depends on definitions met fifty pages
-earlier. Instead, each part below poses a question, defines the instrument built to answer it,
-reports what the instrument showed, and closes with what that showing forced next. Design choices
-are stated as the failures they avoid. Definitions appear where they are first needed, and each
-section closes with its central claim set off from the text. Two conventions hold throughout: every
-number is quoted with its interval where one exists, and ``not established'' and ``shown to be
-zero'' are different statements --- the difference is load-bearing in several places.
+A model that has learned something about a drug should answer differently when it is told a
+different drug. That is the whole question, and it is cheap to ask --- swap the compound named in
+the prompt, change nothing else, and see whether the prediction moves. Asking it honestly turned out
+to be expensive, because the first thing the investigation had to measure was its own instrument,
+and the instrument was reporting near-perfect scores for a predictor that had never been told which
+drug it was predicting.
+
+What follows is the investigation in the order it happened. Every instrument here was built in
+response to the measurement before it, and that order is kept rather than tidied away: a question,
+the tool that can answer it, what the tool showed, and what that showing forced next. Design choices
+appear as the failures they avoid rather than as best practice --- nearly every one was forced by a
+specific way the obvious alternative breaks on this data. Definitions appear where they are first
+needed. Dead ends stay in, including three substitution designs that failed and two printed claims
+that had to be withdrawn, because the confound that killed each one is the reason the surviving
+design looks the way it does. Every section closes with its central claim, set off from the text, in
+language that could be shown wrong. Two conventions hold throughout: every number is quoted with its
+interval where one exists, and ``not established'' and ``shown to be zero'' are different statements
+--- the difference is load-bearing in several places.
 
 The findings, stated before the apparatus that produced them. First, the field's standard
 perturbation metric is saturated by a predictor that carries no information at all, so the
@@ -1415,20 +1423,26 @@ column is reported solely as the diagnostic that would have misled us.
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrll}
 \toprule
-Split & $n$ (cell lines) & model $\NIR$ & $\gap$ vs \texttt{orth} (neutral) & $\gap$ vs \texttt{opposite} \\
+Split & $n$ (lines; wells) & model $\NIR$ & $\gap$ vs \texttt{orth} (neutral) & $\gap$ vs \texttt{opposite} \\
 \midrule
-\texttt{train} & 200 (35) & 0.635 [0.575, 0.695] & \ci{+0.1457}{+0.0813}{+0.2101} & \ci{+0.2627}{+0.2081}{+0.3174} \\
-\textbf{\texttt{unseen\_combo}} & \textbf{250 (39)} & \textbf{0.545 [0.493, 0.596]} & \ci{+0.0449}{-0.0095}{+0.0994} & \ci{+0.1281}{+0.0747}{+0.1816} \\
-\texttt{unseen\_drug} & 120 (38) & 0.512 [0.442, 0.581] & \ci{+0.0097}{-0.0694}{+0.0888} & \ci{+0.0862}{-0.0028}{+0.1753} \\
+\texttt{train} & 200 (35; 113) & 0.635 [0.575, 0.695] & \ci{+0.1457}{+0.0813}{+0.2101} & \ci{+0.2627}{+0.2081}{+0.3174} \\
+\textbf{\texttt{unseen\_combo}} & \textbf{250 (39; 31)} & \textbf{0.545 [0.493, 0.596]} & \ci{+0.0449}{-0.0095}{+0.0994} & \ci{+0.1281}{+0.0747}{+0.1816} \\
+\texttt{unseen\_drug} & 120 (38; 25) & 0.512 [0.442, 0.581] & \ci{+0.0097}{-0.0694}{+0.0888} & \ci{+0.0862}{-0.0028}{+0.1753} \\
 \bottomrule
 \end{tabular}}
 \caption{Whole-well holdout on the rebuilt targets (split-before-fit, plate-scoped generic). Only
 the \texttt{orth} column can carry a magnitude claim; the \texttt{opposite} column adds ``how much
 naming a lie hurts'' to ``how much naming the truth helps'' and is shown as the diagnostic. The
-\texttt{unseen\_drug} row is the control that proves the point: those are drugs the model has never
-seen, its gap must be zero, and it is zero only in the neutral column. Model $\NIR$ intervals test
-against the chance value $0.5$ with no comparator. Intervals are two-way cluster-robust over cell
-lines and wells, with a Student $t$ reference (\S\ref{sec:methods-data}).}
+\texttt{unseen\_drug} row corroborates rather than proves: those drugs were held out of fine-tuning,
+so a large gap there would indict the comparator --- but ``unseen'' means unseen during fine-tuning,
+not during pretraining, and the prompt still supplies a mechanism, so a strictly zero effect was
+never guaranteed. Its \texttt{opposite} gap is nine times its neutral one and only just contains
+zero. What establishes comparator non-neutrality is the direct $0.572/0.497/0.403$ ordering above.
+Model $\NIR$ intervals test against the chance value $0.5$ with no comparator. Intervals are two-way
+cluster-robust over cell lines and wells, with a Student $t$ reference on $\min(G_{\textrm{line}},
+G_{\textrm{well}}) - 1$ degrees of freedom --- which is why the well counts are printed: the
+\texttt{unseen\_drug} arm spans $25$ wells, and $t_{24} = 2.06$ against $1.96$ widens its interval by
+five per cent (\S\ref{sec:methods-data}).}
 \label{tab:generalisation}
 \end{table}
 
