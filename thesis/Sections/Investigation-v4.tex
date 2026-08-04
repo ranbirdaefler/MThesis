@@ -1226,7 +1226,8 @@ here establishes that. The dose arm is the exception: it holds drug and cell lin
 only molar concentration, so its contrast is clean.
 
 
-Roughly $44\%$ of the drug-specific residual variance is drug$\times$cell-line interaction, robust
+Roughly $44\%$ of the drug-specific residual is not shared across contexts --- a figure that
+mixes cell line, dose, well and estimator, as above, and is not a clean interaction share --- robust
 to the generic's scope and to control splitting. Two internal checks agree, and both were decisive
 between scopes. Dose ordering: same-drug, same-line, different-dose transfer is $0.707$ [$0.632$,
 $0.782$], above the cross-line $0.553$ --- changing the dose costs less than changing the cell line,
@@ -1575,7 +1576,7 @@ It is tempting to read $\textrm{ceiling} - \texttt{drug\_lookup} = +0.017$ as ``
 has vanished''. That inference is not supported, for three reasons that all favour the lookup: the
 ceiling is scored against a half-sample truth while every baseline is scored against the full-sample
 truth; \texttt{drug\_lookup} averages $\approx 38$ conditions against the ceiling's single noisy
-half; and $\NIR$ near $0.96$ is compressive, collapsing a wide range of cosines into a few
+half; and $\NIR$ near $0.96$ is compressive, collapsing most of the cosine range into a few
 thousandths. The two coverage figures are also distances to a split-half ceiling, which
 \S\ref{sec:methods-data} notes is optimistic relative to biological reproducibility --- both are
 inflated by an unknown amount, and the ordering is what carries the claim.
@@ -1673,7 +1674,13 @@ settle: settling it would need a leave-one-mechanism-out split rather than the
 leave-one-drug-out split used here, since a held-out drug's mechanism class is generally still
 represented in training.
 
+\subsection{Which part of the prompt is read remains unresolved}
 \label{sec:res-field}
+
+The chapter has established that the output responds to the drug information in the prompt. It has
+not established \emph{which} part of that information is read, and this section says why, and what
+would settle it.
+
 The natural next step writes itself: append the protein targets to the prompt, retrain, and see
 whether unseen-drug performance rises. That arm assumes the bottleneck is information availability.
 Everything in this chapter points the other way, but the direct evidence is weaker than earlier
@@ -1699,6 +1706,45 @@ read against it, and they were not re-run under the corrected evaluation. The cl
 current run establishes is response to the combined drug-and-mechanism prompt, with the mechanism
 field's contribution unresolved.
 
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrrl}
+\toprule
+\multicolumn{4}{l}{Panel A: the channel is available --- metadata-neighbour retrieval, plate-matched} \\
+Channel & Coverage & $n$ & Gap against a count-matched random null \\
+\midrule
+protein target & $54\%$ & $877$ & \ci{+0.0973}{+0.0741}{+0.1183} \\
+mechanism (MoA) & $32\%$ & $1033$ & \ci{+0.0749}{+0.0538}{+0.0948} \\
+chemical structure & $100\%$ & $4074$ & $+0.0162$ [$+0.0051$, $+0.0264$] \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+
+\begin{tabular}{lrrl}
+\toprule
+\multicolumn{4}{l}{Panel B: is it read? --- one span swapped, every other byte identical} \\
+Span swapped & $\gap$ & $n$ & Status \\
+\midrule
+drug name, mechanism kept & --- & --- & pending the corrected re-run \\
+mechanism, drug name kept & --- & --- & pending \\
+both spans (the standard arm) & --- & --- & pending \\
+\bottomrule
+\end{tabular}
+\caption{Availability and use are different questions, and only the first is currently answered.
+Panel A shows that a drug's protein targets and mechanism carry response information recoverable by
+retrieval alone, so an unseen drug is not information-starved. Panel B asks whether the model uses
+the field it is already handed, and is deliberately empty: the arms exist and are implemented, but
+the only run that scored them used the \texttt{opposite}-signature comparator that
+\S\ref{sec:res-generalisation} shows inflates every gap read against it. Panel B is measured against
+the neutral comparator in the corrected evaluation. The mechanism row will carry fewer conditions
+than the others by construction, for the reason given above.}
+\label{tab:fieldattribution}
+\end{table}
+
+
+
 The practical consequence is narrower than the one earlier drafts drew, and more honest. The
 target-prompt arm is not retired by measurement --- it is untested. What argues for building it
 carefully rather than eagerly is the shape of the failure documented above: the model's deficit is
@@ -1706,7 +1752,7 @@ not confined to missing information about unseen drugs, because on seen drugs it
 fifth of the chance-to-ceiling distance against a lookup that knows nothing about contexts at all.
 And what argues for building it at all is the one thing a lookup structurally cannot do: handle a
 drug it has never seen, in the one regime where this section shows live channels exist. The model's
-opportunity is not the interaction --- \S\ref{sec:res-transfer} found $44\%$ of the residual
+opportunity is not the unshared component --- \S\ref{sec:res-transfer} found $44\%$ of the residual
 variance there but no learnable structure in it --- it is the unseen drug. Whether the model can be
 made to take that opportunity is the question the thesis leaves open.
 
