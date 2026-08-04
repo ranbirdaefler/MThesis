@@ -62,3 +62,4 @@ thesis/.build*/
 thesis/main_v4.pdf
 RESULTS_cluster/*.npz
 RESULTS_cluster/*.npy
+CLAUDE.md

@@ -15,7 +15,8 @@ code here exists to separate those. The second half is **intervention** — a se
 prediction target is encoded) that ask what, if anything, makes the model use the drug.
 
 `FINDINGS.md` is the results record: one entry per question, with the methodology, the numbers, and
-what has been retracted or superseded. This file is only about where the code lives.
+what has been retracted or superseded. `thesis/` holds the write-up itself. This file is only about
+where the code lives.
 
 ---
 
@@ -33,6 +34,8 @@ requirements.txt
 
 shared/                     # representation-agnostic core — used by BOTH pipelines (shared/README.md)
   evaluate_c2s_tahoe.py     #   the metric library imported by ~13 scripts (DE-Δr, τ, baselines, CIs)
+  inference.py              #   the one place uncertainty is computed — clustered, two-way, multiway
+  tahoe_design.py           #   what a Tahoe (drug, cell_line, plate, dose) key does and does not mean
   l1000_panel.json          #   fixed 946-gene panel (L1000 ∩ Tahoe) — the gene order everything uses
   l1000_landmark_genes.txt  #   raw L1000 landmark symbols the panel is built from
   build_l1000_panel.py      #   rebuilds the panel
@@ -52,7 +55,16 @@ endcell/                    # current [END_CELL] pipeline (endcell/README.md)
 legacy_whole_panel/         # superseded full-panel pipeline — kept for provenance
   preprocess/ train/ eval/ baselines/
 
-tests/                      # offline self-tests (_test_eval_baselines.py, _test_fixed_panel.py)
+tests/                      # offline self-tests, incl. the split-before-fit release gate
+                            #   PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q
+
+thesis/                     # the write-up (thesis/build.sh → thesis.pdf)
+  main_v4.tex               #   document root
+  Sections/Investigation-v4.tex   #   the investigation, told in the order it happened
+  archive/                  #   superseded drafts, kept for provenance
+
+RESULTS_cluster/            # the artifacts every quoted number is regenerable from (JSON/CSV tracked;
+                            #   .npz activation profiles are not)
 
 docs/                       # detailed writeups, organized by regime (docs/README.md)
   methods/ legacy_l1000/ endcell/ proposals/
@@ -103,6 +115,18 @@ can be validated with no GPU and no data. Run the self-test before any cluster j
 | `check_dose_coverage.py` | Did the dose-blind sampling cap reduce dose diversity? (read-only) |
 | `leak_audit.py` | Train/eval contamination checks |
 | `make_provenance.py` | Bundles results + fingerprints dataset/checkpoint into a committable manifest |
+| `scramble_stratum_audit.py` | Is the scramble comparator actually a null? Recomputes every split gap against the neutral stratum, from saved records, with no GPU |
+| `channel_gate.py` | Is unseen-drug generalisation reachable through *any* drug-side channel — protein target, mechanism, chemical structure? |
+| `variance_decomposition.py` | How much of the drug-specific residual is shared across contexts, and how much is not? (transfer coefficient, energy shares, dose axis) |
+| `experimental_unit_audit.py` | What is the unit of independent treatment assignment in this atlas, and does the holdout respect it? |
+| `dose_response_analysis.py` | Do the doses of one drug behave as a dose–response, or as unrelated conditions? |
+| `drug_difficulty_atlas.py` | Which drugs are hard for reasons other than the model — target quality, cell count, redundancy |
+| `kappa_channel.py` | Is there learnable structure in the interaction component, or only in the main effect? |
+| `leak_magnitude.py` | How much does a transductively-fitted target inflate a score, measured rather than argued |
+| `reward_calibration.py` | Could this reward distinguish two real drugs? (the precondition for any RL arm) |
+| `aggregate_workspace_probe.py` | Collects the per-arm, per-layer probe jobs into one multiplicity-corrected table |
+| `artifact_manifest.py` | Which quoted results have a committed artifact behind them, and which do not |
+| `build_thesis_assets.py` | Emits `thesis/generated/numbers.tex` — a number with no backing artifact cannot be typeset |
 
 ---
 
@@ -134,7 +158,9 @@ the working directory the job is launched from.
 
 `evaluate_c2s_tahoe.py` is the single shared scoring core — model, baselines, and every ablation call
 the same functions, so all numbers are computed on the same footing. It imports no local modules
-(it is the leaf of the dependency graph).
+(it is the leaf of the dependency graph). `shared/inference.py` plays the same role for uncertainty:
+every interval in the project comes from it, so an estimator improvement lands everywhere at once
+rather than in whichever script was edited last.
 
 Note that the cluster copy is a **flat** layout (`~/tahoe/<script>.py`), while this repo is nested.
 Scripts handle both; SLURM files use flat paths.
@@ -163,6 +189,11 @@ python endcell/ot/build_embeddings.py --panel l1000_panel.json --out_dir ot_cach
 python endcell/ot/join_latent.py --cache_dir ot_cache --adata SCVI_MODEL/adata.h5ad
 python endcell/ot/build_residual_targets.py --cache_dir ot_cache --out_dir residual_targets
 python endcell/analysis/residual_eval.py --cache_dir ot_cache --model_path CKPT/final ...
+```
+
+```bash
+# Build the write-up
+./thesis/build.sh          # → thesis/thesis.pdf
 ```
 
 Use `--help` on any script for exact flags; recipe values are in `docs/methods/dataset_construction.md`.
@@ -197,6 +228,17 @@ sentence (a short budget silently truncates and halves the measured effect).
   mid-rank); reported side by side where relevant.
 - **Generalization tiers** — tier1 seen · tier2 unseen drugs · tier3 unseen drug×cell-line combos ·
   tier4 dose interpolation.
+- **Well** — one physical container. In Tahoe a well receives one drug at one dose and holds ~49 cell
+  lines at once, so the well, not the (drug, cell line) pair, is the unit of treatment assignment.
+- **Comparison set** — the conditions a prediction is ranked against when NIR is computed. NIR's
+  chance value of 0.5 is a statement about this set and nothing else.
+- **Two-way cluster-robust** — Cameron–Gelbach–Miller: conditions are crossed by cell line and well,
+  so neither alone is the unit of independence. Reported with a Student-*t* reference on the smaller
+  cluster count, because a cluster-robust variance is asymptotic in clusters, not observations.
+- **Multiway / dyadic variance** — Fafchamps–Gubert, for statistics whose observations are *pairs*
+  and therefore belong to two groups at once; the two-way estimator does not apply there.
+- **Split-before-fit** — the holdout is assigned from metadata before any target is estimated, so no
+  held-out condition can influence the quantity it is later scored against.
 
 ---
 
