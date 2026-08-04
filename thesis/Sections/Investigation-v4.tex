@@ -459,7 +459,9 @@ means the drug-blindness result cannot be dismissed on the grounds their own pap
 yields a higher score.} (a) A predictor carrying nothing about drug, cell or biology scores
 $\DEdr = 0.9999$, above the two-real-cell noise ceiling and above the model. Tier 2, $n=400$
 conditions. (b) Grading the metrics rather than the models: only $\NIR$ points forward. Hardened
-estimate \ci{+0.635}{+0.618}{+0.652}, all-plates run ($1{,}820$ drugs, $25$ cell lines); the four
+estimate \ci{+0.635}{+0.618}{+0.652}, all-plates run ($1{,}820$ drugs, $25$ cell lines), and
+\ci{+0.519}{+0.479}{+0.557} when partners are restricted to the same plate --- the confound-free
+version, lower but still the only calibrated metric of the five; the four
 rivals shown are the within-plate run ($655$ drugs, $61$ groups). \texttt{weighted\_r2} carries no
 directional claim: its sign tracks cell count.}
 \label{fig:calibration}
@@ -1426,14 +1428,20 @@ column is reported solely as the diagnostic that would have misled us.
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrll}
 \toprule
-Split & $n$ (lines; wells) & model $\NIR$ & $\gap$ vs \texttt{orth} (neutral) & $\gap$ vs \texttt{opposite} \\
+Split & $n$ (lines; drugs) & model $\NIR$ & $\gap$, clustered on \emph{cell line} & the same, clustered on \emph{drug} \\
 \midrule
-\texttt{train} & 200 (35; 113) & 0.635 [0.575, 0.695] & \ci{+0.1457}{+0.0813}{+0.2101} & \ci{+0.2627}{+0.2081}{+0.3174} \\
-\textbf{\texttt{unseen\_combo}} & \textbf{250 (39; 31)} & \textbf{0.545 [0.493, 0.596]} & \ci{+0.0449}{-0.0095}{+0.0994} & \ci{+0.1281}{+0.0747}{+0.1816} \\
-\texttt{unseen\_drug} & 120 (38; 25) & 0.512 [0.442, 0.581] & \ci{+0.0097}{-0.0694}{+0.0888} & \ci{+0.0862}{-0.0028}{+0.1753} \\
+\texttt{train} & 300 (39; 76) & 0.598 [0.549, 0.647] & \ci{+0.0898}{+0.0382}{+0.1415} & \ci{+0.0898}{+0.0291}{+0.1506} \\
+\textbf{\texttt{unseen\_combo}} & \textbf{895 (42; 34)} & \textbf{0.533 [0.492, 0.575]} & \ci{+0.0332}{+0.0069}{+0.0594} & $+0.0332$ [$-0.0031$, $+0.0695$] \\
+\texttt{unseen\_drug} & 199 (40; 10) & 0.459 [0.404, 0.514] & $-0.0315$ [$-0.0836$, $+0.0206$] & $-0.0315$ [$-0.1049$, $+0.0419$] \\
 \bottomrule
 \end{tabular}}
-\caption{Whole-well holdout on the rebuilt targets (split-before-fit, plate-scoped generic). Only
+\caption{Whole-well holdout on the corrected evaluation --- the truth verified against the build's
+own fit digest, and the full held-out population rather than the reliability-surviving subset. The
+two right-hand columns carry the SAME point estimate and differ only in what they treat as the unit
+of generalisation. On \texttt{train} the gap excludes zero either way. On \texttt{unseen\_combo} it
+excludes zero clustered on cell line and does not clustered on drug, and drug is the axis a claim
+about transferring a \emph{drug} signature has to generalise across --- which is why this row is
+reported as not established. Only
 the \texttt{orth} column can carry a magnitude claim; the \texttt{opposite} column adds ``how much
 naming a lie hurts'' to ``how much naming the truth helps'' and is shown as the diagnostic. The
 \texttt{unseen\_drug} row corroborates rather than proves: those drugs were held out of fine-tuning,
@@ -1489,7 +1497,7 @@ cosine between the named drug's truth and the target's truth gives \ci{+0.390}{+
 \ci{+0.238}{+0.033}{+0.420} on \texttt{unseen\_drug} --- all three exclude zero. The model emits
 something aligned with the named drug's signature on every split, including held-out wells, with no
 degradation worth the name between train and held-out. Second, scored against chance with no
-comparator, the model's own $\NIR$ clears $0.5$ on \texttt{train} ($0.635$ [$0.575$, $0.695$]) and
+comparator, the model's own $\NIR$ clears $0.5$ on \texttt{train} ($0.598$ [$0.549$, $0.647$]) and
 is not distinguishable from it on either held-out split. A positive slope alongside a chance-level
 $\NIR$ is not a contradiction: it says the drug-to-signature map exists but is coarse. The model
 knows roughly what a drug does and not what it does in this well --- and $\NIR$ asks the second
@@ -1749,9 +1757,14 @@ field's contribution unresolved.
 \multicolumn{4}{l}{Panel A: the channel is available --- metadata-neighbour retrieval, plate-matched} \\
 Channel & Coverage & $n$ & Gap against a plate-matched random null \\
 \midrule
-protein target & $54\%$ & $877$ & \ci{+0.0973}{+0.0741}{+0.1183} \\
-mechanism (MoA) & $32\%$ & $1033$ & \ci{+0.0749}{+0.0538}{+0.0948} \\
-chemical structure & $100\%$ & $4074$ & $+0.0162$ [$+0.0051$, $+0.0264$] \\
+protein target & $54\%$ & $775$ & \ci{+0.1799}{+0.1138}{+0.2459} \\
+mechanism (MoA) & $32\%$ & $981$ & \ci{+0.0663}{+0.0088}{+0.1237} \\
+chemical structure & $100\%$ & $4131$ & \ci{+0.0380}{+0.0143}{+0.0617} \\
+\midrule
+\multicolumn{4}{l}{the same three, against the stricter DIFFERENT-PLATE null} \\
+protein target & & $688$ & \ci{+0.1115}{+0.0448}{+0.1783} \\
+mechanism (MoA) & & $874$ & \ci{+0.0604}{+0.0094}{+0.1114} \\
+\textbf{chemical structure} & & $4114$ & $+0.0183$ [$-0.0033$, $+0.0399$] \\
 \bottomrule
 \end{tabular}
 
@@ -1769,7 +1782,12 @@ both spans (the standard arm) & --- & --- & pending \\
 \end{tabular}
 \caption{Availability and use are different questions, and only the first is currently answered.
 Panel A shows that a drug's protein targets and mechanism carry response information recoverable by
-retrieval alone, so an unseen drug is not information-starved. Panel B asks whether the model uses
+retrieval alone, so an unseen drug is not information-starved. Read the two halves together. Under a
+plate-matched null all three channels clear zero; under the stricter different-plate null, which
+removes the last shared batch structure, target and mechanism survive and \emph{chemical structure
+does not} --- $+0.0183$ \nolinebreak[3]$[-0.0033, +0.0399]$. Chemistry's apparent signal is a
+co-plating artefact. Intervals here are two-way cluster-robust over cell line and treatment well;
+under the one-way cell-line interval this table previously carried, every row looked significant. Panel B asks whether the model uses
 the field it is already handed, and is deliberately empty: the arms exist and are implemented, but
 the only run that scored them used the \texttt{opposite}-signature comparator that
 \S\ref{sec:res-generalisation} shows inflates every gap read against it. Panel B is measured against

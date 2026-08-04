@@ -515,10 +515,15 @@ def main():
             logger.info(f"  {m.ljust(16)}     NA")
     logger.info("=" * 100)
     logger.info("  Read: de_delta / panel_tau should show DRF <= 0 (negative control saturates them);")
-    logger.info("        nir should show DRF > 0. MEASURED ON REAL DATA only nir does: weighted_r2")
-    logger.info("        (-0.163) and spearman_expr (-0.650) come back NEGATIVE, so this guide's")
-    logger.info("        original expectation for those two was wrong. The published claim was always")
-    logger.info("        that NIR alone is calibrated, so the headline is unaffected.")
+    # DO NOT HARD-CODE THE VALUES HERE. An earlier version printed -0.163 / -0.650 literally, which
+    # were the all-plates figures; the plate-matched run then printed those same two numbers beside a
+    # table reading -0.122 / -0.495. Read them off the result being reported.
+    _neg = [(m, d["drf"]) for m, d in rows.items() if d and d.get("drf") is not None and d["drf"] < 0]
+    _txt = ", ".join(f"{m} ({v:+.3f})" for m, v in _neg[:2]) if _neg else "none"
+    logger.info("        nir should show DRF > 0. MEASURED ON REAL DATA only nir does; in THIS run")
+    logger.info(f"        the negative ones include {_txt}, so this guide's original expectation")
+    logger.info("        for them was wrong. The published claim was always that NIR alone is")
+    logger.info("        calibrated, so the headline is unaffected.")
     logger.info(f"-> {args.out}")
 
 
