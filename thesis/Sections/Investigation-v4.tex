@@ -1416,9 +1416,13 @@ structure is unresolved in this dataset. Resolving it would take more cells per 
 plating design that crosses mechanism with plate --- neither of which is an analysis choice.
 
 \begin{claim}
-There is a conditional target worth about half the drug-specific variance that a per-drug constant
-cannot express --- $44.7\%$ of the drug-specific residual is not shared across contexts, though
-that figure mixes several axes --- and no learnable structure in it is found.
+There is a conditional target that a per-drug constant cannot express, and no learnable structure in
+it is found. Its size is quoted as what it is: $\Tcoef = 0.553$ \nolinebreak[3]$[0.514, 0.593]$ is a
+disattenuated cross-context similarity coefficient, so $44.7\%$ of \emph{that similarity scale}
+remains unshared across the compared contexts. It is not a variance share and not a
+drug$\times$cell-line interaction --- the estimator pools pairs differing in cell line, dose, well
+and target estimator --- so it bounds what a per-drug constant leaves on the table without
+establishing that a model could reach any of it.
 \end{claim}
 
 \subsection{Re-encoding produces prompt sensitivity}
