@@ -1,0 +1,86 @@
+{
+ "_frame": "signed rank-discounted residual, cosine similarity (residual_eval.py)",
+ "_perfect": 1.0,
+ "arms": {
+  "control_copy": {
+   "n": 1394,
+   "n_celllines": 42,
+   "m_pos_ceiling": 0.853901176309024,
+   "m_neg": 0.5056543831695378,
+   "sd_neg": 0.2823534897397261,
+   "drf": 0.7044601616421711,
+   "ci": [
+    0.66662312847221,
+    0.7359862399293167
+   ],
+   "n_clusters": 42,
+   "empirical": true,
+   "note": "copies the untreated cell; zero drug information"
+  },
+  "random": {
+   "n": 1394,
+   "n_celllines": 42,
+   "m_pos_ceiling": 0.853901176309024,
+   "m_neg": 0.5006373672160275,
+   "sd_neg": 0.29413443014080287,
+   "drf": 0.7074294028039952,
+   "ci": [
+    0.6705407676016364,
+    0.7412888842292005
+   ],
+   "n_clusters": 42,
+   "empirical": true,
+   "note": "a random vector"
+  },
+  "scramble_orth": {
+   "n": 1394,
+   "n_celllines": 42,
+   "m_pos_ceiling": 0.853901176309024,
+   "m_neg": 0.5005700601085278,
+   "sd_neg": 0.2796235217458341,
+   "drf": 0.7074688319192001,
+   "ci": [
+    0.6756425583091012,
+    0.7357770795106239
+   ],
+   "n_clusters": 42,
+   "empirical": true,
+   "note": "the neutral scrambled partner"
+  },
+  "generic": {
+   "n": 1394,
+   "n_celllines": 42,
+   "m_pos_ceiling": 0.853901176309024,
+   "m_neg": 0.5,
+   "sd_neg": 0.0,
+   "drf": 0.7078023526180479,
+   "ci": [
+    0.6739334280039603,
+    0.7385278251411743
+   ],
+   "n_clusters": 42,
+   "empirical": false,
+   "note": "the zero vector BY CONSTRUCTION -- degenerate, reported for completeness"
+  }
+ },
+ "headline": {
+  "n": 1394,
+  "n_celllines": 42,
+  "m_pos_ceiling": 0.853901176309024,
+  "m_neg": 0.5056543831695378,
+  "sd_neg": 0.2823534897397261,
+  "drf": 0.7044601616421711,
+  "ci": [
+   0.66662312847221,
+   0.7359862399293167
+  ],
+  "n_clusters": 42,
+  "empirical": true,
+  "note": "copies the untreated cell; zero drug information"
+ },
+ "_caveats": [
+  "the positive control is a raw split-half replicate, not the denoised interpolated duplicate of the expression-frame protocol, so this figure is conservative by comparison",
+  "the ceiling arm is scored against half-A truths while the negative arms use full-sample truths (residual_eval.py:631-635 vs :649)",
+  "percentile cluster bootstrap over cell line; no small-sample correction"
+ ]
+}

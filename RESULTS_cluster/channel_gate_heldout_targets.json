@@ -1,0 +1,80 @@
+{
+ "_why": "the gate's targets span every retained condition; this restricts them to drugs held out of training, which is the population the unseen-drug question is about",
+ "n_drugs_in_eval": 90,
+ "n_drugs_heldout": 14,
+ "margin": 0.03,
+ "channels": {
+  "target": {
+   "all_targets": {
+    "n": 712,
+    "n_drugs": 18,
+    "gap": 0.13512036067987784,
+    "ci": [
+     0.10241925935577473,
+     0.16377196091858273
+    ],
+    "n_clusters": 39,
+    "spans_zero": false
+   },
+   "heldout_targets": {
+    "n": 161,
+    "n_drugs": 2,
+    "gap": 0.11966602902106448,
+    "ci": [
+     0.06710978287808335,
+     0.17197738971673718
+    ],
+    "n_clusters": 39,
+    "spans_zero": false
+   }
+  },
+  "moa": {
+   "all_targets": {
+    "n": 921,
+    "n_drugs": 26,
+    "gap": 0.08054919893547109,
+    "ci": [
+     0.050146923459038324,
+     0.10947841556810325
+    ],
+    "n_clusters": 41,
+    "spans_zero": false
+   },
+   "heldout_targets": {
+    "n": 216,
+    "n_drugs": 4,
+    "gap": 0.04386392118985579,
+    "ci": [
+     -0.002083729438391137,
+     0.09213853788132793
+    ],
+    "n_clusters": 40,
+    "spans_zero": true
+   }
+  },
+  "chem": {
+   "all_targets": {
+    "n": 4131,
+    "n_drugs": 94,
+    "gap": 0.026095802440010047,
+    "ci": [
+     0.014275871763574201,
+     0.038171919546600305
+    ],
+    "n_clusters": 42,
+    "spans_zero": false
+   },
+   "heldout_targets": {
+    "n": 898,
+    "n_drugs": 14,
+    "gap": 0.03779310575211302,
+    "ci": [
+     0.015706194321177668,
+     0.06200535817017363
+    ],
+    "n_clusters": 42,
+    "spans_zero": false
+   }
+  }
+ }
+}
