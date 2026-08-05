@@ -137,19 +137,20 @@ that the drug parameterises the computation instead of sitting in the residual s
 readout can round away. That is a research architecture rather than a prompt change, and it is
 outside the scope of what remained here.
 
-\paragraph{Two channel questions that remain open, and one defect pending a re-run.} Target and
+\paragraph{Two channel questions that remain open.} Target and
 mechanism overlap, so whether target adds anything \emph{over} mechanism is unresolved --- and it
 matters, because the prompt already exposes mechanism and whether the model uses that field is itself
 unresolved. Separately, the channel gate measures
 \emph{similarity transfer}: an unseen drug resembling a seen drug with the same target. It does not
 test a \emph{compositional rule} --- that a named target's own pathway moves, which would apply to
 any drug whose target is named, including one with no similar drug in training. The second is the
-stronger claim, it does not reduce to a lookup, and it is untested. Both questions sit behind a
-defect in the gate itself: the partner pool it draws from was not restricted to training drugs, so a
-held-out drug's response could be predicted from a partner that was also held out. The restriction is
-now in the code and the gate has not been re-run, so every statement in this thesis that unseen-drug
-generalisation is reachable through protein-target or mechanism retrieval is provisional on that
-re-run.
+stronger claim, it does not reduce to a lookup, and it is untested. Both questions sat behind a
+defect in the gate itself --- the partner pool was not restricted to training drugs, so a held-out
+drug's response could be predicted from a partner that was also held out --- and the gate has since
+been re-run with the restriction in place. The repair narrowed what may be claimed: protein target
+clears the relevance margin, mechanism misses its lower bound by $0.0021$, and chemistry's interval
+straddles the margin, so only the target channel supports a statement that unseen-drug
+generalisation is reachable through retrieval.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
 axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks

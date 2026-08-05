@@ -1,0 +1,136 @@
+{
+  "n_celllines": 25,
+  "n_drugs": 1820,
+  "mean_cells_per_drug": 50.673659509263096,
+  "mean_degs_per_drug": 197.62261439440965,
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": -0.16272114485359698,
+        "n": 1820,
+        "m_pos": 0.7757843418763234,
+        "m_neg": 0.8071629993863159,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.18257857613029593,
+          -0.14319560244514062
+        ],
+        "boot_sd": 0.010292465547576367,
+        "n_clusters": 25,
+        "n_rows": 1820,
+        "cluster_unit": "cell line (or cell line x plate under --same_plate_only)",
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "spearman_expr": {
+        "drf": -0.6504297347641236,
+        "n": 1820,
+        "m_pos": 0.7723149035999158,
+        "m_neg": 0.8620449622275955,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.6688945237611451,
+          -0.6310090052131467
+        ],
+        "boot_sd": 0.009578021310139214,
+        "n_clusters": 25,
+        "n_rows": 1820,
+        "cluster_unit": "cell line (or cell line x plate under --same_plate_only)",
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "de_delta": {
+        "drf": -0.6860698569340673,
+        "n": 1820,
+        "m_pos": 0.7722387609604666,
+        "m_neg": 0.8649158941411288,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.7293663024702435,
+          -0.6411424723990936
+        ],
+        "boot_sd": 0.0227500408238419,
+        "n_clusters": 25,
+        "n_rows": 1820,
+        "cluster_unit": "cell line (or cell line x plate under --same_plate_only)",
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "panel_tau": {
+        "drf": -0.3194474019738125,
+        "n": 1820,
+        "m_pos": 0.5960784951976488,
+        "m_neg": 0.6938707036005305,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.32981783221704314,
+          -0.30873850825563937
+        ],
+        "boot_sd": 0.005324000563019449,
+        "n_clusters": 25,
+        "n_rows": 1820,
+        "cluster_unit": "cell line (or cell line x plate under --same_plate_only)",
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "nir": {
+        "drf": 0.6345494469196751,
+        "n": 1820,
+        "m_pos": 0.8015854066190031,
+        "m_neg": 0.4570685645196277,
+        "m_perfect": 1.0,
+        "ci": [
+          0.6035321821907341,
+          0.6629164455080166
+        ],
+        "boot_sd": 0.015297849993994214,
+        "n_clusters": 25,
+        "n_rows": 1820,
+        "cluster_unit": "cell line (or cell line x plate under --same_plate_only)",
+        "p_one_sided": 0.0004997501249375312,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 0.002498750624687656,
+        "calibrated": true
+      }
+    },
+    "multiplicity": {
+      "method": "Holm across the metric family",
+      "n_tests": 5,
+      "family": [
+        "weighted_r2",
+        "spearman_expr",
+        "de_delta",
+        "panel_tau",
+        "nir"
+      ]
+    }
+  },
+  "config": {
+    "out": "RESULTS/calibration_v4.json",
+    "selftest": false,
+    "num_shards": 12,
+    "rows_per_shard": 150000,
+    "shard_seed": 7,
+    "cells_per_drug": 60,
+    "max_cells_total": 500000,
+    "min_cells_per_drug": 40,
+    "n_celllines": 25,
+    "min_drugs_per_cl": 6,
+    "same_plate_only": false,
+    "held_out_drugs_file": null,
+    "de_k": 50,
+    "deg_pool_cap": 400,
+    "panel_file": null,
+    "seed": 42,
+    "collect_controls": true,
+    "same_plate": false
+  }
+}

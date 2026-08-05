@@ -63,10 +63,11 @@ training conditions only. Conditions held out of training could therefore contri
 prediction made for a held-out drug, and the chapter's assurance that the gate ``uses only drugs
 that were in training'' did not hold. The code now restricts the pool to the split's training
 conditions, logs the restricted size, and warns rather than silently falling back to an
-unrestricted pool; the rerun has not been performed. Every channel-gate figure measured on Tahoe in
-this thesis therefore predates the fix --- the planted worlds above are a separate synthetic path
-with no held-out split and are unaffected --- and any claim that unseen-drug generalisation is
-reachable by retrieval over target or mechanism is suspended pending that rerun.
+unrestricted pool, and the gate has been re-run under it. Of the $4{,}131$ retained conditions
+$2{,}523$ are training, so the old pool was around $64\%$ larger than it was entitled to be. Every channel-gate figure reported in the main text is from the corrected run; the planted
+worlds above are a separate synthetic path with no held-out split and are unaffected. The repair did
+not move the channels in a common direction --- target fell, mechanism rose, chemistry roughly
+halved --- which is why the pre-fix figures are not quoted alongside them.
 
 \subsection{Absent-gene convention}
 \label{sec:app-convention}

@@ -142,8 +142,9 @@ show that it can be saturated by a predictor carrying no drug information whatso
 any work built from the same family of metrics. Of the five metrics we test, only the normalised
 inverse rank has a positive dynamic range fraction --- $+0.635$ across plates and $+0.519$ within
 plate, against $-0.16$ to $-0.69$ for the other four across plates and $-0.12$ to $-0.50$ within
-plate. We report those figures descriptively, because the intervals and multiplicity correction
-attached to them were computed under a mis-specified clustering and a corrected rerun is pending. We
+plate. The across-plates figure is measured with the bootstrap clustered on the $25$ cell lines
+rather than on the $1{,}820$ drug rows nested in them, $[+0.604, +0.663]$ with Holm $p = 0.002$; the
+within-plate figure awaits the same repair and is quoted as a point estimate. We
 establish drug-blindness on that one surviving metric, using several independent instruments so that
 no single measurement carries the claim alone. We identify the target encoding --- not the data, the architecture, or the training
 objective --- as the binding constraint, and derive from that diagnosis a re-encoding of the

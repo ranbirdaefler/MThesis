@@ -507,7 +507,7 @@ def run(args):
             else:
                 v["verdict"] = "inconclusive"
             v["live"] = v["verdict"] == "live"
-            v["verdict"] = "LIVE" if v["live"] else "closed"
+            v["margin"] = args.min_margin
         verdicts[ch] = v
         logger.info(f"  {ch:8s}  -> {v['verdict']}")
     out["channels"] = verdicts

@@ -314,9 +314,11 @@ generation run and its companion audits (\texttt{re\_v3} with the scramble-strat
 matched variance decomposition, the two calibration runs and the channel gate). Numbers from the
 two earlier runs are not reconciled with these and are not quoted except where a superseded
 estimate is named as such and the conclusion drawn from it withdrawn, because between runs the sign
-of several estimates changed and not only their magnitude. Two components are still pending re-run
-and are marked where they are used: the $\DRF$ calibration bootstrap (\S\ref{sec:res-metrics})
-and the channel-gate partner pool (\S\ref{sec:res-scope}).
+of several estimates changed and not only their magnitude. Two components carried defects found
+after that run and have since been repaired and re-run: the $\DRF$ calibration bootstrap
+(\S\ref{sec:res-metrics}, all-plates arm only) and the channel-gate partner pool
+(\S\ref{sec:res-scope}). Both are reported here on the corrected runs, and the one arm still
+awaiting its re-run is named where it is used.
 
 \subsection{The metric is the first result}
 \label{sec:methods-metrics}
@@ -461,22 +463,25 @@ cell line, and the resampler treated every row as its own cell line, against the
 (the same-plate run carries the identical defect over its $335$ rows). The one-sided $p$ was read
 off the observed resampling distribution rather than one with the null imposed, so it degenerates
 to the floor $1/2001$ wherever $\DRF > 0$ and to $1$ wherever $\DRF < 0$, and no metric in the
-family was in fact tested. Both are repaired in the analysis code and the rerun is pending. Until
-it lands, the interval and the Holm $p$ quoted for $\DRF$ below are withdrawn and only the point
-estimates stand.
+family was in fact tested. Both are repaired in the analysis code, and the all-plates arm has been
+rerun under the repair; the same-plate arm has not, so its point estimates are quoted below and its
+interval is not.
 
-Under the hardened protocol, $\NIR$ is the only one of the five whose $\DRF$ is positive. The
-comparison is reported descriptively, without an interval or a $p$-value, because the stored
-calibration artifact cannot support inference: its bootstrap resampled the $1{,}820$ drug rows as
-though each were a cell line, when the run spans $25$, and the resulting one-sided $p$ sits exactly at
-the resampling floor of $1/2001$ rather than at an estimated value. A corrected re-run is pending and
-only the point estimates are quoted here. In the all-plates run ($1{,}820$ drugs over $25$ cell
-lines), $\NIR$ reads $+0.635$ against $-0.163$ (\texttt{weighted\_r2}), $-0.319$ ($\paneltau$),
-$-0.650$ (\texttt{spearman\_expr}) and $-0.686$ ($\DEdr$). Restricting swap partners to the same
-plate ($335$ drugs over the same $25$ cell lines) pulls every value toward zero and changes no sign:
-$\NIR$ $+0.519$, against $-0.122$, $-0.247$, $-0.495$ and $-0.500$ in the same order. What the
-argument uses is the sign pattern, which is identical in both runs; no ranking among the four
-negative metrics is claimed. The inversion is a
+Under the hardened protocol, $\NIR$ is the only one of the five whose $\DRF$ is positive. In the
+all-plates run, $\DRF(\NIR) = +0.635$, $95\%$ CI $[+0.604, +0.663]$, clustered on the $25$ cell
+lines that the $1{,}820$ drug rows are nested in rather than on the rows themselves. The four rivals
+are all negative and all exclude zero on the same clustering: $-0.163$ (\texttt{weighted\_r2}),
+$-0.319$ ($\paneltau$), $-0.650$ (\texttt{spearman\_expr}) and $-0.686$ ($\DEdr$). Against a null
+imposed by centring the resampling distribution at $\DRF = 0$, no draw of $2{,}000$ reaches the
+observed value for $\NIR$, so the one-sided $p$ is at the resampling floor and reads $0.002$ after
+Holm correction across the five metrics. That the $p$ is at the floor is now a statement about the
+effect rather than about the resampler: the point estimate sits some forty cluster-robust standard
+errors from zero. Restricting swap partners to the same plate ($335$ drugs over the same $25$ cell
+lines) pulls every value toward zero and changes no sign: $\NIR$ $+0.519$, against $-0.122$,
+$-0.247$, $-0.495$ and $-0.500$ in the same order. That arm has not been rerun under the repaired
+bootstrap, so its point estimates are quoted and its interval is not. What the argument uses is the
+sign pattern, which is identical in both runs; no ranking among the four negative metrics is
+claimed. The inversion is a
 property of the data, not a leak: a leave-one-out correction barely moves the numbers, since real
 cell lines carry 20--204 drugs, and it survives holding the plate constant.
 
@@ -500,10 +505,10 @@ conditions. (b) Grading the metrics rather than the models: only $\NIR$ points f
 shows the same-plate run ($335$ drugs over $25$ cell-line$\times$plate groups), the confound-free
 version, in which $\NIR$ reads $+0.519$ against $-0.122$ (\texttt{weighted\_r2}), $-0.247$
 ($\paneltau$), $-0.495$ (\texttt{spearman\_expr}) and $-0.500$ ($\DEdr$); the all-plates run
-($1{,}820$ drugs over $25$ cell lines) gives $+0.635$ for $\NIR$, with the four rivals between
-$-0.163$ and $-0.686$. Point estimates only, with no intervals drawn: the stored bootstrap treated
-each drug row as its own cluster, so its intervals and $p$-values are withheld pending a corrected
-re-run (see text). \texttt{weighted\_r2} carries no directional claim: its sign tracks cell count.}
+($1{,}820$ drugs over $25$ cell lines) gives $+0.635$ for $\NIR$, $95\%$ CI $[+0.604, +0.663]$
+clustered on cell line, with the four rivals between $-0.163$ and $-0.686$ and all excluding zero.
+Intervals are drawn for the all-plates arm only: the same-plate bootstrap still treats each drug row
+as its own cluster, so its point estimates stand and its intervals are withheld (see text). \texttt{weighted\_r2} carries no directional claim: its sign tracks cell count.}
 \label{fig:calibration}
 \end{figure}
 
@@ -518,10 +523,10 @@ is not the bottleneck.
 
 \begin{claim}
 The field's standard score is saturated by a predictor carrying no information ($\DEdr = 0.9999$);
-of the five candidates audited, $\NIR$ is the only one with a positive $\DRF$ ($+0.635$ all-plates,
-$+0.519$ with same-plate partners; point estimates only --- the stored intervals and $p$-values are
-invalid, and a corrected re-run is pending); and on
-$\NIR$ the instrument can discriminate. Every drug-use claim in the rest of this chapter is
+of the five candidates audited, $\NIR$ is the only one with a positive $\DRF$ ($+0.635$,
+$[+0.604, +0.663]$ clustered on the $25$ cell lines, Holm $p = 0.002$; $+0.519$ as a point estimate
+with same-plate partners, an arm whose interval is withheld pending its own re-run); and on $\NIR$
+the instrument can discriminate. Every drug-use claim in the rest of this chapter is
 therefore made on the calibrated metric.
 \end{claim}
 
@@ -1539,14 +1544,6 @@ Split & $n$ (lines; drugs; wells) & model $\NIR$ & $\gap$, clustered on \emph{ce
 \texttt{train} & 300 (39; 76; 136) & 0.598 [0.549, 0.647] & \ci{+0.0898}{+0.0382}{+0.1415} & \ci{+0.0898}{+0.0291}{+0.1506} \\
 \textbf{\texttt{unseen\_combo}} & \textbf{895 (42; 34; 36)} & \textbf{0.533 [0.492, 0.575]} & \ci{+0.0332}{+0.0069}{+0.0594} & $+0.0332$ [$-0.0031$, $+0.0695$] \\
 \texttt{unseen\_drug} & 199 (40; 10; 28) & 0.459 [0.404, 0.514] & $-0.0315$ [$-0.0836$, $+0.0206$] & $-0.0315$ [$-0.1049$, $+0.0419$] \\
-\midrule
-Split & $n$ (lines; drugs; wells) & model $\NIR$ & $\gap$, clustered on \emph{cell line} & the same, clustered on \emph{drug} \\
-\midrule
-\texttt{train} & 300 (39; 76; 136) & 0.598 [0.549, 0.647] & \ci{+0.0898}{+0.0382}{+0.1415} & \ci{+0.0898}{+0.0291}{+0.1506} \\
-\textbf{\texttt{unseen\_combo}} & \textbf{895 (42; 34; 36)} & \textbf{0.533 [0.492, 0.575]} & \ci{+0.0332}{+0.0069}{+0.0594} & $+0.0332$ [$-0.0031$, $+0.0695$] \\
-\texttt{unseen\_drug} & 199 (40; 10; 28) & 0.459 [0.404, 0.514] & $-0.0315$ [$-0.0836$, $+0.0206$] & $-0.0315$ [$-0.1049$, $+0.0419$] \\ 0.598 [0.549, 0.647] & \ci{+0.0898}{+0.0382}{+0.1415} & \ci{+0.0898}{+0.0291}{+0.1506} \\
-\textbf{\texttt{unseen\_combo}} & \textbf{895 (42; 34; 36)} & \textbf{0.533 [0.492, 0.575]} & \ci{+0.0332}{+0.0069}{+0.0594} & $+0.0332$ [$-0.0031$, $+0.0695$] \\
-\texttt{unseen\_drug} & 199 (40; 10) & 0.459 [0.404, 0.514] & $-0.0315$ [$-0.0836$, $+0.0206$] & $-0.0315$ [$-0.1049$, $+0.0419$] \\
 \bottomrule
 \end{tabular}}
 \caption{Whole-well holdout on the corrected evaluation --- the truth verified against the build's
@@ -1799,9 +1796,11 @@ line that share property $X$ with it --- the construction of \texttt{moa\_lookup
 It was intended to draw partners only from drugs that were in training, which would make it a fair
 contest in every split, unlike a same-drug lookup, which on an unseen drug is an oracle. An audit
 of the gate found that the partner pool was \emph{not} restricted to training drugs but spanned
-every retained condition in the cell line; the restriction is now in the code and the rerun is
-pending, so every verdict in this subsection, and the claim below, is reported subject to that
-rerun. The gate's estimand requires the channel arm
+every retained condition in the cell line. The restriction is now in the code and the gate has been
+re-run under it: of the $4{,}131$ retained conditions only $2{,}523$ are training, so nearly two in
+five of the conditions the old pool could draw on were ineligible. Every verdict in this
+subsection is from the corrected run, and the effect of the repair was not uniform --- it moved the
+target gap down, the mechanism gap up, and chemistry's down by half. The gate's estimand requires the channel arm
 and its null to differ in exactly one respect, and two disciplines enforce it. Every channel is
 paired with a plate-matched random null: the same number of partner drugs, drawn at random from the
 same cell line, and the same split of partners across the target's own plate and other plates,
@@ -1821,9 +1820,9 @@ null result: it was never tested.
 \toprule
 Channel & Drugs (annot./scored) & $n$ & vs plate-matched null & (vs count-matched) & Verdict \\
 \midrule
-\textbf{protein target} & 264 / 18 & 775 & \ci{+0.1799}{+0.1138}{+0.2459} & $+0.1863$ & \textbf{live} \\
-mechanism (MoA) & 180 / 26 & 981 & \ci{+0.0663}{+0.0088}{+0.1237} & $+0.0700$ & inconclusive \\
-chemical structure & 377 / 94 & 4131 & \ci{+0.0380}{+0.0143}{+0.0617} & $+0.0241$ & inconclusive \\
+\textbf{protein target} & 264 / 18 & 712 & \ci{+0.1351}{+0.0745}{+0.1958} & $+0.1498$ & \textbf{live} \\
+mechanism (MoA) & 180 / 26 & 921 & \ci{+0.0805}{+0.0279}{+0.1332} & $+0.0623$ & inconclusive \\
+chemical structure & 377 / 94 & 4131 & \ci{+0.0261}{+0.0035}{+0.0487} & $+0.0122$ & inconclusive \\
 
 \bottomrule
 \end{tabular}
@@ -1831,20 +1830,21 @@ chemical structure & 377 / 94 & 4131 & \ci{+0.0380}{+0.0143}{+0.0617} & $+0.0241
 channel annotated on few drugs cannot be closed by a null result, because it was never tested. The
 plate-matched null is the estimand-correct control; the count-matched column shows how much of each
 raw gap was co-plating. The verdicts are the gate's own, and its rule is that the plate-matched
-interval's lower bound must clear a pre-set margin of $0.03$: protein target clears it ($+0.1138$),
-mechanism ($+0.0088$) and chemistry ($+0.0143$) do not. All three intervals exclude zero, so the two
+interval's lower bound must clear a pre-set margin of $0.03$: protein target clears it ($+0.0745$),
+mechanism ($+0.0279$) and chemistry ($+0.0035$) do not. All three intervals exclude zero, so the two
 that fail the margin are inconclusive rather than equivalent to their nulls, and neither may be
-written as closed. Two caveats bound every row. The counts are annotations in Tahoe's drug metadata
-rather than testable coverage here: within this cache only $18$, $26$ and $94$ of the $94$ scored
-drugs received a channel arm at all. And these numbers predate the partner-pool fix --- the pool was
-every retained condition in the cell line rather than training conditions only, so a held-out
-condition could enter the prediction made for it. The corrected rerun is pending, and no row here
-may be read as a training-only retrieval score.}
+written as closed. The two fail it for different reasons, and the distinction matters. Mechanism's
+lower bound falls $0.0021$ short --- a knife-edge that should not be read as a negative result in
+either direction. Chemistry's interval is the \emph{narrowest} of the three ($0.045$ wide against
+$0.121$ for target), so it is not underpowered: the effect is small and well estimated, and the
+margin simply falls inside it. One caveat bounds every row. The counts are annotations in Tahoe's
+drug metadata rather than testable coverage here: within this cache only $18$, $26$ and $94$ of the
+$94$ scored drugs received a channel arm at all.}
 \label{tab:channels}
 \end{table}
 
 The size of that correction is itself informative, so it is reported rather than argued away.
-Mechanism partners are co-plated with the target $0.420$ of the time against $0.340$ for a random
+Mechanism partners are co-plated with the target $0.404$ of the time against $0.362$ for a random
 draw (protein target $0.348$ against $0.323$; chemical similarity $0.344$ against $0.345$ --- none,
 as expected for a channel uncorrelated with plating). Under a third construction that draws all
 partners from other plates, the knowledge channels' advantages fall to $+0.0643$ and $+0.0344$ and
@@ -1927,14 +1927,14 @@ field's contribution unresolved.
 \multicolumn{4}{l}{Panel A: the channel is available --- metadata-neighbour retrieval, plate-matched} \\
 Channel & Coverage & $n$ & Gap against a plate-matched random null \\
 \midrule
-protein target & $54\%$ & $775$ & \ci{+0.1799}{+0.1138}{+0.2459} \\
-mechanism (MoA) & $32\%$ & $981$ & \ci{+0.0663}{+0.0088}{+0.1237} \\
-chemical structure & $100\%$ & $4131$ & \ci{+0.0380}{+0.0143}{+0.0617} \\
+protein target & $54\%$ & $712$ & \ci{+0.1351}{+0.0745}{+0.1958} \\
+mechanism (MoA) & $32\%$ & $921$ & \ci{+0.0805}{+0.0279}{+0.1332} \\
+chemical structure & $100\%$ & $4131$ & \ci{+0.0261}{+0.0035}{+0.0487} \\
 \midrule
 \multicolumn{4}{l}{the same three, against the stricter DIFFERENT-PLATE null} \\
-protein target & & $688$ & \ci{+0.1115}{+0.0448}{+0.1783} \\
-mechanism (MoA) & & $874$ & \ci{+0.0604}{+0.0094}{+0.1114} \\
-\textbf{chemical structure} & & $4114$ & $+0.0183$ [$-0.0033$, $+0.0399$] \\
+protein target & & $599$ & \ci{+0.1322}{+0.0648}{+0.1996} \\
+mechanism (MoA) & & $781$ & \ci{+0.0746}{+0.0243}{+0.1249} \\
+\textbf{chemical structure} & & $4090$ & $+0.0118$ [$-0.0097$, $+0.0333$] \\
 \bottomrule
 \end{tabular}
 
@@ -1954,9 +1954,11 @@ both spans (the standard arm) & \ci{+0.1139}{+0.0781}{+0.1496} & $1394$ & read \
 Panel A shows that a drug's protein targets and mechanism carry response information recoverable by
 retrieval alone, so an unseen drug is not information-starved. Read the two halves together. Under a
 plate-matched null all three channels clear zero; under the stricter different-plate null, which
-removes the last shared batch structure, target and mechanism survive and \emph{chemical structure
-does not} --- $+0.0183$ \nolinebreak[3]$[-0.0033, +0.0399]$. Chemistry's apparent signal is a
-co-plating artefact. Intervals here are two-way cluster-robust over cell line and treatment well;
+removes the last shared batch structure, target and mechanism continue to clear it and
+\emph{chemical structure does not} --- $+0.0118$ \nolinebreak[3]$[-0.0097, +0.0333]$. Much of
+chemistry's apparent signal is co-plating. Clearing zero is not the same as clearing the gate's
+relevance margin of $0.03$, and only target does both: mechanism's different-plate lower bound of
+$+0.0243$ leaves it inconclusive rather than live. Intervals here are two-way cluster-robust over cell line and treatment well;
 under the one-way cell-line interval this table previously carried, every row looked significant. Panel B asks whether the model uses
 the field it is already handed, and the answer is that it uses one span and not the other. Swapping
 the drug name moves the output by $+0.1026$; swapping the mechanism, with the name left in place,
