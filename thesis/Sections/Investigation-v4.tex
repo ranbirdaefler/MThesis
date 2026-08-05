@@ -50,10 +50,7 @@ is drug-blind in the expression frame: it returns the same answer whether told t
 different one, and a baseline that copies the untreated cell matches it exactly. Third, the
 blindness is not an encoding failure. Drug identity is written into the model's activations,
 increasingly explicitly with depth, and the readout barely consults it. Fourth, re-encoding the
-training target as the drug-specific Third, the blindness is not an encoding
-failure. Drug identity is written into the model's activations, increasingly explicitly with depth,
-and the readout barely consults it. Fourth, re-encoding the training target as the drug-specific
-residual makes the model demonstrably sensitive to the drug in its prompt --- yet that sensitivity
+training target as the drug-specific residual makes the model demonstrably sensitive to the drug in its prompt --- yet that sensitivity
 does not become reliable prediction on held-out treatment wells, and a lookup table of training
 averages scores above the within-well split-half precision reference itself, covering $115.7\%$ of
 the distance from chance to that bar --- a property of the bar, not a headroom estimate --- where
@@ -1675,9 +1672,8 @@ Split & $n$ (lines; drugs; wells) & model $\NIR$ & $\gap$, clustered on \emph{ce
 own fit digest, and the full held-out population rather than the reliability-surviving subset. The
 two right-hand columns carry the SAME point estimate and differ only in what they treat as the unit
 of generalisation. On \texttt{train} the gap excludes zero either way. On \texttt{unseen\_combo} it
-excludes zero clustered on cell line and does not clustered on drug, and drug is the axis a claim
-about transferring a \emph{drug} signature has to generalise across --- which is why this row is
-reported as not established. Only
+excludes zero clustered on cell line and does not clustered on drug --- which, for the reason the
+text below gives, is why this row is reported as not established. Only
 the \texttt{orth} column can carry a magnitude claim; the \texttt{opposite} column adds ``how much
 naming a lie hurts'' to ``how much naming the truth helps'' and is shown as the diagnostic. The
 \texttt{unseen\_drug} row corroborates rather than proves: those drugs were held out of Tahoe
@@ -1795,8 +1791,8 @@ slope excludes zero on all three splits under both clusterings
 
 Transfer to held-out combinations is not established. The gap there is $+0.0332$, which excludes
 zero clustered on cell line and well \nolinebreak[3]$[+0.0069, +0.0594]$ and does not clustered on
-drug and well \nolinebreak[3]$[-0.0031, +0.0695]$ --- and drug is the axis a claim about
-transferring a \emph{drug} signature has to generalise across. The split is also weaker than its
+drug and well \nolinebreak[3]$[-0.0031, +0.0695]$, and it is the drug axis that the claim has to
+survive. The split is also weaker than its
 name: $30$ of its $34$ drugs and $39$ of its $42$ cell lines appear in training, and $82\%$ of its
 conditions recombine a seen drug with a seen cell line. The effect is a majority tilt rather than a
 uniform one, positive for $20$ of $34$ drugs (sign test $p = 0.39$).
@@ -1962,9 +1958,9 @@ chemical structure & 377 / 94 & 4131 & \ci{+0.0261}{+0.0035}{+0.0487} & $+0.0122
 
 \bottomrule
 \end{tabular}
-\caption{Coverage is stated first, as the number of Tahoe-annotated drugs behind each channel: a
-channel annotated on few drugs cannot be closed by a null result, because it was never tested. The
-plate-matched null is the estimand-correct control; the count-matched column shows how much of each
+\caption{Coverage is stated first, as the number of Tahoe-annotated drugs behind each channel, for
+the reason given above: a null result on a channel that was never really tested is not a closure.
+The plate-matched null is the estimand-correct control; the count-matched column shows how much of each
 raw gap was co-plating. The verdicts are the gate's own, and its rule is that the plate-matched
 interval's lower bound must clear a pre-set margin of $0.03$: protein target clears it ($+0.0745$),
 mechanism ($+0.0279$) and chemistry ($+0.0035$) do not. All three intervals exclude zero when
