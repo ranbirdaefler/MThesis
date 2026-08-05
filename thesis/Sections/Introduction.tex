@@ -147,7 +147,9 @@ nested in them --- $[+0.604, +0.663]$ across plates over $25$ lines, $[+0.516, +
 over $27$, each with Holm $p = 0.002$. We
 establish drug-blindness on that one surviving metric, using several independent instruments so that
 no single measurement carries the claim alone. We identify the target encoding --- not the data, the architecture, or the training
-objective --- as the binding constraint, and derive from that diagnosis a re-encoding of the
+objective --- as the most probable binding constraint, noting that the re-encoding which tests it
+also changes aggregation, control referencing and sequence length, so the attribution is to the
+encoding as a package rather than to token dilution alone, and derive from that diagnosis a re-encoding of the
 prediction target which produces the first measurable drug effect in this project. On training
 conditions the model beats its designated comparator (\texttt{scramble\_orth}: the same prompt with
 the drug name replaced by a within-plate partner chosen so that its measured response is

@@ -60,8 +60,10 @@ correct predictions, which is the evidence for it. It explains a uniform pattern
 state-matched treated cell to a full pseudobulk collapse, stays in the near-null regime, because all
 of them change \emph{what the target is} and none change \emph{what the tokens encode}. (One arm,
 the optimal-transport target, does show a weak effect once a sharper stratified test is applied ---
-\ci{+0.0263}{+0.0069}{+0.0476} --- but roughly five-fold below what re-encoding achieves, which
-is the distinction that matters.) Re-encoding
+\ci{+0.0263}{+0.0069}{+0.0476} on the \texttt{opposite} stratum, though not on the neutral one ---
+but that arm ran at a $600$-token generation budget against the residual arm's $1400$ and was not
+recomputed in the canonical run, so \S\ref{sec:res-epsilon} declines to put the two into ratio and
+so does this sentence.) Re-encoding
 the target as the drug-specific residual raises the differing fraction to $59\%$ and produces the
 first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
 matched control that stays null.

@@ -368,8 +368,6 @@ and a baseline that performs no fitting at all reaches the same figure. The part
 from the tier-1 run that computed it; the rest of the table is tier 2.}
 \label{tab:de-artifact}
 \end{table}
-% AUTHOR NOTE: the partial-DE_dr column is tier 1 while the DE_dr column is tier 2; a tier-2
-% partial run would unify the table.
 
 The cause is visible in the definition, and three properties of it, each innocent in isolation,
 compose into the failure. First, $S_K$ is selected using the truth, so every predictor is scored on
@@ -397,8 +395,8 @@ reported side by side: \texttt{worst} assigns every absent gene the last rank $G
 \texttt{francesca} assigns them a fixed middle rank $G/2$. The choice is immaterial --- spike-in
 $\DEdr$ reads $0.952$ against $0.954$ under the two, and no baseline or ceiling in this chapter
 moves by more than $0.01$ --- so all figures are quoted under \texttt{worst} and the convention is
-not mentioned again.
-% AUTHOR NOTE: no artifact (the 0.952 / 0.954 convention comparison).
+not mentioned again. That comparison was a one-off diagnostic and was not written to an artifact,
+so it is quoted as a check that was run rather than as a reproducible result.
 
 The metric this investigation relies on instead is the Normalised Inverse Rank ($\NIR$), introduced
 by Wu et al.\ in PerturBench~\cite{perturbench} (there called the ``transposed-rank'' metric) and
@@ -931,9 +929,10 @@ This design was run across the five training arms of Table~\ref{tab:trainconfig}
 residual arms, replicated at three further seeds. Of $26$ headline tests --- five arms by up to
 seven depths, exactly one survives Benjamini--Hochberg correction: the residual arm at layer $12$
 ($q = 0.026$), with a monotone dose--response across the ladder's first three rungs ($+0.0013$,
-$+0.0017$, $+0.0044$ at $\alpha = 0.5, 1, 2$). The consensus arm at layer 2 ($p = 0.012$) does not
+$+0.0017$, $+0.0044$ at $\alpha = 0.5, 1, 2$; the rung values come from the run log and were not
+written to an artifact, so the monotonicity is reported as an observation and no test is built on
+it). The consensus arm at layer 2 ($p = 0.012$) does not
 survive ($q = 0.156$).
-% AUTHOR NOTE: no artifact (the alpha-ladder rungs +0.0013 / +0.0017 / +0.0044).
 
 \begin{table}[h]
 \centering
@@ -1025,7 +1024,9 @@ consensus (global mean) & $\rightarrow\infty$ & \ci{-0.010}{-0.022}{+0.003} & nu
 \caption{The regularisation parameter interpolates between the two target constructions tested
 independently, and no point on the ladder lifts the model out of the near-null regime. These figures
 come from a random-partner scramble; \S\ref{sec:res-encoding} shows that under a sharper stratified
-test the optimal-transport arm does show a weak effect (\ci{+0.0263}{+0.0069}{+0.0476}). That
+test the optimal-transport arm shows a weak effect against the \texttt{opposite} partner
+(\ci{+0.0263}{+0.0069}{+0.0476}) but not against the neutral one
+($+0.0144$ \nolinebreak[3]$[-0.0032, +0.0323]$, which spans zero). That
 figure is from the earlier build, at $600$ generation tokens against the residual arm's $1400$, and
 was not recomputed in the canonical run, so it is not put into ratio against the residual arm's
 gaps. The consensus endpoint is additionally the
@@ -1139,12 +1140,6 @@ retention argument. A disjoint-control recomputation exists, but it was never wr
 in the canonical build and the two surviving records of it disagree on the plate figure, so no
 corrected percentages are quoted here; what both records agree on is that plate scope retains at
 least as many conditions as cell-line scope, so retention is not a reason to prefer cell-line scope.
-% AUTHOR NOTE: the 62% / 19% pair cited above IS sourced -- RESULTS_cluster/target_divergence.json,
-% scopes.cellline.reliability.frac_reproducible = 0.6169 and scopes.plate... = 0.1933, both at thr 0.2.
-% The disjoint-control pair has NO json artifact in RESULTS_cluster. Two prose records disagree:
-% FINDINGS.md:546 gives 20% plate / 16% cell line; coda_errata/ERRATA.md:985-988 quotes a real-cache
-% rebuild log giving 19% plate / 16% cell line at thr 0.2 (and 51% / 47% at the resolved thr 0.1086).
-% Restore digits only once a rerun writes them to an artifact.
 Two further diagnostics settle it in plate's favour and are reported in \S\ref{sec:res-transfer}: at
 cell-line scope the dose-transfer ordering inverts and the shared-minus-split control bias reads
 $+0.242$, against $-0.000$ at plate scope. A plate group with fewer than three other training drugs
@@ -1391,8 +1386,6 @@ computed in the canonical run and the row an earlier draft carried for it is wit
 We looked for structure in $\kappa$ and did not find it: no cell line modulates different drugs in
 a consistent direction, and a direct test of whether mechanism-matched drugs deviate from their
 per-drug constants in the same way within a given cell line returned nothing detectable.
-% AUTHOR NOTE: no artifact (the mechanism-matched permutation p 0.15-0.31 quoted in an earlier
-% draft). Withdrawn, not restated; rerun or cut the clause before submission.
  The temptation is to read two negative results as irreducibility, and they do not
 support it. The second test bounds its own power severely: $\kappa$'s split-half reliability in this
 atlas is $0.195$ at the $0.05$ reliability floor ($0.324$ at the stricter $0.20$ floor), so the
@@ -1451,9 +1444,12 @@ the $600$-token generation cap of \S\ref{sec:methods-data}, which halved it ($+0
 correct $+0.1429$); re-running both controls at the matched $1400$-token budget left them flat and
 null, so the comparison is budget-matched and the conclusion unaffected. And the optimal-transport
 arm, originally reported as achieving nothing, scores \ci{+0.0263}{+0.0069}{+0.0476} under the
-sharper stratified test with a monotone gradient: it does use the drug, weakly. The original null
-was an underpowered instrument, not an absence of signal; the $\varepsilon$-ladder conclusion
-stands, but ``OT achieved nothing'' is withdrawn.
+sharper stratified test --- but that is the \texttt{opposite} stratum, and against the neutral
+\texttt{orth} partner the same test gives $+0.0144$ \nolinebreak[3]$[-0.0032, +0.0323]$, which spans
+zero. The gradient across strata is monotone ($+0.0073$, $+0.0144$, $+0.0263$), so the arm is not
+inert; but the only stratum that excludes zero is the one this chapter shows is not a null, so
+``OT uses the drug'' is stated weakly and the $\varepsilon$-ladder conclusion is what carries.
+``OT achieved nothing'' is nonetheless withdrawn.
 
 The comparator-free evidence is already in hand, and it is the strongest in this chapter: regressing
 each generation's $\NIR$ on the cosine between the named drug's truth and the target's truth gives a
@@ -1653,14 +1649,17 @@ $0.1119$, median $+0.0220$), with individual conditions spanning $[-0.3046, +0.3
 clearing $|0.1|$: weak on average and substantially heterogeneous, so a single summary number would
 misrepresent it in either direction.
 
-One caveat attaches to every held-out number in this chapter, and it is stated here where those
+One asymmetry attaches to every held-out number in this chapter, and it is stated here where those
 numbers live. The evaluation's truths are reconstructed through a compatibility path that refits the
 generic on the reliability-surviving subset of training conditions rather than the full set the
-checkpoint was trained against, and that filters held-out conditions by their own split-half
-reproducibility: a selection on the evaluation set's outcome. Its direction is conservative for
-the headline: it retains the cleanest, easiest conditions, and the held-out result still fails to
-clear zero. But the evaluated population is not the full held-out population, and the intervals
-above should be read as applying to the reproducible subset.
+checkpoint was trained against. The \texttt{train} split is therefore, by construction, the
+reliability-surviving population. The two held-out splits are \emph{not} filtered: \texttt{unseen\_combo}
+carries all $895$ of its conditions, $499$ of them below the $+0.1086$ reliability line and $74$ with
+a negative split-half cosine, and \texttt{unseen\_drug} all $199$, with $88$ below the line and $18$
+negative. This is deliberate --- filtering the evaluation set on its own outcome is the selection
+this chapter removed --- but it means the two sides are not matched on reliability, and the
+comparison is conservative in the direction that matters: the held-out arms are scored on their full,
+noisier populations while the trained arm is not.
 
 \begin{claim}
 Re-encoding the target made the model respond to the combined drug-and-mechanism prompt. That
@@ -1747,12 +1746,6 @@ lookup's $115.7\%$.}
 \label{tab:baselines}
 \label{tab:lookup}
 \end{table}
-% AUTHOR NOTE (run C): canonical moa_lookup = 0.5520 on n = 218 (re_v3.json means.moa_lookup;
-% n from means.vs_baselines.moa_lookup -- verified same support: exactly 218 records carry both
-% model and moa_lookup). Paired model - moa_lookup = +0.0436, ci_two_way [-0.0480, +0.1352],
-% which spans zero, so the comparison stays uninformative rather than favourable.
-% STILL STALE (run B) IN THIS BLOCK: table row says n = 118 / 0.565, caption says 118, prose says
-% +0.0413 [-0.0610, +0.1436]. Do not delete this note until those three are updated.
 
 The pre-registered interpretation, written before the result, anticipated three branches; the middle
 one fired. The model reads and transfers the drug, but recovers only a small fraction of its
@@ -1772,11 +1765,13 @@ from~\cite{partin}, that good pair-holdout performance is reachable by predictin
 training average, is treated here as the hypothesis rather than the caveat, and measured. It
 holds.
 
-It is tempting to read $\textrm{ceiling} - \texttt{drug\_lookup} = +0.017$ as ``the modelling target
-has vanished''. That inference is not supported, for three reasons that all favour the lookup: the
+On the common support the lookup scores \emph{above} the reference,
+$\texttt{drug\_lookup} - \textrm{reference} = +0.056$, and it is tempting to read that as ``the
+modelling target has vanished''. That inference is not supported, for three reasons that all favour
+the lookup: the
 ceiling is scored against a half-sample truth while every baseline is scored against the full-sample
 truth; \texttt{drug\_lookup} averages $\approx 38$ conditions against the ceiling's single noisy
-half; and $\NIR$ near $0.96$ is compressive, collapsing most of the cosine range into a few
+half; and $\NIR$ near $0.91$ is compressive, collapsing most of the cosine range into a few
 thousandths. The two coverage figures are also distances to a split-half ceiling, which
 \S\ref{sec:methods-data} notes is optimistic relative to biological reproducibility --- both are
 inflated by an unknown amount, and the ordering is what carries the claim.
@@ -1837,7 +1832,8 @@ channel annotated on few drugs cannot be closed by a null result, because it was
 plate-matched null is the estimand-correct control; the count-matched column shows how much of each
 raw gap was co-plating. The verdicts are the gate's own, and its rule is that the plate-matched
 interval's lower bound must clear a pre-set margin of $0.03$: protein target clears it ($+0.0745$),
-mechanism ($+0.0279$) and chemistry ($+0.0035$) do not. All three intervals exclude zero, so the two
+mechanism ($+0.0279$) and chemistry ($+0.0035$) do not. All three intervals exclude zero when
+clustered on cell line and well, so the two
 that fail the margin are inconclusive rather than equivalent to their nulls, and neither may be
 written as closed. The two fail it for different reasons, and the distinction matters. Mechanism's
 lower bound falls $0.0021$ short --- a knife-edge that should not be read as a negative result in
@@ -1851,20 +1847,16 @@ $94$ scored drugs received a channel arm at all.}
 
 The size of that correction is itself informative, so it is reported rather than argued away.
 Mechanism partners are co-plated with the target $0.404$ of the time against $0.362$ for a random
-draw (protein target $0.348$ against $0.323$; chemical similarity $0.344$ against $0.345$ --- none,
-as expected for a channel uncorrelated with plating). Under a third construction that draws all
-partners from other plates, the knowledge channels' advantages fall to $+0.0643$ and $+0.0344$ and
-chemistry's interval spans zero ($+0.0056$); in that construction the channel arms' absolute $\NIR$
-sits at $0.360$ and $0.296$, below chance.
-% AUTHOR NOTE: no artifact (the different-plate construction: +0.0643 / +0.0344 / +0.0056 and the
-% 0.360 / 0.296 absolutes).
-Below-chance absolutes do not contradict the live verdicts, and the reason is the estimand. When
-partners are drawn from other plates, the arm's prediction carries the wrong plate's structure and
-loses even to a chance draw in a comparison set that spans plates --- the absolute score is
-frame-sensitive and uninterpretable on its own, which is exactly why every verdict above is read as
-a gap against the plate-matched null rather than against chance. The verdicts survive the
-correction; the magnitudes shrank by a fifth to a third, which is what the co-plating fractions
-predict. The bound this establishes is on similarity transfer through each channel, not on any
+draw (protein target $0.368$ against $0.366$; chemical similarity $0.370$ against $0.367$ ---
+negligible for both, as expected for channels uncorrelated with plating; mechanism is the one
+channel where co-plating is material). Under a third construction that draws all partners from other
+plates, the target advantage is \ci{+0.1322}{+0.0648}{+0.1996} ($n = 599$), mechanism's is
+\ci{+0.0746}{+0.0243}{+0.1249} ($n = 781$), and chemistry's interval spans zero
+($+0.0118$ \nolinebreak[3]$[-0.0097, +0.0333]$, $n = 4090$). The channel arms' absolute $\NIR$ in
+that construction sits at $0.638$, $0.575$ and $0.499$ against nulls of $0.506$, $0.500$ and
+$0.487$, so removing the shared plate does not push the arms below chance. Holding the plate apart
+barely moves target or mechanism --- two and seven per cent off their plate-matched gaps --- while
+chemistry's roughly halves, which is where the co-plating correction actually bites. The bound this establishes is on similarity transfer through each channel, not on any
 model: a model could in principle combine channels or learn a non-smooth structure-to-response map
 that a nearest-neighbour average cannot express, though at a few hundred drugs the lookup is
 effectively the bound.
@@ -1880,9 +1872,13 @@ annotations for $264$ drugs ($280$ distinct symbols, $550$ edges) which no analy
 project had read.
 
 \begin{claim}
-The correct statement is narrower and more useful than the one we started with: chemical structure
-does not predict response, measured twice in two frames; protein target and mechanism do.
-Unseen-drug generalisation is reachable through drug-side knowledge, and not through chemistry.
+The correct statement is narrower than the one we started with, and narrower again than an earlier
+draft of this claim. Against the gate's pre-set relevance margin of $0.03$, only protein target
+clears it and may be written as live. Mechanism excludes zero on every construction but its lower
+bound falls $0.0021$ short of the margin. Chemistry carries the narrowest interval of the three and
+the margin falls inside it. All three exclude zero against a plate-matched null, so none may be
+written as closed either. Similarity transfer through the target channel is measurable; mechanism
+and chemistry are unresolved at this margin, not excluded.
 \end{claim}
 
 Three caveats bound it. Coverage is $54\%$ and $32\%$, so this is measured on the annotated subset.
@@ -1920,10 +1916,12 @@ by the name span: swapping only the drug name gave $\gap$ of $\ci{+0.0809}{+0.05
 ($n = 570$); swapping only the mechanism gave $+0.0091$ [$-0.0174$, $+0.0383$] ($n = 325$); and
 both together gave $+0.1024$ [$+0.0827$, $+0.1236$]. Those arms were scored against the
 \texttt{opposite}-signature comparator that \S\ref{sec:res-generalisation} shows inflates every gap
-read against it, and they were not re-run under the corrected evaluation. The claim that the model
-``reads the name and not the mechanism'' is therefore withdrawn pending that re-run; what the
-current run establishes is response to the combined drug-and-mechanism prompt, with the mechanism
-field's contribution unresolved.
+read against it. The arms \emph{were} re-run under the corrected evaluation --- Panel B of
+Table~\ref{tab:fieldattribution} carries the run-C figures --- but the comparator defect survives the
+re-run, because it is a property of the swap partner and not of the target build. The claim that the
+model ``reads the name and not the mechanism'' is therefore withdrawn pending arms scored against the
+neutral \texttt{orth} partner; what the current run establishes is response to the combined
+drug-and-mechanism prompt, with the mechanism field's contribution unresolved.
 
 \begin{table}[htbp]
 \centering
@@ -1966,12 +1964,18 @@ chemistry's apparent signal is co-plating. Clearing zero is not the same as clea
 relevance margin of $0.03$, and only target does both: mechanism's different-plate lower bound of
 $+0.0243$ leaves it inconclusive rather than live. Intervals here are two-way cluster-robust over cell line and treatment well;
 under the one-way cell-line interval this table previously carried, every row looked significant. Panel B asks whether the model uses
-the field it is already handed, and the answer is that it uses one span and not the other. Swapping
-the drug name moves the output by $+0.1026$; swapping the mechanism, with the name left in place,
-moves it by $+0.0303$ with an interval containing zero. The name therefore carries about nine tenths
-of the combined effect. Both intervals are clustered on the drug and the treatment well; the mechanism
-row also fails to clear zero clustered on cell line and well, so the reading does not depend on that
-choice. The mechanism row carries fewer conditions by construction: where a swap partner happens to
+the field it is already handed. Swapping the drug name moves the output by $+0.1026$; swapping the
+mechanism, with the name left in place, moves it by $+0.0303$ with an interval containing zero. The
+attribution that reading invites --- that the name carries the effect and the mechanism field does
+not --- is \emph{not} supported, because the comparator is not neutral and is non-neutral in
+opposite directions across the two rows. The name arm's scrambled partner scores $0.434$, below
+chance, so about two thirds of its $+0.1026$ is the comparator falling rather than the model
+rising; the mechanism arm's partner scores $0.520$, above chance, which suppresses its gap. Measured
+instead as the model's own distance from chance on each row --- the decomposition of
+\S\ref{sec:res-generalisation} --- the ordering inverts: $+0.0367$ on the name row against $+0.0506$
+on the mechanism subset. The panel therefore establishes that the model responds to the combined
+prompt, and leaves the split between the two spans unresolved until the arms are re-run against the
+neutral comparator. Both intervals are clustered on the drug and the treatment well. The mechanism row carries fewer conditions by construction: where a swap partner happens to
 share the target's mechanism, swapping only the mechanism reproduces the model's own prompt byte for
 byte and the gap is zero by definition, so those conditions are dropped rather than scored.}
 \label{tab:fieldattribution}

@@ -193,9 +193,11 @@ most predictable question an examiner can ask --- does it work if the model is b
 answer in this thesis.
 
 Two things can be said about what we would expect, and they point in different directions. The
-bottleneck this work identifies is not capacity. It is that roughly $1\%$ of the training gradient
-reaches drug identity, because the target tokens are overwhelmingly shared across drugs
-(Section~\ref{sec:res-encoding}); a larger model receives the same diluted signal from the same
+bottleneck this work identifies is not capacity. It is that the target tokens are overwhelmingly
+shared across drugs --- only $17\%$ of them differ between two drugs in the same cell line under the
+standard target, against $59\%$ under the residual encoding (Section~\ref{sec:res-encoding}) --- so
+very little of the training signal can be carrying drug identity. No token-level loss or gradient
+attribution was computed, so no fraction of the gradient itself is claimed; a larger model receives the same diluted signal from the same
 objective, and the fact that re-encoding the target lifted the effect while leaving capacity
 untouched is evidence that the constraint binds where we say it does.
 
