@@ -1845,7 +1845,24 @@ $94$ scored drugs received a channel arm at all.}
 \label{tab:channels}
 \end{table}
 
-The size of that correction is itself informative, so it is reported rather than argued away.
+One more thing decides how far the target verdict can be pushed, and it is the clustering axis.
+The gate clusters on cell line and treatment well, which is right for a statement about this
+experiment. But the claim the channel is being asked to support --- that an \emph{unseen drug} is
+reachable through its target annotation --- generalises over drugs, so the drug is the unit, and
+only $18$ annotated drugs carry the target arm. Recomputed on that axis the interval widens and the
+verdict changes: against the plate-matched null the target gap is
+$+0.1351$ \nolinebreak[3]$[+0.0287, +0.2416]$ clustered on drug and well ($\mathrm{df} = 17$),
+whose lower bound falls $0.0013$ short of the margin, and against the different-plate null it is
+$+0.1322$ \nolinebreak[3]$[+0.0199, +0.2445]$. Both still exclude zero; neither clears $0.03$.
+Mechanism, which excludes zero on the cell-line axis, spans it on the drug axis in all three
+constructions. The honest summary is therefore narrower than \emph{live}: protein target is the
+strongest channel of the three by a clear margin and carries signal on every construction and both
+clusterings, but its clearance of the relevance margin holds on the cell-line axis and not on the
+drug axis, and rests on $18$ drugs. This is the same axis question \S\ref{sec:res-transfer} settles
+against a cross-line claim, and it is answered the same way: the axis is chosen by the claim, not by
+which interval is narrower.
+
+The size of the co-plating correction is itself informative, so it is reported rather than argued away.
 Mechanism partners are co-plated with the target $0.404$ of the time against $0.362$ for a random
 draw (protein target $0.368$ against $0.366$; chemical similarity $0.370$ against $0.367$ ---
 negligible for both, as expected for channels uncorrelated with plating; mechanism is the one
@@ -1873,12 +1890,16 @@ project had read.
 
 \begin{claim}
 The correct statement is narrower than the one we started with, and narrower again than an earlier
-draft of this claim. Against the gate's pre-set relevance margin of $0.03$, only protein target
-clears it and may be written as live. Mechanism excludes zero on every construction but its lower
-bound falls $0.0021$ short of the margin. Chemistry carries the narrowest interval of the three and
-the margin falls inside it. All three exclude zero against a plate-matched null, so none may be
-written as closed either. Similarity transfer through the target channel is measurable; mechanism
-and chemistry are unresolved at this margin, not excluded.
+draft of this claim, and narrower again once the clustering axis is chosen by the claim rather than
+by the gate. Protein target is the strongest channel by a clear margin and excludes zero on every
+construction under both clusterings; it clears the pre-set relevance margin of $0.03$ clustered on
+cell line and well, but not clustered on the drug, which is the axis a statement about unseen drugs
+rides on, and it rests on $18$ annotated drugs. Mechanism excludes zero on the cell-line axis, falls
+$0.0021$ short of the margin there, and spans zero on the drug axis. Chemistry's interval is the
+narrowest of the three and the margin falls inside it. None of the three may be written as closed,
+and none may be written as live without naming the axis. Similarity transfer through the target
+channel is measurable and is the only channel worth pursuing; whether it is large enough to matter
+is unresolved at $18$ drugs.
 \end{claim}
 
 Three caveats bound it. Coverage is $54\%$ and $32\%$, so this is measured on the annotated subset.

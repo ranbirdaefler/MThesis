@@ -188,10 +188,14 @@ anything conditional built here, so on seen drugs nothing we built beats retriev
 But a lookup requires the drug to have been seen. For drugs that have not been, the gate has now
 been re-run with its partner pool restricted to training conditions --- the construction the
 question actually asks about, since a partner the model never saw cannot stand for what training
-supplied. On that run one channel clears the pre-set relevance margin of $0.03$ and two do not.
-Protein target clears it on all three constructions: count-matched \ci{+0.1498}{+0.0958}{+0.2038},
+supplied. On that run one channel clears the pre-set relevance margin of $0.03$ and two do not --- and the one
+that does, does so on one clustering and not the other. Protein target clears it on all three
+constructions clustered on cell line and well: count-matched \ci{+0.1498}{+0.0958}{+0.2038},
 plate-matched \ci{+0.1351}{+0.0745}{+0.1958}, and the stricter different-plate requirement
-\ci{+0.1322}{+0.0648}{+0.1996}. Mechanism excludes zero on all three
+\ci{+0.1322}{+0.0648}{+0.1996}. Clustered on the drug --- the unit a claim about unseen drugs
+generalises over, and one carrying only $18$ annotated drugs --- the same gaps read
+$[+0.0536, +0.2460]$, $[+0.0287, +0.2416]$ and $[+0.0199, +0.2445]$: still clear of zero, but
+clearing the margin on the count-matched null only. Mechanism excludes zero on all three
 (plate-matched \ci{+0.0805}{+0.0279}{+0.1332}) yet its lower bound falls $0.0021$ short of the
 margin, so it is neither live nor equivalent to its null but inconclusive on a knife-edge.
 Chemical structure carries the narrowest interval of the three and still cannot be placed: it
@@ -211,9 +215,10 @@ atlas's own metadata.
 So the thesis does not end in closure. It ends with the opportunity located: on seen drugs a
 generative model has nothing to add over retrieval, because the unshared part is unpredictable; on
 unseen drugs, where retrieval is impossible by construction, protein-target annotation is the one
-channel that clears a relevance margin against a different-plate null with the partner pool
-restricted to training drugs, and is therefore where a model may be able to do something a
-dictionary cannot. That
+channel carrying signal against a different-plate null with the partner pool restricted to training
+drugs, and is therefore where a model may be able to do something a dictionary cannot --- with the
+size of that opening still unresolved, because on the drug axis its interval clears zero but not the
+relevance margin, on $18$ drugs. That
 is also the setting the benchmark literature calls
 Leave-Drugs-Out, and the one that matters for drug design.
 

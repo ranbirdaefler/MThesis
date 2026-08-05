@@ -1,0 +1,166 @@
+{
+ "_source": "recomputed from channel_gate_v4.json records",
+ "_why": "the gate reports cell_line x well; the claim generalises over DRUGS, so the drug is the unit. Both axes are reported because they disagree on the target verdict.",
+ "margin": 0.03,
+ "channels": {
+  "target": {
+   "plate_matched": {
+    "n": 712,
+    "gap": 0.13512036067987784,
+    "n_drugs": 18,
+    "ci_line_well": [
+     0.07447927971257501,
+     0.19576144164718068
+    ],
+    "df_line": 38,
+    "verdict_line": "live",
+    "ci_drug_well": [
+     0.028653378337527152,
+     0.24158734302222853
+    ],
+    "df_drug": 17,
+    "verdict_drug": "inconclusive"
+   },
+   "count_matched": {
+    "n": 712,
+    "gap": 0.14979481106993586,
+    "n_drugs": 18,
+    "ci_line_well": [
+     0.09583637902846953,
+     0.2037532431114022
+    ],
+    "df_line": 38,
+    "verdict_line": "live",
+    "ci_drug_well": [
+     0.05361356800149772,
+     0.245976054138374
+    ],
+    "df_drug": 17,
+    "verdict_drug": "live"
+   },
+   "different_plate": {
+    "n": 599,
+    "gap": 0.13221492434115228,
+    "n_drugs": 18,
+    "ci_line_well": [
+     0.0648037504179931,
+     0.19962609826431146
+    ],
+    "df_line": 38,
+    "verdict_line": "live",
+    "ci_drug_well": [
+     0.01990743280502115,
+     0.2445224158772834
+    ],
+    "df_drug": 17,
+    "verdict_drug": "inconclusive"
+   }
+  },
+  "moa": {
+   "plate_matched": {
+    "n": 921,
+    "gap": 0.08054919893547109,
+    "n_drugs": 26,
+    "ci_line_well": [
+     0.027874175686430525,
+     0.13322422218451166
+    ],
+    "df_line": 40,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.003834160653531052,
+     0.16493255852447325
+    ],
+    "df_drug": 25,
+    "verdict_drug": "inconclusive"
+   },
+   "count_matched": {
+    "n": 921,
+    "gap": 0.06230521161040203,
+    "n_drugs": 26,
+    "ci_line_well": [
+     0.015501999935912503,
+     0.10910842328489155
+    ],
+    "df_line": 40,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.01517270129016527,
+     0.13978312451096933
+    ],
+    "df_drug": 25,
+    "verdict_drug": "inconclusive"
+   },
+   "different_plate": {
+    "n": 781,
+    "gap": 0.0746338228309035,
+    "n_drugs": 26,
+    "ci_line_well": [
+     0.024319046612916534,
+     0.12494859904889047
+    ],
+    "df_line": 39,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.0035572083800193,
+     0.1528248540418263
+    ],
+    "df_drug": 25,
+    "verdict_drug": "inconclusive"
+   }
+  },
+  "chem": {
+   "plate_matched": {
+    "n": 4131,
+    "gap": 0.026095802440010047,
+    "n_drugs": 94,
+    "ci_line_well": [
+     0.0035231888498251894,
+     0.04866841603019491
+    ],
+    "df_line": 41,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.008083321710944332,
+     0.06027492659096442
+    ],
+    "df_drug": 93,
+    "verdict_drug": "inconclusive"
+   },
+   "count_matched": {
+    "n": 4131,
+    "gap": 0.01217506953910093,
+    "n_drugs": 94,
+    "ci_line_well": [
+     -0.01170052808124751,
+     0.03605066715944937
+    ],
+    "df_line": 41,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.02352155208002751,
+     0.04787169115822937
+    ],
+    "df_drug": 93,
+    "verdict_drug": "inconclusive"
+   },
+   "different_plate": {
+    "n": 4090,
+    "gap": 0.011785920163186497,
+    "n_drugs": 94,
+    "ci_line_well": [
+     -0.00974669354917999,
+     0.03331853387555299
+    ],
+    "df_line": 41,
+    "verdict_line": "inconclusive",
+    "ci_drug_well": [
+     -0.018429019372341326,
+     0.042000859698714324
+    ],
+    "df_drug": 93,
+    "verdict_drug": "inconclusive"
+   }
+  }
+ }
+}

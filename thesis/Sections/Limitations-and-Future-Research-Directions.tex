@@ -147,10 +147,14 @@ any drug whose target is named, including one with no similar drug in training. 
 stronger claim, it does not reduce to a lookup, and it is untested. Both questions sat behind a
 defect in the gate itself --- the partner pool was not restricted to training drugs, so a held-out
 drug's response could be predicted from a partner that was also held out --- and the gate has since
-been re-run with the restriction in place. The repair narrowed what may be claimed: protein target
-clears the relevance margin, mechanism misses its lower bound by $0.0021$, and chemistry's interval
-straddles the margin, so only the target channel supports a statement that unseen-drug
-generalisation is reachable through retrieval.
+been re-run with the restriction in place. The repair narrowed what may be claimed, and the
+clustering axis narrows it again: protein target clears the relevance margin on the cell-line axis,
+misses it on the drug axis, and rests on $18$ annotated drugs; mechanism misses its lower bound by
+$0.0021$ on the cell-line axis and spans zero on the drug axis; chemistry's interval straddles the
+margin on both. Only the target channel supports a statement that unseen-drug generalisation is
+reachable through retrieval, and only as a direction worth testing rather than a measured effect of
+useful size. The binding limitation is coverage: $18$ drugs cannot settle it, and the experiment
+that would is a target-annotated panel broad enough to cluster on.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
 axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks
