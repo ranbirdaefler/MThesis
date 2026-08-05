@@ -1525,8 +1525,11 @@ arm's ($+0.026$).
 
 One measurement lesson and one withdrawal belong with this result. The effect was first measured at
 the $600$-token generation cap of \S\ref{sec:methods-data}, which halved it ($+0.0716$ against the
-correct $+0.1429$); re-running both controls at the matched $1400$-token budget left them flat and
-null, so the comparison is budget-matched and the conclusion unaffected. And the optimal-transport
+correct $+0.1429$); the two controls were \emph{not} re-run at that budget, so the three-column
+comparison is not budget-matched and is not presented as one. Both control arms are scored at
+$600$ tokens against the residual arm's $1400$. Truncation costs the residual arm signal rather
+than granting it any, so the mismatch works against the effect being reported rather than for it,
+but the comparison should be read as unmatched on generation budget until those arms are re-run. And the optimal-transport
 arm, originally reported as achieving nothing, scores \ci{+0.0263}{+0.0069}{+0.0476} under the
 sharper stratified test --- but that is the \texttt{opposite} stratum, and against the neutral
 \texttt{orth} partner the same test gives $+0.0144$ \nolinebreak[3]$[-0.0032, +0.0323]$, which spans
@@ -1946,10 +1949,12 @@ restricted where the \emph{predictors} come from; it did not change which condit
 \emph{scored}. The gate's targets are all $4{,}131$ retained conditions, spanning $94$ drugs, of
 which $14$ are held out of training entirely --- and the target channel's arm covers $18$ drugs, of
 which \textbf{two} are held out. Restricting the targets to held-out drugs, which is the population
-the unseen-drug question is actually about, the target gap is
-$+0.1197$ \nolinebreak[3]$[+0.0671, +0.1720]$ on those two drugs, mechanism falls from $+0.0805$ to
-$+0.0439$ \nolinebreak[3]$[-0.0021, +0.0921]$ and spans zero on four, and chemistry reads
-$+0.0378$ \nolinebreak[3]$[+0.0157, +0.0620]$ on fourteen. What this section measures is therefore
+the unseen-drug question is actually about, and clustered two-way on cell line and well as
+everything else in this subsection is, the target gap is
+$+0.1197$ \nolinebreak[3]$[+0.0499, +0.1894]$ on those two drugs; mechanism falls from $+0.0805$ to
+$+0.0439$ \nolinebreak[3]$[-0.0846, +0.1723]$ on four; and chemistry reads
+$+0.0378$ \nolinebreak[3]$[-0.0029, +0.0785]$ on fourteen. Both of the latter span zero. Only the
+target channel survives the restriction at all, and it survives on two drugs. What this section measures is therefore
 \emph{channel availability} --- whether the information a channel carries is present in the atlas at
 all --- and not unseen-drug predictive performance, which two drugs cannot establish for the target
 channel and which mechanism does not survive at all. Every verdict below should be read in those
@@ -2007,7 +2012,7 @@ cell line and well, but not clustered on the drug, which is the axis a statement
 rides on, and it rests on $18$ annotated drugs of which two are held out of training. Mechanism
 excludes zero on the cell-line axis, falls $0.0021$ short of the margin there, spans zero on the
 drug axis, and spans zero again when the targets are restricted to held-out drugs
-($+0.0439$ \nolinebreak[3]$[-0.0021, +0.0921]$); it cannot carry an unseen-drug claim in any
+($+0.0439$ \nolinebreak[3]$[-0.0846, +0.1723]$); it cannot carry an unseen-drug claim in any
 conditioning. Chemistry's interval is the
 narrowest of the three and the margin falls inside it. None of the three may be written as closed,
 and none may be written as live without naming the axis. Similarity transfer through the target

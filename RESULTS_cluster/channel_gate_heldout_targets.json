@@ -10,10 +10,11 @@
     "n_drugs": 18,
     "gap": 0.13512036067987784,
     "ci": [
-     0.10241925935577473,
-     0.16377196091858273
+     0.07447927971257501,
+     0.19576144164718068
     ],
-    "n_clusters": 39,
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 38,
     "spans_zero": false
    },
    "heldout_targets": {
@@ -21,10 +22,11 @@
     "n_drugs": 2,
     "gap": 0.11966602902106448,
     "ci": [
-     0.06710978287808335,
-     0.17197738971673718
+     0.04988802018070265,
+     0.1894440378614263
     ],
-    "n_clusters": 39,
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 4,
     "spans_zero": false
    }
   },
@@ -34,10 +36,11 @@
     "n_drugs": 26,
     "gap": 0.08054919893547109,
     "ci": [
-     0.050146923459038324,
-     0.10947841556810325
+     0.027874175686430525,
+     0.13322422218451166
     ],
-    "n_clusters": 41,
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 40,
     "spans_zero": false
    },
    "heldout_targets": {
@@ -45,10 +48,11 @@
     "n_drugs": 4,
     "gap": 0.04386392118985579,
     "ci": [
-     -0.002083729438391137,
-     0.09213853788132793
+     -0.08461115563528196,
+     0.17233899801499356
     ],
-    "n_clusters": 40,
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 10,
     "spans_zero": true
    }
   },
@@ -58,10 +62,11 @@
     "n_drugs": 94,
     "gap": 0.026095802440010047,
     "ci": [
-     0.014275871763574201,
-     0.038171919546600305
+     0.0035231888498251894,
+     0.04866841603019491
     ],
-    "n_clusters": 42,
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 41,
     "spans_zero": false
    },
    "heldout_targets": {
@@ -69,11 +74,12 @@
     "n_drugs": 14,
     "gap": 0.03779310575211302,
     "ci": [
-     0.015706194321177668,
-     0.06200535817017363
+     -0.002901907478786908,
+     0.07848811898301294
     ],
-    "n_clusters": 42,
-    "spans_zero": false
+    "unit": "two-way (Cameron-Gelbach-Miller)",
+    "df": 39,
+    "spans_zero": true
    }
   }
  }

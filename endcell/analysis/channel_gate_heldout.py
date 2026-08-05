@@ -62,15 +62,21 @@ def main():
                 print("  %-7s %-18s n=%d -- too few to score" % (ch, label, len(rows)))
                 continue
             d = [r[arm] - r[null] for r in rows]
-            ci = inf.cluster_bootstrap(d, [r["cell_line"] for r in rows],
-                                       lambda x: float(np.mean(x)), n_boot=N_BOOT, seed=SEED)
+            # TWO-WAY (line x well), matching every sibling interval in this subsection. A one-way
+            # cell-line bootstrap was used here first and it is too narrow for a crossed design --
+            # the section's own caption disowns exactly that estimator. It matters: on held-out
+            # targets the chemistry row reads [+0.0157, +0.0620] one-way and [-0.0029, +0.0785]
+            # two-way, so the choice decides whether that row excludes zero.
+            ci = inf.two_way_cluster_ci(d, [r["cell_line"] for r in rows],
+                                        [r.get("well", r["cell_line"]) for r in rows])
             row[label] = {"n": len(rows), "n_drugs": len({r["drug"] for r in rows}),
                           "gap": float(np.mean(d)), "ci": [ci["lo"], ci["hi"]],
-                          "n_clusters": ci["n_clusters"],
+                          "unit": ci.get("unit"), "df": ci.get("df"),
                           "spans_zero": bool(ci["lo"] <= 0.0 <= ci["hi"])}
-            print("  %-7s %-18s n=%-5d drugs=%-3d gap %+.4f [%+.4f, %+.4f]%s"
+            print("  %-7s %-18s n=%-5d drugs=%-3d gap %+.4f [%+.4f, %+.4f] %s%s"
                   % (ch, label, len(rows), row[label]["n_drugs"], row[label]["gap"],
-                     ci["lo"], ci["hi"], "  SPANS ZERO" if row[label]["spans_zero"] else ""))
+                     ci["lo"], ci["hi"], ci.get("unit", ""),
+                     "  SPANS ZERO" if row[label]["spans_zero"] else ""))
         out["channels"][ch] = row
 
     json.dump(out, io.open(OUT, "w", encoding="utf-8"), indent=1)

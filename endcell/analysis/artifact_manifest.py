@@ -47,7 +47,11 @@ MANIFEST = [
          script="endcell/analysis/workspace_probe.py",
          backs="Q21 replication table, seeds 43/44/45"),
     # ---- Q18, the channel gate -------------------------------------------------------------
-    dict(id="channel_gate", quoted=True, files=["channel_gate.json"],
+    # The canonical gate is channel_gate_v4.json (training-only partner pool). The bare
+    # channel_gate.json this entry used to demand is two generations stale, and demanding it
+    # reported a MISSING artifact for a result that is present and current.
+    dict(id="channel_gate", quoted=True, any_of=True,
+         files=["channel_gate_v4.json", "channel_gate.json"],
          script="endcell/analysis/channel_gate.py",
          backs="Q18 'two live channels': MoA +0.078, target +0.084",
          superseded_by="channel_gate_platematched.json",
@@ -72,7 +76,11 @@ MANIFEST = [
          script="endcell/analysis/kappa_channel.py",
          backs="Q19 mechanism-matched vs mismatched cos(kappa), ceiling 0.195"),
     # ---- Q20, field decomposition ----------------------------------------------------------
-    dict(id="field_decomp", quoted=True, files=["field_decomp.json"],
+    # residual_eval.py --field_decomp writes the decomposition INTO its own output under
+    # means.field_decomposition rather than to a standalone file; re_v3.json carries it, and that
+    # is what Panel B of tab:fieldattribution quotes.
+    dict(id="field_decomp", quoted=True, any_of=True,
+         files=["field_decomp.json", "re_v3.json"],
          script="endcell/analysis/residual_eval.py --field_decomp",
          backs="Q20: swap-drug-only, swap-MoA-only, swap-both; mechanism CI [-0.017,+0.038]"),
     # ---- Q15 / Q16, residual arm -----------------------------------------------------------
@@ -139,8 +147,13 @@ def scan(dirpath):
                 found.extend(hits)
             else:
                 missing.append(pat)
-        rows.append({**m, "found": sorted(set(found)), "missing_patterns": missing,
-                     "ok": not missing, "partial": bool(found) and bool(missing)})
+        # `any_of` entries are satisfied by ONE of their patterns: the same result has been
+        # written under different filenames across pipeline generations, and demanding every
+        # historical name reports a MISSING artifact for a result that is present and current.
+        ok = bool(found) if m.get("any_of") else not missing
+        rows.append({**m, "found": sorted(set(found)),
+                     "missing_patterns": [] if ok else missing,
+                     "ok": ok, "partial": (not ok) and bool(found)})
     return rows
 
 
