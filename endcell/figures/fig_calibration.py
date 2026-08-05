@@ -60,7 +60,12 @@ def main():
     if scr is not None:
         rows.append(("scramble\n(wrong drug)", scr, style.OKABE["orange"]))
 
-    drf = style.load("drf_sameplate.json")
+    # CANONICAL same-plate arm. drf_sameplate.json is a superseded run (655 drugs, 61 cell lines,
+    # NIR DRF +0.446) and panel (b) was still drawing it while the caption quoted the current
+    # figures -- a figure disagreeing with its own caption. The canonical within-plate arm is the
+    # wide, cell-line-clustered rerun: 586 drugs over 44 cell-line x plate groups spanning 27 lines.
+    drf = style.load("calibration_v5_sameplate_wide.json")
+    ap = style.load("calibration_v4.json")          # all-plates arm, cited in the caption
     order = ["nir", "weighted_r2", "panel_tau", "spearman_expr", "de_delta"]
     dd = drf["drf"]["neg_mean"]
 
@@ -70,7 +75,17 @@ def main():
              "panel_b": {m: {k: dd[m][k] for k in ("drf", "m_neg", "m_pos", "m_perfect")}
                          for m in order},
              "drf_n_drugs": drf["drf"]["neg_mean"]["nir"]["n"],
-             "drf_n_celllines": drf.get("n_celllines")}
+             "drf_n_celllines": drf.get("n_celllines"),
+             "drf_n_groups": drf.get("n_groups"),
+             "drf_source": "calibration_v5_sameplate_wide.json",
+             # The caption contrasts panel (b) with the ALL-PLATES arm, which is not plotted.
+             # Record it here so the figure's data file documents every number its caption asserts.
+             "drf_all_plates_reference": {
+                 "_source": "calibration_v4.json",
+                 "n_drugs": ap.get("n_drugs"), "n_celllines": ap.get("n_celllines"),
+                 **{m: {"drf": ap["drf"]["neg_mean"][m]["drf"],
+                        "ci": ap["drf"]["neg_mean"][m].get("ci")}
+                    for m in order}}}
 
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(style.TEXTWIDTH_IN, 2.6),
                                    gridspec_kw=dict(width_ratios=[1.15, 1.0], wspace=0.95))
