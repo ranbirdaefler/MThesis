@@ -1020,9 +1020,14 @@ noisier: $+0.0265$ \nolinebreak[3]$[+0.0021, +0.0524]$ against $+0.0197$
 and $2$ excludes zero on its own, so the dose--response is real ($+0.0013$, $+0.0017$, $+0.0044$),
 and the two highest rungs do not ($\alpha = 5$ and $10$ span zero, as an on-manifold displacement
 pushed far enough must). But applying the $26$-test correction to the $\alpha = 1$ slice instead
-leaves \emph{nothing} surviving. The multiplicity-corrected claim is therefore a statement about the
-$\alpha = 0.5$ slice and is not robust to that choice, which is why this result is carried as the
-weakest load-bearing element in the chapter and no argument downstream rests on it alone.
+leaves \emph{nothing} surviving, and applying it to $\alpha = 2$ promotes a different arm at a
+different depth (\texttt{residual\_holdout} at layer $4$, $q = 0.007$) while demoting this one. The
+slice decides not merely whether a survivor exists but which one it is, which is the signature of a
+family dominated by noise rather than one containing a single robust effect. The
+multiplicity-corrected claim is therefore a statement about the $\alpha = 0.5$ slice and is not
+robust to that choice. This result is carried as the weakest load-bearing element in the chapter,
+no argument downstream rests on it alone, and a reader who discards it entirely loses nothing that
+the drug-blindness result depends on.
 
 \begin{table}[h]
 \centering
