@@ -78,3 +78,7 @@ docs/proposals/
 
 # ---- Cluster job logs copied back for inspection ----
 RESULTS_cluster/*.out
+
+# ---- Private review documents ----
+thesis/thesis_committee_assessment.md
+AUDIT_HANDOVER.md
