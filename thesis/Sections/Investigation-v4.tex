@@ -1504,12 +1504,16 @@ establishing that a model could reach any of it.
 \label{sec:res-encoding}
 
 Re-encoding the target as the drug-specific residual raises the differing fraction to $59\%$ at an
-unchanged retrieval ceiling, and produces the first non-null result in the project. On the earlier
+unchanged retrieval ceiling, and produces the first non-null result in the project --- first in
+sequence, and, as the budget-matched re-run below shows, not the only target construction that
+produces one. On the earlier
 target build, the stratified scramble of \S\ref{sec:methods-controls} gave a gap that grew with swap
 dissimilarity --- \ci{+0.0351}{+0.0061}{+0.0656}, \ci{+0.0716}{+0.0371}{+0.1059} and
 \ci{+0.1429}{+0.1112}{+0.1787} across the \texttt{near}, \texttt{orth} and \texttt{opposite}
 strata --- while the single-cell and optimal-transport controls stayed flat and null at every
-stratum ($-0.001$ to $+0.016$). These magnitudes were read against the \texttt{opposite} comparator,
+stratum ($-0.001$ to $+0.016$) \emph{at the $600$-token budget those controls were scored at}. The
+optimal-transport arm does not stay flat once it is given the residual arm's budget, as the
+re-run below establishes; the single-cell arm does. These magnitudes were read against the \texttt{opposite} comparator,
 which \S\ref{sec:res-generalisation} shows is not a null; they are quoted here as a gradient, and
 the neutral-comparator magnitudes are adjudicated there. The monotone ordering is itself the
 evidence: a metric artefact would not order itself by swap dissimilarity.
@@ -1540,11 +1544,26 @@ arm's ($+0.026$).
 
 One measurement lesson and one withdrawal belong with this result. The effect was first measured at
 the $600$-token generation cap of \S\ref{sec:methods-data}, which halved it ($+0.0716$ against the
-correct $+0.1429$); the two controls were \emph{not} re-run at that budget, so the three-column
-comparison is not budget-matched and is not presented as one. Both control arms are scored at
-$600$ tokens against the residual arm's $1400$. Truncation costs the residual arm signal rather
-than granting it any, so the mismatch works against the effect being reported rather than for it,
-but the comparison should be read as unmatched on generation budget until those arms are re-run. And the optimal-transport
+correct $+0.1429$). Both controls have since been re-run at the residual arm's $1400$-token
+budget, and the result narrows this section's claim rather than confirming it. The single-cell
+control stays flat, as it was at $600$: $-0.0128$ \nolinebreak[3]$[-0.0458, +0.0202]$ against its
+own neutral comparator, spanning zero. The optimal-transport control does \emph{not}. At $600$
+tokens its gap was $+0.0144$ \nolinebreak[3]$[-0.0051, +0.0338]$ and spanned zero; at $1400$ it is
+$+0.0292$ \nolinebreak[3]$[+0.0144, +0.0441]$ and does not. The token budget was suppressing a real
+effect in that arm, which is the same lesson the residual arm taught, applied to a control that was
+previously read as inert.
+
+What follows from that has to be said plainly, because it costs this section its strongest
+phrasing. The residual arm's own pooled gap against the neutral comparator is
+$+0.0361$ \nolinebreak[3]$[+0.0159, +0.0564]$, and the optimal-transport arm's is
+$+0.0292$ \nolinebreak[3]$[+0.0144, +0.0441]$. Those intervals overlap almost entirely. Re-encoding
+the target therefore produces prompt sensitivity, but it is \emph{not} the only target change that
+does, and the claim that it produced the first non-null effect in the project holds only in the
+order the experiments were run, not as a statement that the residual encoding is uniquely
+responsible. Two limits bound the comparison in the other direction: the arms are scored in
+different frames, so their absolute $\NIR$s are not comparable and only each arm's gap against its
+own comparator is; and they are separate evaluations over different condition sets
+($1{,}394$ against $248$), so this is an arm-level comparison and not a paired one. And the optimal-transport
 arm, originally reported as achieving nothing, scores \ci{+0.0263}{+0.0069}{+0.0476} under the
 sharper stratified test --- but that is the \texttt{opposite} stratum, and against the neutral
 \texttt{orth} partner the same test gives $+0.0144$ \nolinebreak[3]$[-0.0032, +0.0323]$, which spans
@@ -1561,7 +1580,9 @@ drug-and-mechanism prompt. What that response is worth is the question the rest 
 answers.
 
 \begin{claim}
-Re-encoding the target produced the first non-null drug effect in the project. On trained
+Re-encoding the target produced the project's first non-null drug effect, though a
+budget-matched re-run of the optimal-transport control shows it is not the only target construction
+that produces one. On trained
 conditions the model beats the neutral comparator by \ci{+0.0898}{+0.0291}{+0.1506} and beats chance
 outright --- with no comparator arm at all --- by \ci{+0.0981}{+0.0407}{+0.1554}, both clustered on
 the drug, the axis the claim rides on.

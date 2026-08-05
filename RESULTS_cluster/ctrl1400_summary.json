@@ -1,0 +1,66 @@
+{
+ "_why": "re-run of both control arms at the residual arm's 1400-token budget, closing the token-budget confound the chapter previously had to leave open",
+ "comparison": "model - scramble_orth, two-way clustered on cell line and well",
+ "arms": {
+  "residual (the effect)@1400": {
+   "n": 1394,
+   "model": 0.5367012554202398,
+   "comparator": 0.5005700601085278,
+   "gap": 0.036131195311711946,
+   "ci": [
+    0.015865900495854623,
+    0.05639649012756927
+   ],
+   "df": 41,
+   "spans_zero": false
+  },
+  "single-cell control@1400": {
+   "n": 248,
+   "model": 0.6054216038719684,
+   "comparator": 0.6182167154462413,
+   "gap": -0.012795111574272735,
+   "ci": [
+    -0.04576874702200211,
+    0.020178523873456634
+   ],
+   "df": 38,
+   "spans_zero": true
+  },
+  "optimal-transport control@1400": {
+   "n": 248,
+   "model": 0.6485263319148774,
+   "comparator": 0.6193060203334132,
+   "gap": 0.029220311581464275,
+   "ci": [
+    0.014376509379996951,
+    0.044064113782931597
+   ],
+   "df": 38,
+   "spans_zero": false
+  },
+  "single-cell control@600": {
+   "n": 250,
+   "model": 0.5917427947895858,
+   "comparator": 0.612391524385782,
+   "gap": -0.020648729596196246,
+   "ci": [
+    -0.04687661505229654,
+    0.00557915585990405
+   ],
+   "df": 40,
+   "spans_zero": true
+  },
+  "optimal-transport control@600": {
+   "n": 250,
+   "model": 0.6262571989938921,
+   "comparator": 0.6118710879386717,
+   "gap": 0.014386111055220273,
+   "ci": [
+    -0.005058438261796555,
+    0.0338306603722371
+   ],
+   "df": 40,
+   "spans_zero": true
+  }
+ }
+}
