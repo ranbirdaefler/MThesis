@@ -1,0 +1,152 @@
+{
+  "n_drug_line": 3369,
+  "min_rel": 0.2,
+  "ceiling_kappa_reliability": 0.3240335239664948,
+  "same_drug_cross_line_raw": -0.018552160323576018,
+  "same_drug_cross_line_null": -0.06391437308868501,
+  "same_drug_cross_line_excess": 0.045362212765108996,
+  "n_same_drug_pairs": 6540,
+  "channels": {
+    "target": {
+      "channel": "target",
+      "n_annotated_drugs": 50,
+      "target_degree": {
+        "median": 1.0,
+        "p90": 4.0,
+        "max": 13
+      },
+      "different": {
+        "n_pairs": 1,
+        "n_lines": 1,
+        "same_mech": 0.5664509513825442,
+        "diff_mech": 0.1502858654678939,
+        "delta": 0.4161650859146503,
+        "ci": [
+          NaN,
+          NaN
+        ],
+        "relprod_gap": 0.0008466072125422885,
+        "pool_same": 1,
+        "pool_diff": 90,
+        "per_class": []
+      },
+      "any": {
+        "n_pairs": 70,
+        "n_lines": 29,
+        "same_mech": 0.35771059253845594,
+        "diff_mech": -0.07520124040349845,
+        "delta": 0.43291183294195434,
+        "ci": [
+          0.3278548886851682,
+          0.5360925125093691
+        ],
+        "relprod_gap": 0.0033792822788737066,
+        "pool_same": 70,
+        "pool_diff": 3888,
+        "per_class": [
+          {
+            "class": "frozenset({'TOP2A'})",
+            "n": 44,
+            "delta": 0.44219809655809345
+          },
+          {
+            "class": "frozenset({'GNRHR'})",
+            "n": 9,
+            "delta": 0.11458174119123389
+          },
+          {
+            "class": "frozenset({'JAK3', 'JAK2', 'JAK1'})",
+            "n": 8,
+            "delta": 0.8661940838289853
+          }
+        ]
+      },
+      "perm_null": {
+        "n": 117,
+        "mean": 0.07494777223182363,
+        "sd": 0.47922821071171134,
+        "se": 0.044304663753075284,
+        "p_one_sided": 0.2033898305084746
+      },
+      "headline_valid": false
+    },
+    "moa": {
+      "channel": "moa",
+      "n_annotated_drugs": 31,
+      "different": {
+        "n_pairs": 9,
+        "n_lines": 6,
+        "same_mech": -0.039432994739040356,
+        "diff_mech": 0.2534601749288072,
+        "delta": -0.2928931696678475,
+        "ci": [
+          -0.4645887224552184,
+          -0.0851484741415741
+        ],
+        "relprod_gap": 0.03287438783490672,
+        "pool_same": 9,
+        "pool_diff": 91,
+        "per_class": [
+          {
+            "class": "DNA synthesis/repair inhibitor",
+            "n": 9,
+            "delta": -0.2928931696678475
+          }
+        ]
+      },
+      "any": {
+        "n_pairs": 202,
+        "n_lines": 31,
+        "same_mech": 0.04136269869378305,
+        "diff_mech": -0.05130380624013885,
+        "delta": 0.0926665049339219,
+        "ci": [
+          0.030742821476192166,
+          0.16372973294611115
+        ],
+        "relprod_gap": 0.002370969176908395,
+        "pool_same": 202,
+        "pool_diff": 2201,
+        "per_class": [
+          {
+            "class": "DNA synthesis/repair inhibitor",
+            "n": 145,
+            "delta": 0.07642605396763896
+          },
+          {
+            "class": "JAK/STAT inhibitor",
+            "n": 41,
+            "delta": 0.1363569157335673
+          }
+        ]
+      },
+      "perm_null": {
+        "n": 196,
+        "mean": -0.0016675935771952475,
+        "sd": 0.18817287440783007,
+        "se": 0.01344091960055929,
+        "p_one_sided": 0.9441624365482234
+      },
+      "headline_valid": false
+    }
+  },
+  "config": {
+    "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache",
+    "min_treated": 40,
+    "min_control": 20,
+    "min_rel": 0.2,
+    "plate_policy": "different",
+    "min_pairs": 60,
+    "min_lines": 8,
+    "min_class_pairs": 5,
+    "n_perm": 200,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/kappa_channel_rel20.json",
+    "selftest": false
+  },
+  "annotation_coverage": {
+    "target": 264,
+    "moa": 180
+  }
+}

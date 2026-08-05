@@ -1,0 +1,217 @@
+{
+  "n_drug_line": 3369,
+  "min_rel": 0.05,
+  "ceiling_kappa_reliability": 0.19511729603382047,
+  "same_drug_cross_line_raw": -0.023773946443285964,
+  "same_drug_cross_line_null": -0.038496807498981114,
+  "same_drug_cross_line_excess": 0.01472286105569515,
+  "n_same_drug_pairs": 29444,
+  "channels": {
+    "target": {
+      "channel": "target",
+      "n_annotated_drugs": 50,
+      "target_degree": {
+        "median": 1.0,
+        "p90": 4.0,
+        "max": 13
+      },
+      "different": {
+        "n_pairs": 6,
+        "n_lines": 5,
+        "same_mech": 0.3206788058388062,
+        "diff_mech": -0.24681602649285792,
+        "delta": 0.5674948323316641,
+        "ci": [
+          0.33119500819180303,
+          0.8476322477376684
+        ],
+        "relprod_gap": 0.000600652852305012,
+        "pool_same": 6,
+        "pool_diff": 1243,
+        "per_class": []
+      },
+      "any": {
+        "n_pairs": 238,
+        "n_lines": 41,
+        "same_mech": 0.19968958620832808,
+        "diff_mech": -0.04088408172525497,
+        "delta": 0.24057366793358306,
+        "ci": [
+          0.15672969659631927,
+          0.3235578577004482
+        ],
+        "relprod_gap": 0.0010237584302750062,
+        "pool_same": 238,
+        "pool_diff": 20537,
+        "per_class": [
+          {
+            "class": "frozenset({'TOP2A'})",
+            "n": 72,
+            "delta": 0.41785241545851487
+          },
+          {
+            "class": "frozenset({'GNRHR'})",
+            "n": 61,
+            "delta": 0.010193352280049509
+          },
+          {
+            "class": "frozenset({'MTOR', 'FKBP1A'})",
+            "n": 22,
+            "delta": 0.35703075337226303
+          },
+          {
+            "class": "frozenset({'JAK3', 'JAK2', 'JAK1'})",
+            "n": 21,
+            "delta": 0.735744855160413
+          },
+          {
+            "class": "frozenset({'EGFR'})",
+            "n": 20,
+            "delta": 0.18520911125899253
+          },
+          {
+            "class": "frozenset({'HTR2A', 'DRD2'})",
+            "n": 13,
+            "delta": -0.019570936772035585
+          },
+          {
+            "class": "frozenset({'CYP2C9', 'CYP2E1', 'CYP3A4'})",
+            "n": 11,
+            "delta": 0.18969227145879242
+          },
+          {
+            "class": "frozenset({'ADRA2C', 'ADRB1', 'ADRA2B', 'ADRA1A', 'ADRA2A', 'ADRA1D', 'ADRA1B'})",
+            "n": 10,
+            "delta": -0.03283261905615378
+          },
+          {
+            "class": "frozenset({'ADRA2C', 'ADRA2B', 'ADRA2A'})",
+            "n": 8,
+            "delta": -0.24550035113629456
+          }
+        ]
+      },
+      "perm_null": {
+        "n": 200,
+        "mean": -0.013460669805731766,
+        "sd": 0.24556319316189115,
+        "se": 0.017363939909459527,
+        "p_one_sided": 0.014925373134328358
+      },
+      "headline_valid": false
+    },
+    "moa": {
+      "channel": "moa",
+      "n_annotated_drugs": 31,
+      "different": {
+        "n_pairs": 49,
+        "n_lines": 21,
+        "same_mech": 0.03974817507407938,
+        "diff_mech": -0.03931298251728238,
+        "delta": 0.07906115759136177,
+        "ci": [
+          -0.0876063871812863,
+          0.26121815650372443
+        ],
+        "relprod_gap": 0.0020792722191790565,
+        "pool_same": 49,
+        "pool_diff": 620,
+        "per_class": [
+          {
+            "class": "DNA synthesis/repair inhibitor",
+            "n": 34,
+            "delta": -0.0262201474672828
+          },
+          {
+            "class": "JAK/STAT inhibitor",
+            "n": 15,
+            "delta": 0.3176987823909561
+          }
+        ]
+      },
+      "any": {
+        "n_pairs": 665,
+        "n_lines": 40,
+        "same_mech": 0.015471119014423733,
+        "diff_mech": -0.07694947897435442,
+        "delta": 0.09242059798877815,
+        "ci": [
+          0.04660643754253081,
+          0.14267075685049968
+        ],
+        "relprod_gap": 0.0008154151057382268,
+        "pool_same": 665,
+        "pool_diff": 7414,
+        "per_class": [
+          {
+            "class": "DNA synthesis/repair inhibitor",
+            "n": 392,
+            "delta": 0.07059830218850151
+          },
+          {
+            "class": "JAK/STAT inhibitor",
+            "n": 148,
+            "delta": 0.17859455919723635
+          },
+          {
+            "class": "Cyclooxygenase inhibitor",
+            "n": 28,
+            "delta": -0.12211184446169664
+          },
+          {
+            "class": "Adrenoceptor agonist",
+            "n": 28,
+            "delta": -0.10350059002741556
+          },
+          {
+            "class": "MTOR inhibitor",
+            "n": 22,
+            "delta": 0.47055588666906856
+          },
+          {
+            "class": "EGFR/ERBB inhibitor",
+            "n": 20,
+            "delta": 0.15762001529021993
+          },
+          {
+            "class": "Other TK inhibitor",
+            "n": 17,
+            "delta": 0.044904123403061665
+          },
+          {
+            "class": "Microtubule inhibitor",
+            "n": 10,
+            "delta": -0.05976833012269115
+          }
+        ]
+      },
+      "perm_null": {
+        "n": 200,
+        "mean": -0.0020859087231210505,
+        "sd": 0.09702208496263723,
+        "se": 0.006860497420193814,
+        "p_one_sided": 0.20398009950248755
+      },
+      "headline_valid": false
+    }
+  },
+  "config": {
+    "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache",
+    "min_treated": 40,
+    "min_control": 20,
+    "min_rel": 0.05,
+    "plate_policy": "different",
+    "min_pairs": 60,
+    "min_lines": 8,
+    "min_class_pairs": 5,
+    "n_perm": 200,
+    "n_boot": 2000,
+    "seed": 42,
+    "out": "RESULTS/kappa_channel.json",
+    "selftest": false
+  },
+  "annotation_coverage": {
+    "target": 264,
+    "moa": 180
+  }
+}

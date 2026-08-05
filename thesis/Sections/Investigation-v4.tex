@@ -1007,12 +1007,22 @@ monotone dose--response.
 
 This design was run across the five training arms of Table~\ref{tab:trainconfig} and, for the two
 residual arms, replicated at three further seeds. Of $26$ headline tests --- five arms by up to
-seven depths, exactly one survives Benjamini--Hochberg correction: the residual arm at layer $12$
-($q = 0.026$), with a monotone dose--response across the ladder's first three rungs ($+0.0013$,
-$+0.0017$, $+0.0044$ at $\alpha = 0.5, 1, 2$; the rung values come from the run log and were not
-written to an artifact, so the monotonicity is reported as an observation and no test is built on
-it). The consensus arm at layer 2 ($p = 0.012$) does not
-survive ($q = 0.156$).
+seven depths --- exactly one survives Benjamini--Hochberg correction: the residual arm at layer $12$
+($p = 0.001$, $q = 0.026$). The consensus arm at layer $2$ ($p = 0.012$) does not survive
+($q = 0.156$).
+
+Which rung that correction is applied to matters, and the answer is not the one a reader would
+assume. The headline is the $\alpha = 0.5$ rung --- half the natural displacement --- and the
+ladder's first entry is therefore the headline restated in raw nats ($+0.0013$) rather than an
+independent point beside it. At the full displacement $\alpha = 1$ the effect is \emph{larger} and
+noisier: $+0.0265$ \nolinebreak[3]$[+0.0021, +0.0524]$ against $+0.0197$
+\nolinebreak[3]$[+0.0063, +0.0335]$, at $p = 0.033$ against $p = 0.001$. Each of $\alpha = 0.5$, $1$
+and $2$ excludes zero on its own, so the dose--response is real ($+0.0013$, $+0.0017$, $+0.0044$),
+and the two highest rungs do not ($\alpha = 5$ and $10$ span zero, as an on-manifold displacement
+pushed far enough must). But applying the $26$-test correction to the $\alpha = 1$ slice instead
+leaves \emph{nothing} surviving. The multiplicity-corrected claim is therefore a statement about the
+$\alpha = 0.5$ slice and is not robust to that choice, which is why this result is carried as the
+weakest load-bearing element in the chapter and no argument downstream rests on it alone.
 
 \begin{table}[h]
 \centering

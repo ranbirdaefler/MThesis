@@ -1,0 +1,32 @@
+{
+  "dose_column_holds_sample_ids": true,
+  "n_samples": 289,
+  "cell_lines_per_sample": {
+    "mean": 48.5916955017301,
+    "median": 49.0,
+    "min": 43,
+    "max": 50
+  },
+  "samples_on_multiple_plates": 0,
+  "samples_with_multiple_drugs": 0,
+  "distinct_treatments": 287,
+  "treatments_with_replicate_samples": 1,
+  "samples_per_treatment_hist": {
+    "1": 286,
+    "3": 1
+  },
+  "drug_dose_line_on_multiple_plates": 49,
+  "drug_dose_line_groups": 13946,
+  "combination_samples": 0,
+  "combination_examples": [],
+  "samples_in_metadata": 289,
+  "samples_with_molar_dose": 289,
+  "dose_failure_reasons": {},
+  "dose_float_collisions": 0,
+  "dose_float_splits": 0,
+  "dose_float_collision_examples": [],
+  "dose_float_split_examples": [],
+  "samples_crossing_split": 124,
+  "samples_with_split_info": 255,
+  "cache_dir": "/data/BuffaF-Projetcs/florian_c2s/ot_cache"
+}

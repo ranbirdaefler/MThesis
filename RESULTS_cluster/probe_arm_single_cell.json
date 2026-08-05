@@ -1,0 +1,1414 @@
+{
+  "layers": {
+    "2": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 48.51981393218072,
+      "frac_signal_removed": 0.3257142857142857,
+      "frac_signal_removed_pure": 0.29729729729729737,
+      "drug_decode": 0.2847222222222222,
+      "drug_decode_ablated": 0.20555555555555555,
+      "drug_decode_context_removed": 0.29861111111111116,
+      "drug_decode_pure_ablated": 0.22222222222222224,
+      "drug_decode_full_pure_ablated": 0.24722222222222218,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.17222222222222222,
+        "dose": 0.5916666666666667
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.21527777777777776,
+        "dose": 0.5958333333333334
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.34088722006425853,
+        "drug_vs_context": 0.5212287345623355,
+        "pure_vs_context": 8.78044125720792e-29
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.10119117225235828,
+        0.33599568589556533,
+        0.45180849580388005,
+        0.35846711150111976,
+        0.4313870412122305,
+        0.40899411838282873,
+        0.5057352768476895,
+        0.6108209059241104,
+        0.6566038763919643,
+        0.636787533894439,
+        0.7038313280439386,
+        0.5566257371055597,
+        0.6894593400192074,
+        0.742539198408418,
+        0.7119307142586558,
+        0.6583039207977244,
+        0.6383168242086739,
+        0.6034300021161284,
+        0.7527467525187549,
+        0.820280311513199,
+        0.7630820382664084,
+        0.25425259332114786,
+        0.7203820828072441
+      ],
+      "slab_determinacy": 0.5914445858744949,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          0.20159470873574417,
+          0.0037664323948296465,
+          60
+        ],
+        "random_matched": [
+          0.044860372630258404,
+          0.004896789225182289,
+          3
+        ],
+        "deleted_shared": [
+          1.81764657497406,
+          0.02484231970131797,
+          60
+        ],
+        "cell_line": [
+          2.17661693294843,
+          0.022424095352248572,
+          60
+        ],
+        "context": [
+          2.3770449022452036,
+          0.025429923359606494,
+          60
+        ],
+        "raw_drug": [
+          1.7127802709738413,
+          0.023999382834646036,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.5986504640179684,
+        "drug_pure": 0.044876051208346535,
+        "shared": 0.6330032018806672,
+        "cell_line": 0.6703273471728168,
+        "context": 0.7270969891901282
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 58,
+        "n_drug_clusters": 24,
+        "effect_swap": -0.00038349513025111396,
+        "effect_perm": -4.9271460145418794e-05,
+        "effect_iso": -8.381190479696913e-05,
+        "clean_ab_gap": 0.09946576860860672,
+        "equiv_margin": 0.009946576860860673,
+        "delivered_norm_ratio_perm": 0.9999999980154217,
+        "delivered_norm_ratio_iso": 1.0000000032185485,
+        "diff_perm": -0.0003342236701056952,
+        "diff_perm_norm": -0.0033601878795191356,
+        "ci_perm_norm": [
+          -0.011218749137268395,
+          0.00456235618749305
+        ],
+        "ci_perm": [
+          -0.0011158815057655445,
+          0.00045379826485522883
+        ],
+        "p_perm": 0.3965,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": -0.00029968322545414485,
+        "diff_iso_norm": -0.003012928263123213,
+        "ci_iso_norm": [
+          -0.009662328961511469,
+          0.0037465884005001807
+        ],
+        "ci_iso": [
+          -0.000961070976705939,
+          0.0003726572949158409
+        ],
+        "p_iso": 0.3965,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.019187674194604893,
+        "injected_norm_vs_centred_slab": 0.7180224618338572,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": -0.00038349513025111396,
+            "effect_perm": -4.9271460145418794e-05,
+            "effect_iso": -8.381190479696913e-05,
+            "diff_perm": -0.0003342236701056952,
+            "ci_perm": [
+              -0.001077619373708898,
+              0.00043528351724899246
+            ],
+            "p_perm": 0.3975,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": 0.00053713743961649,
+            "effect_perm": 0.0004573252688756635,
+            "effect_iso": -2.1904603266435323e-05,
+            "diff_perm": 7.981217074082651e-05,
+            "ci_perm": [
+              -0.0007256929964937014,
+              0.0008986800732271756
+            ],
+            "p_perm": 0.843,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": 0.000591367786005718,
+            "effect_perm": 0.00022064905811362002,
+            "effect_iso": 0.00015574630190577735,
+            "diff_perm": 0.00037071872789209797,
+            "ci_perm": [
+              -0.0005798851252779074,
+              0.0012815197786467
+            ],
+            "p_perm": 0.4205,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": 0.0013036138586607997,
+            "effect_perm": 0.0008358711847099225,
+            "effect_iso": 0.0008913936723616197,
+            "diff_perm": 0.0004677426739508772,
+            "ci_perm": [
+              -0.0006934601975441765,
+              0.001592731089864265
+            ],
+            "p_perm": 0.417,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": 0.0026468516349496857,
+            "effect_perm": 0.0020080224698809396,
+            "effect_iso": 0.0015074725938558611,
+            "diff_perm": 0.0006388291650687457,
+            "ci_perm": [
+              -0.0014388054551483097,
+              0.002657828753834745
+            ],
+            "p_perm": 0.522,
+            "detection": "not detected (CI spans zero)"
+          }
+        ],
+        "q_perm_bh": 0.59475
+      }
+    },
+    "4": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 21.72053601211212,
+      "frac_signal_removed": 0.538961038961039,
+      "frac_signal_removed_pure": 0.44089456869009586,
+      "drug_decode": 0.46944444444444444,
+      "drug_decode_ablated": 0.23888888888888887,
+      "drug_decode_context_removed": 0.47638888888888886,
+      "drug_decode_pure_ablated": 0.2847222222222222,
+      "drug_decode_full_pure_ablated": 0.3694444444444444,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.2125,
+        "dose": 0.6277777777777779
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.24027777777777776,
+        "dose": 0.6166666666666668
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.31611235949677724,
+        "drug_vs_context": 0.4790898953188339,
+        "pure_vs_context": 1.406699236876896e-29
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.08981215359071326,
+        0.5132500427179193,
+        0.6321367934874185,
+        0.45955845734654555,
+        0.47242285485986396,
+        0.5167843239448983,
+        0.5899536898240331,
+        0.593717283357731,
+        0.6204231889748307,
+        0.7194912978954301,
+        0.6642222386046192,
+        0.7407720946807301,
+        0.7308426499683598,
+        0.7307246293334355,
+        0.7725362738428843,
+        0.7127826572081013,
+        0.6954208025171768,
+        0.7412152798459261,
+        0.7480937279129821,
+        0.8192366257340766,
+        0.7851883721477162,
+        0.7097012405322772,
+        0.7746718328662358
+      ],
+      "slab_determinacy": 0.6701430162546905,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          0.9693863153457641,
+          0.011538017424377319,
+          60
+        ],
+        "random_matched": [
+          0.2539575222879648,
+          0.11553047912543864,
+          3
+        ],
+        "deleted_shared": [
+          5.759329128265381,
+          0.035073764488199974,
+          60
+        ],
+        "cell_line": [
+          5.5160935084025065,
+          0.03536598185659674,
+          60
+        ],
+        "context": [
+          6.137895401318868,
+          0.03164125897276737,
+          60
+        ],
+        "raw_drug": [
+          4.664918120702108,
+          0.03317772470784023,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.6578670522275359,
+        "drug_pure": 0.03724517525553738,
+        "shared": 0.6865451379875983,
+        "cell_line": 0.7040705634927256,
+        "context": 0.749439995075528
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 56,
+        "n_drug_clusters": 24,
+        "effect_swap": -0.000336948501743826,
+        "effect_perm": -0.0003222099852428254,
+        "effect_iso": -0.00047134757612733816,
+        "clean_ab_gap": 0.09348340203944296,
+        "equiv_margin": 0.009348340203944296,
+        "delivered_norm_ratio_perm": 0.9999999963206386,
+        "delivered_norm_ratio_iso": 1.0000000054254408,
+        "diff_perm": -1.4738516501000554e-05,
+        "diff_perm_norm": -0.0001576591799128364,
+        "ci_perm_norm": [
+          -0.005930921603094231,
+          0.00559710867670607
+        ],
+        "ci_perm": [
+          -0.0005544427286864756,
+          0.0005232367606829681
+        ],
+        "p_perm": 0.953,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": 0.00013439907438351218,
+        "diff_iso_norm": 0.0014376784696689354,
+        "ci_iso_norm": [
+          -0.005724720107607854,
+          0.009420386791025647
+        ],
+        "ci_iso": [
+          -0.0005351663113827882,
+          0.0008806498057525085
+        ],
+        "p_iso": 0.7365,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.025676294543839143,
+        "injected_norm_vs_centred_slab": 0.878266829470347,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": -0.000336948501743826,
+            "effect_perm": -0.0003222099852428254,
+            "effect_iso": -0.00047134757612733816,
+            "diff_perm": -1.4738516501000554e-05,
+            "ci_perm": [
+              -0.0005388147728951391,
+              0.0005264928412966474
+            ],
+            "p_perm": 0.995,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": -0.0005143759947085324,
+            "effect_perm": -0.0005538197186390204,
+            "effect_iso": -0.0005908996814430616,
+            "diff_perm": 3.94437239304879e-05,
+            "ci_perm": [
+              -0.0006101662084961272,
+              0.0007036148812735698
+            ],
+            "p_perm": 0.8745,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": -0.0001086270778218638,
+            "effect_perm": -0.00015603052395615584,
+            "effect_iso": -0.0003639424281325095,
+            "diff_perm": 4.740344613429204e-05,
+            "ci_perm": [
+              -0.0006964994411937297,
+              0.0008134119225535262
+            ],
+            "p_perm": 0.937,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": -0.0006873011464800738,
+            "effect_perm": -0.0004882215942035658,
+            "effect_iso": -0.0003314815804237055,
+            "diff_perm": -0.000199079552276508,
+            "ci_perm": [
+              -0.0018368801016658805,
+              0.001405662879362633
+            ],
+            "p_perm": 0.8095,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": 0.00011021108278384539,
+            "effect_perm": 0.0005251077862783504,
+            "effect_iso": -0.0004536987977470486,
+            "diff_perm": -0.00041489670349450505,
+            "ci_perm": [
+              -0.003085596304442194,
+              0.0022113643584566215
+            ],
+            "p_perm": 0.7455,
+            "detection": "not detected (CI spans zero)"
+          }
+        ],
+        "q_perm_bh": 0.953
+      }
+    },
+    "6": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 26.876406296646238,
+      "frac_signal_removed": 0.5822454308093994,
+      "frac_signal_removed_pure": 0.44619422572178463,
+      "drug_decode": 0.5736111111111111,
+      "drug_decode_ablated": 0.2638888888888889,
+      "drug_decode_context_removed": 0.5708333333333333,
+      "drug_decode_pure_ablated": 0.33472222222222225,
+      "drug_decode_full_pure_ablated": 0.4375,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.20833333333333331,
+        "dose": 0.5902777777777778
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.29027777777777775,
+        "dose": 0.6319444444444444
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.3247723437539095,
+        "drug_vs_context": 0.4827410333868528,
+        "pure_vs_context": 9.552963802444311e-30
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.09565737041263138,
+        0.5347117310598617,
+        0.6130559258755678,
+        0.46915121007808913,
+        0.46887002796246835,
+        0.5341387354781677,
+        0.49943413531763925,
+        0.6255333206987969,
+        0.6899248283835537,
+        0.6650451781036858,
+        0.6819369824625043,
+        0.6295845340115179,
+        0.6813846103307658,
+        0.7649954700748411,
+        0.731391293244812,
+        0.7731505847788949,
+        0.77358677645214,
+        0.7034474045165349,
+        0.8044284208372676,
+        0.8097791437760027,
+        0.7713128949152168,
+        0.8384054261480604,
+        0.7643508806871413
+      ],
+      "slab_determinacy": 0.6739827052360695,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          1.9969878574212392,
+          0.02352678473586774,
+          60
+        ],
+        "random_matched": [
+          0.2976901008023156,
+          0.048328515302138345,
+          3
+        ],
+        "deleted_shared": [
+          7.565167506535848,
+          0.03430271667821346,
+          60
+        ],
+        "cell_line": [
+          8.000840099652608,
+          0.04307653794929265,
+          60
+        ],
+        "context": [
+          8.172409224510194,
+          0.028597190936846633,
+          60
+        ],
+        "raw_drug": [
+          6.382131759325663,
+          0.03796333190589992,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.673641207228676,
+        "drug_pure": 0.035831538902062,
+        "shared": 0.7041570963181483,
+        "cell_line": 0.7195241109669391,
+        "context": 0.7619576571970003
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 57,
+        "n_drug_clusters": 24,
+        "effect_swap": 2.0184755002402206e-05,
+        "effect_perm": -0.000292075813477044,
+        "effect_iso": 5.6192897987962974e-05,
+        "clean_ab_gap": 0.10536197527600652,
+        "equiv_margin": 0.010536197527600653,
+        "delivered_norm_ratio_perm": 1.0000000000747067,
+        "delivered_norm_ratio_iso": 1.0000000040919879,
+        "diff_perm": 0.00031226056847944626,
+        "diff_perm_norm": 0.002963693188756642,
+        "ci_perm_norm": [
+          -0.002971360637483234,
+          0.008771603186266217
+        ],
+        "ci_perm": [
+          -0.00031306842602260744,
+          0.0009241934380423212
+        ],
+        "p_perm": 0.2995,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": -3.600814298556077e-05,
+        "diff_iso_norm": -0.0003417565292529277,
+        "ci_iso_norm": [
+          -0.005602057059451032,
+          0.004849880446131801
+        ],
+        "ci_iso": [
+          -0.0005902437973926575,
+          0.0005109929836569262
+        ],
+        "p_iso": 0.89,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.020967497188968325,
+        "injected_norm_vs_centred_slab": 0.8892503008766434,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": 2.0184755002402206e-05,
+            "effect_perm": -0.000292075813477044,
+            "effect_iso": 5.6192897987962974e-05,
+            "diff_perm": 0.00031226056847944626,
+            "ci_perm": [
+              -0.00030852988756577325,
+              0.0009127943496107299
+            ],
+            "p_perm": 0.293,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": -0.00048337485856327355,
+            "effect_perm": -0.0003987938078287364,
+            "effect_iso": -0.0004024243178993544,
+            "diff_perm": -8.458105073453719e-05,
+            "ci_perm": [
+              -0.0007340712339545935,
+              0.0005798868414827879
+            ],
+            "p_perm": 0.7705,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": 0.0005590241186465543,
+            "effect_perm": -0.00031894181181945833,
+            "effect_iso": 0.0003710211720286164,
+            "diff_perm": 0.0008779659304660126,
+            "ci_perm": [
+              -0.00010157839351725908,
+              0.0018900921539172695
+            ],
+            "p_perm": 0.081,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": 0.0009045418514143662,
+            "effect_perm": -0.0011675938981680863,
+            "effect_iso": -0.00014593726184246037,
+            "diff_perm": 0.0020721357495824527,
+            "ci_perm": [
+              0.0005759464660611773,
+              0.003655888738390197
+            ],
+            "p_perm": 0.0075,
+            "detection": "DETECTED"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": 0.00142249154457643,
+            "effect_perm": -0.001148262948906013,
+            "effect_iso": 0.0006851982835079891,
+            "diff_perm": 0.002570754493482443,
+            "ci_perm": [
+              -0.00010275251405096742,
+              0.005252345297314102
+            ],
+            "p_perm": 0.062,
+            "detection": "not detected (CI spans zero)"
+          }
+        ],
+        "q_perm_bh": 0.59475
+      }
+    },
+    "8": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 21.840679432155568,
+      "frac_signal_removed": 0.5888650963597432,
+      "frac_signal_removed_pure": 0.4737991266375546,
+      "drug_decode": 0.6902777777777779,
+      "drug_decode_ablated": 0.3083333333333333,
+      "drug_decode_context_removed": 0.6777777777777778,
+      "drug_decode_pure_ablated": 0.3763888888888889,
+      "drug_decode_full_pure_ablated": 0.5375,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.1930555555555556,
+        "dose": 0.5791666666666667
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.30833333333333335,
+        "dose": 0.65
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.3005066032753751,
+        "drug_vs_context": 0.4787768527465395,
+        "pure_vs_context": 1.0237764993941998e-28
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.10055840967264758,
+        0.5424262090531572,
+        0.5767716022883658,
+        0.4541822894919764,
+        0.5034382446187661,
+        0.4450908433052669,
+        0.602560187976377,
+        0.7108964458335642,
+        0.5103930168783909,
+        0.6536871241385945,
+        0.683236033206502,
+        0.6804983842570539,
+        0.6036432586609687,
+        0.6809573680366582,
+        0.651201086512449,
+        0.786540926177269,
+        0.690320697347332,
+        0.6857600644052602,
+        0.8277560923847024,
+        0.8379845761597987,
+        0.4802877123110686,
+        0.5351718331457819,
+        0.7798456752356515
+      ],
+      "slab_determinacy": 0.6328477123374979,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          1.5038881381352742,
+          0.019603728502433835,
+          60
+        ],
+        "random_matched": [
+          0.28867907399932546,
+          0.09615683973286386,
+          3
+        ],
+        "deleted_shared": [
+          8.152743021647135,
+          0.023214284708528363,
+          60
+        ],
+        "cell_line": [
+          6.304947113990783,
+          0.026002467404168193,
+          60
+        ],
+        "context": [
+          7.72212704817454,
+          0.023852294371586775,
+          60
+        ],
+        "raw_drug": [
+          7.216842023531596,
+          0.02345092416167422,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.6615401280312072,
+        "drug_pure": 0.03674837120570008,
+        "shared": 0.6859757993959882,
+        "cell_line": 0.7056052572622002,
+        "context": 0.7479958179608228
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 58,
+        "n_drug_clusters": 24,
+        "effect_swap": 0.00013274936039148015,
+        "effect_perm": 0.00017186204100877827,
+        "effect_iso": 0.0003232704488029629,
+        "clean_ab_gap": 0.10984154484932374,
+        "equiv_margin": 0.010984154484932375,
+        "delivered_norm_ratio_perm": 1.0000000071245227,
+        "delivered_norm_ratio_iso": 1.0000000060755145,
+        "diff_perm": -3.911268061729811e-05,
+        "diff_perm_norm": -0.0003560827614993155,
+        "ci_perm_norm": [
+          -0.005850881549957798,
+          0.005146824736993131
+        ],
+        "ci_perm": [
+          -0.0006426698681777702,
+          0.0005653351801800399
+        ],
+        "p_perm": 0.878,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": -0.00019052108841148275,
+        "diff_iso_norm": -0.0017345084564572722,
+        "ci_iso_norm": [
+          -0.007731045694756495,
+          0.003998705954980034
+        ],
+        "ci_iso": [
+          -0.0008491900024127667,
+          0.00043922403949319734
+        ],
+        "p_iso": 0.5605,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.015674112069012307,
+        "injected_norm_vs_centred_slab": 0.970085294425415,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": 0.00013274936039148015,
+            "effect_perm": 0.00017186204100877827,
+            "effect_iso": 0.0003232704488029629,
+            "diff_perm": -3.911268061729811e-05,
+            "ci_perm": [
+              -0.0006235723547510551,
+              0.0005518792582041682
+            ],
+            "p_perm": 0.9115,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": -0.00024004364915891456,
+            "effect_perm": -9.699890571655175e-05,
+            "effect_iso": 1.800619760454203e-05,
+            "diff_perm": -0.00014304474344236281,
+            "ci_perm": [
+              -0.0008562039268805935,
+              0.0005501221449709507
+            ],
+            "p_perm": 0.675,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": -0.0001791692689264601,
+            "effect_perm": 1.0006295425786978e-05,
+            "effect_iso": 0.00026018298647693114,
+            "diff_perm": -0.0001891755643522471,
+            "ci_perm": [
+              -0.0009566959041979537,
+              0.000592446024177637
+            ],
+            "p_perm": 0.6175,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": -0.00033360607901968263,
+            "effect_perm": 0.0005515863959936196,
+            "effect_iso": -0.0005203886359230802,
+            "diff_perm": -0.0008851924750133023,
+            "ci_perm": [
+              -0.0027852623964654062,
+              0.0010004780172634313
+            ],
+            "p_perm": 0.361,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": 0.00031465121056802324,
+            "effect_perm": 0.001307859115783692,
+            "effect_iso": -0.000859614248748993,
+            "diff_perm": -0.0009932079052156688,
+            "ci_perm": [
+              -0.004327508081670381,
+              0.0025154871596149743
+            ],
+            "p_perm": 0.572,
+            "detection": "not detected (CI spans zero)"
+          }
+        ],
+        "q_perm_bh": 0.953
+      }
+    },
+    "9": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 23.171729951514497,
+      "frac_signal_removed": 0.5849056603773585,
+      "frac_signal_removed_pure": 0.47402597402597396,
+      "drug_decode": 0.7041666666666666,
+      "drug_decode_ablated": 0.31666666666666665,
+      "drug_decode_context_removed": 0.6833333333333333,
+      "drug_decode_pure_ablated": 0.3791666666666667,
+      "drug_decode_full_pure_ablated": 0.5291666666666667,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.15833333333333335,
+        "dose": 0.5430555555555556
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.30972222222222223,
+        "dose": 0.6375
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.2790657614055724,
+        "drug_vs_context": 0.46824319331910724,
+        "pure_vs_context": 8.911828639102493e-29
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.08584697275387984,
+        0.5712063367356253,
+        0.5658046329263466,
+        0.46271280751805866,
+        0.5814066537049272,
+        0.6815424759011316,
+        0.4294966377588087,
+        0.5428153210808704,
+        0.5885830211080123,
+        0.6581796071796686,
+        0.5878321331176914,
+        0.7089979964783117,
+        0.6456000075492576,
+        0.6591092754608899,
+        0.7101816822824205,
+        0.778102359261819,
+        0.7972117944133384,
+        0.6150501725836665,
+        0.642762577031618,
+        0.633540221995829,
+        0.35898307675083685,
+        0.7556675132653962,
+        0.8290809045432879
+      ],
+      "slab_determinacy": 0.6274485094839914,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          1.6046330312887827,
+          0.016088015895924183,
+          60
+        ],
+        "random_matched": [
+          0.22583960170547165,
+          0.06838087467824347,
+          3
+        ],
+        "deleted_shared": [
+          5.92549155553182,
+          0.02965443685464144,
+          60
+        ],
+        "cell_line": [
+          5.233094263076782,
+          0.025580192577490238,
+          60
+        ],
+        "context": [
+          6.7476508299509685,
+          0.027975766801784513,
+          60
+        ],
+        "raw_drug": [
+          4.663917016983032,
+          0.0221822493956951,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.650834337015559,
+        "drug_pure": 0.039702078731461206,
+        "shared": 0.6703535400123891,
+        "cell_line": 0.6883894194892342,
+        "context": 0.7362965426867596
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 58,
+        "n_drug_clusters": 24,
+        "effect_swap": 7.853244413101682e-05,
+        "effect_perm": 0.0002812731836819071,
+        "effect_iso": -0.00011689625593642913,
+        "clean_ab_gap": 0.10387671163232517,
+        "equiv_margin": 0.010387671163232519,
+        "delivered_norm_ratio_perm": 0.9999999995943586,
+        "delivered_norm_ratio_iso": 0.9999999989034253,
+        "diff_perm": -0.0002027407395508903,
+        "diff_perm_norm": -0.0019517439122302737,
+        "ci_perm_norm": [
+          -0.006237344377088406,
+          0.0025146061377812456
+        ],
+        "ci_perm": [
+          -0.0006479148232103173,
+          0.0002612090166431774
+        ],
+        "p_perm": 0.3795,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": 0.00019542870006744595,
+        "diff_iso_norm": 0.001881352393587235,
+        "ci_iso_norm": [
+          -0.002695569942659649,
+          0.0064307203365013095
+        ],
+        "ci_iso": [
+          -0.0002800069416184197,
+          0.0006680020819828757
+        ],
+        "p_iso": 0.408,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.01424266950084189,
+        "injected_norm_vs_centred_slab": 0.9742500240583425,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": 7.853244413101682e-05,
+            "effect_perm": 0.0002812731836819071,
+            "effect_iso": -0.00011689625593642913,
+            "diff_perm": -0.0002027407395508903,
+            "ci_perm": [
+              -0.0006513712455625805,
+              0.0002526054697329439
+            ],
+            "p_perm": 0.3875,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": 7.940186638087192e-05,
+            "effect_perm": 0.00035432541576345123,
+            "effect_iso": -4.020831061968451e-05,
+            "diff_perm": -0.0002749235493825793,
+            "ci_perm": [
+              -0.000828614099382605,
+              0.0002934604502764669
+            ],
+            "p_perm": 0.3465,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": 0.0001036200066755144,
+            "effect_perm": -4.879868725288413e-05,
+            "effect_iso": 0.0001238584590364744,
+            "diff_perm": 0.00015241869392839852,
+            "ci_perm": [
+              -0.0005382444005718718,
+              0.0008937493150656748
+            ],
+            "p_perm": 0.686,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": 0.0003476399044118487,
+            "effect_perm": 1.3492219947564e-05,
+            "effect_iso": 0.0002117788157441495,
+            "diff_perm": 0.0003341476844642847,
+            "ci_perm": [
+              -0.0009689793121130403,
+              0.001614392902211343
+            ],
+            "p_perm": 0.6095,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": 0.0008745911791039932,
+            "effect_perm": 2.3572059384317316e-05,
+            "effect_iso": 2.572857755236043e-06,
+            "diff_perm": 0.000851019119719676,
+            "ci_perm": [
+              -0.0013695901586364136,
+              0.0030589553085585393
+            ],
+            "p_perm": 0.469,
+            "detection": "not detected (CI spans zero)"
+          }
+        ],
+        "q_perm_bh": 0.59475
+      }
+    },
+    "12": {
+      "gate_pass": false,
+      "instrument_live": false,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 3.8803978061910347,
+      "frac_signal_removed": 0.3973799126637554,
+      "frac_signal_removed_pure": 0.5394736842105263,
+      "drug_decode": 0.6777777777777777,
+      "drug_decode_ablated": 0.425,
+      "drug_decode_context_removed": 0.8861111111111111,
+      "drug_decode_pure_ablated": 0.4305555555555555,
+      "drug_decode_full_pure_ablated": 0.3611111111111111,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.29027777777777775,
+        "dose": 0.6347222222222222
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.22222222222222224,
+        "dose": 0.586111111111111
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.44185337550578174,
+        "drug_vs_context": 0.6391547138090939,
+        "pure_vs_context": 8.591233787553213e-29
+      },
+      "pure_drug_dims": 23,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.21309127259872226,
+        0.2802110507336736,
+        0.3403560281052935,
+        0.2730409795639742,
+        0.39650252238747874,
+        0.42691053752449887,
+        0.3668665002124672,
+        0.48727083148377875,
+        0.4631999923141789,
+        0.48186352095772034,
+        0.5778379143785232,
+        0.575705072529407,
+        0.5416968253651528,
+        0.5820063857062874,
+        0.43867766726316887,
+        0.6744082082186029,
+        0.5547111173778491,
+        0.6162062800326966,
+        0.674022106903881,
+        0.7110695382011887,
+        0.24080192124629926,
+        0.7136559062963722,
+        0.7757780330379801
+      ],
+      "slab_determinacy": 0.49590827010605193,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          0.652952034274737,
+          0.007262809022170912,
+          60
+        ],
+        "random_matched": [
+          0.06869936891727978,
+          0.018554349422951515,
+          3
+        ],
+        "deleted_shared": [
+          0.4467979003985723,
+          0.004084681381528984,
+          60
+        ],
+        "cell_line": [
+          0.266580880433321,
+          0.0033991550481570535,
+          60
+        ],
+        "context": [
+          0.901292152206103,
+          0.007219915574520527,
+          60
+        ],
+        "raw_drug": [
+          0.6472446242968242,
+          0.0056616744463722805,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.47036321521456365,
+        "drug_pure": 0.02791155353927235,
+        "shared": 0.6171823396365033,
+        "cell_line": 0.7351250692194817,
+        "context": 0.8511465304908836
+      },
+      "swap_skipped": "instrument saturated"
+    },
+    "16": {
+      "gate_pass": false,
+      "instrument_live": true,
+      "slab_informative": true,
+      "ablation_gate_blocks_ablation_claims_only": true,
+      "headroom": 8.368920268041599,
+      "frac_signal_removed": 0.25342465753424664,
+      "frac_signal_removed_pure": 0.4615384615384615,
+      "drug_decode": 0.65,
+      "drug_decode_ablated": 0.4958333333333333,
+      "drug_decode_context_removed": 0.9263888888888889,
+      "drug_decode_pure_ablated": 0.5180555555555556,
+      "drug_decode_full_pure_ablated": 0.38749999999999996,
+      "chance": 0.041666666666666664,
+      "leakage_pure_slab": {
+        "cell_line": null,
+        "plate": 0.2625,
+        "dose": 0.5097222222222222
+      },
+      "leakage_majority_floor": {
+        "cell_line": 0.034722222222222224,
+        "plate": 0.16805555555555557,
+        "dose": 0.6083333333333333
+      },
+      "confound_crossdecode_raw": {
+        "cell_line": null,
+        "plate": 0.22777777777777777,
+        "dose": 0.6430555555555555
+      },
+      "overlaps": {
+        "drug_vs_cell_line": 0.48466086543649484,
+        "drug_vs_context": 0.7298899827635364,
+        "pure_vs_context": 7.702205791618935e-29
+      },
+      "pure_drug_dims": 22,
+      "raw_drug_dims": 23,
+      "shared_dims": 23,
+      "orthogonalize_residuals": [
+        0.22805963279414745,
+        0.18697852544619845,
+        0.23929172321092224,
+        0.2864606064180342,
+        0.2940222332681244,
+        0.3426017460621491,
+        0.3566565107415678,
+        0.3238714232891538,
+        0.42583081930533073,
+        0.41284811965680546,
+        0.3946070737505511,
+        0.4692043449355645,
+        0.4894888428151121,
+        0.43824465493460263,
+        0.5539366451086922,
+        0.5124693437518845,
+        0.336788890298364,
+        0.5275959215524794,
+        0.47967488004345327,
+        0.5656454550962913,
+        0.4297539340027527,
+        0.31519908136642233,
+        0.6825864176467455
+      ],
+      "slab_determinacy": 0.4138562863658705,
+      "context_classes_dropped": 3,
+      "kl": {
+        "pure_drug": [
+          0.037790100028117495,
+          0.0006142041106214108,
+          60
+        ],
+        "random_matched": [
+          0.007988794127272235,
+          0.0003351852190421249,
+          3
+        ],
+        "deleted_shared": [
+          0.06824692742278178,
+          0.0014754350455882658,
+          60
+        ],
+        "cell_line": [
+          0.0668575810889403,
+          0.0013785775906029769,
+          60
+        ],
+        "context": [
+          0.10451652954022089,
+          0.0022975225559878124,
+          60
+        ],
+        "raw_drug": [
+          0.06514341657360395,
+          0.0013516173405770026,
+          60
+        ]
+      },
+      "variance_share": {
+        "drug": 0.4792089535377456,
+        "drug_pure": 0.01735441639545052,
+        "shared": 0.6035048845962768,
+        "cell_line": 0.7443832599757669,
+        "context": 0.9153501138971439
+      },
+      "swap": {
+        "n": 60,
+        "n_pair_clusters": 57,
+        "n_drug_clusters": 24,
+        "effect_swap": -0.0002938972892149431,
+        "effect_perm": 0.00030508675994290004,
+        "effect_iso": 0.0004448149936570759,
+        "clean_ab_gap": 0.10649056736461494,
+        "equiv_margin": 0.010649056736461495,
+        "delivered_norm_ratio_perm": 1.0000000101359563,
+        "delivered_norm_ratio_iso": 1.0000000024009432,
+        "diff_perm": -0.0005989840491578432,
+        "diff_perm_norm": -0.005624761553828247,
+        "ci_perm_norm": [
+          -0.01321873265941185,
+          0.001612475822092106
+        ],
+        "ci_perm": [
+          -0.0014076703407419333,
+          0.00017171346515631227
+        ],
+        "p_perm": 0.1305,
+        "verdict_perm": "EQUIVALENT to control within margin (identity is NOT read)",
+        "diff_iso": -0.000738712282872019,
+        "diff_iso_norm": -0.006936879961797263,
+        "ci_iso_norm": [
+          -0.015006756439314296,
+          0.0011251602641429413
+        ],
+        "ci_iso": [
+          -0.0015980780075251682,
+          0.00011981895490470183
+        ],
+        "p_iso": 0.0875,
+        "verdict_iso": "EQUIVALENT to control within margin (identity is NOT read)",
+        "injected_norm_vs_slab_component": 0.1540473910573947,
+        "injected_norm_vs_centred_slab": 1.1326796654969977,
+        "ladder": [
+          {
+            "alpha": 0.5,
+            "effect_swap": -0.0002938972892149431,
+            "effect_perm": 0.00030508675994290004,
+            "effect_iso": 0.0004448149936570759,
+            "diff_perm": -0.0005989840491578432,
+            "ci_perm": [
+              -0.0013927077959714747,
+              0.0001917245755767119
+            ],
+            "p_perm": 0.1385,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 1.0,
+            "effect_swap": -0.00044716710759900024,
+            "effect_perm": 0.00019026026659369846,
+            "effect_iso": 0.0010315228156689467,
+            "diff_perm": -0.0006374273741926987,
+            "ci_perm": [
+              -0.0020174035594361507,
+              0.0006348531446672912
+            ],
+            "p_perm": 0.3405,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 2.0,
+            "effect_swap": -0.0011121392314419793,
+            "effect_perm": 0.0009122433563953425,
+            "effect_iso": 0.0021124227365967234,
+            "diff_perm": -0.0020243825878373217,
+            "ci_perm": [
+              -0.004506031026188099,
+              0.00044068276187670085
+            ],
+            "p_perm": 0.112,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 5.0,
+            "effect_swap": -0.003199512659638722,
+            "effect_perm": 0.002008041439038035,
+            "effect_iso": 0.005897108499835141,
+            "diff_perm": -0.0052075540986767565,
+            "ci_perm": [
+              -0.011967025712651099,
+              0.0009730141668587985
+            ],
+            "p_perm": 0.0945,
+            "detection": "not detected (CI spans zero)"
+          },
+          {
+            "alpha": 10.0,
+            "effect_swap": -0.00849808323551267,
+            "effect_perm": 0.0069910036547128854,
+            "effect_iso": 0.01272495439413901,
+            "diff_perm": -0.015489086890225554,
+            "ci_perm": [
+              -0.029331100186435487,
+              -0.0024038330803549074
+            ],
+            "p_perm": 0.018,
+            "detection": "DETECTED (negative)"
+          }
+        ],
+        "q_perm_bh": 0.59475
+      }
+    }
+  },
+  "config": {
+    "eval_dir": null,
+    "eval_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+    "model_path": "/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final",
+    "tier": "tier2_unseen_drugs",
+    "layers": "2,4,6,8,9,12,16",
+    "n_drugs": 24,
+    "n_per_drug": 60,
+    "n_dims": 23,
+    "ctx_mult": 3,
+    "n_kl_prompts": 60,
+    "n_rand_draws": 3,
+    "headroom": 5.0,
+    "equiv_frac": 0.1,
+    "alphas": "0.5,1,2,5,10",
+    "do_swap": true,
+    "out": "RESULTS/probe_arm_single_cell.json",
+    "bf16": true,
+    "seed": 42,
+    "arm": "single_cell",
+    "selftest": false
+  },
+  "context_labels_used": [
+    "cell_line",
+    "plate",
+    "dose"
+  ],
+  "n_drug_classes": 24,
+  "chance": 0.041666666666666664,
+  "layer_set_preregistered": "2,4,6,8,9,12,16",
+  "design": "v3 displacement swap; out-of-sample subspaces; cluster bootstrap over drugs",
+  "arm": "single_cell",
+  "eval_source": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl",
+  "swap_measured_at_layers": [
+    2,
+    4,
+    6,
+    8,
+    9,
+    16
+  ],
+  "swap_skipped_reasons": {
+    "12": "instrument saturated"
+  },
+  "headline_status": "measured"
+}
