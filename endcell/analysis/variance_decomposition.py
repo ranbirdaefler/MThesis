@@ -874,6 +874,43 @@ def selftest():
     print(f"  structure-matched control (diff drug, diff line): n={len(xl)} T={xm:+.3f}  "
           f"{'OK' if good else 'FAIL'}")
 
+    # ---- kappa_structure(): planted worlds, one it MUST detect and one it MUST NOT ------------
+    # Appendix tab:planted quoted these rows from a one-off run because kappa_structure() was
+    # reachable only behind a real-data flag. It is exercised here instead, so the rows reproduce.
+    for structured in (True, False):
+        rng_k = np.random.RandomState(7)
+        synth = {}
+        # each cell line has a characteristic direction it bends responses in -- or does not
+        line_dir = {f"c{c}": rng_k.randn(P) for c in range(6)}
+        for d in range(30):
+            beta = rng_k.randn(P)                      # the drug's shared main effect
+            for c in range(6):
+                if structured:
+                    # kappa = the LINE's direction, scaled per drug: consistent within a line
+                    kap = line_dir[f"c{c}"] * (1.0 + 0.25 * rng_k.randn())
+                else:
+                    # kappa = specific to this (drug, line) pairing: no line-level direction
+                    kap = rng_k.randn(P)
+                true = beta + kap
+                rA = true + rng_k.randn(P) * 0.25
+                rB = true + rng_k.randn(P) * 0.25
+                synth[(f"d{d}", f"c{c}", "p0", "1")] = {
+                    "residual": 0.5 * (rA + rB), "residual_A": rA, "residual_B": rB,
+                    "repro_cos": cos(rA, rB), "shift_norm": 1.0, "generic_norm": 0.0,
+                    "group": (f"c{c}", "p0"), "n_cells": 50, "n_ctrl": 50}
+        ks = kappa_structure(synth, seed=0, n_boot=400,
+                             rng_ci=np.random.RandomState(3)) or {}
+        exc = ks.get("excess_within_line")
+        if exc is None:
+            good, shown = False, "no verdict returned"
+        elif structured:
+            good, shown = exc > 0.15, f"excess {exc:+.3f} (expect >> 0)"
+        else:
+            good, shown = abs(exc) < 0.10, f"excess {exc:+.3f} (expect ~ 0)"
+        ok &= good
+        label = "structured kappa " if structured else "idiosyncratic kappa"
+        print(f"  kappa_structure, {label}: {shown}  {'OK' if good else 'FAIL'}")
+
     # Spearman-Brown sanity
     good = abs(spearman_brown(0.5) - 2 / 3) < 1e-9
     ok &= good

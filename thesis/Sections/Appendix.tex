@@ -29,11 +29,14 @@ $\kappa$-structure & a consistent per-line modulation & excess $+1.085$ & \\
 \end{tabular}
 \caption{All three recover planted answers in both directions. Every row is a synthetic planted-world
 check --- no data, no network, fixed seed --- and none of these numbers comes from the evaluation
-run or is stored in a result artifact. The $\Tcoef$ rows reproduce exactly from
-\texttt{variance\_decomposition.py --selftest} and the channel-gate rows from
-\texttt{channel\_gate.py --selftest}. The $\kappa$-structure rows are the exception: they come from
-a one-off planted-world run of \texttt{kappa\_structure()}, which the current code exposes only as a
-real-data flag and not as a selftest, and are \pending{reproducible rerun}.}
+run or is stored in a result artifact. The $\Tcoef$ rows and the
+$\kappa$-structure rows reproduce from \texttt{variance\_decomposition.py --selftest}, and the
+channel-gate rows from \texttt{channel\_gate.py --selftest}. The $\kappa$-structure check plants two
+worlds and requires the estimator to separate them: one in which every cell line bends whatever it
+is given in a characteristic direction, where within-line consistency must exceed across-line
+($+1.17$), and one in which $\kappa$ is specific to each drug-and-line pairing with no line-level
+direction, where the excess must vanish ($-0.00$). An estimator that reported structure in the
+second would be the failure this table exists to rule out.}
 \label{tab:planted}
 \end{table}
 
