@@ -1,0 +1,33 @@
+{
+ "_why": "the lookup averages the same drug from OTHER CELL LINES but a Tahoe well holds ~49 lines, so on a trained target those lines can sit in the target's own well. On held-out wells they cannot. Reported by split so the pooled figure is not read as uniformly clean.",
+ "splits": {
+  "train": {
+   "n": 299,
+   "model": 0.598846385317259,
+   "drug_lookup": 0.9800525033766944,
+   "gap": -0.3812061180594356,
+   "ci": [
+    -0.43028803540976784,
+    -0.33212420070910337
+   ],
+   "df": 38,
+   "well_clean": false
+  },
+  "unseen_combo": {
+   "n": 893,
+   "model": 0.532869404099162,
+   "drug_lookup": 0.8899228953948028,
+   "gap": -0.35705349129564096,
+   "ci": [
+    -0.4033629154323199,
+    -0.310744067158962
+   ],
+   "df": 35,
+   "well_clean": true
+  },
+  "unseen_drug": {
+   "n": 0,
+   "note": "no training lookup exists for a held-out drug"
+  }
+ }
+}

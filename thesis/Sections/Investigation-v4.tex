@@ -305,10 +305,10 @@ provisionality. The first concerns uncertainty. Conditions are not independent, 
 independent in two crossed ways at once: two conditions from the same treated well share a physical
 assignment and a batch, and two conditions from the same cell line share the biology. Treating
 conditions as independent gives intervals that are too narrow --- here, about $1.3$ to $1.5$ times
-too narrow) and neither grouping alone captures the dependence. The tempting shortcut is actively
+too narrow --- and neither grouping alone captures the dependence. The tempting shortcut is actively
 misleading: clustering on the assignment unit alone uses the larger cluster count ($289$ wells
-against $\approx 50$ lines) and would tighten every interval while sounding more rigorous. All
-intervals in this chapter are therefore two-way cluster-robust (Cameron--Gelbach--Miller),
+against $\approx 50$ lines) and would tighten every interval while sounding more rigorous. Every interval on a
+\emph{mean} in this chapter is therefore two-way cluster-robust (Cameron--Gelbach--Miller),
 \begin{equation}
  V \;=\; V_{\textrm{line}} \;+\; V_{\textrm{well}} \;-\; V_{\textrm{intersection}},
 \end{equation}
@@ -444,7 +444,14 @@ are not interchangeable: widening $J$ across plates moves a drug-agnostic baseli
 to $0.399$ (\S\ref{sec:res-blind}). Two properties do work that no other candidate does. Chance is
 $0.50$ by construction, not empirically: it is a statement about $J$ and nothing else, so ``this
 model is at chance'' is a statement rather than a comparison against a fitted null, and that is what
-makes the negative results in this chapter quotable without a control arm. And because the generic
+makes the negative results in this chapter quotable without a control arm. The condition it rests on
+should be named, because it is an assumption and not a theorem: the target's own truth $y_i$ must be
+exchangeable with the comparison truths $\{y_j\}$, so that an uninformative prediction ranks $y_i$
+uniformly among them. That holds within every arm as scored here, since each arm is compared against
+the same truth set it is scored on. One asymmetry survives \emph{between} arms and is stated where
+the ceiling is used: the split-half reference is scored against half-sample truths while every
+baseline is scored against full-sample truths (\texttt{residual\_eval.py}), which makes the
+reference the harder of the two and the comparison conservative rather than flattering. And because the generic
 response is present in every condition's truth in equal measure, it cancels in the comparison:
 $\NIR$ is a discrimination metric, and only the drug-specific difference decides it, which is
 precisely the component the reversion artefact exploits. The tie term is not cosmetic. In residual
@@ -563,6 +570,15 @@ protocol uses, so the figure is conservative by comparison; and the \texttt{gene
 scores exactly $0.500$ with zero variance because the residual is defined by subtracting it, is
 reported only for completeness --- using it would make $\DRF$ a rescaling of the ceiling and test
 nothing.
+
+One exception to the rule of \S\ref{sec:methods-data} is worth flagging where the numbers are, not
+in a footnote. $\DRF$ is a ratio of means rather than a mean, and the two-way estimator above is
+written for a mean, so both $\DRF$ intervals --- expression frame and residual frame --- are
+\emph{one-way} percentile cluster bootstraps that resample whole cell lines and recompute the ratio
+inside each draw. That respects the cell-line dependence and the ratio structure, and it ignores the
+crossed well dimension. Wells are crossed with lines here, so the interval is robust on the
+cell-line axis alone and is narrower than a fully crossed one would be. The $\NIR$ separation it
+grades is far too large for that to change the sign, but the caveat belongs beside the number.
 
 The metric can discriminate even if the model cannot, and the instrument that shows it is a
 spike-in forced choice: within one plate, a reference pseudobulk drawn from drug A's cells must be
@@ -961,6 +977,13 @@ exactly centred displacement. A norm-matched random direction is off the class-m
 inflates the logsumexp normaliser (measured $+2.75$ nats), depressing every target whether or not it
 carries identity; hence the contrast score, in which the position-uniform part of that inflation
 cancels and the \texttt{permuted} arm absorbs the rest.
+
+What the planted-world selftest does and does not cover follows from the same algebra. It plants a
+readout that genuinely reads the drug subspace and checks that the swap path recovers it, which
+validates the directional logic end to end. It cannot speak to the normaliser, because in the
+planted world each drug's ``response'' is a single token: there is no prefix, so nothing diverges,
+and the one term the argument above had to be careful about is the one term the selftest never
+exercises.
 
 Everything is out of sample, and everything is on a comparable scale. The subspaces and class means
 are fit on one slice of cells; $g_B$ is drawn from a third disjoint slice --- never from the rows
@@ -1805,7 +1828,17 @@ not separated and \texttt{moa\_lookup}'s higher pooled mean reflects its narrowe
 than a defeat. The paired comparison on the common support ($n = 1{,}192$) is model $-$
 \texttt{drug\_lookup} $= \ci{-0.3631}{-0.3982}{-0.3280}$ two-way clustered, and of the distance from
 chance to the within-well split-half precision reference the model covers $13.9\%$ against the
-lookup's $115.7\%$.}
+lookup's $115.7\%$. That pooled figure should not be the one quoted, because the lookup is not
+equally clean on both sides of the split. It averages the same drug from \emph{other cell lines},
+and a Tahoe well holds roughly $49$ lines, so for a trained target those other lines can sit in the
+target's own physical well and carry its batch. On held-out wells they cannot. The lookup scores
+$0.980$ on \texttt{train} and $0.890$ on \texttt{unseen\_combo}, and that $0.09$ is the size of the
+well advantage. The clean comparison is the held-out one, where the target's well is absent from
+training by construction: there the model trails the lookup by $-0.357$
+\nolinebreak[3]$[-0.403, -0.311]$ over $893$ conditions, against $-0.381$
+\nolinebreak[3]$[-0.430, -0.332]$ over $299$ trained ones. The ordering is the same and the
+conclusion does not turn on the choice, but the held-out number is the one that means what the
+sentence says.}
 \label{tab:baselines}
 \label{tab:lookup}
 \end{table}
