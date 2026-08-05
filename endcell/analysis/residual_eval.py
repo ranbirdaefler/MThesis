@@ -191,6 +191,16 @@ def main():
                     help="MUST match the order the checkpoint was trained on. drug_last places the "
                          "instruction immediately before generation instead of several hundred "
                          "tokens upstream behind the control cell sentence.")
+    ap.add_argument("--field_decomp_partner", choices=["near", "orth", "opposite"],
+                    default="opposite",
+                    help="Which swap partner the field-decomposition arms use. The default is "
+                         "`opposite`, which is what the reported run used and what reproduces it -- "
+                         "but `opposite` is NOT a null: it is an active treatment, and it is "
+                         "non-neutral in OPPOSITE directions across the two spans (its partner "
+                         "scores 0.434 on the name arm, below chance, and 0.520 on the mechanism "
+                         "arm, above it). Measured as model-minus-chance the name/mechanism "
+                         "ordering inverts, which is why the attribution built on this partner is "
+                         "withdrawn. Use `orth` for the neutral comparator that settles it.")
     ap.add_argument("--field_decomp", action="store_true",
                     help="add drug-only and mechanism-only scramble arms on the opposite stratum, "
                          "to separate 'reads the identity token' from 'reads the knowledge channel "
@@ -592,10 +602,12 @@ def main():
             if sp:
                 arms[f"scramble_{strat}"] = generate([sp] * args.k_samples,
                                                      tag=f"{key}|scramble_{strat}")
-        # FIELD DECOMPOSITION: which part of the prompt is actually read? Run on the OPPOSITE
-        # partner only -- the sharpest stratum -- to keep the generation cost to 1.5x.
+        # FIELD DECOMPOSITION: which part of the prompt is actually read? Run on ONE partner
+        # stratum to keep the generation cost to 1.5x. Which stratum is a real choice, not a
+        # detail: `opposite` is the sharpest but is not a null, so a gap read against it mixes the
+        # model's response with the comparator's own displacement. See --field_decomp_partner.
         if args.field_decomp:
-            bkey = pinfo["opposite"]
+            bkey = pinfo[args.field_decomp_partner]
             for fld in ("drug", "moa"):
                 sp = scramble_prompt(prompt, d, bkey[0], moa_of.get(bkey[0], "unclear"), fields=fld)
                 if sp:                       # None when the swap would not change the prompt,
