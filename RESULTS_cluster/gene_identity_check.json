@@ -1,0 +1,23 @@
+{
+ "n_truth_profiles": 606,
+ "panel_size": 946,
+ "genes_tested": [
+  "RPS5",
+  "RPS6",
+  "GAPDH",
+  "HSPA8"
+ ],
+ "ranks": {
+  "RPS5": 37,
+  "RPS6": 2,
+  "GAPDH": 1,
+  "HSPA8": 148
+ },
+ "median_rank_observed": 19.5,
+ "median_rank_expected_under_permutation": 473.5,
+ "p_one_sided": 0.00014999250037498125,
+ "n_draws": 20000,
+ "seed": 0,
+ "verdict": "panel index matches gene identity",
+ "_note": "A PCA cell-line probe cannot establish this: column permutation is orthogonal and leaves PCA and classification invariant. Abundance rank is not permutation-invariant, which is why this test can detect what that probe cannot."
+}

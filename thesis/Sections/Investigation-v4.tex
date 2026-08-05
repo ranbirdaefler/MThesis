@@ -95,18 +95,38 @@ dose (\texttt{drugname\_drugconc}), plate, and a fine-grained mechanism-of-actio
 L1000 landmark set~\cite{l1000} with Tahoe's measured genes, library-normalised to counts per
 $10{,}000$ and transformed as $\log_{10}(1 + x)$. The panel is a budget choice rather than a
 biological one: a cell is represented as a token sequence, the model's context is $8192$ tokens, and
-a prompt must carry an instruction line and two cells, so the full transcriptome does not fit. The
-normalisation is what makes a rank representation meaningful. Without library normalisation a
-sequence's ordering tracks sequencing depth; without the log transform a handful of ultra-high genes
-occupies the head of every sequence regardless of condition.
+a prompt must carry an instruction line and two cells, so the full transcriptome does not fit. Neither
+step changes the rank sentence, and it is worth being exact about that because it is easy
+to assume otherwise: library normalisation multiplies every gene in a cell by one constant and the
+logarithm is monotone, so within a cell the ordering --- and therefore the sentence --- is invariant
+to both. What they change is everything downstream of a single cell. Counts scaled by depth are not
+comparable \emph{across} cells, so the pseudobulk means, the drug-specific residual that is a
+difference of two such means, and every cosine and Euclidean quantity computed on them all depend on
+the normalisation even though the sentences do not. Sequencing depth does still shape a sentence,
+through which genes are detected at all rather than through their order, and no rescaling recovers a
+transcript that was not observed.
 
 One representational pitfall is worth recording because it is silent. Tahoe's per-cell
 \texttt{genes} field holds vocabulary token identifiers, not positional indices into the gene
 metadata table. Mapping them positionally scrambles gene identity quietly: the values exceed the
 metadata row count, so the error surfaces only as an out-of-bounds index at the tail. All expression
-construction here maps \texttt{gene\_metadata['token\_id']} to gene symbol to panel index, and the
-construction is validated by a PCA cell-line probe on the resulting panel, which reaches $0.864$
-against a chance rate of $0.02$.
+construction here maps \texttt{gene\_metadata['token\_id']} to gene symbol to panel index.
+
+Validating that mapping needs more care than it first appears. An earlier draft offered a PCA
+cell-line probe on the resulting panel, which reaches $0.864$ against a chance rate of $0.02$. That
+probe cannot establish gene identity, and the reason is worth stating because the same mistake is
+easy to make elsewhere: permuting the gene columns is an orthogonal transform, so it preserves every
+pairwise distance between cells and leaves PCA and classification accuracy exactly unchanged. A
+panel with every gene label scrambled scores $0.864$ too. The probe shows the panel retains
+cell-line-discriminative structure, which is worth knowing, but it is silent on which column is
+which gene.
+
+What does discriminate is abundance, because abundance is a property of the gene rather than of the
+panel. On the measured profiles, \texttt{GAPDH} is the single most abundant of the $946$ genes and
+\texttt{RPS6} the second; across the canonical high-expressors carried by this panel the median
+abundance rank is $19.5$, against $473.5$ expected if the index were permuted
+($p = 0.00015$, $20{,}000$ draws; \texttt{gene\_identity\_check.py}). A permutation would erase
+exactly this signal, which is why it is the test that was needed.
 
 The physical layout of the atlas drives every inferential choice in this chapter, so it is stated
 before anything that depends on it. Tahoe applies one drug at one dose to one \emph{well} containing
