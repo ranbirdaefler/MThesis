@@ -1,0 +1,43 @@
+{
+ "_argument": "THE ARGUMENT. The residual's generic is a plate-local, drug-weighted, leave-one-drug-out mean\n(build_residual_targets.py, class Generic). So \"what makes this drug different\" means different from\nthe other drugs on its own plate and cell line. Where a mechanism class is co-plated -- and the gate\nfinds mechanism the one channel where co-plating is material, 0.404 against 0.362 for a random draw\n-- part of that class's shared programme sits inside the generic and is subtracted out of every\nmember's residual by construction. The mechanism gate is therefore graded in a frame that has\nalready removed some of what it is asked to find, and the bias runs AGAINST the channel.",
+ "_roster_note": "gate-retained conditions only; drug_biology_atlas.csv is NOT a superset (it omits gate-retained drugs in all 122 groups) so it is not used to widen the roster",
+ "full_arm": {
+  "n": 921,
+  "n_drugs": 26,
+  "n_lines": 41,
+  "n_wells": 68,
+  "gap": 0.08054919893547109,
+  "ci": [
+   0.027874175686430525,
+   0.13322422218451166
+  ],
+  "df": 40
+ },
+ "no_same_moa_platemate": {
+  "n": 155,
+  "n_drugs": 21,
+  "n_lines": 37,
+  "n_wells": 43,
+  "gap": 0.11452729339230433,
+  "ci": [
+   0.02761177903666727,
+   0.20144280774794138
+  ],
+  "df": 36
+ },
+ "has_same_moa_platemate": {
+  "n": 762,
+  "n_drugs": 25,
+  "n_lines": 39,
+  "n_wells": 60,
+  "gap": 0.0737074966067247,
+  "ci": [
+   0.014968029894530804,
+   0.1324469633189186
+  ],
+  "df": 38
+ },
+ "same_moa_share_of_generic_mean": 0.0444431281795594,
+ "intervals_overlap": true,
+ "reading": "directional support that the plate-local generic attenuates the mechanism channel; the verdict stays inconclusive and this is not a corrected estimate"
+}

@@ -1194,7 +1194,29 @@ $40$ treated and $20$ plate-matched control cells:
  \;-\; \underbrace{\frac{1}{|D_c|}\sum_{d' \in D_c} \shift(d',c)}_{\textrm{generic}(c)} .
 \end{equation}
 The control subtraction removes the cell's own state; the mean-over-drugs subtraction removes the
-generic drug programme shared across compounds. What remains is what makes this drug different.
+generic drug programme shared across compounds. What remains is what makes this drug different
+\emph{from the other drugs on its own plate and cell line}, and that qualifier does work.
+
+The generic is a plate-local mean, so whatever a compound shares with its plate-mates leaves along
+with the stress and cell-cycle programme. Mechanism is the one channel where that matters:
+\S\ref{sec:res-scope} finds mechanism-related drugs co-plated $0.404$ of the time against $0.362$
+for a random draw, the only channel where the difference is material. For a co-plated mechanism
+class, then, part of the class's own shared programme sits inside the generic and is subtracted out
+of every member's residual by construction --- so the mechanism channel is graded in a frame that
+has already removed some of what it is asked to find, and the bias runs against it.
+
+The direction is testable rather than arguable. Joining Tahoe's \texttt{moa-fine} labels to the
+plate rosters the gate itself scored, same-mechanism plate-mates supply a mean $4.4\%$ of a
+condition's generic, small per condition but present for $83\%$ of the $917$ labelled
+mechanism-arm conditions. The $155$ conditions with \emph{no} same-mechanism plate-mate --- whose
+residuals therefore retain the mechanism programme --- give a gap of
+\ci{+0.1145}{+0.0276}{+0.2014}, against \ci{+0.0737}{+0.0150}{+0.1324} for the $762$ that have one,
+both against the same plate-matched null under the same two-way clustering. That is the direction
+the construction predicts. It is not a corrected estimate: the two intervals overlap across almost
+their whole range, the split is post hoc, and the cleaner stratum rests on $43$ wells. What it
+supports is a statement about sign rather than size --- the frame understates this channel rather
+than flattering it, which makes \S\ref{sec:res-scope}'s inconclusive verdict on mechanism the
+conservative reading rather than a generous one.
 
 The two subtractions are not equal partners, and the table above says which does the work. Removing
 the control moves the between-drug token difference from $34.6$ to $111.4$ --- $92\%$ of the total
