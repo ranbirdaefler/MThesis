@@ -8,8 +8,16 @@ repair.
 
 \paragraph{The evaluation had to be fixed first.} The metric the field standardises on is exploitable:
 a zero-information baseline placing every gene at the middle rank scores $\DEdr = 1.000$, above both
-the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed within plate, only
-$\NIR$ --- a discrimination metric, in which the generic response cancels --- is calibrated. Of the four prediction metrics tested, three are clearly inverted and the fourth is approximately neutral. This is the most portable result
+the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed across plates, and replicated within plate, only
+$\NIR$ --- a discrimination metric, in which the generic response cancels --- has a positive dynamic
+range fraction: $+0.635$ across plates and $+0.519$ within plate. All four prediction metrics tested
+come out negative --- $-0.163$ to $-0.686$ across plates, $-0.122$ to $-0.500$ within plate ---
+inverted, not merely uninformative. These figures are reported descriptively. Both released
+calibration artifacts cluster the drug rows as though each row were its own cell line ($1{,}820$ and
+$335$ rows, when there are $25$ cell lines), so their bootstrap intervals are far too narrow, and the
+one-sided $p$ for $\NIR$ sits at the resampling floor of $1/2001$ in both runs --- the Holm-adjusted
+$0.0025$ quoted earlier in this thesis is that floor times the family size of five, not a measured
+value. A corrected rerun is pending and no significance claim is made here. This is the most portable result
 here, since it applies to any work scored on $\DEdr$-family metrics.
 
 This also settles how the thesis enters the dispute of Section~\ref{sec:lit-dispute}. Miller et
@@ -20,7 +28,7 @@ emphatically --- metric choice dominates, and only the rank-based metric survive
 that on drug perturbation the model is at chance \emph{on the metric their own analysis endorses}.
 That is the strongest form the sceptical result can take: it cannot be answered with the objection
 their paper raises. Their conclusion is not overturned so much as bounded --- it does not extend
-from genetic perturbation to this task, and the per-drug-constant finding above suggests why.
+from genetic perturbation to this task, and the per-drug-constant finding below suggests why.
 
 \paragraph{The model is drug-blind, and the representation is not the reason.} Four independent
 instruments agree that swapping the drug token changes the output by nothing. Yet drug identity is
@@ -55,7 +63,7 @@ the target as the drug-specific residual raises the differing fraction to $59\%$
 first non-null drug effect in this project, with a monotone gradient across swap dissimilarity and a
 matched control that stays null.
 
-\paragraph{What that drug use amounts to: a main effect, not an interaction.} An earlier form of
+\paragraph{What that drug use amounts to, and what it does not.} An earlier form of
 this paragraph claimed the drug use generalises, on a holdout keyed at the (drug, cell line) level
 where pairings never seen in training scored \ci{+0.1002}{+0.0661}{+0.1368} and held-out
 \emph{drugs} came out null. Two corrections have since removed that claim. The targets were rebuilt
@@ -64,42 +72,77 @@ corrected: the scramble arm the gap was measured against is not a null but a dif
 learned signature, chosen to point away from the truth. The held-out-drug arm is what exposed it,
 by returning a positive result on a split where a positive result is impossible.
 
-Measured against the neutral comparator on the rebuilt targets, trained pairings score $+0.1457$ and
-held-out pairings $+0.0449$ \nolinebreak[3]$[-0.0074, +0.0972]$ --- so there \emph{is} a memorisation
-premium ($+0.1008$, cluster-robust $p = 0.015$), and cross-context transfer is not established. It is not shown to
-be zero either: the interval reaches $+0.097$, and at $n=250$ that is a limit of power. What does
-survive, on two tests that use no comparator at all and so cannot be reached by this defect, is that
-the model emits the signature of the drug it is named ($+0.374$ on held-out pairings against
-$+0.390$ on trained ones) while scoring at chance when ranked against other drugs in the same cell
-line. The map exists and is coarse: the model learned the drug main effect and not the drug
-$\times$ cell-line interaction --- which is also why the lookup below beats it, since the lookup
-\emph{is} that main effect, measured directly.
+Measured against the neutral comparator on the rebuilt targets, trained pairings score $+0.0898$
+\nolinebreak[3]$[+0.0382, +0.1415]$, held-out pairings $+0.0332$, and held-out \emph{drugs} $-0.0315$
+\nolinebreak[3]$[-0.0836, +0.0206]$. Transfer to held-out combinations is \emph{not} established. Its
+interval excludes zero when the bootstrap is clustered on cell line and well
+\nolinebreak[3]$[+0.0069, +0.0594]$, and does not when it is clustered on drug and well
+\nolinebreak[3]$[-0.0031, +0.0695]$ --- and drug is the axis along which a claim about transferring a
+\emph{drug} signature has to generalise. The split is also mostly recombination rather than novelty:
+$30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the trained arm, and $84\%$ of
+its observations sit on those shared drugs. The memorisation premium that earlier carried this
+argument goes with it. Pooled it is $+0.0567$ \nolinebreak[3]$[-0.0014, +0.1148]$, cluster-robust
+$p = 0.056$; restricted to the $30$ drugs common to both splits it changes sign, to $-0.0606$ with
+$p = 0.18$. It is confounded in any case, because the splits are not equally hard: the within-well
+split-half precision reference is $0.956$ on the trained split against $0.824$ and $0.836$ on the two
+held-out ones, a spread of $0.132$, so gaps measured on them are not directly comparable.
 
-\paragraph{But a lookup table wins --- and it is not the ceiling either.} A per-drug mean residual
-measured in other cell lines scores $0.963$ against a $0.968$ replicate ceiling; the model reaches
-$0.639$. The natural reading of those three numbers is that the drug's response is essentially a
+What survives is narrower than what was claimed for it. The comparator-free test --- the slope of
+$\NIR$ on the cosine similarity between the real response of the drug named in the prompt and that of
+the true one --- is positive on every split: $+0.373$ on trained pairings, $+0.337$ on held-out
+pairings, $+0.342$ on held-out drugs. This does \emph{not} show that the model knows held-out
+compounds. The slope is fitted over the three scrambled \emph{partner} prompts alone (\texttt{near},
+\texttt{orth}, \texttt{opposite}); the prompt naming the true target drug is never a point on the
+line, and on the held-out-drug split $82\%$ of the $597$ points name a drug that also appears in the
+trained arm. What it shows is that the model responds to the identity of a named trained drug even
+when it is scored in a context whose true drug it has never seen --- a real effect, and a much weaker
+one than zero-shot drug knowledge. Alongside it, on both held-out splits the model scores at chance
+when its output is ranked against other drugs in the same cell line ($\NIR = 0.533$
+\nolinebreak[3]$[0.492, 0.575]$ and $0.459$ \nolinebreak[3]$[0.404, 0.514]$), and its output is no
+closer to the true drug's response than to other drugs' (own-minus-other cosine $+0.011$ and
+$-0.014$, neither interval excluding zero). The map exists and is coarse: what the model has captured
+is close to a per-drug average response --- which is also why the lookup below beats it, since the
+lookup \emph{is} that average, measured directly.
+
+\paragraph{But a lookup table wins --- and what it beats is not a ceiling.} A per-drug mean residual
+measured in other cell lines scores $0.913$; the model reaches $0.537$ overall, and $0.549$ on the
+$n = 1192$ conditions on which both are scored. The within-well split-half precision reference is
+$0.854$ over all conditions and $0.857$ on that common support, so the lookup does not approach that
+reference --- it \emph{exceeds} it, recovering $116\%$ of its headroom above chance on the common
+support against the model's $14\%$. The natural reading of those numbers is that the drug's response
+is essentially a
 per-drug constant, that a conditional model therefore has almost nothing to condition on, and that
 the correct formulation of the task is retrieval rather than generation. We initially drew exactly
 that conclusion, and it is wrong.
 
 It is wrong because $\NIR$ compresses near the top of its range --- the same class of failure this
-thesis opens by documenting, arriving a second time in our own preferred instrument, at the ceiling
-instead of the floor. Measured in cosine space with measurement noise divided out, the transfer
-coefficient is $\Tcoef = \ci{0.557}{0.513}{0.601}$ against a simulated no-interaction null of
-$1.001$, with a structure-matched negative control at $+0.000$. Roughly $45\%$ of the drug-specific
-signal is a drug$\times$cell-line interaction. The per-drug constant is what the lookup captures and
-what the model gropes toward; the interaction is reached by neither, and by nothing else in the
-literature we are aware of.
+thesis opens by documenting, arriving a second time in our own preferred instrument, at the top of
+the scale instead of the bottom. Measured in cosine space with measurement noise divided out, the
+transfer coefficient is \ci{\Tcoef = 0.553}{0.514}{0.593}, against a simulated null in which the
+residual is entirely shared across contexts --- a null this estimator recovers at $1.001$ --- and
+with a structure-matched negative control at \ci{-0.008}{-0.036}{+0.020}. So roughly $45\%$
+\nolinebreak[3]$[41\%, 49\%]$ of the drug-specific residual is \emph{not shared across contexts}.
+That is deliberately weaker than the reading in an earlier draft, which took $1 - \Tcoef$ to be a
+drug$\times$cell-line interaction share. It is not one. The estimator pools pairs that differ in
+cell line, in dose and in well, and it was run with \texttt{same\_dose\_only} off,
+\texttt{loo\_generic} off and a reproducibility threshold of $0.2$; on pairs that vary dose within a
+single cell line it returns \ci{\Tcoef = 0.707}{0.632}{0.782}, so nearly $0.3$ of the residual still
+fails to transfer with the cell line held fixed. The unshared remainder therefore mixes interaction
+with dose, well and estimator slack, and cannot be attributed to a drug$\times$cell-line term
+without a design that separates them. What can be said is that the per-drug constant is what the
+lookup captures and what the model gropes toward, and that the unshared remainder is reached by
+neither.
 
 So the honest statement of what the model does is sharper, and less flattering, than ``it misses the
-interaction''. It fails to recover the \emph{main effect} that a numpy dictionary obtains for free,
-and the interaction is a further prize that no method here --- ours least of all --- comes near. Two
-different failures, and collapsing them undersells both.
+part that is not shared across contexts''. It fails to recover the \emph{shared} part that a numpy
+dictionary obtains for free, and the unshared remainder --- which mixes cell line, dose, well and
+estimator, and in which no learnable structure was found --- is reached by no method here, ours
+least of all. Two different failures, and collapsing them undersells both.
 
 That conclusion connects this work to an assumption the field has carried since the Connectivity
 Map: that a compound induces a characteristic signature stable enough across cellular contexts for
 signature-similarity querying to be meaningful. This thesis measures that assumption directly, with
-a calibrated metric and a proper replicate ceiling, at single-cell resolution --- and the modern
+a discrimination metric and a within-well split-half precision reference, at single-cell resolution --- and the modern
 finding that a per-perturbation mean is hard to beat may be less a warning about weak baselines than
 a restatement of it.
 
@@ -107,50 +150,62 @@ It also places this work as the single-cell, generative instance of DrEval's
 critique~\cite{dreval}. DrEval audits drug \emph{sensitivity} prediction and finds that deep models
 barely outperform a naive additive predictor of mean drug and cell-line effects. Our
 \texttt{drug\_lookup} is that predictor's drug term, and the finding replicates on a
-$946$-dimensional transcriptomic response: $0.963$ against a $0.968$ replicate ceiling, versus
-$0.639$ for the model. Three of DrEval's six pathologies --- pseudoreplication, biased evaluation
+$946$-dimensional transcriptomic response: $0.913$ for the lookup against $0.537$ for the model,
+with a within-well split-half precision reference of $0.854$ that the lookup exceeds. Three of DrEval's six pathologies --- pseudoreplication, biased evaluation
 metrics, and missing ablation studies --- turn out to structure the entire methodology of this
 thesis, which arrived at clustered bootstraps over cell lines, a discrimination metric immune to
 between-drug variance, and a token-level scramble ablation independently. That convergence is worth
 recording: the controls a critical benchmark demands are the same controls a single negative result
 needs in order to mean anything.
 
-\paragraph{Where the opportunity actually is.} Two further measurements locate it precisely, and
-between them they redirect what follows from this work.
+\paragraph{Where the opportunity actually is.} Two further measurements bear on where it lies --- one
+unresolved, the other provisional pending a corrected rerun --- and between them they redirect what
+follows from this work.
 
-The drug$\times$cell-line interaction is large --- roughly $45\%$ of the drug-specific variance ---
+The part of the drug-specific signal that is not shared across contexts is large --- roughly $45\%$ ---
 and we could not find structure in it. No cell line modulates different drugs in a consistent
-direction (excess within-line consistency $-0.007$, and at plate scope an interval excluding anything
-above $+0.002$), and a direct test of whether mechanism-matched drugs share an interaction with a
-given cell line returned nothing detectable (permutation $p \approx 0.15$--$0.31$).
+direction. Within-line consistency is $-0.0149$ \nolinebreak[3]$[-0.0251, -0.0050]$ against
+$+0.0003$ \nolinebreak[3]$[-0.0071, +0.0081]$ across lines, an excess of $-0.0153$; the within-line
+interval lies entirely below zero, so there is no positive consistency to find. A direct test of
+whether mechanism-matched drugs share a context term with a given cell line returned nothing
+detectable.
 
-Those are two negative results and they do not license the conclusion that the interaction is
-irreducible. The second test bounds its own power severely: the interaction's split-half reliability
-in this atlas is $0.195$, so $\kappa$ is barely estimable, and same-mechanism compounds are so
-heavily co-plated that only $3$--$7\%$ of matched pairs survive a different-plate requirement. The
-honest statement is that the structure of the interaction is \emph{unresolved here}, and that
+Those are two negative results and they do not license the conclusion that the unshared part is
+irreducible. The second test bounds its own power severely: the mean split-half reliability of
+$\kappa$ in this atlas is $0.326$, so the quantity being correlated is barely estimable, and
+mechanism is partially confounded with plate, by an amount that was never measured for this test. The
+honest statement is that the structure of the unshared part is \emph{unresolved here}, and that
 resolving it needs more cells per condition or a plating design that crosses mechanism with plate ---
 neither of which is an analysis choice. What can be said without qualification is that a lookup
-scoring $0.963$ against a $0.968$ ceiling is already close to what a per-drug constant can achieve,
-so on seen drugs nothing we built beats retrieval.
+scoring $0.913$, above the $0.854$ within-well split-half precision reference, already outscores
+anything conditional built here, so on seen drugs nothing we built beats retrieval.
 
 But a lookup requires the drug to have been seen. For drugs that have not been, protein-target and
 mechanism annotations score above a \emph{count-matched} null
-(\ci{+0.084}{+0.059}{+0.110} and \ci{+0.078}{+0.056}{+0.103}), while chemical structure does not.
-That null is matched on the number of partners but not on plate: drugs sharing a mechanism are
-largely laid out on the same plate, drugs drawn at random are not, and the residuals being averaged
-retain plate structure. The arm and its null therefore differ in two respects where the estimand
-allows one, so an unknown share of these gaps is plate rather than annotation. A plate-matched
-re-measurement is pending and these two numbers should not be read as established until it lands.
-This overturns a pre-registration made earlier in this project, which inferred that unseen drugs
+(\ci{+0.1863}{+0.1264}{+0.2462} and \ci{+0.0700}{+0.0198}{+0.1202}), and both survive the
+plate-matched re-measurement an earlier draft listed as pending
+(\ci{+0.1799}{+0.1138}{+0.2459} and \ci{+0.0663}{+0.0088}{+0.1237}) as well as the stricter
+different-plate requirement (\ci{+0.1115}{+0.0448}{+0.1783} and \ci{+0.0604}{+0.0094}{+0.1114});
+Table~\ref{tab:fieldattribution} carries all three constructions. Chemical structure is far weaker
+and does not survive that requirement (\ci{+0.0183}{-0.0033}{+0.0399}). A different defect is now
+the binding one, and it is not yet repaired: the pool the partner drugs were drawn from was not
+restricted to training drugs, so a held-out drug could be matched to a partner the model had also
+never seen, and the arm therefore does not isolate what is retrievable \emph{from training}. The
+code has been corrected and the rerun is pending. Until it lands, these gaps establish that target
+and mechanism annotation carry transcriptional signal in this atlas, but they do \emph{not}
+establish that unseen-drug generalisation is reachable by target or mechanism retrieval, and that
+stronger reading should not be attributed to them.
+This at least qualifies a pre-registration made earlier in this project, which inferred that unseen drugs
 were unreachable from a gate that tested chemical \emph{structure} --- the channel our own
 drug-knowledge specification ranked lowest --- and never read the target annotations sitting in the
 atlas's own metadata.
 
 So the thesis does not end in closure. It ends with the opportunity located: on seen drugs a
-generative model has nothing to add over retrieval, because the residual part is unpredictable; on
-unseen drugs, where retrieval is impossible by construction, drug-side knowledge works and a model
-can do something a dictionary cannot. That is also the setting the benchmark literature calls
+generative model has nothing to add over retrieval, because the unshared part is unpredictable; on
+unseen drugs, where retrieval is impossible by construction, protein-target and mechanism annotation
+are the only channels that survive a different-plate null, and --- pending a rerun whose partner pool
+is restricted to training drugs --- may be where a model can do something a dictionary cannot. That
+is also the setting the benchmark literature calls
 Leave-Drugs-Out, and the one that matters for drug design.
 
 \paragraph{A note on method.} The substantive results here rest on controls that were added in

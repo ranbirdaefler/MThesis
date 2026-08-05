@@ -16,7 +16,7 @@ directions, since an estimator that only ever returns the answer one hopes for i
 \toprule
 Estimator & Planted truth & Recovered & \\
 \midrule
-transfer coefficient $\Tcoef$ & $\Tcoef = 1.00$ (no interaction) & 0.999 & \\
+transfer coefficient $\Tcoef$ & $\Tcoef = 1.00$ (fully shared) & 0.999 & \\
  & $\Tcoef = 0.70$ & 0.703 & \\
  & $\Tcoef = 0.40$ & 0.404 & \\
 \midrule
@@ -27,9 +27,26 @@ $\kappa$-structure & a consistent per-line modulation & excess $+1.085$ & \\
  & an idiosyncratic interaction & excess $+0.001$ & \\
 \bottomrule
 \end{tabular}
-\caption{All three recover planted answers in both directions.}
+\caption{All three recover planted answers in both directions. Every row is a synthetic planted-world
+check --- no data, no network, fixed seed --- and none of these numbers comes from the evaluation
+run or is stored in a result artifact. The $\Tcoef$ rows reproduce exactly from
+\texttt{variance\_decomposition.py --selftest} and the channel-gate rows from
+\texttt{channel\_gate.py --selftest}. The $\kappa$-structure rows are the exception: they come from
+a one-off planted-world run of \texttt{kappa\_structure()}, which the current code exposes only as a
+real-data flag and not as a selftest, and are \pending{reproducible rerun}.}
 \label{tab:planted}
 \end{table}
+
+The $\Tcoef$ rows above are a data-free unit test: a purely synthetic world in which the only
+axis a drug's response is not shared across is cell line, so recovery there shows that the
+estimator inverts its own generative model --- and nothing more. In the canonical run $\Tcoef$
+was computed with \texttt{same\_dose\_only=false}, \texttt{loo\_generic=false} and
+\texttt{repro\_thr=0.2}, so cell line, dose, well and estimator noise all enter the same number.
+Repeated on synthetic data calibrated to that run's own gene dimension, per-condition cell counts
+and empirical noise, the estimator returns $1.001$, $0.747$ and $0.494$ for planted $\Tcoef$ of
+$1.00$, $0.75$ and $0.50$. Neither the planted rows above nor this calibrated repeat licenses
+reading $1 - \Tcoef$ as a drug $\times$ cell-line interaction share: it is the fraction not
+shared across the compared contexts.
 
 Two of these validations changed the estimators rather than merely endorsing them. The channel
 gate's count-matched null originally drew its random partners from a pool \emph{excluding} the
@@ -39,14 +56,29 @@ on a single small world, so the original validation --- asserting that one draw 
 tested luck rather than correctness; it now averages 24 independent worlds. That variance is also why
 the reported channel results are gated on a clustered interval rather than on a point estimate.
 
+A third defect was found after the canonical run and is not yet reflected in any channel number.
+The gate's \emph{retrieval} pool --- the partners whose mean residual forms the prediction --- was
+every retained condition in the cell line other than the target's own drug, rather than the
+training conditions only. Conditions held out of training could therefore contribute to the
+prediction made for a held-out drug, and the chapter's assurance that the gate ``uses only drugs
+that were in training'' did not hold. The code now restricts the pool to the split's training
+conditions, logs the restricted size, and warns rather than silently falling back to an
+unrestricted pool; the rerun has not been performed. Every channel-gate figure measured on Tahoe in
+this thesis therefore predates the fix --- the planted worlds above are a separate synthetic path
+with no held-out split and are unaffected --- and any claim that unseen-drug generalisation is
+reachable by retrieval over target or mechanism is suspended pending that rerun.
+
 \subsection{Absent-gene convention}
 \label{sec:app-convention}
 
 A predicted cell sentence lists only expressed genes, so some panel genes are unranked and a
 convention is required. Two were carried throughout: \texttt{worst} assigns absent genes the last
 rank $G$, \texttt{francesca} a fixed middle rank $G/2$. The choice does not matter --- spike-in
-$\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no ceiling or baseline in
-this thesis moves by more than $0.01$ between them. All figures in the body are quoted under
+$\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no quantity scored under
+both conventions moves by more than $0.01$ between them. The convention is an input only to the
+rank-based scores reported here, $\DEdr$ and $\paneltau$; the canonical run's headline metric,
+$\NIR$, is scored in residual space by a separate instrument that never receives the absent-gene
+fill, so the choice cannot reach it. All figures in the body are quoted under
 \texttt{worst}.
 
 \subsection{Swap-distance sweep}
@@ -54,7 +86,12 @@ this thesis moves by more than $0.01$ between them. All figures in the body are 
 
 The stratified scramble of Section~\ref{sec:methods-controls} was preceded by a continuous version:
 $\gap$ measured as a function of the response distance between the real and the swapped-in drug,
-binned into quintiles.
+binned into quintiles. It is a separate, earlier run and none of its numbers belong to the
+canonical set: the two columns are the single-cell and optimal-transport checkpoints rather than the
+residual arm the canonical results describe, they were scored on the unseen-drug tier of a different
+evaluation set, and their swap partners were not restricted to the same plate, whereas the canonical
+run draws partners within plate. The artifacts are \texttt{scramble\_sweep\_single.json} and
+\texttt{scramble\_sweep\_T2.json}.
 
 \begin{table}[h]
 \centering
@@ -76,13 +113,15 @@ $\approx 0$. 200 (drug, swap) pairs over 20 cell lines, $n=40$ per bin.}
 \label{tab:sweep}
 \end{table}
 
-Two features make this an argument rather than five nulls. The single borderline value sits in a
-\emph{middle} bin, whereas a genuine dissimilarity effect would be monotone and peak in the far bin.
-And the comparison is paired: the model's own $\NIR$ drifts across bins from $0.497$ to $0.326$,
-because drugs that are far from everything populate the far bins, but $\gap$ uses the same drug on
-both arms so that drift cancels.
+Two features make this an argument rather than five nulls. The single borderline value sits in an
+\emph{inner} bin --- the second of the five, \ci{+0.060}{-0.002}{+0.124} --- whereas a genuine
+dissimilarity effect would be monotone and peak in the far bin. And the comparison is paired: the
+model's own $\NIR$ moves across bins ($0.497$, $0.612$, $0.523$, $0.401$, $0.326$ from nearest to
+farthest --- falling overall, but not monotonically), because drugs that are far from everything
+populate the far bins, but $\gap$ uses the same drug on both arms so that drift cancels.
 
-The intervals are wide --- $n=40$ per bin gives half-widths of $0.06$--$0.10$ --- so this sweep
+The intervals are wide --- $n=40$ per bin gives half-widths of $0.06$--$0.10$ in the
+single-cell column and $0.03$--$0.06$ in the optimal-transport column --- so this sweep
 excludes a large effect rather than establishing a null, which is why the stratified scramble
 replaced it in the body.
 
@@ -110,7 +149,11 @@ residual (holdout) & as above, 738 withheld & 1 epoch & \\
 \end{tabular}
 \caption{Learning rate $10^{-5}$, batch size 1, gradient accumulation 16, maximum length 8192, bf16,
 weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early on a flat loss;
-since it is one endpoint of the $\varepsilon$-ladder, the ladder's negative rests on the other two.}
+since it is one endpoint of the $\varepsilon$-ladder, the ladder's negative rests on the other two.
+These five arms --- \texttt{single\_cell}, \texttt{consensus}, \texttt{ot\_T2},
+\texttt{residual}, \texttt{residual\_holdout} --- are also the complete family over which the
+identity test of Section~\ref{sec:res-mechanism} takes its multiplicity correction: five arms by
+up to seven depths, $26$ measured tests --- the family size behind the $q$-values quoted there.}
 \label{tab:trainconfig}
 \end{table}
 

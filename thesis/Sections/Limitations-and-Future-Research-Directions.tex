@@ -9,32 +9,37 @@ compound set. This is ample to test whether the model uses the drug, and to meas
 is not a population estimate. Any claim about the \emph{distribution} of drug behaviours should be
 read against the broader characterisation, which used $6{,}628$ conditions.
 
-\paragraph{Only reproducible conditions.} The residual arm retains the $62\%$ of conditions whose
-residual reproduces across a half-split ($\cos > 0.2$). This is the right choice --- training on
-irreproducible residuals is training on noise --- but it means results describe the winnable
-fraction of the task, not all of it. The filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.598$ against the filtered $0.557$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes.
+\paragraph{Only reproducible conditions.} The residual arm trains on the $50.5\%$ of conditions whose
+residual reproduces across a half-split --- $2{,}523$ of $4{,}999$ training conditions, kept at
+$\cos > 0.109$, the $95$th percentile of a null that pairs half A of one condition with half B of
+another. This is the right choice --- training on
+irreproducible residuals is training on noise --- but it means the model was taught the winnable
+fraction of the task, not all of it. A reliability filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.597$ \nolinebreak[3]$[0.563, 0.632]$ against the filtered $0.553$ \nolinebreak[3]$[0.514, 0.593]$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes. Two mismatches belong with it. The filter inside that calculation is the inherited $\cos > 0.2$ line rather than the $0.109$ line the training set actually uses, so the pair brackets the trained-on population without reproducing it. And the generation evaluation is selected differently again: it applies the $0.109$ line to the \texttt{train} split but leaves the held-out splits unfiltered, so held-out conditions whose two halves disagree outright are still scored. That asymmetry is load-bearing rather than cosmetic --- it accounts for the entire spread in the three splits' within-well split-half precision references ($0.956$, $0.824$, $0.836$), because imposing the training line on the held-out splits as well lifts theirs to $0.961$ and $0.960$. The spread is a fact about which conditions each split retains, not about how hard the splits intrinsically are.
 
-\paragraph{The intervals omit generation variance.} Every confidence interval in this thesis is a
-clustered bootstrap that resamples \emph{cell lines} while treating each condition's score as fixed.
-It therefore captures between-cell-line variance and not the variance introduced by sampling the
-model's output. With four generations per arm at temperature $0.8$ that second source is not
+\paragraph{The intervals omit generation variance.} The confidence intervals in this thesis are
+cluster-robust with each condition's score treated as fixed. The headline gaps carry two-way
+intervals over \emph{cell line} and \emph{treatment well}, with a Student $t$ reference on
+$\min(G_{\textrm{line}}, G_{\textrm{well}}) - 1$ degrees of freedom, and are reported a second time
+clustered on the \emph{drug}; the transfer coefficient carries a multiway dyadic interval; a few
+tables retain a one-way clustered bootstrap and name its unit. They therefore capture
+between-cluster variance and not the variance introduced by sampling the model's output. With four generations per arm at temperature $0.8$ that second source is not
 negligible, and it is not measured here. An across-seed replication --- three seeds, identical in
 every other respect --- would supply the missing component, and the honest form of every interval
 below would then be a point estimate with a seed spread beside it. \todo{run the three-seed
 replication and report the across-seed spread beside the within-seed interval, stating which
 sources each captures}
 
-\paragraph{A swing that looked like generation variance and was not.} Two evaluations of the same
-checkpoint on the same conditions, differing only in that one carried two additional scramble arms
-and so consumed the sampling stream differently, returned $\gap$ on the held-out-drug split as
-\ci{+0.0195}{-0.045}{+0.086} and \ci{+0.1114}{+0.051}{+0.173}. This was originally recorded as
-evidence of seed instability, and that diagnosis was wrong --- or rather, it named the trigger and
+\paragraph{A swing that looked like generation variance and was not.} Two superseded evaluations of
+the held-out-drug control returned values of $\gap$ far enough apart to be recorded as evidence of
+seed instability. Only one of the pair survives in the results archive, so the size of the swing is
+no longer quotable here; the diagnosis, however, was wrong --- or rather, it named the trigger and
 missed the cause. Both figures are gaps against the \texttt{opposite} swap, which
 Section~\ref{sec:res-generalisation} shows is not a null: it contains a term measuring how far the
 \emph{partner} drug was pushed the wrong way, a quantity that has nothing to do with the target and
 that changes with which partner happens to be drawn. An arm whose value is partly a nuisance
-quantity will move when the draw moves. Against the neutral comparator the same control sits at
-$+0.0097$ \nolinebreak[3]$[-0.0655, +0.0848]$. Two mechanisms are involved and both are now
+quantity will move when the draw moves. On the canonical evaluation the same control reads $+0.0379$ against \texttt{opposite} and
+\ci{-0.0315}{-0.0836}{+0.0206} against the neutral stratum, the interval clustered two-way on cell
+line and well. Two mechanisms are involved and both are now
 addressed: generation was genuinely unseeded --- \texttt{do\_sample} advanced from global torch
 state, so the two arms of a contrast were drawn from different points of one stream --- and each
 call now seeds its own generator from (condition, arm, batch); and the comparator has been corrected.
@@ -53,10 +58,20 @@ comparable to the within-plate tables elsewhere. \todo{rescore the generation-fr
 
 \paragraph{Frame coverage.} The drug-specific residual is $\lVert\resid\rVert/\lVert\shift\rVert =
 0.786$ of the response, against $0.620$ for the generic program and batch, and the two are
-essentially orthogonal ($0.786^2 + 0.620^2 = 1.002$). So this frame covers $62\%$ of the response
-\emph{variance} and every result here should be read within that bound --- a real but not total
-share. The remaining $38\%$ is precisely the component the field's absolute-accuracy metrics are
+essentially orthogonal: the shift's energy decomposes into residual $0.621$, generic $0.390$ and a
+cross term of $-0.011$, which sum to $1.000$. So this frame covers $62.1\%$ of the response
+\emph{energy} and every result here should be read within that bound --- a real but not total
+share. The generic $39.0\%$ is precisely the component the field's absolute-accuracy metrics are
 dominated by, which is why a drug-agnostic predictor scores so well on them.
+
+\paragraph{The three splits are not equally hard.} The within-well split-half precision reference
+differs across them --- $0.956$ on \texttt{train}, $0.824$ on \texttt{unseen\_combo} and $0.836$ on
+\texttt{unseen\_drug}, a spread of $0.132$ --- so a shortfall on a held-out split is partly a
+difference in how much recoverable signal those conditions carry, not only a difference in what the
+model learned. Any comparison of raw $\NIR$ or of $\gap$ across splits inherits that confound, and
+the training-exposure contrast of Section~\ref{sec:res-generalisation} inherits it in particular.
+Earlier drafts asserted the opposite --- that the split ceilings were comparable and so could not
+explain the held-out shortfall --- and that assertion is withdrawn.
 
 \subsection{Limitations of the unseen-drug evaluation}
 
@@ -67,16 +82,33 @@ the arm against the neutral stratum throughout; the two below survive that corre
 \paragraph{It is not a clean held-out-drug design.} The prompt contains
 \texttt{Mechanism: \{moa\}}, so holding out a drug still hands the model the held-out drug's class
 label. The correct design is leave-one-\emph{mechanism}-out. The leak is probably small ---
-\texttt{moa\_lookup} scores $0.529$, so the mechanism label carries little about the response --- but
+The size of the leak is measured
+directly: scrambling the \texttt{Mechanism} field alone moves the model's $\NIR$ by $+0.030$
+($n = 738$; two-way cluster-robust $[-0.008, +0.069]$), so the channel is small and not
+distinguishable from zero. It cannot, however, be dismissed \emph{relative to the model}:
+\texttt{moa\_lookup} scores $0.552$ on its $n = 218$ support, above the model's own $0.537$, and on
+the \texttt{unseen\_drug} split the mechanism lookup is ahead of the model by $0.099$ ($n = 44$).
+The leak is small in absolute terms but not small relative to what the model achieves on this arm.
+The design is wrong,
 the design is wrong, and the arm's proper use is as an instrument control rather than as the basis
 for a positive unseen-drug claim.
 
 \paragraph{It is underpowered by construction.} The confidence interval half-width on the
-\texttt{unseen\_drug} gap is $\approx \pm 0.075$, against a maximum effect available through the
-mechanism channel of $\approx 0.033$. The arm therefore \emph{cannot} detect the largest effect it
+\texttt{unseen\_drug} gap is $\pm 0.052$ clustered two-way on cell line and well, and $\pm 0.073$
+clustered on the drug; the smallest effect the arm would detect at $80\%$ power is $\approx 0.079$.
+The largest effect the mechanism channel could deliver is the distance from chance to
+\texttt{moa\_lookup}, which scores $0.552$ pooled across splits against a chance value of
+$0.500$, so $\approx 0.052$. The arm therefore \emph{cannot} detect the largest effect it
 could plausibly be measuring. This cuts both ways and the direction matters. As a \emph{control} it
 is doing the job asked of it: the question there is whether the point estimate sits at zero when the
-model has no drug knowledge, and $+0.0097$ does. As \emph{evidence of absence} it carries almost
+As a \emph{control} the
+arm is not falsified: the question there is whether it returns zero when the drug name carries
+nothing the model was fine-tuned on, and the estimate \ci{-0.0315}{-0.1049}{+0.0419} (clustered on
+drug) has an interval covering zero. It does not sit \emph{at} zero, though --- it is negative and
+of the same magnitude as the largest effect the arm could plausibly be measuring --- so it is
+uninformative in both directions rather than confirming a null. Note also that ``unseen'' here
+means held out from Tahoe fine-tuning only: Pythia-1b saw drug names in natural-language
+pretraining and the prompt still supplies \texttt{Mechanism}. As \emph{evidence of absence} it carries almost
 nothing, because an effect of the size the mechanism channel could deliver would sit comfortably
 inside the interval. The distinction is what licenses using the arm to validate the comparator in
 Section~\ref{sec:res-generalisation} while declining to use it to argue that unseen-drug transfer is
@@ -86,12 +118,18 @@ zero.
 
 \paragraph{The arm this work closed rather than opened.} The obvious continuation of
 Section~\ref{sec:res-scope} is a channel-conditioned prompt: append protein targets to the
-instruction, retrain, and evaluate on a leave-one-mechanism-out split. We do not recommend it, and
-the reason is measured rather than argued. Section~\ref{sec:res-field} shows the model reads the drug
-\emph{name} (\ci{+0.081}{+0.059}{+0.101}) and does not measurably read the \emph{mechanism} field it
-is already given (\ci{+0.009}{-0.017}{+0.038}), in an arm powered to detect an effect the size of the
-name's. Adding a target field to a prompt whose mechanism field is ignored addresses information
-availability, and the binding constraint is the readout.
+instruction, retrain, and evaluate on a leave-one-mechanism-out split. We do not recommend building it
+eagerly, and the reason is a shape of failure rather than a settled measurement.
+Section~\ref{sec:res-field} does not resolve \emph{which} span of the prompt is read. On the
+canonical run, swapping the drug \emph{name} alone moves the output by
+\ci{+0.1026}{+0.0625}{+0.1427} ($n = 1394$) while swapping the \emph{mechanism} field alone moves it
+by $+0.0303$ \nolinebreak[3]$[-0.0078, +0.0685]$ ($n = 738$), both clustered on drug and well. All of
+those arms swap to an opposite-signature partner, which Section~\ref{sec:res-generalisation} shows is
+not a null, so each gap carries a ``how much naming a lie hurts'' term and the attribution is a
+direction rather than a result. Pending a re-run against the neutral partner, the case against a
+target-conditioned prompt rests not on demonstrated mechanism-blindness but on the size of the
+readout deficit: on the common support the model covers $13.9\%$ of the distance from chance to the
+within-well bar that a context-blind lookup covers entirely.
 
 What would be worth building instead is an intervention that makes the drug \emph{causal} rather than
 merely present --- a learned per-drug modulation of the transformation from control to treated, so
@@ -99,21 +137,33 @@ that the drug parameterises the computation instead of sitting in the residual s
 readout can round away. That is a research architecture rather than a prompt change, and it is
 outside the scope of what remained here.
 
-\paragraph{Two channel questions that do remain open.} Target and mechanism overlap, so whether
-target adds anything \emph{over} mechanism is unresolved --- and it matters, because the prompt
-already exposes mechanism and the model already ignores it. Separately, the channel gate measures
+\paragraph{Two channel questions that remain open, and one defect pending a re-run.} Target and
+mechanism overlap, so whether target adds anything \emph{over} mechanism is unresolved --- and it
+matters, because the prompt already exposes mechanism and whether the model uses that field is itself
+unresolved. Separately, the channel gate measures
 \emph{similarity transfer}: an unseen drug resembling a seen drug with the same target. It does not
 test a \emph{compositional rule} --- that a named target's own pathway moves, which would apply to
 any drug whose target is named, including one with no similar drug in training. The second is the
-stronger claim, it does not reduce to a lookup, and it is untested.
+stronger claim, it does not reduce to a lookup, and it is untested. Both questions sit behind a
+defect in the gate itself: the partner pool it draws from was not restricted to training drugs, so a
+held-out drug's response could be predicted from a partner that was also held out. The restriction is
+now in the code and the gate has not been re-run, so every statement in this thesis that unseen-drug
+generalisation is reachable through protein-target or mechanism retrieval is provisional on that
+re-run.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
 axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks
 whether the control cell's state is used \emph{compositionally} with the drug. The transfer
-coefficient now scopes it: with the interaction both substantial ($\approx45\%$) and idiosyncratic,
-a new cell line offers no consistent direction to exploit, so the achievable target there reduces to
-recalling the drug's per-drug constant --- which a lookup already does at $0.963$. The axis is
-therefore less promising than it appeared before Section~\ref{sec:res-transfer} was measured.
+coefficient scopes it only loosely: $44.7\%$ \nolinebreak[3]$[40.7\%, 48.6\%]$ of the drug-specific
+residual is not shared across contexts, and no structure was recovered in that unshared part. That
+figure is not a drug$\times$cell-line interaction share --- it mixes cell line, dose, well and
+estimator (Section~\ref{sec:res-transfer}) --- so it bounds what a per-drug constant leaves on the
+table without establishing that a new cell line is the axis the remainder lies along. What can be
+said is that no consistent per-line direction was found, so the achievable target on a new cell line
+plausibly reduces to recalling the drug's per-drug constant --- which a training-only lookup already
+does at $0.913$. The axis is therefore less promising than it appeared before
+Section~\ref{sec:res-transfer} was measured, though the argument is weaker than a coefficient-based
+one.
 
 \paragraph{Objectives that were considered and rejected.} Recorded so they are not re-litigated:
 \begin{itemize}
@@ -121,7 +171,7 @@ therefore less promising than it appeared before Section~\ref{sec:res-transfer} 
         reward, so the token-dilution ratio never enters the gradient --- attacks a bottleneck that
         the residual encoding has already lifted ($34.6 \rightarrow 118.2$ differing tokens); and its
         reward optimises similarity to the true residual, which is precisely what
-        \texttt{drug\_lookup} already achieves at $0.963$. Its best case is convergence to the
+        \texttt{drug\_lookup} already achieves at $0.913$. Its best case is convergence to the
         lookup.
   \item \textbf{A differentiable profile-level contrastive loss.} The natural construction,
         $\textrm{score}(g) = \sum_i P(\textrm{token}_i = g)\,w(i)$, presumes gene $\approx$ token,
@@ -151,18 +201,26 @@ untouched is evidence that the constraint binds where we say it does.
 The genuinely different argument for scale is not capacity but \emph{prior knowledge}. A 27B model
 pretrained on far more text plausibly knows, as a fact about the world, that a named compound
 inhibits a named kinase --- knowledge a 1B model may simply lack. That matters here because
-Section~\ref{sec:res-field} finds the model reads the drug \emph{name} but not the
-\emph{mechanism} field it is already handed, and a model with real pharmacological knowledge is
-exactly the case where that might change. This is a sharper hypothesis than ``bigger is better'' and
+Section~\ref{sec:res-field} leaves unresolved whether the model uses the \emph{mechanism} field it
+is already handed --- swapping that field alone moves the output by $+0.0303$
+\nolinebreak[3]$[-0.0078, +0.0685]$ ($n=738$), an interval containing zero, in an arm whose
+comparator is not a null --- and a model with real pharmacological knowledge is exactly the case
+where that might change. This is a sharper hypothesis than ``bigger is better'' and
 it is testable cheaply with a low-rank adaptation of a mid-sized checkpoint rather than a full
 fine-tune. We did not run it, and it is the first thing we would run with more time.
 
 \paragraph{The starting checkpoint was never prepared for this task.} We fine-tune from
-\texttt{C2S-Scale-Pythia-1b-pt}, which is pretrained on atlas data alone --- CELLxGENE and the Human
-Cell Atlas, no perturbation corpus of any kind --- and whose released capabilities do not include
-perturbation prediction. This cuts two ways and both should be stated. It is why the held-out splits
-are clean: a drug withheld here was never seen at any stage, so nothing in the pipeline can have
-memorised it. But it also means the failure we report is a failure of \emph{this} starting point, and
+\texttt{C2S-Scale-Pythia-1b-pt}, whose cell-sentence pretraining corpus is atlas data alone ---
+CELLxGENE and the Human Cell Atlas, no perturbation corpus of any kind --- and whose released
+capabilities do not include perturbation prediction. This cuts two ways and both should be stated. It
+is why the held-out splits are as clean as they are: a drug withheld here entered neither the
+fine-tuning data nor the generic that defines its target, the split being assigned from metadata
+before any expression was aggregated, so no Tahoe perturbation response for it can have been
+memorised. That is a narrower guarantee than ``unseen'', and the difference matters. The backbone is
+a Pythia language model~\cite{pythia} whose own pretraining is text, so a held-out compound's name
+may well have been read there; and the prompt supplies the \texttt{Mechanism:} field for held-out
+drugs exactly as it does for trained ones. The correct description of the held-out arms is therefore
+\emph{held out from Tahoe fine-tuning, with mechanism supplied}, not unseen by the whole pipeline. But it also means the failure we report is a failure of \emph{this} starting point, and
 a reader may reasonably ask whether a checkpoint already tuned for perturbation prediction would
 behave differently. We cannot answer that from the public artifacts. The perturbation-specialised
 model in the same line of work is a Gemma-3 4B checkpoint that was not released, and the available

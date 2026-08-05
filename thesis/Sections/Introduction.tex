@@ -36,9 +36,9 @@ compound and every cell line appears not as a summary statistic but as a cloud o
 That resolution changes which questions can be asked. The obvious one is conditional --- what does
 this compound do to this cellular context, rather than what does it do on average across contexts
 that may have little in common. The less obvious question is whether the first has an answer.
-Because many conditions were run more than once, it becomes possible to measure how much of an
-apparent drug effect reproduces across replicates and how much is simply the variability of the
-assay. That second measurement turns out to matter as much as the first, and a good deal of what
+Because each treated condition is a population of cells rather than a single measurement, it becomes
+possible to measure how much of an apparent drug effect reproduces across disjoint halves of the
+same treated well and how much is only variation between the cells that happened to be sampled. That second measurement turns out to matter as much as the first, and a good deal of what
 follows rests on the observation that standard evaluations quietly confuse the two.
 
 The other development behind this thesis has nothing to do with cells. Over the same period,
@@ -66,7 +66,8 @@ stimulation in peripheral blood cells, and, for small molecules, bulk L1000 prof
 SciPlex3 panel. The single-cell results are scored as distributions --- how closely the generated
 population for a condition resembles the observed one --- rather than condition by condition. The
 checkpoint used throughout this thesis, \texttt{C2S-Scale-Pythia-1b-pt}, is the pretrained model
-from that family: atlas data only, with no drug-treated cells among it.
+from that family: a Pythia-1b language model~\cite{pythia}, pretrained on natural language and then
+further pretrained on atlas cells, with no drug-treated cells among that atlas data.
 
 What we do is extend that line of work to chemical perturbation at the scale Tahoe-100M now makes
 available, and evaluate it as a prediction problem in the strict sense --- condition by condition,
@@ -74,12 +75,17 @@ against controls chosen so that a model which ignores the drug cannot pass. The 
 a cell-sentence model fine-tuned on this atlas learns what a particular compound does to a
 particular cell.
 
-Two things are worth keeping straight about what the model has actually seen, since the scale of the
-atlas invites an easy overstatement. Its pretraining is large but drug-free: tens of millions of
-cells, none of them treated with anything. And the fine-tuning does not consume Tahoe entire --- it
-draws a sample of a few hundred thousand treated cells from it, which is ample for the task but is
-not a hundred million. Whatever the model learns about drugs, it learns during fine-tuning, from
-that sample.
+Three things are worth keeping straight about what the model has actually seen, since the scale of
+the atlas invites an easy overstatement. Its cell pretraining is large but drug-free: tens of
+millions of cells, none of them treated with anything. The fine-tuning does not consume Tahoe
+entire --- it draws a sample of a few hundred thousand treated cells from it, which is ample for the
+task but is not a hundred million. And nothing here is unseen by the whole pipeline: the backbone is
+the Pythia-1b decoder~\cite{pythia}, a general-purpose language model pretrained on natural text,
+and every prompt names the compound outright and carries a \texttt{Mechanism} field --- its
+annotated mechanism of action where one exists, the literal string \texttt{unclear} where it does
+not. What a held-out drug is held out of is the Tahoe fine-tuning, with its name and whatever
+mechanism annotation it carries still supplied at inference --- not the model's prior exposure to
+that name.
 
 It does learn something, and the something is the difficulty. The model acquires a good account of
 what a treated cell looks like \emph{in general} --- the shared shape that perturbed transcriptomes
@@ -91,23 +97,26 @@ and is told nothing about any drug at all.
 
 A second comparison is worth separating from that one, because it is weaker but more informative. A
 per-drug average, estimated from the same compound in \emph{other} cell lines, also outperforms the
-model --- but this is not a naive baseline. It is very nearly the best any method can do at the part
-of the problem it addresses, scoring $0.963$ against a replicate ceiling of $0.968$, and being close
-to it would be a real achievement rather than a low bar. What it cannot do is condition on the cell
+model --- but this is not a naive baseline. On the conditions where both are defined ($n = 1192$) it
+scores $0.913$ where the model scores $0.549$, so matching it would be a real
+achievement rather than a low bar. What it cannot do is condition on the cell
 in front of it, which is precisely why the comparison is useful: it separates the drug's average
-effect from the part that depends on context. Section~\ref{sec:res-transfer} measures that split, and
-finds the second part worth roughly half the drug-specific signal --- reached by the average, by the
-model, and by the literature alike, which is to say not at all.
+effect from the part that depends on context. Section~\ref{sec:res-transfer} measures that split with a
+transfer coefficient \ci{\Tcoef = 0.553}{0.514}{0.593}, leaving \ci{44.7\%}{40.7\%}{48.6\%} of the
+drug-specific residual not shared across contexts. That residual is not a drug-by-cell-line
+interaction share --- the estimator mixes cell line, dose, well and target estimator --- and whether
+any model could reach it is a separate question, taken up there.
 
 A negative result earns its place only if it can be made specific, and that is the organising
 principle of what follows. We establish first that the failure is real rather than an artifact of
 how this field measures success --- a distinction less pedantic than it sounds, since the standard
 metric can be saturated by a predictor that knows nothing about drugs. We then locate where in the
 pipeline the failure originates, show that the location implies a repair, apply it, and finally
-bound how much of the problem any method of this kind could recover even if that repair were
-perfect. The thesis therefore ends not in closure but in a number: a measured fraction of the
-drug-specific signal claimed by nothing in the literature, by no baseline we could construct, and by
-none of our own models.
+measure how much of the reproducible drug response is not shared across contexts --- across cell
+line, dose and well together --- a descriptive quantity rather than a bound on what any method
+could reach. The thesis therefore ends not in closure but in a number: a measured fraction of the
+drug-specific residual that is not shared across contexts --- a component the per-drug lookup cannot
+express by construction, and one no model in this thesis was shown to recover.
 
 Four questions carry that argument, in order:
 
@@ -123,20 +132,39 @@ Four questions carry that argument, in order:
         the process that writes the output? Each answer implies a different repair, and only one of
         them is cheap.
   \item \textbf{How much is recoverable at all?} A per-drug average is a strong baseline. How much
-        of the drug-specific signal does it capture, how much is genuinely conditional on cellular
-        context, and how much does any method --- ours or anyone else's --- actually reach?
+        of the drug-specific signal does it capture, how much of it is not shared across contexts,
+        and how much of that unshared part do our models or any baseline we could construct
+        actually reach?
 \end{enumerate}
 
 The contributions follow the same order. We audit the calibration of the standard evaluation and
 show that it can be saturated by a predictor carrying no drug information whatsoever, which bears on
-any work built from the same family of metrics. We establish drug-blindness on the one metric that
-survives that audit, using several independent instruments so that no single measurement carries the
-claim alone. We identify the target encoding --- not the data, the architecture, or the training
+any work built from the same family of metrics. Of the five metrics we test, only the normalised
+inverse rank has a positive dynamic range fraction --- $+0.635$ across plates and $+0.519$ within
+plate, against $-0.16$ to $-0.69$ for the other four across plates and $-0.12$ to $-0.50$ within
+plate. We report those figures descriptively, because the intervals and multiplicity correction
+attached to them were computed under a mis-specified clustering and a corrected rerun is pending. We
+establish drug-blindness on that one surviving metric, using several independent instruments so that
+no single measurement carries the claim alone. We identify the target encoding --- not the data, the architecture, or the training
 objective --- as the binding constraint, and derive from that diagnosis a re-encoding of the
-prediction target which produces the first measurable drug effect in this project and generalises to
-drug-and-cell-line pairings never seen during training. And we separate the per-drug main effect
-from the drug-by-cell-line interaction, showing that the interaction accounts for roughly half the
-drug-specific signal and is reached by neither the lookup baseline nor the model.
+prediction target which produces the first measurable drug effect in this project. On training
+conditions the model beats its designated comparator (\texttt{scramble\_orth}: the same prompt with
+the drug name replaced by a within-plate partner chosen so that its measured response is
+near-orthogonal to the target drug's) by $+0.0898$, with an interval excluding zero whether the
+resampling is clustered on cell line $[+0.0382,\,+0.1415]$ or on drug $[+0.0291,\,+0.1506]$. We do
+\emph{not} claim that this transfers. On held-out drug-and-cell-line pairings the same gap is
+$+0.0332$, which excludes zero clustered on cell line $[+0.0069,\,+0.0594]$ but not clustered on
+drug $[-0.0031,\,+0.0695]$ --- and drug is the axis across which a claim about transferring a drug
+signature has to generalise. That split is in any case mostly recombination rather than novelty:
+$30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the training split, and $82\%$
+of its conditions pair a training drug with a training cell line. On genuinely unseen drugs the gap
+is $-0.0315$, with intervals spanning zero under both clusterings ($[-0.0836,\,+0.0206]$ on cell
+line, $[-0.1049,\,+0.0419]$ on drug). Nor are the three gaps on a common scale: the within-well
+split-half precision reference differs across the splits ($0.956$, $0.824$, $0.836$), so their
+ordering cannot be read as a clean decay with novelty. Finally we separate the part of the
+reproducible drug response that is shared across contexts from the part that is not, and report the
+unshared fraction as $0.447$ $[0.407,\,0.486]$ --- a residual mixing cell line, dose, well and
+estimator rather than a clean drug-by-cell-line interaction.
 
 The thesis proceeds as follows. Section~\ref{sec:litreview} places the work against single-cell
 foundation models, the perturbation-prediction literature, and an unsettled dispute within it about
