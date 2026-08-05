@@ -10,16 +10,17 @@ repair.
 a zero-information baseline placing every gene at the middle rank scores $\DEdr = 1.000$, above both
 the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed across plates, and replicated within plate, only
 $\NIR$ --- a discrimination metric, in which the generic response cancels --- has a positive dynamic
-range fraction: $+0.635$ across plates and $+0.519$ within plate. All four prediction metrics tested
-come out negative --- $-0.163$ to $-0.686$ across plates, $-0.122$ to $-0.500$ within plate ---
+range fraction: $+0.635$ across plates and $+0.545$ within plate. All four prediction metrics tested
+come out negative --- $-0.163$ to $-0.686$ across plates, $-0.104$ to $-0.515$ within plate ---
 inverted, not merely uninformative. The released calibration artifacts clustered the drug rows as
-though each row were its own cell line ($1{,}820$ and $335$ rows, when there are $25$ cell lines),
-so their intervals were far too narrow. The across-plates arm has been rerun with the bootstrap
-clustered on cell line and the null imposed: $\DRF(\NIR) = +0.635$, $[+0.604, +0.663]$, Holm
-$p = 0.002$ across the family of five. That $p$ is still at the resampling floor, but now because
-the estimate sits some forty cluster-robust standard errors from zero rather than because each row
-was counted as its own cluster. The within-plate arm has not been rerun, so its $+0.519$ is quoted
-as a point estimate without an interval. This is the most portable result
+though each row were its own cell line, so their intervals were far too narrow. Both arms have been
+rerun with the bootstrap clustered on cell line and the null imposed: $\DRF(\NIR) = +0.635$,
+$[+0.604, +0.663]$ over $25$ cell lines across plates, and $+0.545$, $[+0.516, +0.569]$ over $27$
+within plate, each at Holm $p = 0.002$ across the family of five. That $p$ is still at the
+resampling floor, but now because the estimate sits some forty cluster-robust standard errors from
+zero rather than because each row was counted as its own cluster. The intervals are percentile
+cluster bootstraps without a small-sample correction, and plate is crossed with cell line while only
+the cell-line channel is clustered, so they are robust on that axis alone. This is the most portable result
 here, since it applies to any work scored on $\DEdr$-family metrics.
 
 This also settles how the thesis enters the dispute of Section~\ref{sec:lit-dispute}. Miller et

@@ -75,3 +75,6 @@ nir.pdf
 
 # ---- Private working docs ----
 docs/proposals/
+
+# ---- Cluster job logs copied back for inspection ----
+RESULTS_cluster/*.out

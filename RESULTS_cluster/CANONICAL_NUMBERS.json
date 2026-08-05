@@ -316,6 +316,8 @@
    "n_celllines": 25,
    "n_drugs": 1820,
    "_source": "calibration_v4.json",
+   "n_groups": null,
+   "_interval_method": "percentile cluster bootstrap over cell lines; no small-sample correction, and plate is crossed with cell line but only the cell-line channel is clustered",
    "metrics": {
     "weighted_r2": {
      "drf": -0.16272114485359698,
@@ -370,59 +372,120 @@
    }
   },
   "same_plate": {
-   "n_celllines": 25,
+   "n_celllines": 27,
+   "n_drugs": 586,
+   "_source": "calibration_v5_sameplate_wide.json",
+   "n_groups": 44,
+   "_interval_method": "percentile cluster bootstrap over cell lines; no small-sample correction, and plate is crossed with cell line but only the cell-line channel is clustered",
+   "metrics": {
+    "weighted_r2": {
+     "drf": -0.10368551967507333,
+     "ci": [
+      -0.12813447316032292,
+      -0.07325111977866545
+     ],
+     "p_holm": 1.0,
+     "n_clusters": 27,
+     "n_rows": 586
+    },
+    "spearman_expr": {
+     "drf": -0.49980528261592316,
+     "ci": [
+      -0.5262690615117764,
+      -0.4606251757542229
+     ],
+     "p_holm": 1.0,
+     "n_clusters": 27,
+     "n_rows": 586
+    },
+    "de_delta": {
+     "drf": -0.5149630424987773,
+     "ci": [
+      -0.5682792223279913,
+      -0.45191723283560015
+     ],
+     "p_holm": 1.0,
+     "n_clusters": 27,
+     "n_rows": 586
+    },
+    "panel_tau": {
+     "drf": -0.2504545628681181,
+     "ci": [
+      -0.2635993890226975,
+      -0.2316719247887532
+     ],
+     "p_holm": 1.0,
+     "n_clusters": 27,
+     "n_rows": 586
+    },
+    "nir": {
+     "drf": 0.5445614678231298,
+     "ci": [
+      0.5157400841488878,
+      0.5691365314884349
+     ],
+     "p_holm": 0.002498750624687656,
+     "n_clusters": 27,
+     "n_rows": 586
+    }
+   }
+  },
+  "same_plate_cap25": {
+   "n_celllines": 18,
    "n_drugs": 335,
-   "_source": "calibration_v3_sameplate.json (v4 NOT AVAILABLE -- pseudoreplicated interval)",
+   "_source": "calibration_v5_sameplate.json",
+   "n_groups": 25,
+   "_interval_method": "percentile cluster bootstrap over cell lines; no small-sample correction, and plate is crossed with cell line but only the cell-line channel is clustered",
    "metrics": {
     "weighted_r2": {
      "drf": -0.12205466639814119,
      "ci": [
-      -0.15090507675896414,
-      -0.09191708491736915
+      -0.1505541926853178,
+      -0.09887994418956136
      ],
      "p_holm": 1.0,
-     "n_clusters": null,
-     "n_rows": null
+     "n_clusters": 18,
+     "n_rows": 335
     },
     "spearman_expr": {
      "drf": -0.49486417869158356,
      "ci": [
-      -0.5141949146230756,
-      -0.47378778028424573
+      -0.5195579366451852,
+      -0.4514198073259863
      ],
      "p_holm": 1.0,
-     "n_clusters": null,
-     "n_rows": null
+     "n_clusters": 18,
+     "n_rows": 335
     },
     "de_delta": {
      "drf": -0.5000830228116453,
      "ci": [
-      -0.5403888083009024,
-      -0.45952413733106595
+      -0.5394380802331932,
+      -0.4477416950049588
      ],
      "p_holm": 1.0,
-     "n_clusters": null,
-     "n_rows": null
+     "n_clusters": 18,
+     "n_rows": 335
     },
     "panel_tau": {
      "drf": -0.24717987694760532,
      "ci": [
-      -0.25576828815758634,
-      -0.23730359697877954
+      -0.2603791273571237,
+      -0.22557920312531612
      ],
      "p_holm": 1.0,
-     "n_clusters": null,
-     "n_rows": null
+     "n_clusters": 18,
+     "n_rows": 335
     },
     "nir": {
      "drf": 0.5193880837173863,
      "ci": [
-      0.47932445784547595,
-      0.5569411943867006
+      0.4787162200279815,
+      0.5461425029851891
      ],
      "p_holm": 0.002498750624687656,
-     "n_clusters": null,
-     "n_rows": null
+     "n_clusters": 18,
+     "n_rows": 335
     }
    }
   }

@@ -460,12 +460,15 @@ about all five at once. Those three choices govern how the point estimate is for
 what the bootstrap resamples --- governs whether the interval around it means anything, and in the
 stored runs it was not made: each of the all-plates run's $1{,}820$ rows is one drug within one
 cell line, and the resampler treated every row as its own cell line, against the $25$ that exist
-(the same-plate run carries the identical defect over its $335$ rows). The one-sided $p$ was read
+(the same-plate run carried the identical defect over its own rows). The one-sided $p$ was read
 off the observed resampling distribution rather than one with the null imposed, so it degenerates
 to the floor $1/2001$ wherever $\DRF > 0$ and to $1$ wherever $\DRF < 0$, and no metric in the
-family was in fact tested. Both are repaired in the analysis code, and the all-plates arm has been
-rerun under the repair; the same-plate arm has not, so its point estimates are quoted below and its
-interval is not.
+family was in fact tested. Both are repaired in the analysis code and both arms have been rerun
+under the repair. The same-plate rerun also fixed a mismatch the first run exposed: its cluster was
+the (cell line, plate) pair the comparison is grouped within, but plates nest inside cell lines and
+share their biology, so resampling pairs independently repeats the original error one level up. The
+cluster is now the cell line in both arms, and the grouping unit and the cluster unit are reported
+separately because they are not the same thing.
 
 Under the hardened protocol, $\NIR$ is the only one of the five whose $\DRF$ is positive. In the
 all-plates run, $\DRF(\NIR) = +0.635$, $95\%$ CI $[+0.604, +0.663]$, clustered on the $25$ cell
@@ -476,12 +479,15 @@ imposed by centring the resampling distribution at $\DRF = 0$, no draw of $2{,}0
 observed value for $\NIR$, so the one-sided $p$ is at the resampling floor and reads $0.002$ after
 Holm correction across the five metrics. That the $p$ is at the floor is now a statement about the
 effect rather than about the resampler: the point estimate sits some forty cluster-robust standard
-errors from zero. Restricting swap partners to the same plate ($335$ drugs over the same $25$ cell
-lines) pulls every value toward zero and changes no sign: $\NIR$ $+0.519$, against $-0.122$,
-$-0.247$, $-0.495$ and $-0.500$ in the same order. That arm has not been rerun under the repaired
-bootstrap, so its point estimates are quoted and its interval is not. What the argument uses is the
-sign pattern, which is identical in both runs; no ranking among the four negative metrics is
-claimed. The inversion is a
+errors from zero. Restricting swap partners to the same plate ($586$ drugs over $44$
+cell-line$\times$plate groups spanning $27$ cell lines) pulls every value toward zero and changes no
+sign: $\NIR$ $+0.545$ $[+0.516, +0.569]$, against $-0.104$, $-0.251$, $-0.500$ and $-0.515$ in the
+same order, each excluding zero. The two arms are matched on the thing the comparison is about ---
+$27$ cell lines within plate against $25$ across plates --- which an earlier configuration was not:
+capping the run at $25$ \emph{groups} admitted only $18$ distinct cell lines. That narrower run gives
+$\NIR$ $+0.519$ $[+0.479, +0.546]$ over $335$ drugs, so the figure is not an artifact of how many
+plate-groups are admitted. What the argument uses is the sign pattern, which is identical in every
+run; no ranking among the four negative metrics is claimed. The inversion is a
 property of the data, not a leak: a leave-one-out correction barely moves the numbers, since real
 cell lines carry 20--204 drugs, and it survives holding the plate constant.
 
@@ -502,13 +508,13 @@ means the drug-blindness result cannot be dismissed on the grounds their own pap
 yields a higher score.} (a) A predictor carrying nothing about drug, cell or biology scores
 $\DEdr = 0.9999$, above the two-real-cell noise ceiling and above the model. Tier 2, $n=400$
 conditions. (b) Grading the metrics rather than the models: only $\NIR$ points forward. The panel
-shows the same-plate run ($335$ drugs over $25$ cell-line$\times$plate groups), the confound-free
-version, in which $\NIR$ reads $+0.519$ against $-0.122$ (\texttt{weighted\_r2}), $-0.247$
-($\paneltau$), $-0.495$ (\texttt{spearman\_expr}) and $-0.500$ ($\DEdr$); the all-plates run
+shows the same-plate run ($586$ drugs over $44$ cell-line$\times$plate groups), the confound-free
+version, in which $\NIR$ reads $+0.545$ against $-0.104$ (\texttt{weighted\_r2}), $-0.251$
+($\paneltau$), $-0.500$ (\texttt{spearman\_expr}) and $-0.515$ ($\DEdr$); the all-plates run
 ($1{,}820$ drugs over $25$ cell lines) gives $+0.635$ for $\NIR$, $95\%$ CI $[+0.604, +0.663]$
 clustered on cell line, with the four rivals between $-0.163$ and $-0.686$ and all excluding zero.
-Intervals are drawn for the all-plates arm only: the same-plate bootstrap still treats each drug row
-as its own cluster, so its point estimates stand and its intervals are withheld (see text). \texttt{weighted\_r2} carries no directional claim: its sign tracks cell count.}
+Both arms are clustered on the cell line --- $25$ across plates, $27$ within --- and every interval
+shown is a percentile cluster bootstrap with no small-sample correction (see text). \texttt{weighted\_r2} carries no directional claim: its sign tracks cell count.}
 \label{fig:calibration}
 \end{figure}
 
@@ -524,8 +530,8 @@ is not the bottleneck.
 \begin{claim}
 The field's standard score is saturated by a predictor carrying no information ($\DEdr = 0.9999$);
 of the five candidates audited, $\NIR$ is the only one with a positive $\DRF$ ($+0.635$,
-$[+0.604, +0.663]$ clustered on the $25$ cell lines, Holm $p = 0.002$; $+0.519$ as a point estimate
-with same-plate partners, an arm whose interval is withheld pending its own re-run); and on $\NIR$
+$[+0.604, +0.663]$ clustered on the $25$ cell lines, Holm $p = 0.002$; $+0.545$
+$[+0.516, +0.569]$ over $27$ cell lines with same-plate partners, Holm $p = 0.002$); and on $\NIR$
 the instrument can discriminate. Every drug-use claim in the rest of this chapter is
 therefore made on the calibrated metric.
 \end{claim}

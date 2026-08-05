@@ -1,0 +1,142 @@
+{
+  "n_celllines": 27,
+  "n_groups": 44,
+  "n_drugs": 586,
+  "mean_cells_per_drug": 50.17132180245482,
+  "mean_degs_per_drug": 157.48034952180174,
+  "drf": {
+    "neg_mean": {
+      "weighted_r2": {
+        "drf": -0.10368551967507333,
+        "n": 586,
+        "m_pos": 0.7660583316669529,
+        "m_neg": 0.7880359358144702,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.12813447316032292,
+          -0.07325111977866545
+        ],
+        "boot_sd": 0.014245955355284116,
+        "n_clusters": 27,
+        "n_rows": 586,
+        "cluster_unit": "cell line",
+        "n_groups": 44,
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "spearman_expr": {
+        "drf": -0.49980528261592316,
+        "n": 586,
+        "m_pos": 0.785791601485014,
+        "m_neg": 0.8571758607614923,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.5262690615117764,
+          -0.4606251757542229
+        ],
+        "boot_sd": 0.01686271122952281,
+        "n_clusters": 27,
+        "n_rows": 586,
+        "cluster_unit": "cell line",
+        "n_groups": 44,
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "de_delta": {
+        "drf": -0.5149630424987773,
+        "n": 586,
+        "m_pos": 0.82424641825703,
+        "m_neg": 0.8839882051161576,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.5682792223279913,
+          -0.45191723283560015
+        ],
+        "boot_sd": 0.030038462669622797,
+        "n_clusters": 27,
+        "n_rows": 586,
+        "cluster_unit": "cell line",
+        "n_groups": 44,
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "panel_tau": {
+        "drf": -0.2504545628681181,
+        "n": 586,
+        "m_pos": 0.6095668465372004,
+        "m_neg": 0.6877670208445811,
+        "m_perfect": 1.0,
+        "ci": [
+          -0.2635993890226975,
+          -0.2316719247887532
+        ],
+        "boot_sd": 0.008140674068291739,
+        "n_clusters": 27,
+        "n_rows": 586,
+        "cluster_unit": "cell line",
+        "n_groups": 44,
+        "p_one_sided": 1.0,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 1.0,
+        "calibrated": false
+      },
+      "nir": {
+        "drf": 0.5445614678231298,
+        "n": 586,
+        "m_pos": 0.6683842522847758,
+        "m_neg": 0.27187595188709096,
+        "m_perfect": 1.0,
+        "ci": [
+          0.5157400841488878,
+          0.5691365314884349
+        ],
+        "boot_sd": 0.013511414821300955,
+        "n_clusters": 27,
+        "n_rows": 586,
+        "cluster_unit": "cell line",
+        "n_groups": 44,
+        "p_one_sided": 0.0004997501249375312,
+        "p_note": "cluster bootstrap with the null imposed by recentring; floor is 0.0005",
+        "p_holm": 0.002498750624687656,
+        "calibrated": true
+      }
+    },
+    "multiplicity": {
+      "method": "Holm across the metric family",
+      "n_tests": 5,
+      "family": [
+        "weighted_r2",
+        "spearman_expr",
+        "de_delta",
+        "panel_tau",
+        "nir"
+      ]
+    }
+  },
+  "config": {
+    "out": "RESULTS/calibration_v5_sameplate_wide.json",
+    "selftest": false,
+    "num_shards": 12,
+    "rows_per_shard": 150000,
+    "shard_seed": 7,
+    "cells_per_drug": 60,
+    "max_cells_total": 500000,
+    "min_cells_per_drug": 40,
+    "n_celllines": 150,
+    "min_drugs_per_cl": 6,
+    "same_plate_only": true,
+    "held_out_drugs_file": null,
+    "de_k": 50,
+    "deg_pool_cap": 400,
+    "panel_file": null,
+    "seed": 42,
+    "collect_controls": true,
+    "same_plate": true
+  }
+}
