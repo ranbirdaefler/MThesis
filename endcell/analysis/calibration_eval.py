@@ -273,9 +273,23 @@ def aggregate_drf(all_rows, n_boot=2000, seed=0):
     # main loop extends one pooled list, so 25 cell lines produced 1820 rows and the artifact
     # reported n_cell_lines = 1820. The interval was therefore roughly sqrt(1820/25) ~ 8.5x too
     # narrow, and the one-sided p sat at the resampling floor 1/(n_boot+1) for every metric.
+    def _cluster_src(r):
+        """The grouping unit as computed: cell line, or (cell line, plate) under --same_plate_only."""
+        return str(r.get("group"))
+
     def _cluster_of(r):
         g = r.get("group")
-        return str(g) if g is not None else "__ungrouped__"
+        if g is None:
+            return "__ungrouped__"
+        # Under --same_plate_only the group is a (cell_line, plate) PAIR. Plates nest inside cell
+        # lines -- two plates of one line share that line's biology -- so resampling pairs
+        # independently understates the variance. That is the same error one level up as the one
+        # repaired above, where rows nested in cell lines were each given their own cluster.
+        # Cluster on the cell line and let its plates ride along inside it. The all-plates run is
+        # unaffected: there the group is already a bare cell-line id.
+        if isinstance(g, (tuple, list)):
+            return str(g[0])
+        return str(g)
 
     pvals, keys = [], []
     for m in METRICS:
@@ -298,7 +312,14 @@ def aggregate_drf(all_rows, n_boot=2000, seed=0):
             rec["boot_sd"] = ci["boot_sd"]
             rec["n_clusters"] = ci["n_clusters"]
             rec["n_rows"] = len(usable)
-            rec["cluster_unit"] = "cell line (or cell line x plate under --same_plate_only)"
+            # The cluster is ALWAYS the cell line: _cluster_of collapses a (cell_line, plate)
+            # group to its line. The grouping unit and the cluster unit are different things and
+            # the old string conflated them. Plate is crossed with cell line across the atlas and
+            # only the cell-line channel is clustered here, so the interval is robust on that axis
+            # alone -- shared/inference.py has two_way_cluster_ci and crossed_bootstrap, and
+            # neither is called from this file.
+            rec["cluster_unit"] = "cell line"
+            rec["n_groups"] = len({_cluster_src(r) for r in usable})
             # ONE-SIDED p AGAINST DRF <= 0, BY CLUSTER AND WITH THE NULL IMPOSED.
             #
             # The previous version resampled the OBSERVED distribution and counted draws at or below
@@ -505,6 +526,7 @@ def main():
     rng = np.random.RandomState(args.seed)
     all_rows = []
     used_cls = 0
+    used_groups = []
     diag_degs, diag_cells = [], []
     for cl, dd in by_cl_drug.items():
         if cl not in ctrl_by_cl:
@@ -518,6 +540,7 @@ def main():
                                             args.deg_pool_cap, group_id=cl)
         all_rows.extend(rows)
         diag_degs.append(nd); diag_cells.append(nc)
+        used_groups.append(cl)
         used_cls += 1
         logger.info(f"  {str(cl)[:24]:24s} {len(drugs)} drugs -> {len(rows)} calibrated "
                     f"(~{nc:.0f} cells/drug, ~{nd:.0f} DEGs/drug)")
@@ -525,7 +548,11 @@ def main():
             break
 
     drf = aggregate_drf(all_rows)
-    out = {"n_celllines": used_cls, "n_drugs": len(all_rows),
+    # `used_cls` counts GROUPS. Under --same_plate_only a group is (cell_line, plate), so it is not
+    # a cell-line count and must not be reported as one -- the v3 artifact's "25 cell lines" was
+    # really 25 cell-line x plate groups.
+    _lines = {(g[0] if isinstance(g, (tuple, list)) else g) for g in used_groups}
+    out = {"n_celllines": len(_lines), "n_groups": used_cls, "n_drugs": len(all_rows),
            "mean_cells_per_drug": float(np.mean(diag_cells)) if diag_cells else 0.0,
            "mean_degs_per_drug": float(np.mean(diag_degs)) if diag_degs else 0.0,
            "drf": drf, "config": {k: v for k, v in vars(args).items()}}
@@ -535,7 +562,8 @@ def main():
     logger.info("")
     logger.info("=" * 100)
     logger.info("  DYNAMIC RANGE FRACTION per metric (higher = better-calibrated; <=0 = inverted)")
-    logger.info(f"  cell lines {out['n_celllines']}, drugs {out['n_drugs']}, "
+    logger.info(f"  cell lines {out['n_celllines']} (groups {out['n_groups']}), "
+                f"drugs {out['n_drugs']}, "
                 f"~{out['mean_cells_per_drug']:.0f} cells/drug, ~{out['mean_degs_per_drug']:.0f} DEGs/drug")
     logger.info("  negative control = LEAVE-ONE-OUT mean baseline; positive control = interpolated duplicate")
     logger.info("  " + "metric".ljust(16) + "DRF".rjust(8) + "  m(neg)".rjust(9) +
@@ -551,7 +579,11 @@ def main():
     # DO NOT HARD-CODE THE VALUES HERE. An earlier version printed -0.163 / -0.650 literally, which
     # were the all-plates figures; the plate-matched run then printed those same two numbers beside a
     # table reading -0.122 / -0.495. Read them off the result being reported.
-    _neg = [(m, d["drf"]) for m, d in rows.items() if d and d.get("drf") is not None and d["drf"] < 0]
+    # `rows` here was the leftover loop variable from the collection loop above -- the LAST group's
+    # list of per-drug rows, not the metric table. It raised AttributeError after --out was already
+    # written, so the result was sound but `set -e` killed everything downstream in the job.
+    _neg = [(m, d["drf"]) for m, d in drf["neg_mean"].items()
+            if d and d.get("drf") is not None and d["drf"] < 0]
     _txt = ", ".join(f"{m} ({v:+.3f})" for m, v in _neg[:2]) if _neg else "none"
     logger.info("        nir should show DRF > 0. MEASURED ON REAL DATA only nir does; in THIS run")
     logger.info(f"        the negative ones include {_txt}, so this guide's original expectation")
