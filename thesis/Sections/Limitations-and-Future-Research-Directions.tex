@@ -14,7 +14,7 @@ residual reproduces across a half-split --- $2{,}523$ of $4{,}999$ training cond
 $\cos > 0.109$, the $95$th percentile of a null that pairs half A of one condition with half B of
 another. This is the right choice --- training on
 irreproducible residuals is training on noise --- but it means the model was taught the winnable
-fraction of the task, not all of it. A reliability filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.597$ \nolinebreak[3]$[0.563, 0.632]$ against the filtered $0.553$ \nolinebreak[3]$[0.514, 0.593]$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes. Two mismatches belong with it. The filter inside that calculation is the inherited $\cos > 0.2$ line rather than the $0.109$ line the training set actually uses, so the pair brackets the trained-on population without reproducing it. And the generation evaluation is selected differently again: it applies the $0.109$ line to the \texttt{train} split but leaves the held-out splits unfiltered, so held-out conditions whose two halves disagree outright are still scored. That asymmetry is load-bearing rather than cosmetic --- it accounts for the entire spread in the three splits' within-well split-half precision references ($0.956$, $0.824$, $0.836$), because imposing the training line on the held-out splits as well lifts theirs to $0.961$ and $0.960$. The spread is a fact about which conditions each split retains, not about how hard the splits intrinsically are.
+fraction of the task, not all of it. A reliability filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.597$ \nolinebreak[3]$[0.563, 0.632]$ against the filtered $0.553$ \nolinebreak[3]$[0.514, 0.593]$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes. Two mismatches belong with it. The filter inside that calculation is the inherited $\cos > 0.2$ line rather than the $0.109$ line the training set actually uses, so the pair brackets the trained-on population without reproducing it. And the generation evaluation is selected differently again --- it applies the $0.109$ line to the \texttt{train} split and leaves the held-out splits unfiltered. That second mismatch is load-bearing rather than cosmetic, and it is taken up on its own below.
 
 \paragraph{The intervals omit generation variance.} The confidence intervals in this thesis are
 cluster-robust with each condition's score treated as fixed. The headline gaps carry two-way
@@ -22,12 +22,19 @@ intervals over \emph{cell line} and \emph{treatment well}, with a Student $t$ re
 $\min(G_{\textrm{line}}, G_{\textrm{well}}) - 1$ degrees of freedom, and are reported a second time
 clustered on the \emph{drug}; the transfer coefficient carries a multiway dyadic interval; a few
 tables retain a one-way clustered bootstrap and name its unit. They therefore capture
-between-cluster variance and not the variance introduced by sampling the model's output. With four generations per arm at temperature $0.8$ that second source is not
-negligible, and it is not measured here. An across-seed replication --- three seeds, identical in
-every other respect --- would supply the missing component, and the honest form of every interval
-below would then be a point estimate with a seed spread beside it. \todo{run the three-seed
-replication and report the across-seed spread beside the within-seed interval, stating which
-sources each captures}
+between-cluster variance and not the variance introduced by sampling the model's output. With four
+generations per arm at temperature $0.8$ that second source is not negligible, and no across-seed
+replication of the generation arms was run --- not deferred, not planned. Every interval quoted
+from a generation arm is therefore a within-seed interval and should be read as conditional on the
+seed: it covers the sampling of conditions, cell lines and wells, and it does not cover the
+sampling of the model's output.
+
+The one measurement here that was repeated across seeds gives a sense of what is being left out,
+though it cannot calibrate it. The activation probe of Section~\ref{sec:res-mechanism} returned
+$+0.0197$, $+0.0118$ and $+0.0085$ on three seeds, each excluding zero. That is a different
+instrument on a different quantity and its spread does not transfer to $\NIR$; what it does
+establish is that a factor of two between seeds is realistic in this project, which is reason
+enough not to read a generation interval as though it covered seed variation as well.
 
 \paragraph{A swing that looked like generation variance and was not.} Two superseded evaluations of
 the held-out-drug control returned values of $\gap$ far enough apart to be recorded as evidence of
@@ -52,9 +59,14 @@ noise does (SNR $\approx 0.75$, median $0$ differentially expressed genes at FDR
 
 \paragraph{Cross-plate absolutes.} The residual-space scores are computed with comparison sets
 grouped by cell line rather than by plate. The \emph{difference} $\gap$ is leak-immune, because both
-arms share the same control cell, but the absolute $\NIR$ values in that frame are not directly
-comparable to the within-plate tables elsewhere. \todo{rescore the generation-free arms within plate
---- this costs no GPU time}
+arms share the same control cell, so the grouping choice does not touch $\gap$ itself. The absolute $\NIR$ values do not travel. They are not comparable to the within-plate
+tables elsewhere in the chapter, and the rescore that would make them comparable --- regrouping the
+generation-free arms within plate, which needs no GPU time --- was not run, so the size of the
+correction is unknown for this frame. Table~\ref{tab:plateleak} is the only guide to how large it
+might be, and it suggests not small: measured in the expression frame, holding the plate constant
+moves a drug-agnostic mean baseline from $0.399$ to $0.161$ and the precision reference from
+$0.625$ to $0.575$. Residual-frame absolutes should therefore be read within their own frame and
+never set beside a within-plate number.
 
 \paragraph{Frame coverage.} The drug-specific residual is $\lVert\resid\rVert/\lVert\shift\rVert =
 0.786$ of the response, against $0.620$ for the generic program and batch, and the two are
@@ -64,14 +76,26 @@ cross term of $-0.011$, which sum to $1.000$. So this frame covers $62.1\%$ of t
 share. The generic $39.0\%$ is precisely the component the field's absolute-accuracy metrics are
 dominated by, which is why a drug-agnostic predictor scores so well on them.
 
-\paragraph{The three splits are not equally hard.} The within-well split-half precision reference
-differs across them --- $0.956$ on \texttt{train}, $0.824$ on \texttt{unseen\_combo} and $0.836$ on
-\texttt{unseen\_drug}, a spread of $0.132$ --- so a shortfall on a held-out split is partly a
-difference in how much recoverable signal those conditions carry, not only a difference in what the
-model learned. Any comparison of raw $\NIR$ or of $\gap$ across splits inherits that confound, and
-the training-exposure contrast of Section~\ref{sec:res-generalisation} inherits it in particular.
-Earlier drafts asserted the opposite --- that the split ceilings were comparable and so could not
-explain the held-out shortfall --- and that assertion is withdrawn.
+\paragraph{The splits are scored on different populations.} The within-well split-half precision
+reference differs sharply across the three splits as they are actually scored --- $0.956$ on
+\texttt{train}, $0.824$ on \texttt{unseen\_combo}, $0.836$ on \texttt{unseen\_drug} --- and the
+obvious reading of that spread is the wrong one. It is not that held-out conditions carry less
+recoverable signal. It is the selection asymmetry noted above: \texttt{train} is filtered at the
+$0.109$ reliability line, which costs it one of its $300$ conditions, and the held-out splits are
+not filtered at all, so their scored populations still contain conditions whose own two halves
+disagree outright. Impose the training line on all three and the references agree --- $0.955$,
+$0.961$ and $0.960$, a spread of $0.006$ where there had been $0.132$. Matched on reproducibility,
+a held-out condition is as recoverable as a trained one.
+
+The consequence runs against this thesis rather than for it. \emph{Those conditions carry less
+signal} is not a reason to discount a held-out shortfall, because once the same line is applied to
+both they carry the same signal; where the raw spread has been used to soften a held-out result,
+that softening is withdrawn. What survives is narrower and still binding: the three splits are
+scored on populations selected by different rules, so a raw $\NIR$ or a $\gap$ read across them is
+not answering the same question on each, and the training-exposure contrast of
+Section~\ref{sec:res-generalisation} inherits that directly. The matched-population rescore was
+carried out for the precision reference only and was not run through the model's own arms, so what
+the held-out shortfall becomes once the populations agree is not reported here.
 
 \subsection{Limitations of the unseen-drug evaluation}
 
@@ -81,17 +105,21 @@ the arm against the neutral stratum throughout; the two below survive that corre
 
 \paragraph{It is not a clean held-out-drug design.} The prompt contains
 \texttt{Mechanism: \{moa\}}, so holding out a drug still hands the model the held-out drug's class
-label. The correct design is leave-one-\emph{mechanism}-out. The leak is probably small ---
-The size of the leak is measured
-directly: scrambling the \texttt{Mechanism} field alone moves the model's $\NIR$ by $+0.030$
-($n = 738$; two-way cluster-robust $[-0.008, +0.069]$), so the channel is small and not
-distinguishable from zero. It cannot, however, be dismissed \emph{relative to the model}:
-\texttt{moa\_lookup} scores $0.552$ on its $n = 218$ support, above the model's own $0.537$, and on
-the \texttt{unseen\_drug} split the mechanism lookup is ahead of the model by $0.099$ ($n = 44$).
-The leak is small in absolute terms but not small relative to what the model achieves on this arm.
-The design is wrong,
-the design is wrong, and the arm's proper use is as an instrument control rather than as the basis
-for a positive unseen-drug claim.
+label. The correct design is leave-one-\emph{mechanism}-out. The size of the leak is measured
+rather than assumed. Scrambling the \texttt{Mechanism} field alone moves the model's $\NIR$ by
+$+0.030$ ($n = 738$; $[-0.008, +0.069]$ clustered on drug and well), a channel small enough that it
+is not distinguishable from zero. A mechanism-only lookup says the same thing from the other side:
+pooled over the $n = 218$ conditions on which both are scored, the model is ahead of it by $+0.044$
+($[-0.048, +0.135]$ clustered two-way on cell line and well), so nothing in this comparison
+shows the class label on its own buying more than the model already has.
+
+The exception is the split where it would matter. On \texttt{unseen\_drug} the mechanism lookup is
+ahead of the model by $0.099$ on $44$ conditions, with an interval spanning zero
+($[-0.222, +0.008]$, clustered on cell line) and far too wide to settle anything. That is not
+evidence the leak is doing work; it is a measurement with no power at exactly the point where the
+design defect bites. So the position is: the design is wrong, the arm cannot say what the wrongness
+cost, and its proper use is as an instrument control rather than as the basis for a positive
+unseen-drug claim.
 
 \paragraph{It is underpowered by construction.} The confidence interval half-width on the
 \texttt{unseen\_drug} gap is $\pm 0.052$ clustered two-way on cell line and well, and $\pm 0.073$
@@ -99,20 +127,20 @@ clustered on the drug; the smallest effect the arm would detect at $80\%$ power 
 The largest effect the mechanism channel could deliver is the distance from chance to
 \texttt{moa\_lookup}, which scores $0.552$ pooled across splits against a chance value of
 $0.500$, so $\approx 0.052$. The arm therefore \emph{cannot} detect the largest effect it
-could plausibly be measuring. This cuts both ways and the direction matters. As a \emph{control} it
-is doing the job asked of it: the question there is whether the point estimate sits at zero when the
-As a \emph{control} the
-arm is not falsified: the question there is whether it returns zero when the drug name carries
-nothing the model was fine-tuned on, and the estimate \ci{-0.0315}{-0.1049}{+0.0419} (clustered on
-drug) has an interval covering zero. It does not sit \emph{at} zero, though --- it is negative and
-of the same magnitude as the largest effect the arm could plausibly be measuring --- so it is
-uninformative in both directions rather than confirming a null. Note also that ``unseen'' here
-means held out from Tahoe fine-tuning only: Pythia-1b saw drug names in natural-language
-pretraining and the prompt still supplies \texttt{Mechanism}. As \emph{evidence of absence} it carries almost
-nothing, because an effect of the size the mechanism channel could deliver would sit comfortably
-inside the interval. The distinction is what licenses using the arm to validate the comparator in
-Section~\ref{sec:res-generalisation} while declining to use it to argue that unseen-drug transfer is
-zero.
+could plausibly be measuring.
+
+That cuts both ways, and the two directions are not symmetric. As a \emph{control} the arm is not
+falsified: the question there is whether it returns zero when the drug name carries nothing the
+model was fine-tuned on, and the estimate \ci{-0.0315}{-0.1049}{+0.0419} (clustered on drug) has an
+interval covering zero. It does not sit \emph{at} zero --- it is negative and of the same order as
+the largest effect the arm could plausibly be measuring --- so what it supplies is the absence of a
+contradiction, not a confirmed null. As \emph{evidence of absence} it carries almost nothing,
+because an effect of the size the mechanism channel could deliver would sit comfortably inside the
+interval. That distinction is what licenses using the arm to validate the comparator in
+Section~\ref{sec:res-generalisation} while declining to use it to argue that unseen-drug transfer
+is zero. And ``unseen'' is narrower than it sounds in any case: it means held out from Tahoe
+fine-tuning only. Pythia-1b saw drug names in natural-language pretraining, and the prompt still
+supplies \texttt{Mechanism}.
 
 \subsection{Directions}
 
@@ -187,8 +215,10 @@ one.
         drug-blind solution the loss exists to penalise.
   \item \textbf{Loss re-weighting toward differentially expressed genes.} Re-weighted cross-entropy
         against a single target contains no negatives, so nothing in it forces the output for one
-        drug to differ from another's. Given that the readout is direction-blind
-        (Section~\ref{sec:res-mechanism}), it addresses token dilution but not the actual defect.
+        drug to differ from another's. It therefore attacks token dilution and leaves the
+        discrimination failure exactly where it was --- and the discrimination failure is what the
+        measurements establish, whether or not the readout also turns out to be blind to direction
+        specifically, which Section~\ref{sec:res-mechanism} declines to establish.
 \end{itemize}
 
 \paragraph{One model size, and the smallest one.} Every result here comes from a 1B-parameter
@@ -229,9 +259,15 @@ may well have been read there; and the prompt supplies the \texttt{Mechanism:} f
 drugs exactly as it does for trained ones. The correct description of the held-out arms is therefore
 \emph{held out from Tahoe fine-tuning, with mechanism supplied}, not unseen by the whole pipeline. But it also means the failure we report is a failure of \emph{this} starting point, and
 a reader may reasonably ask whether a checkpoint already tuned for perturbation prediction would
-behave differently. We cannot answer that from the public artifacts. The perturbation-specialised
-model in the same line of work is a Gemma-3 4B checkpoint that was not released, and the available
-C2S-Scale checkpoints are the pretrained ones. What we can say is narrower and worth separating from
+behave differently. Within the C2S-Scale line that question cannot be answered from what is public:
+the perturbation-specialised model there is a Gemma-3 4B checkpoint that was not released, and the
+available C2S-Scale checkpoints are the pretrained ones. Outside that line the question is
+answerable, and we did not answer it. Tahoe-x1~\cite{tahoex1} is a perturbation-trained foundation
+model built on this same atlas and public before this thesis was submitted. It is not a
+cell-sentence model, so it does not isolate the representation variable this work is about, but it
+is the obvious external check on whether a readout failure of this kind survives
+perturbation-specific pretraining, and it was not run here. That is a gap in this work, not a gap
+in the public record. What we can say is narrower and worth separating from
 the broader claim: every arm in this thesis starts from the same base and differs only in the
 variable under test, so the \emph{comparisons} between arms are unaffected by this choice even where
 the absolute level is not.

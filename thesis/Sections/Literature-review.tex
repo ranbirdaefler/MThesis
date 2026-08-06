@@ -101,6 +101,80 @@ The checkpoint fine-tuned in every experiment below is \texttt{C2S-Scale-Pythia-
 pretrained member of that family, whose training corpus is atlas data alone and contains no
 drug-treated cells.
 
+\subsection{Predicting chemical perturbation without a language model}
+\label{sec:lit-chem}
+
+Cell sentences are an unusual way to attack this problem, and the usual way is worth setting out,
+because it is the comparison a reader reaches for first. The direct line of work predicts a treated
+cell as a displacement in a learned latent space. scGen~\cite{scgen} estimates the vector between
+control and perturbed populations in the latent space of a variational autoencoder and adds it to
+cells from a context where the perturbation was never applied: the perturbation is one offset, and
+the autoencoder supplies everything else. CPA~\cite{cpa} makes that arithmetic explicit and
+learnable --- a basal cell state plus additively composed embeddings for drug, dose and covariates,
+decoded back to expression --- so an unobserved combination is assembled from parts that were each
+observed separately. chemCPA replaces CPA's one-hot drug embedding with a molecular-structure
+encoder, which is what allows a compound absent from training to be embedded at
+all.\footnote{Hetzel et al., \emph{Predicting Cellular Responses to Novel Drug Perturbations at a
+Single-Cell Resolution}, NeurIPS 2022.} GEARS~\cite{gears} does the analogous thing for genetic
+perturbations, reaching unseen genes through a gene--gene knowledge graph rather than through
+chemistry. A second family replaces the additive displacement with a learned map: CellOT fits, for
+each perturbation, a neural optimal-transport map from the control population to the treated one,
+and its conditional extension amortises that map over a perturbation embedding so that a single
+network covers many treatments.\footnote{Bunne et al., \emph{Learning single-cell perturbation
+responses using neural optimal transport}, Nature Methods 2023; Bunne, Krause and Cuturi,
+\emph{Supervised Training of Conditional Monge Maps}, NeurIPS 2022.}
+
+Two properties are common to all of them, and neither holds for the model fine-tuned here. The
+prediction is a vector in a continuous space, emitted in one pass by a decoder trained on a loss
+written directly on that vector; and the drug enters through an embedding the architecture was
+built to receive. A cell-sentence model emits a token sequence sampled left to right, carries the
+drug as a few words of a natural-language prompt, and is trained by a per-token cross-entropy that
+weights every position equally. That difference is not decorative. In the standard
+cell-sentence target, $83\%$ of the top-$200$ token positions are identical between any two drugs
+in the same context (Section~\ref{sec:methods-residual}) --- the string to be emitted is nearly the
+same string whichever drug was named --- and a latent-transition model has no target with that
+property. Whether that property is the binding constraint is not settled here:
+Section~\ref{sec:res-encoding} reports what re-encoding the target does, and the chapter declines
+to identify tokenisation as the unique cause. What is reported below is therefore
+specific to conditional generation over an ordering, and it is not evidence about CPA, chemCPA or
+CellOT, none of which was run here.
+
+The two families are also scored differently, and that difference is the subject of
+Section~\ref{sec:res-metrics}. The latent-transition literature is evaluated condition by condition
+against the observed population --- distributional distances, $R^2$ on pseudobulk, overlap of
+differentially expressed genes --- which asks whether a prediction resembles what its own condition
+produced. It does not ask whether the prediction resembles its own condition more than it resembles
+some other drug's, and those two questions come apart precisely when most of the response is shared
+across drugs. Benchmark suites have consolidated the first: scPerturb~\cite{scperturb} harmonises
+the datasets and standardises distances between perturbed populations, and
+PerturBench~\cite{perturbench} assembles models and metrics for the same comparison across
+perturbation types. PerturBench also supplies the exception this thesis relies on, a rank-based
+score that grades a prediction against a set of candidate conditions rather than against one truth.
+
+None of these methods is run as a baseline here, and the reason is an argument rather than an
+apology: the thing they have in common is measured directly. In scGen and in CPA the drug-specific
+content carried into a new context is a single per-drug vector --- dose-scaled, in CPA's case ---
+and everything else comes from the encoder and the decoder. Section~\ref{sec:res-lookup} measures
+what such a vector is worth on this task by looking the drug up: the mean residual of the same
+compound in other cell lines, fitted from training conditions only. On the conditions where both
+are defined it scores $0.913$ against the fine-tuned model's $0.549$ ($n = 1{,}192$), and $0.890$
+against $0.533$ on the $893$ held-out drug-and-cell-line combinations, where the lookup cannot
+borrow the target's own well; chance on that scale is $0.50$ by construction. That is not a score
+for CPA or chemCPA --- their decoders make the emitted effect context-dependent even when the drug
+channel is one vector, and no experiment here evaluates them --- but it does say which question is
+the informative one. It is not which architecture wins. It is whether anything improves on a
+per-drug constant, and that is answerable, and answered below, without fitting a second
+architecture.
+
+Two gaps bear on what follows, one in this literature and one in this thesis.
+Tahoe-100M~\cite{tahoe100m} is recent enough that we are aware of no published evaluation of any of
+these methods on it, so the reference points used below are constructed rather than cited --- which
+is why so much of the next chapter is spent building baselines before anything is scored against
+them. And the atlas's own authors have since released Tahoe-x1, a family of single-cell foundation
+models pretrained on a corpus that includes this atlas; it is the natural comparison for a
+perturbation-trained backbone against the drug-free checkpoint used here, it was not evaluated in
+this thesis, and nothing measured here speaks to it.
+
 \subsection{The dispute: do these models beat uninformative baselines?}
 \label{sec:lit-dispute}
 
@@ -140,18 +214,44 @@ reading is that the models were always capturing real biology and the broken met
 so better measurement should expose genuine skill. The other is that the models were never capturing
 much, and better measurement will simply show that failure more clearly and more honestly. Put that
 way the question is empirical rather than interpretive --- but it is settled only within the setting
-where it is tested, and the setting of this thesis has been tested by neither camp. Miller et al.\
+where it is tested, and neither camp has tested it in the setting of this thesis. Miller et al.\
 and Ahlmann-Eltze et al.\ both study \textbf{genetic} perturbation, where an intervention is a
 designed, near-binary knockout with a named target gene. DrEval studies \textbf{drug sensitivity} as
-a scalar potency such as IC$_{50}$, predicted from cell-line omics. None of them studies a full
-transcriptomic response to a small molecule --- which acts at a dose and typically engages several
-proteins at once --- at single-cell resolution, produced by an autoregressive generative model.
+a scalar potency such as IC$_{50}$, predicted from cell-line omics. None of the works in the dispute
+takes as its object a full transcriptomic response to a small molecule --- which acts at a dose and
+typically engages several proteins at once --- at single-cell resolution, produced by an
+autoregressive generative model. The models of Section~\ref{sec:lit-chem} do work on chemical
+perturbation at single-cell resolution, so the setting itself is not unoccupied. What we are aware
+of no one having done in that setting is running the calibration audit first, and letting it decide
+which metrics are admissible before any model is scored.
 
 The position taken here is to adopt the proponents' instrument rather than argue with it.
 Section~\ref{sec:res-metrics} ports the \DRF{} framework onto drug perturbation and uses it to decide
-which metrics are admissible in this setting before any model is scored, so that the evaluation is
-chosen by the sceptics' opponents rather than by us. Whatever the models then turn out to do, the
-measurement cannot be dismissed by the objection Miller et al.\ themselves raise.
+which metrics are admissible in this setting before any model is scored. The framework and the
+interpolated-duplicate positive control it rests on are inherited; not every choice inside them
+is. The metric that survives is computed under a similarity
+function we picked --- Euclidean distance in expression space rather than over rank vectors --- on a
+criterion stated where the choice is made, and the two variants do not agree. The accurate statement
+is therefore that the design of the audit comes from the sceptics' opponents and one parameter
+inside it is ours, disclosed at the point of use. What adopting the design buys is that the verdict
+cannot be dismissed by the objection Miller et al.\ themselves raise.
+
+That verdict is where this thesis and its own instrument part company, and the divergence is a
+result rather than an embarrassment. The audit reproduces their central finding: metric choice
+dominates, the rank-based metric survives, and the correlation-based measures they flag as poorly
+calibrated are exactly the ones that fail here --- four of the five metrics audited are not merely
+uninformative but inverted, scoring a drug-agnostic baseline above the noise ceiling, each with an
+interval excluding zero. The agreement is not total, and the exception belongs in the same sentence:
+the weighted $R^2$ variant implemented here is inverted too, where their analysis rates that family
+as calibrated --- its sign tracks cell count, and Section~\ref{sec:res-metrics} therefore draws no
+directional conclusion from it. What it does not reproduce is their conclusion about models. They
+report that deep models beat uninformative baselines once the metric is fixed; on the metric their
+own analysis endorses, the checkpoint evaluated here does not (Section~\ref{sec:res-blind}). Both
+results can stand: a repaired metric is a precondition for seeing skill, not a guarantee that there
+is skill to see. Which difference in setting accounts for the split --- genetic against chemical
+perturbation, a discriminative regression model against an autoregressive generative one, or the
+strength of the per-drug baseline in this atlas --- is taken up where the measurements are, in
+Sections~\ref{sec:res-metrics} and~\ref{sec:res-lookup}.
 
 \subsection{Six ways a drug-response benchmark can mislead}
 \label{sec:lit-dreval}
@@ -199,10 +299,19 @@ across cellular contexts that querying a reference database by signature similar
 The L1000 platform~\cite{l1000} operationalised this at scale, and its 978-gene landmark set defines
 the gene panel used here, intersected with Tahoe's measured genes to give $946$.
 
-The premise --- that a drug's signature transfers across cell lines --- is normally assumed rather than
-measured, and how much of it holds determines whether a conditional model has anything left to
-predict once a per-drug constant is accounted for. Section~\ref{sec:res-transfer} measures it
-directly, corrected for measurement noise, at single-cell resolution.
+The premise --- that a drug's signature transfers across cellular contexts --- is normally assumed
+rather than measured, and how much of it holds determines whether a conditional model has anything
+left to predict once a per-drug constant is accounted for. Section~\ref{sec:res-transfer} measures
+it directly, at single-cell resolution and with the measurement noise divided out, and what comes
+back is a number rather than a yes or a no. On a disattenuated cross-context similarity scale the
+shared part is \ci{\Tcoef = 0.553}{0.514}{0.593}: a drug's residual signature in one context
+recovers a little over half of itself in another, far above the matched negative controls
+($-0.017$ and $-0.008$) and far below reproduction. The remaining \ci{44.7\%}{40.7\%}{48.6\%} is not
+thereby shown to be biology. The compared pairs differ in cell line, in dose and in treatment well
+at once, so the figure is not a variance share and not a drug$\times$cell-line interaction, and the
+section says so where it reports it. What the measurement delivers is a calibration of the transfer
+premise rather than a verdict on it, and we are aware of no prior estimate of that quantity for
+chemical perturbation at single-cell resolution.
 
 \subsection{Decodable, used, and the global workspace}
 \label{sec:lit-interp}
@@ -227,21 +336,29 @@ intervention: swapping one active workspace vector for another changes the model
 Content in the J-space drives behaviour; content outside it may be richly represented and still
 inert with respect to what the model actually emits.
 
-That framing matters here because it supplies both a hypothesis and an experimental design. The
-hypothesis is that a property can be decodable from the residual stream at high accuracy while
-sitting outside the workspace the generation readout consults, in which case no amount of encoding
-it more explicitly will change the output. The design is the swap itself: overwrite one candidate
-representation with another and ask whether the model's behaviour follows. Section~\ref{sec:res-mechanism}
-constructs a domain analogue of exactly this test, substituting a drug's learned representation for
-another drug's and measuring whether the emitted profile moves toward the substituted drug.
+What this thesis takes from that account is an experimental design, and it is worth being exact
+about how much. The design is the swap: overwrite one candidate representation with another and ask
+whether the model's behaviour follows. Section~\ref{sec:res-mechanism} constructs a domain analogue
+of exactly that test, substituting a drug's learned representation for another drug's and measuring
+whether the emitted profile moves toward the substituted drug. The account also sharpens the
+decodable/used distinction into something testable: a property can be recoverable from the residual
+stream at high accuracy and still sit outside whatever the readout consults, in which case encoding
+it more explicitly changes nothing. What the thesis does not do is test the workspace claim itself.
+Nothing below identifies a J-space, measures its occupancy, or shows that a drug representation
+lies outside one; the substitution result is consistent with the workspace reading and equally
+consistent with a readout that reads the drug at low gain for some other reason, and
+Section~\ref{sec:res-mechanism} declines to choose between them. The framework is cited for the
+instrument it justifies and the distinction it sharpens, not as a hypothesis this thesis
+adjudicates.
 
 The related account of why a model might allocate its representations this way comes from
 Elhage et al.~\cite{superposition}, who show that networks reserve dedicated directions for features
 the computation needs on every forward pass and push the remainder into superposition, where a
 feature remains linearly recoverable without occupying an axis of its own. Read together, the two
-suggest an asymmetry worth testing: a property required to emit any plausible output should sit in
-the causally active set, while one needed only for occasional, context-dependent composition need
-not.
+are a reason to measure decodability and use separately rather than to read the first as evidence
+for the second: a property required to emit any plausible output should sit in the causally active
+set, while one needed only for occasional, context-dependent composition need not. That asymmetry
+motivates building the instrument; it is not something the instrument returns.
 
 \subsection{Optimal transport for state matching}
 \label{sec:lit-ot}
@@ -300,7 +417,8 @@ $\varepsilon$ is thus a continuous interpolation between two target construction
 otherwise have to be treated as unrelated alternatives, which is how Section~\ref{sec:res-epsilon}
 uses it.
 
-Applied to biology, this machinery has largely been used for trajectory inference. Waddington-OT
+Applied to biology, this machinery has largely been put to two uses, and this thesis makes neither of
+them exactly. The first is trajectory inference. Waddington-OT
 \cite{schiebinger} treats the cell population at each time point as a distribution in expression
 space and recovers a probabilistic ancestor--descendant link between snapshots, on the assumption
 that cells follow paths minimising transport cost. Subsequent work relaxes the assumption that mass
@@ -308,7 +426,13 @@ is conserved --- cells divide and die, so the two populations need not have equa
 unbalanced formulations built on the Wasserstein--Fisher--Rao metric. A separate line of work
 exploits the fact that when both measures are Gaussian the transport cost has a closed form, the
 Bures--Wasserstein distance, which splits cleanly into a shift in means and a change in covariance
-structure and so distinguishes a population that moved from one that merely spread out.
+structure and so distinguishes a population that moved from one that merely spread out. The second
+use is prediction itself: a further line of work fits a transport map from control cells to treated
+cells and takes that map \emph{as} the predictor. The use made here is a third one, upstream of the
+model. Transport supplies the correspondence from which a training target is built, and the object
+that then has to generalise is the language model trained on that target, not the coupling --- which
+is why what matters below is $\varepsilon$, the parameter deciding which target the coupling defines,
+rather than the fidelity of the solver.
 
 Two practical points govern how couplings are computed here. The ground cost must be evaluated in a
 space where Euclidean distance is meaningful, and raw counts are not such a space: they are sparse,
