@@ -511,12 +511,13 @@ which performs no fitting at all. The model's own partial-$\DEdr$
 was never computed,\footnote{It requires a GPU pass that was not run, so the cell is marked rather
 than filled with the expected value.} so the comparison is anchored instead to $\paneltau$, Kendall's
 $\tau$ between predicted and true rank over the full $946$-gene panel, which selects no gene subset
-and is measured for every arm. The anchor is used only to rank arms against one another on a fixed
-scale; no absolute claim rests on it, because the calibration audit below finds $\paneltau$
-inverted and therefore inadmissible for absolute claims --- and an inverted metric does not preserve
-relative ordering either, so what follows is read only as corroboration of the reversion story and
-never as evidence of skill. On that reading it tells the same story: \texttt{revert\_mean} $0.268$, ridge
-$0.265$, model $0.257$ (tier 2, \texttt{worst} convention). The response decomposes into control
+and is measured for every arm. The calibration audit below finds $\paneltau$ inverted, so no
+absolute claim rests on it and no ordering read off it counts as evidence of skill --- an inverted
+metric preserves neither. What the anchor can still show is an \emph{absence} of separation, which
+is what it shows: \texttt{revert\_mean} $0.268$, ridge $0.265$, model $0.257$ (tier 2,
+\texttt{worst} convention), three arms inside a spread of $0.011$. That the model does not pull away
+from a baseline that reverts toward the population centre is the observation; which of the three
+sits highest is not one this metric can support. The response decomposes into control
 reversion (an artefact), a generic drug programme ($\approx 0.26$, drug-agnostic, trivially
 matched), and a drug-specific component that no predictor captures.
 
@@ -597,9 +598,11 @@ separates a positive from a negative control. The Dynamic Range Fraction is
 on a scale where $0$ is the drug-agnostic baseline and $1$ a perfect predictor. Here
 $\textrm{pos}$ is an interpolated-duplicate noise ceiling --- a technical duplicate interpolated
 toward the mean baseline with per-gene weights given by differential-expression significance ---
-and $\textrm{neg}$ is a drug-agnostic leave-one-out mean. A negative $\DRF$ means the metric scores
-the uninformative baseline above the noise ceiling: it is inverted, and rewards the generic gene
-ordering rather than the drug. Three hardening choices matter for how the result can be read. Tied
+and $\textrm{neg}$ is a drug-agnostic leave-one-out mean. A negative $\DRF$ means the metric scored
+the uninformative baseline above the noise ceiling in that run. Reading it as \emph{inversion} ---
+the metric rewarding the generic gene ordering rather than the drug --- takes one further step,
+that the sign is a property of the metric and not of the sample it was measured on. Three of the
+four negatives below survive that step; the fourth does not, and is carved out where it appears. Three hardening choices matter for how the result can be read. Tied
 expression values receive average ranks, because breaking ties by array index makes a tied gene's
 rank depend on its position in the panel. The $\DRF$ ratio is recomputed whole inside every
 bootstrap resample, because its denominator is estimated from the same data as its numerator and
