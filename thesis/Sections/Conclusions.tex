@@ -216,8 +216,9 @@ It also places this work as the single-cell, generative instance of DrEval's
 critique~\cite{dreval}. DrEval audits drug \emph{sensitivity} prediction and finds that deep models
 barely outperform a naive additive predictor of mean drug and cell-line effects. Our
 \texttt{drug\_lookup} is that predictor's drug term, and the finding replicates on a
-$946$-dimensional transcriptomic response: $0.913$ for the lookup against $0.537$ for the model,
-with a within-well split-half precision reference of $0.854$ that the lookup exceeds. Three of DrEval's six pathologies --- pseudoreplication, biased evaluation
+$946$-dimensional transcriptomic response. On the $1{,}192$ conditions where both are defined the
+lookup scores $0.913$ against the model's $0.549$, with a within-well split-half precision reference
+of $0.857$ that the lookup exceeds. Three of DrEval's six pathologies --- pseudoreplication, biased evaluation
 metrics, and missing ablation studies --- turn out to structure the entire methodology of this
 thesis, which arrived at clustered bootstraps over cell lines, a discrimination metric immune to
 between-drug variance, and a token-level scramble ablation independently. That convergence is worth
@@ -244,7 +245,8 @@ mechanism is partially confounded with plate, by an amount that was never measur
 honest statement is that the structure of the unshared part is \emph{unresolved here}, and that
 resolving it needs more cells per condition or a plating design that crosses mechanism with plate ---
 neither of which is an analysis choice. What can be said without qualification is that a lookup
-scoring $0.913$, above the $0.854$ within-well split-half precision reference, already outscores
+scoring $0.913$, above the $0.857$ within-well split-half precision reference on that same common
+support, already outscores
 anything conditional built here, so on seen drugs nothing we built beats retrieval.
 
 But a lookup requires the drug to have been seen. For drugs that have not been, the gate has now
