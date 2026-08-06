@@ -247,8 +247,7 @@ its plate-mates must clear $0.8$ --- and is distinct from the aggregate ceilings
 
 The upper block of that table describes Tahoe-100M rather than this project, and it is worth reading
 as a result and not only as scaffolding, because it holds for anyone else scoring predictions on
-this atlas. Across the $5{,}014$ of $6{,}628$ conditions whose (cell line, plate) group carries
-plate-matched DMSO cells --- the only ones a control-referenced test can reach --- the median has no
+this atlas. Across those $5{,}014$ control-reachable conditions the median has no
 differentially expressed gene at BH $q<0.05$ and a signal-to-noise ratio of $0.75$ against its own
 within-well split-half noise, and $72.7\%$ are active on the whole profile: the typical condition
 carries a real response measured with too few cells, not no response, and \S\ref{sec:res-blind} is
@@ -732,8 +731,12 @@ with intervals excluding zero in both audited arms. Three of them --- $\paneltau
 ranking the drug-agnostic baseline above the noise ceiling; \texttt{weighted\_r2} sits closest to
 zero and its sign tracks cell count, so no directional claim is made for it. Under $\NIR$ the positive control is retrieved
 well clear of the negative ($0.802$ against $0.457$ across plates, $0.668$ against $0.272$ within),
-so the instrument registers a true positive. Every drug-use claim in the rest of this chapter is
-therefore made on the calibrated metric.
+so the instrument registers a true positive. Every drug-use claim in the rest of this chapter that
+rests on a continuous prediction score is therefore made on the calibrated metric; $\DEdr$ appears
+below only where two arms are compared with each other on the same scale, never as an absolute score
+of the model's drug use. The remaining instruments --- forced-choice grading, output invariance, and
+the logit-space activation tests of \S\ref{sec:res-mechanism} --- are deliberately on scales of their
+own, each with a fixed chance value or a paired control.
 \end{claim}
 
 \subsection{The model is drug-blind}
@@ -791,15 +794,21 @@ within-well split-half precision reference $0.575$ against $0.576$.}
 The mean baseline is the clearest demonstration: it contains no drug information whatsoever, and it
 scores $0.399$ when the comparison set may span plates against $0.161$ when it may not. Every
 discrimination instrument therefore gained a \texttt{--same\_plate\_only} mode and all discrimination
-results in this chapter were re-run within plate. Conclusions are unchanged; some magnitudes shrink.
+results in this chapter were re-run within plate, except where a departure from that rule is named
+at the point of use --- as with the swap-distance sweep that answers the fourth objection below,
+whose swap partners were not plate-restricted (Appendix~\ref{sec:app-sweep}), and the residual-frame
+scores of \S\ref{sec:methods-residual}, whose comparison set is grouped by cell line and whose
+justification is given there. Conclusions are unchanged; some magnitudes shrink.
 
 The central manipulation is the \emph{scramble ablation}: the prompt is left byte-identical except
 that the drug name and mechanism are replaced by another drug's, while the control cell and the
 scoring truth are unchanged. Because both arms share the same control cell, control- and
 batch-derived leakage cancels in the scramble gap $\gap = \NIR_{\textrm{model}} -
-\NIR_{\textrm{scramble}}$. This is the only manipulation that isolates drug use, and every
-drug-use claim in this chapter is anchored to it rather than to a comparison against a
-drug-agnostic predictor.
+\NIR_{\textrm{scramble}}$. This is the only manipulation that isolates drug use, and the only difference in this chapter whose
+leakage cancels by construction. It does not displace the drug-agnostic comparisons: the verdict
+above and the stratum ladder below are comparisons of exactly that kind, and what licenses them is
+not cancellation but the within-plate rule Table~\ref{tab:plateleak} establishes. Both are reported
+wherever both exist.
 
 Two constraints on the swap partner are required for a gap measured this way to mean what it says,
 and both exist because the unconstrained pool fails in a specific way. The partner must be a
@@ -850,7 +859,7 @@ with similarity measured as top-$100$ Kendall $\tau$ and as Jaccard overlap. A p
 two generations for the same drug resemble each other more than generations for different drugs do;
 zero means swapping the drug perturbs the output no more than resampling at the same temperature
 does. Reported over $8$ contexts $\times$ $12$ drugs at temperature $0.8$. This instrument is the
-weakest of the four --- it can only detect whether the output moves, not whether it moves correctly
+least informative of the four --- it can only detect whether the output moves, not whether it moves correctly
 --- but it is also the least able to be confounded, since it needs no ground truth at all.
 
 \begin{table}[h]
@@ -962,10 +971,16 @@ ranked. The same measurement bounds the task from below --- at single-cell resol
 versus different-drug discrimination gap is only $+0.006$ \nolinebreak[3]$[+0.003, +0.008]$, so
 whatever a model can learn here, it cannot be learned from a single cell.
 
-Fourth, \emph{does the scramble swap in similar drugs?} The swap-distance sweep resolves this:
-$\gap$ is null in every distance bin including the far tail ($-0.019$), across a $2.3\times$ spread
-in swap distance, with a trend correlation of $+0.051$. Telling the model it is a drug whose true
-response is maximally different still does not change the output.
+Fourth, \emph{does the scramble swap in similar drugs?} The swap-distance sweep bounds this rather
+than settling it, and it sits outside the within-plate rule stated above: an earlier run on the
+single-cell and optimal-transport checkpoints, scored on the unseen-drug tier of a different
+evaluation set, with swap partners not restricted to the same plate, and with $n=40$ per bin wide
+enough to exclude a large effect rather than to establish a null (Appendix~\ref{sec:app-sweep}).
+Within those limits $\gap$ is null in every distance bin including the far tail ($-0.019$), across a
+$2.3\times$ spread in swap distance, with a trend correlation of $+0.051$: telling the model it is a
+drug whose true response is maximally different does not detectably move the output. The stratified
+scramble of \S\ref{sec:res-generalisation} replaced this sweep in the reported set and is what
+carries the objection there.
 
 \begin{claim}
 On the calibrated metric the model is drug-blind in the expression frame, and even where the task
@@ -973,7 +988,8 @@ is provably winnable: at chance overall ($0.498$ against a $0.576$ within-well s
 precision reference), matched on the identifiable stratum by a
 zero-drug-information control-copy ($0.768$ against $0.766$, paired contrast
 \ci{+0.002}{-0.026}{+0.028}), and
-unmoved even when told the most dissimilar drug on offer.
+no more moved by a maximally dissimilar swap than by a similar one --- a bound from a sweep outside
+the within-plate rule (Appendix~\ref{sec:app-sweep}) rather than a canonical measurement.
 \end{claim}
 
 \subsection{Is the drug represented at all?}
@@ -2069,8 +2085,8 @@ two right-hand columns carry the SAME point estimate and differ only in what the
 of generalisation. On \texttt{train} the gap excludes zero either way. On \texttt{unseen\_combo} it
 excludes zero clustered on cell line and does not clustered on drug --- which, for the reason the
 text below gives, is why this row is reported as not established. Every gap printed here is measured
-against the neutral \texttt{orth} partner, the only comparator that can carry a magnitude claim; the
-\texttt{opposite} figures are quoted in prose only, as the diagnostic, never as a column. The
+against the neutral \texttt{orth} partner, for the reason given above; \texttt{opposite} figures
+never appear as a column here. The
 \texttt{unseen\_drug} row corroborates rather than proves: those drugs were held out of Tahoe
 fine-tuning, so a large gap there would indict the comparator --- but the base model was pretrained
 on natural language and the prompt still supplies a mechanism, so a strictly zero effect was

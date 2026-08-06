@@ -78,11 +78,14 @@ halved --- which is why the pre-fix figures are not quoted alongside them.
 A predicted cell sentence lists only expressed genes, so some panel genes are unranked and a
 convention is required. Two were carried throughout: \texttt{worst} assigns absent genes the last
 rank $G$, \texttt{francesca} a fixed middle rank $G/2$. The choice does not matter --- spike-in
-$\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no quantity scored under
-both conventions moves by more than $0.01$ between them. The convention is an input only to the
-rank-based scores reported here, $\DEdr$ and $\paneltau$; the canonical run's headline metric,
-$\NIR$, is scored in residual space by a separate instrument that never receives the absent-gene
-fill, so the choice cannot reach it. All figures in the body are quoted under
+$\DEdr$ reads $0.952$ under the first and $0.954$ under the second, and no baseline or ceiling scored
+under both conventions moves by more than $0.01$ between them. That side-by-side comparison was a
+one-off diagnostic and was not written to an artifact, so it is quoted here as a check that was run
+rather than as a reproducible result. The convention is an input to the rank-based scores ---
+$\DEdr$, $\paneltau$, and the rank-frame variant \texttt{nir\_rank} whose full arm list
+Section~\ref{sec:methods-metrics} reports, which fills absent genes at the last rank like the rest.
+It does not reach the $\NIR$ figures the canonical results rest on, which are scored by separate
+instruments that never receive the absent-gene fill. All figures in the body are quoted under
 \texttt{worst}.
 
 \subsection{Swap-distance sweep}
@@ -193,9 +196,12 @@ way. A random direction inside the slab is off the class-mean manifold: it infla
 normaliser (measured $+2.75$ nats) where the on-manifold displacement does not, so every target is
 depressed under the control arm whether or not it carries identity. With the scored target stripped
 of all identity information, $36\%$ of the effect still stood. Norm-matched is not
-disruption-matched. The same argument retires the simplest test of all, ``how far did the output
-move'': distance moved is exactly what norm-matching equalises, so that test has no power in
-precisely the world where the readout does read the drug.
+disruption-matched. The same argument retires the simplest \emph{injection} test, ``how far did the
+output move'': distance moved is exactly what norm-matching equalises, so that test has no power in
+precisely the world where the readout does read the drug. It does not reach the behavioural
+output-invariance instrument of Section~\ref{sec:methods-controls}, which perturbs the prompt rather
+than the activations and matches no norms; that instrument's own limitation --- it registers whether
+the output moves, not whether it moves correctly --- is stated where it is used.
 
 Three further guards from the surviving design are engineering rather than inference and are
 recorded here. A \emph{drug-proxy screen} refuses any context label that is a near-bijection with
@@ -218,6 +224,14 @@ The calibration framework of Section~\ref{sec:methods-metrics} is itself checked
 audit whose instrument is untested proves nothing. Beyond deterministic unit checks --- a perfect
 prediction must reach the metric's maximum, a zero shift and a flat truth must return no score ---
 the self-test asserts the exploit under a \emph{second, independent} zero-information baseline: a
-leave-one-out mean scores $\DEdr = 1.000$ while scoring $\NIR = 0.000$. Two unrelated constructions
-both saturating the standard metric, and both scoring zero on the discrimination metric, establishes
-the exploit as a property of the metric rather than of any one baseline.
+leave-one-out mean scores $\DEdr = 1.000$ while $\NIR$ refuses to place it above chance. The
+assertion in the code is exactly that --- $\NIR \leq 0.6$ --- and the value it records is $0.000$.
+That $0.000$ is not the metric's chance value, which is $0.500$
+(Section~\ref{sec:methods-metrics}) and is what the generic arm scores in
+Tables~\ref{tab:lookup} and~\ref{tab:allarms}; nor is it the untied degeneracy that section
+describes, since the self-test scores under the same half-tie convention as everything else here. It
+is a property of this particular construction: the mean of the five other drugs resembles those five
+more closely than it resembles the held-out one, so it loses every comparison. Two unrelated
+constructions saturating the standard metric while neither is placed above chance by the
+discrimination metric establishes the exploit as a property of the metric rather than of any one
+baseline.
