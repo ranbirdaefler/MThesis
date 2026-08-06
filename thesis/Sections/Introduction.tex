@@ -5,8 +5,9 @@ A compound that enters a cell changes what that cell transcribes. Which genes mo
 and in which direction is the readout the field treats as its most direct account of what a compound
 actually does --- not what it was designed to bind, but what the cell does in response. That is a
 working premise rather than an established fact, and how far it holds in any given experiment is
-itself a measurement: \S\ref{sec:methods-data} finds a substantial share of this atlas's treated
-conditions statistically inert or unidentifiable in principle, and nothing can be graded on those.
+itself a measurement: \S\ref{sec:methods-data} finds a substantial share of the treated conditions
+in the atlas used here statistically inert or unidentifiable in principle, and nothing can be graded
+on those.
 Reading the response is routine. Reading it for every combination that might matter is not. A compound behaves differently
 at different doses, and differently again depending on the genetic background of the cell receiving
 it, so the space to be explored is the product of three large sets rather than any one of them. Even
@@ -94,11 +95,13 @@ of a treated profile that is not specific to the treatment: the cell's own state
 that perturbed transcriptomes have in common whichever compound produced it. What it does not
 reproduce is the part that separates one compound from another --- and that part is not a remainder.
 Decomposing the treated-minus-control shift gives $62.1\%$ of its energy to the drug-specific
-residual against $39.0\%$ to the generic programme, the two components essentially orthogonal, so the
-missing one is the larger of the two. Change the drug named in the prompt while holding the input
+residual against $39.0\%$ to the generic programme, the two components essentially orthogonal (a
+cross term of $-0.011$ closes the arithmetic), so the missing one is the larger of the two. Change the drug named in the prompt while holding the input
 cell fixed, and the prediction barely moves. Within plate on unseen drugs the model scores $0.498$
-against a within-well split-half precision reference of $0.576$, and a baseline that copies the
-untreated cell and is told nothing about any drug scores $0.504$. Restricting to the conditions where
+against a within-well split-half precision reference of $0.576$ --- one estimator, recomputed for
+every stratum scored, so that its value moves with the stratum, and the ``noise ceiling'' figures
+below are that same instrument on other strata --- and a baseline that copies the untreated cell and
+is told nothing about any drug scores $0.504$. Restricting to the conditions where
 the task is provably winnable does not separate them: model $0.768$, control-copy $0.766$, a paired
 contrast of $+0.002$ \nolinebreak[3]$[-0.026, +0.028]$ over $204$ conditions whose own noise ceiling
 is $0.938$. That interval is narrow relative to the range available on that stratum, so what it rules
@@ -113,7 +116,8 @@ drug, cell or biology, scores $\DEdr = 0.9999$ \nolinebreak[3]$[0.99991, 0.99992
 default metric, above both the two-cell noise ceiling and the model. The second is the target.
 Because a cell sentence ranks genes by expression, the string the model is trained to emit is nearly
 the same string for any two drugs in the same cell line --- only $17\%$ of its top $200$ gene
-positions differ between them --- and of the divergence that re-encoding recovers, $92\%$ comes from
+positions differ between them --- and of the divergence that rewriting the target as the
+drug-specific residual recovers (Section~\ref{sec:methods-residual}), $92\%$ comes from
 subtracting the cell's own baseline state rather than the response drugs share with one another. Most
 of what makes two targets look alike is the cell, not a common reaction to being drugged. Neither
 number involves a forward pass, and the within-well retrieval reference is unmoved by the re-encoding
@@ -128,17 +132,21 @@ is. A per-drug average --- the compound's mean drug-specific residual, fitted fr
 conditions in \emph{other} cell lines --- beats the model, and not as a low bar. On the conditions
 where both are defined ($n = 1192$) the lookup scores $0.913$ against the model's $0.549$; of the
 distance from chance to the within-well split-half precision reference of $0.857$ it covers
-$115.7\%$ where the model covers $13.9\%$. That the lookup passes the reference it is measured
+$115.7\%$ where the model covers $13.9\%$. That $0.913$ is pooled across the split: $0.980$ on
+trained conditions, where the other cell lines the lookup averages can sit in the target's own well,
+and $0.890$ on held-out ones, where they cannot --- the ordering is the same on both.
+That the lookup passes the reference it is measured
 against is a property of the reference --- one noisy half-sample against a many-line average, on a
 metric that compresses near its top --- and is not an estimate of headroom. Nor is the ordering an
 artefact of averaging many lines: restricted to a \emph{single} other cell line the same lookup still
 scores $0.822$. What no lookup can do is condition on the cell in front of it, which is why this is
 the useful comparison: it separates the drug's average effect from the part that depends on context.
 Section~\ref{sec:res-transfer} measures that split with a transfer coefficient
-\ci{\Tcoef = 0.553}{0.514}{0.593}, leaving \ci{44.7\%}{40.7\%}{48.6\%} of the drug-specific residual
-not shared across the compared contexts. That figure is descriptive and should not be carried further
-than it goes: the estimator mixes cell line, dose, well and target estimator, so it is neither a
-drug-by-cell-line interaction share nor a bound on what a model could reach.
+\ci{\Tcoef = 0.553}{0.514}{0.593}, leaving \ci{44.7\%}{40.7\%}{48.6\%} of the similarity scale that
+coefficient is measured on not shared across the compared contexts. That figure is descriptive and
+should not be carried further than it goes: the estimator mixes cell line, dose, well and target
+estimator, so it is not a drug-by-cell-line interaction share, and it bounds from above what a
+per-drug constant leaves on the table without establishing that a model could reach any of it.
 
 A negative result earns its place only if it can be made specific, and that is the organising
 principle of what follows. We establish first that the failure is real rather than an artifact of
@@ -146,7 +154,8 @@ how this field measures success --- a distinction less pedantic than it sounds, 
 metric can be saturated by a predictor that knows nothing about drugs. We then ask where in the
 pipeline the failure lives, and the answer is not that the drug is missing. It is recoverable from
 the data wherever the task is winnable at all, and it is linearly decodable from the model's own
-activations, more explicitly the deeper one reads; what the generation readout does with that
+activations at every layer measured, and more explicitly the deeper one reads once cell line, plate
+and dose are projected out; what the generation readout does with that
 representation is consult it at very low gain --- a small effect, replicated across seeds in one
 training arm and absent in another, and surviving multiplicity correction only at one rung of the
 displacement ladder, offered as the modest reading rather than as a mechanism. At the token budget those arms were scored at, no repair
@@ -157,8 +166,8 @@ budget-matched re-run of the optimal-transport target clears zero as well. That 
 gap the thesis actually turns on opens: prompt sensitivity is not biological fidelity. The re-encoded
 model responds to the drug named in its prompt and still recovers a small fraction of that drug's
 signature --- a smaller fraction than a training-only lookup that never sees the cell it is
-predicting for. The thesis therefore ends not in closure but in the one place a lookup cannot go by
-construction: the drug never seen in training. Of the three properties a compound could be
+predicting for. The thesis therefore ends not in closure but in the one place where no lookup can be built at
+all: the drug never seen in training. Of the three properties a compound could be
 generalised through, exactly one carries signal we are willing to call measurable, and only on one
 of the two axes it could be clustered over.
 
@@ -178,19 +187,23 @@ Four questions carry that argument, in order:
   \item \textbf{Does it beat the thing it has to beat?} A table of per-drug averages, fitted on
         training conditions and blind to the cell it is predicting for, is the pre-registered win
         condition: a lookup can reproduce a memorised average, so only a model that tailors its
-        answer to the control cell's state can beat one. Does this model? And of the signal a lookup
+        answer to the control cell's state can beat one. Does this model? And the signal a lookup
         cannot express by construction --- the part that does not transfer across contexts --- how
-        much does any predictor here recover?
+        large is it, and does anything built here reach it?
 \end{enumerate}
 
-The contributions follow the same order. We audit the calibration of the standard evaluation and
+The contributions follow that order, and add two the four questions do not anticipate: the limits of
+the drug effect's transfer, and what is left for a drug never seen in training. We audit the
+calibration of the standard evaluation and
 show that it can be saturated by a predictor carrying no drug information whatsoever, which bears on
 any work built from the same family of metrics. Of the five metrics we test, only the normalised
 inverse rank has a positive dynamic range fraction --- $+0.635$ across plates and $+0.545$ within
 plate, against $-0.16$ to $-0.69$ for the other four across plates and $-0.10$ to $-0.52$ within
 plate. The four negatives are the stronger half of that result rather than a footnote to it: a
 negative fraction means the metric ranks an uninformative predictor \emph{above} a real replicate, so
-those four are inverted and not merely blunt. Both surviving figures are measured with the bootstrap
+three of those four are inverted and not merely blunt --- the fourth, the weighted $R^2$ variant and
+the one closest to zero in both arms, carries no directional claim of its own, because its sign
+tracks cell count. Both surviving figures are measured with the bootstrap
 clustered on cell lines rather than on the drug rows nested in them --- $[+0.604, +0.663]$ across
 plates over $25$ lines, $[+0.516, +0.569]$ within plate over $27$, each with Holm $p = 0.002$. The
 audit then repeats in the residual frame, on a different target, a different comparison set and a
@@ -202,8 +215,9 @@ We establish drug-blindness on that one surviving metric, using several independ
 that no single measurement carries the claim alone, and we separate out two things the failure is
 not. It is not that the drug is absent from the data: on the stratum where the task is provably
 winnable the signal is there and the model still does not use it. And it is not that the drug is
-absent from the model: drug identity is linearly decodable from the residual stream, more explicitly
-the deeper one reads, while the generation readout consults that representation at very low gain.
+absent from the model: drug identity is linearly decodable from the residual stream at every layer
+measured, and more explicitly the deeper one reads once cell line, plate and dose are projected out,
+while the generation readout consults that representation at very low gain.
 That dissociation between what is encoded and what is read is a small effect rather than a
 mechanism --- present in one training arm and absent in another, and surviving multiplicity
 correction only at one rung of the displacement ladder. It is the least well-evidenced link in the
@@ -217,9 +231,9 @@ target holds separated from its scramble, which left how the target is written. 
 the architecture. The one intervention this thesis recommends building --- a learned per-drug
 modulation of the control-to-treated transformation --- is architectural rather than a change of
 prompt, and it is recommended on the size of the readout deficit rather than on the activation
-evidence above, which is too weak to carry it. The re-encoding that tests the diagnosis also changes aggregation, control referencing and
-sequence length, so the attribution is to the encoding as a package rather than to token dilution
-alone. It produces the first measurable drug effect in this project. On training conditions the model
+evidence above, which is too weak to carry it. The re-encoding that tests the diagnosis changes five things at once --- aggregation, control
+referencing and sequence length among them --- so the attribution is to the encoding as a package
+rather than to token dilution alone. It produces the first measurable drug effect in this project. On training conditions the model
 beats its designated comparator (\texttt{scramble\_orth}: the same prompt with the drug name replaced
 by a within-plate partner chosen so that its measured response is near-orthogonal to the target
 drug's --- chosen that way because a comparator handed a deliberately \emph{dis}similar drug scores
@@ -237,32 +251,32 @@ signature has to generalise. That split is in any case mostly recombination rath
 $30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the training split, and $82\%$
 of its conditions pair a training drug with a training cell line. On genuinely unseen drugs the gap
 is $-0.0315$, with intervals spanning zero under both clusterings ($[-0.0836,\,+0.0206]$ on cell
-line, $[-0.1049,\,+0.0419]$ on drug). Nor are the three gaps on a common scale: the within-well
-split-half precision reference differs across the splits ($0.956$, $0.824$, $0.836$), so their
-ordering cannot be read as a clean decay with novelty.
+line, $[-0.1049,\,+0.0419]$ on drug). Nor are the three gaps on a common scale: the three splits are
+scored on populations selected by different reliability rules --- the raw within-well split-half
+precision references read $0.956$, $0.824$ and $0.836$, though matched on reproducibility they agree
+--- so their ordering cannot be read as a clean decay with novelty.
 
-We then show that the sensitivity and the fidelity are different quantities, which is the result the
-rest of the thesis is organised around. The per-drug lookup quoted above --- fitted on training
-conditions only, blind to the cell it is predicting for, $0.913$ against the model's $0.549$ ---
-holds up even when its averaging advantage is removed: drawn from a \emph{single} other cell line it
-still scores $0.822$. That the lookup passes the precision reference is a property of that reference
---- a single noisy
-half-sample against a many-line average, on a metric that compresses near its top --- so the ordering
-is what carries the claim, not the excess. This is DrEval's finding replicated in transcriptomic
+We then show that the sensitivity and the fidelity are different quantities. The per-drug lookup
+quoted above --- fitted on training
+conditions only and blind to the cell it is predicting for --- beats the model on the conditions
+where both are defined, and goes on beating it once its averaging advantage is removed. This is
+DrEval's finding replicated in transcriptomic
 space, on a $946$-gene response rather than a scalar potency, and it is what makes the negative a
 statement about the model rather than about the noise floor.
 
 Finally we ask what remains reachable for a drug never seen in training, by grading the three
 channels through which such a drug could be predicted at all. Protein target is the only one that
-clears the pre-set relevance margin of $0.03$, and it clears it clustered on cell line and not
-clustered on drug, which is the axis an unseen-drug claim rides on; it rests on $18$ annotated drugs
+clears the pre-set relevance margin of $0.03$, and it clears it clustered on cell line on all three
+constructions; clustered on drug, which is the axis an unseen-drug claim rides on, it clears the
+margin only against the weaker count-matched null and falls short against both estimand-correct
+ones. It rests on $18$ annotated drugs
 of which two are held out. Mechanism and chemical structure are inconclusive rather than closed, and
 mechanism is graded in a frame biased against it, since the plate-local generic removes part of a
 co-plated mechanism class's own shared programme before the channel is scored. Alongside that we
-report how much of the reproducible drug response is not shared across the compared contexts ---
-$0.447$ $[0.407,\,0.486]$, mixing cell line, dose, well and estimator rather than isolating a
-drug-by-cell-line interaction. That last number is scope-setting rather than load-bearing: it says
-how much of the signal a lookup cannot express, not how much anything could recover.
+report how much of the reproducible drug response is not shared across the compared contexts
+(Section~\ref{sec:res-transfer}, the transfer coefficient quoted above), and what reaches it: nothing
+built here does. That figure is scope-setting rather than load-bearing --- it bounds from above what
+a per-drug constant leaves on the table, without establishing that a model could reach any of it.
 
 The thesis proceeds as follows. Section~\ref{sec:litreview} places the work against single-cell
 foundation models, the perturbation-prediction literature, and an unsettled dispute within it about
@@ -270,6 +284,8 @@ whether deep models beat trivial baselines at all --- a dispute this thesis adju
 corner, using the instruments of the side it ultimately argues against. Section~\ref{sec:methods}
 is the investigation itself, told in the order it happened: because nearly every instrument in it
 was built in response to the measurement that came before, the data, the methods and the findings
-are presented as one continuous account, with each definition given where it is first needed.
+are presented as one continuous account, with each definition given where it is first needed, apart
+from the metric symbols, which the chapter's apparatus section quotes ahead of the section that
+derives them.
 Section~\ref{sec:limitations} sets out the scope honestly, separating what is closed by measurement
 from what is merely untested, and Section~\ref{sec:conclusions} concludes.

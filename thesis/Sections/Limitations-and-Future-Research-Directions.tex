@@ -60,13 +60,16 @@ noise does (SNR $\approx 0.75$, median $0$ differentially expressed genes at FDR
 
 \paragraph{Cross-plate absolutes.} The residual-space scores are computed with comparison sets
 grouped by cell line rather than by plate. The \emph{difference} $\gap$ is leak-immune, because both
-arms share the same control cell, so the grouping choice does not touch $\gap$ itself. The absolute $\NIR$ values do not travel. They are not comparable to the within-plate
-tables elsewhere in the chapter, and the rescore that would make them comparable --- regrouping the
-generation-free arms within plate, which needs no GPU time --- was not run, so the size of the
-correction is unknown for this frame. Table~\ref{tab:plateleak} is the only guide to how large it
-might be, and it suggests not small: measured in the expression frame, holding the plate constant
-moves a drug-agnostic mean baseline from $0.399$ to $0.161$ and the precision reference from
-$0.625$ to $0.575$. Residual-frame absolutes should therefore be read within their own frame and
+arms share the same control cell, so the grouping choice does not touch $\gap$ itself. The absolute $\NIR$ values are a different matter.
+Section~\ref{sec:methods-residual} argues that the grouping is admissible in this frame because the
+plate-scoped generic has already subtracted each plate's mean response from truths and predictions
+alike, so no first-order correction is due; but that subtraction removes plate structure in
+expectation only, and the generic is estimated from a small plate group, so some may survive in an
+individual residual. The rescore that would size what survives --- regrouping the generation-free
+arms within plate, which needs no GPU time --- was not run. Table~\ref{tab:plateleak} bounds it from
+above rather than estimating it: it is measured in the expression frame with no generic subtracted at
+all, where holding the plate constant moves a drug-agnostic mean baseline from $0.399$ to $0.161$ and
+the precision reference from $0.625$ to $0.575$. Residual-frame absolutes should therefore be read within their own frame and
 never set beside a within-plate number.
 
 \paragraph{Frame coverage.} The drug-specific residual is $\lVert\resid\rVert/\lVert\shift\rVert =
@@ -74,24 +77,26 @@ never set beside a within-plate number.
 essentially orthogonal: the shift's energy decomposes into residual $0.621$, generic $0.390$ and a
 cross term of $-0.011$, which sum to $1.000$. So this frame covers $62.1\%$ of the response
 \emph{energy} and every result here should be read within that bound --- a real but not total
-share. The generic $39.0\%$ is precisely the component the field's absolute-accuracy metrics are
-dominated by, which is why a drug-agnostic predictor scores so well on them.
+share. The generic $39.0\%$ is drug-agnostic and trivially matched, and it is part of what a drug-agnostic
+predictor can supply on the field's absolute-accuracy metrics --- though what saturates $\DEdr$
+there is reversion toward a central point, not the generic programme specifically
+(Section~\ref{sec:res-metrics}).
 
 \paragraph{The splits are scored on different populations.} The within-well split-half precision
 reference differs sharply across the three splits as they are actually scored --- $0.956$ on
 \texttt{train}, $0.824$ on \texttt{unseen\_combo}, $0.836$ on \texttt{unseen\_drug} --- and the
 obvious reading of that spread is the wrong one. It is not that held-out conditions carry less
-recoverable signal. It is the selection asymmetry noted above: \texttt{train} is filtered at the
-$0.109$ reliability line, which costs it one of its $300$ conditions, and the held-out splits are
-not filtered at all, so their scored populations still contain conditions whose own two halves
-disagree outright. Impose the training line on all three and the references agree --- $0.955$,
+recoverable signal. It is the selection asymmetry noted above: \texttt{train} is drawn from a pool already filtered at
+the $0.109$ reliability line --- none of its $300$ scored conditions falls at or below that line ---
+while the held-out splits are not filtered at all, so their scored populations still contain
+conditions whose own two halves disagree outright. Impose the training line on all three and the references agree --- $0.955$,
 $0.961$ and $0.960$, a spread of $0.006$ where there had been $0.132$. Matched on reproducibility,
 a held-out condition is as recoverable as a trained one.
 
 The consequence runs against this thesis rather than for it. \emph{Those conditions carry less
 signal} is not a reason to discount a held-out shortfall, because once the same line is applied to
-both they carry the same signal; where the raw spread has been used to soften a held-out result,
-that softening is withdrawn. What survives is narrower and still binding: the three splits are
+both they carry the same signal. The raw spread is therefore not available as a softening of any
+held-out result, and is not used as one anywhere in this thesis. What survives is narrower and still binding: the three splits are
 scored on populations selected by different rules, so a raw $\NIR$ or a $\gap$ read across them is
 not answering the same question on each, and the training-exposure contrast of
 Section~\ref{sec:res-generalisation} inherits that directly. The matched-population rescore was
@@ -184,7 +189,9 @@ defect in the gate itself --- the partner pool was not restricted to training dr
 drug's response could be predicted from a partner that was also held out --- and the gate has since
 been re-run with the restriction in place. The repair narrowed what may be claimed, and the
 clustering axis narrows it again: protein target clears the relevance margin on the cell-line axis,
-misses it on the drug axis, and rests on $18$ annotated drugs; mechanism misses its lower bound by
+misses it on the drug axis against both estimand-correct nulls --- clearing it there only against
+the weaker count-matched one --- and rests on $18$ annotated drugs of which two are held out;
+mechanism misses its lower bound by
 $0.0021$ on the cell-line axis and spans zero on the drug axis; chemistry's interval straddles the
 margin on both. Only the target channel supports a statement that unseen-drug generalisation is
 reachable through retrieval, and only as a direction worth testing rather than a measured effect of
@@ -192,16 +199,19 @@ useful size. The binding limitation is coverage: $18$ drugs cannot settle it, an
 that would is a target-annotated panel broad enough to cluster on.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
-axis from the held-out pairings tested here, and one not blocked by the structure gate: it asks
+axis from the held-out pairings tested here, and one the atlas's plating design does not compromise
+in the way it compromises those: it asks
 whether the control cell's state is used \emph{compositionally} with the drug. The transfer
-coefficient scopes it only loosely: $44.7\%$ \nolinebreak[3]$[40.7\%, 48.6\%]$ of the drug-specific
-residual is not shared across contexts, and no structure was recovered in that unshared part. That
+coefficient scopes it only loosely: $44.7\%$ \nolinebreak[3]$[40.7\%, 48.6\%]$ of the similarity
+scale $\Tcoef$ is measured on is not shared across the compared contexts, and no structure was
+recovered in that unshared part by tests that do not settle it. That
 figure is not a drug$\times$cell-line interaction share --- it mixes cell line, dose, well and
 estimator (Section~\ref{sec:res-transfer}) --- so it bounds what a per-drug constant leaves on the
 table without establishing that a new cell line is the axis the remainder lies along. What can be
 said is that no consistent per-line direction was found, so the achievable target on a new cell line
 plausibly reduces to recalling the drug's per-drug constant --- which a training-only lookup already
-does at $0.913$. The axis is therefore less promising than it appeared before
+does at $0.890$ on held-out pairings, the nearest measured analogue of a new context ($0.913$
+pooled, inflated on trained conditions by the well advantage). The axis is therefore less promising than it appeared before
 Section~\ref{sec:res-transfer} was measured, though the argument is weaker than a coefficient-based
 one.
 
@@ -209,10 +219,11 @@ one.
 \begin{itemize}
   \item \textbf{Reinforcement learning with a contrastive reward.} Its mechanism --- a per-sequence
         reward, so the token-dilution ratio never enters the gradient --- attacks a bottleneck that
-        the residual encoding has already lifted ($34.6 \rightarrow 118.2$ differing tokens); and its
+        the residual encoding has already lifted ($34.6 \rightarrow 118.2$ differing tokens at
+        cell-line scope, $120.3$ at the plate scope the trained build uses); and its
         reward optimises similarity to the true residual, which is precisely what
-        \texttt{drug\_lookup} already achieves at $0.913$. Its best case is convergence to the
-        lookup.
+        \texttt{drug\_lookup} already achieves at $0.913$ pooled, $0.890$ on held-out wells. Its
+        best case is convergence to the lookup.
   \item \textbf{A differentiable profile-level contrastive loss.} The natural construction,
         $\textrm{score}(g) = \sum_i P(\textrm{token}_i = g)\,w(i)$, presumes gene $\approx$ token,
         but $86.9\%$ of the $946$ panel genes share a first sub-token under this tokeniser (mean
@@ -236,14 +247,16 @@ answer in this thesis.
 Two things can be said about what we would expect, and they point in different directions. The
 constraint this work points to is not capacity. It is that the target tokens are overwhelmingly
 shared across drugs --- only $17\%$ of them differ between two drugs in the same cell line under the
-standard target, against $59\%$ under the residual encoding (Section~\ref{sec:res-encoding}) --- so
+standard target, against $59\%$ under the residual encoding at cell-line scope and $60\%$ at the
+plate scope the trained build uses (Section~\ref{sec:res-encoding}) --- so
 very little of the training signal can be carrying drug identity. That last step is a hypothesis
 about the optimisation rather than a measurement: no token-level loss or gradient attribution was
 computed, so no fraction of the gradient itself is claimed. A larger model receives the same diluted
 signal from the same objective, and re-encoding the target lifted the effect while leaving capacity
 untouched --- which points away from capacity without establishing what it points towards. The
-re-encoding changed aggregation, control referencing, sign coding and length at the same time, and a
-budget-matched optimal-transport target lifts the effect too, so Section~\ref{sec:res-encoding}
+re-encoding changed five things at once --- aggregation, control referencing, sign coding and length
+among them --- and a budget-matched optimal-transport target lifts the effect too, so
+Section~\ref{sec:res-encoding}
 declines to identify the tokenisation as the constraint that binds.
 
 The genuinely different argument for scale is not capacity but \emph{prior knowledge}. A 27B model
@@ -285,6 +298,6 @@ and that arm's null is quoted with the qualification wherever it is used.
 \paragraph{Generality.} Everything here is one backbone on one atlas in one representation. Whether
 the readout-specificity failure is a property of cell-sentence models specifically, or of
 autoregressive conditional generation over transcriptomes generally, is open. The mechanistic
-protocol of Section~\ref{sec:methods-probe} --- purified subspace, removal gate, positive control,
-matched-norm swap --- transfers unchanged to any model with an accessible residual stream, and is
-probably the most reusable artifact of this work.
+protocol of Sections~\ref{sec:res-used}--\ref{sec:res-mechanism} --- purified subspace, removal
+gate, positive control, matched-norm swap --- transfers unchanged to any model with an accessible
+residual stream, which is what makes it reusable independently of this atlas.

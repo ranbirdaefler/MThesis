@@ -237,19 +237,22 @@ interpolated-duplicate positive control it rests on are inherited; not every cho
 is. The metric that survives is computed under a similarity
 function we picked --- Euclidean distance in expression space rather than over rank vectors --- on a
 criterion stated where the choice is made, and the two variants do not agree. The accurate statement
-is therefore that the design of the audit comes from the sceptics' opponents and one parameter
-inside it is ours, disclosed at the point of use. What adopting the design buys is that the verdict
+is therefore that the design of the audit is theirs, while the family graded inside it is our
+selection of five --- including our own implementation of their weighted $R^2$ variant --- and the
+similarity function of the metric that survives is ours, each disclosed at the point of use. What adopting the design buys is that the verdict
 cannot be dismissed by the objection Miller et al.\ themselves raise.
 
-That verdict is where this thesis and its own instrument part company, and the divergence is a
-result rather than an embarrassment. The audit reproduces their central finding: metric choice
-dominates, the rank-based metric survives, and the correlation-based measures they flag as poorly
-calibrated are exactly the ones that fail here --- four of the five metrics audited are not merely
-uninformative but inverted, scoring a drug-agnostic baseline above the noise ceiling, each with an
-interval excluding zero. The agreement is not total, and the exception belongs in the same sentence:
-the weighted $R^2$ variant implemented here is inverted too, where their analysis rates that family
-as calibrated --- its sign tracks cell count, and Section~\ref{sec:res-metrics} therefore draws no
-directional conclusion from it. What it does not reproduce is their conclusion about models. They
+That verdict is where this thesis parts company with the authors whose instrument it borrowed, and
+the divergence is a result rather than an embarrassment. The audit reproduces their central
+methodological finding and then sharpens it. Metric choice dominates, and the correlation-based
+measures they flag as poorly calibrated are among the ones that fail here: four of the five metrics
+audited come out negative, each with an interval excluding zero, and three of the four are inverted
+rather than merely uninformative, scoring a drug-agnostic baseline above the noise ceiling. What
+does not transfer is the rank-based family as a family --- two of those four negatives are
+themselves rank-based, and what survives the port is the single \emph{discrimination} metric among
+them. The fourth negative is the weighted $R^2$ variant implemented here, which their analysis rates
+as calibrated; its sign tracks cell count, so Section~\ref{sec:res-metrics} draws no directional
+conclusion from it. What it does not reproduce is their conclusion about models. They
 report that deep models beat uninformative baselines once the metric is fixed; on the metric their
 own analysis endorses, the checkpoint evaluated here does not (Section~\ref{sec:res-blind}). Both
 results can stand: a repaired metric is a precondition for seeing skill, not a guarantee that there
@@ -271,9 +274,15 @@ Pseudoreplication, in Hurlbert's original sense~\cite{hurlbert}, is treating rep
 one unit as independent observations. DrEval observes that GDSC2's $395{,}025$ measurements descend
 from only $969$ cell lines and $287$ drugs, so an interval computed over measurements is badly
 overconfident about how much independent evidence exists. Our data has the same shape --- hundreds of
-thousands of cells resolving to a few thousand conditions across $50$ cell lines --- and every
-confidence interval in this thesis is consequently a clustered bootstrap over cell lines rather than
-over cells.
+thousands of cells resolving to a few thousand conditions across $50$ cell lines --- and no interval
+in this thesis is computed over cells. Section~\ref{sec:methods-data} sets out what replaces them:
+an interval on a mean is clustered on the two units that actually repeat and are crossed with one
+another, the cell line and the treatment well; a statistic computed over \emph{pairs} of conditions
+uses a dyadic estimator instead, because neither grouping partitions a pair; and the two ratio
+statistics the two-way form is not written for use a one-way cluster bootstrap over cell lines,
+flagged where they appear. Where a claim has to generalise across drugs rather than across cell
+lines, the same interval is recomputed with the drug in place of the cell line, and both are
+reported.
 
 Biased evaluation they frame as a version of Simpson's paradox. Because different drugs act at
 vastly different concentrations, most of the variance in a response dataset lies \emph{between}
