@@ -38,8 +38,8 @@ appear as the failures they avoid rather than as best practice --- nearly every 
 specific way the obvious alternative breaks on this data. Definitions appear where they are first
 needed, with one exception: the apparatus section quotes the metric symbols ahead of
 \S\ref{sec:res-metrics}, which derives them, and glosses $\NIR$ --- the one it leans on
-throughout --- at its first use. Dead ends stay in, including three substitution designs that failed and two printed claims
-that had to be withdrawn, because the confound that killed each one is the reason the surviving
+throughout --- at its first use. Dead ends stay in, including three substitution designs that failed and every printed claim
+that had to be withdrawn --- five of them, each named where it was made, because the confound that killed each one is the reason the surviving
 design looks the way it does. Every section that reaches a verdict closes with its central claim, set
 off from the text, in language that could be shown wrong. One section closes without one, and
 deliberately: \S\ref{sec:res-field} asks which span of the prompt the model reads, cannot answer it,
@@ -218,7 +218,7 @@ drugs seen in $\geq 3$ cell lines & 227 \\
 \multicolumn{2}{l}{\textbf{Residual-frame cache} (rebuilt targets, \S\ref{sec:methods-residual})} \\
 \midrule
 cells (treated / control) & 620,564 (600,000 / 20,564) \\
-(cell line, plate) groups & 198 \\
+(cell line, plate) groups behind the scored conditions & 119 \\
 drugs / cell lines & 106 / 50 \\
 conditions with $\geq40$ treated and $\geq20$ control cells & 6,617 \\
 \quad by split after inventory filters (train / held-out wells / held-out drugs) & 4,999 / 900 / 711 \\
@@ -229,7 +229,7 @@ training examples / well-held-out validation examples & 147,710 / 3,600 \\
 \midrule
 tier 1 (seen conditions) / tier 2 (unseen drugs) / tier 3 (unseen combinations) & 4,325 / 2,188 / 99 \\
 conditions scored per tier in the generation evaluations & 400 \\
-tier-2 drugs in the expression-frame $\NIR$ benchmark (within plate) & 606 \\
+tier-2 conditions in the expression-frame $\NIR$ benchmark (within plate) & 606 \\
 conditions scored in the residual-frame evaluation & 1,394 \\
 \quad by split (train / \texttt{unseen\_combo} / \texttt{unseen\_drug}) & 300 / 895 / 199 \\
 \quad treated wells behind them (no well spans two splits) & 136 / 36 / 28 \\
@@ -403,9 +403,12 @@ negative had to be withdrawn (\S\ref{sec:res-encoding}). The same cap had alread
 residual arm's own effect. The general form is not specific to cell sentences: wherever a paired
 comparison is scored on variable-length generations, the token budget is part of the claim, an
 under-budgeted arm can be reported as a null, and a null quoted without its budget cannot be read.
-Hence the rule --- every generation-based evaluation reports the \ENDCELL{}/\DOWN{} completion rate,
-the fraction of emitted symbols that are valid panel genes, and the duplicate rate, before any score
-is quoted, together with the budget it was generated under. The generation configuration itself is
+Hence the rule --- every generation-based evaluation computes the \ENDCELL{}/\DOWN{} completion
+rate, the fraction of emitted symbols that are valid panel genes, and the duplicate rate before any
+score is read from it, and no score in this chapter comes from a run whose validity block was not
+inspected. Those three rates are written to each run's log rather than tabulated here, so what the
+chapter carries per evaluation is the generation budget, which is the part of the block a reader
+cannot reconstruct. The generation configuration itself is
 fixed and is recorded here because the intervals do not cover it: sampling at temperature $0.8$ with
 top-$p$ $0.9$, four samples per condition in the residual-frame evaluations of
 \S\ref{sec:res-encoding} and their control re-runs, and eight in the expression-frame evaluations
@@ -451,7 +454,7 @@ set starts to include genes that do not move.
 
 What does this metric reward? The way to find out is to score a predictor that contains nothing:
 every gene placed at the middle rank, carrying no information about drug, cell or biology. It scores
-$\DEdr(K{=}50) = 0.9999$ [$0.99991$, $0.99992$] --- above the two-real-cell noise ceiling ($0.76$)
+$\DEdr(K{=}50) = 0.999913$ [$0.999908$, $0.999919$] --- above the two-real-cell noise ceiling ($0.76$)
 and above the model ($0.73$). The ordering is inverted: less information yields a higher score,
 which is the signature of an artefact rather than of skill. The same predictor's partial-$\DEdr$ and
 $\paneltau$ are undefined rather than merely poor: its shift from control is identically zero, so

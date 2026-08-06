@@ -764,6 +764,19 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
                     f"valid panel genes {100*np.mean(g['valid_frac']):.1f}% | "
                     f"duplicates {100*np.mean(g['dup_frac']):.1f}%")
 
+    # Persist it, not just log it. The chapter states a rule that every generation-based evaluation
+    # checks these three rates before a score is read; with the block only in the run log, the
+    # artifact could not show the rule had been kept.
+    validity = None
+    if gen_stats and gen_stats["n"]:
+        g = gen_stats
+        validity = {"n_generations": int(g["n"]),
+                    "frac_with_down_block": float(g["has_down"] / g["n"]),
+                    "mean_up_block_genes": float(np.mean(g["up_len"])) if g["up_len"] else 0.0,
+                    "mean_down_block_genes": float(np.mean(g["dn_len"])) if g["dn_len"] else 0.0,
+                    "frac_valid_panel_genes": float(np.mean(g["valid_frac"])),
+                    "frac_duplicates": float(np.mean(g["dup_frac"]))}
+
     means = {}
     for a in ("ceiling", "model", "scramble_near", "scramble_orth", "scramble_opposite",
               "scramble_drugonly", "scramble_moaonly",
@@ -1033,7 +1046,8 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     logger.info("=" * 100)
     means["strata"] = strat_out
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump({"config": vars(args), "means": means, "records": recs}, open(args.out, "w"),
+    json.dump({"config": vars(args), "generation_validity": validity,
+               "means": means, "records": recs}, open(args.out, "w"),
               indent=2, default=float)
     logger.info(f"-> {args.out}")
 
