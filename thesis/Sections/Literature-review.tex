@@ -162,7 +162,7 @@ and everything else comes from the encoder and the decoder. Section~\ref{sec:res
 what such a vector is worth on this task by looking the drug up: the mean residual of the same
 compound in other cell lines, fitted from training conditions only. On the conditions where both
 are defined it scores $0.913$ against the fine-tuned model's $0.549$ ($n = 1{,}192$), and $0.890$
-against $0.533$ on the $893$ held-out drug-and-cell-line combinations, where the lookup cannot
+against $0.533$ on the $893$ conditions of the held-out wells, where the lookup cannot
 borrow the target's own well; chance on that scale is $0.50$ by construction. That is not a score
 for CPA or chemCPA --- their decoders make the emitted effect context-dependent even when the drug
 channel is one vector --- but it does say which question is the informative one. It is not which architecture wins. It is whether anything improves on a
@@ -294,8 +294,13 @@ Pearson of $0.01$. Section~\ref{sec:methods-metrics} explains why a discriminati
 Their treatment of splits is the part we borrow most directly. DrEval names four, each corresponding
 to a different application: Leave-Pairs-Out for missing-value imputation, Leave-Cell-Lines-Out for
 personalised medicine, Leave-Drugs-Out for drug design, and Leave-Tissue-Out for repurposing. Our
-holdout maps onto two of these --- \texttt{unseen\_combo} is Leave-Pairs-Out and \texttt{unseen\_drug}
-is Leave-Drugs-Out --- and Section~\ref{sec:methods-holdout} uses their names. The mapping carries a
+holdout maps onto one of these and deliberately misses another. \texttt{unseen\_drug} is
+Leave-Drugs-Out. \texttt{unseen\_combo} is \emph{not} Leave-Pairs-Out, and
+\S\ref{sec:methods-holdout} uses that name only for the estimand it declines: holding out a
+(drug, cell line) pair leaves the pair's own treated well in training through its other
+$\approx 48$ cell lines, which measures within-atlas matrix completion rather than generalisation.
+Our split withholds the whole treatment well instead, so it is strictly the stronger of the two and
+answers a narrower question --- an unseen well of a seen drug. The mapping carries a
 warning we take seriously. Citing Partin et al.~\cite{partin}, DrEval reports that good
 Leave-Pairs-Out and Leave-Cell-Lines-Out performance is reachable simply by predicting each drug's
 average response across the training cell lines, so a strong result on those splits demands that the

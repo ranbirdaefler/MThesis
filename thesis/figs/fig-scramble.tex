@@ -62,10 +62,12 @@ controlled rather than cancelled, and by cell line in the residual frame, where 
 generic has already subtracted each plate's mean response from truths and predictions alike --- in
 expectation, with however much survives in an individual residual left unmeasured
 (\S\ref{sec:methods-residual}, and \S\ref{sec:limitations} for what that leaves open).
-A refinement matters here and is
-developed in Section~\ref{sec:methods-controls}: if the swapped-in drug happens to have a
+A refinement matters here: if the swapped-in drug happens to have a
 \emph{similar} true response then an unchanged output is correct rather than blind, so the swap
-partner is chosen from three defined similarity strata and the evidence is the \emph{gradient} across
-them rather than any single value.}
+partner is chosen from three defined similarity strata by residual cosine. Which stratum can carry
+the evidence is not a free choice --- a usable null is one whose own score sits at chance, and
+\S\ref{sec:res-generalisation} finds that true of exactly one of the three, the neutral
+\texttt{orth} partner. Every gap in this chapter is measured against that one; the other two strata
+are read as diagnostics.}
 \label{fig:scramble}
 \end{figure}
