@@ -107,9 +107,11 @@ the arm against the neutral stratum throughout; the two below survive that corre
 \paragraph{It is not a clean held-out-drug design.} The prompt contains
 \texttt{Mechanism: \{moa\}}, so holding out a drug still hands the model the held-out drug's class
 label. The correct design is leave-one-\emph{mechanism}-out. The size of the leak is measured
-rather than assumed. Scrambling the \texttt{Mechanism} field alone moves the model's $\NIR$ by
-$+0.030$ ($n = 738$; $[-0.008, +0.069]$ clustered on drug and well), a channel small enough that it
-is not distinguishable from zero. A mechanism-only lookup is the same measurement from the other
+rather than assumed, and the measurement is not clean. Scrambling the \texttt{Mechanism} field
+alone moves the model's $\NIR$ by $+0.0303$ \nolinebreak[3]$[-0.0078, +0.0685]$ ($n = 738$,
+clustered on drug and well), an interval containing zero --- but that understates the channel rather
+than bounding it, because this row's swap partner scores $0.520$, above chance, and a comparator
+above chance suppresses the gap (Table~\ref{tab:fieldattribution}, Panel B). A mechanism-only lookup is the same measurement from the other
 side, and is equally inconclusive: pooled over the $n = 218$ conditions on which both are scored, model $-$
 \texttt{moa\_lookup} $= +0.044$ ($[-0.048, +0.135]$ clustered two-way on cell line and well), an
 interval that spans zero, so the two are not separated and the comparison settles nothing in
