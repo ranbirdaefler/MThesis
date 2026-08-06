@@ -951,7 +951,8 @@ reach --- or it enters and is ignored, a readout failure, which only an objectiv
 reach. Every behavioural measurement so far is consistent with both, because both predict the same
 output. The previous section has already closed a third possibility, that the task itself cannot be
 done: the ceiling rises with aggregation, nearly half of all conditions ($46.2\%$) are identifiable
-in principle, and the model is at chance even on those. So the failure is the model's, and the useful question becomes
+in principle, and on those the model is matched exactly by a baseline that copies the untreated
+cell ($0.768$ against $0.766$). So the failure is the model's, and the useful question becomes
 where in the model it lives. That question cannot be answered behaviourally; it needs the weights.
 It decomposes into three sub-questions, each with its own instrument, because each instrument's
 blind spot is exactly what the next must close. Is drug identity present in the activations? Does
@@ -1001,6 +1002,7 @@ the next question.
 \end{claim}
 
 \subsection{Is the representation used?}
+\label{sec:res-used}
 
 Asking whether the network uses the drug region means intervening on it, and intervening requires
 localising it first. The second instrument is built in four steps, and each step exists because the
@@ -2089,7 +2091,7 @@ Re-encoding the target made the model respond to the combined drug-and-mechanism
 much is established and survives every stress: on trained conditions it holds clustered on the cell
 line and on the drug, it holds against chance with no comparator at all, and the comparator-free
 slope excludes zero on all three splits under both clusterings
-(\ci{+0.373}{+0.280}{+0.466}, \ci{+0.337}{+0.223}{+0.450}, \ci{+0.342}{+0.215}{+0.469}).
+(\ci{+0.373}{+0.280}{+0.466}, \ci{+0.336}{+0.223}{+0.450}, \ci{+0.342}{+0.215}{+0.469}).
 
 Transfer to held-out combinations is not established. The gap there is $+0.0332$, which excludes
 zero clustered on cell line and well \nolinebreak[3]$[+0.0069, +0.0594]$ and does not clustered on
