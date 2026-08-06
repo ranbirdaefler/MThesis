@@ -84,7 +84,9 @@ arm and absent in another, whose survival of multiplicity correction depends on 
 displacement ladder the correction is applied to. That supports the modest reading --- the generation
 readout consults the drug representation at very low gain --- and does not support a claim about
 privileged subspaces or global workspaces, which is offered here as an interpretive frame rather
-than a result. It is the weakest load-bearing element in the thesis and nothing else rests on it.
+than a result. It is the weakest load-bearing element in the thesis, and no argument here rests on
+it alone: the one architectural intervention this thesis proposes takes its warrant from the size of
+the readout deficit, not from this.
 
 \paragraph{The target's tokens barely distinguish one drug from another, and the construction that
 changed that produced the first non-null effect.} Because a cell sentence ranks genes by expression, the targets for two different
@@ -95,9 +97,13 @@ carrying drug identity --- but that inference is a \emph{hypothesis} about the o
 measurement of it. What is measured here is the overlap of the target gene sets; no token-level loss
 or gradient attribution was computed, and the claim should be read at that strength. Its warrant is
 that it predicts correctly, twice. It predicts that changing \emph{what the target is} while leaving
-\emph{what the tokens encode} alone will not help --- and an entire $\varepsilon$-ladder of target
+\emph{what the tokens encode} alone will not help --- and an $\varepsilon$-ladder of target
 constructions, from a single state-matched treated cell to a full pseudobulk collapse, stays in the
-near-null regime under the random-partner test. And it predicts that changing what the tokens encode
+near-null regime under the random-partner test at the budget and comparator that test was run at.
+That qualification is load-bearing, and the paragraph below pays it: re-scored at a matched budget
+against a neutral partner one of the three rungs is not null, and a second arm was stopped mid-epoch
+and so evidences little, which leaves the ladder's negative resting outside that scoring on the
+single-cell rung alone. And it predicts that changing what the tokens encode
 will help: re-encoding the target as the drug-specific residual raises the differing fraction to
 $59\%$ and produces the first non-null drug effect in the project, with a gap that grows
 monotonically with swap dissimilarity.
@@ -144,8 +150,9 @@ well \nolinebreak[3]$[+0.0291, +0.1506]$; held-out pairings score $+0.0332$ and 
 well \nolinebreak[3]$[+0.0069, +0.0594]$, and does not when it is clustered on drug and well
 \nolinebreak[3]$[-0.0031, +0.0695]$ --- and drug is the axis along which a claim about transferring a
 \emph{drug} signature has to generalise. The split is also mostly recombination rather than novelty:
-$30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the trained arm, and $84\%$ of
-its observations sit on those shared drugs. The memorisation premium that earlier carried this
+$30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the trained arm, and $82\%$ of
+its conditions pair a training drug with a training cell line. The memorisation premium that earlier
+carried this
 argument goes with it. Pooled it is $+0.0567$ \nolinebreak[3]$[-0.0014, +0.1148]$, cluster-robust
 $p = 0.056$; restricted to the $30$ drugs common to both splits it changes sign, to $-0.0606$ with
 $p = 0.18$. It is confounded in any case, because the splits are not equally hard: the within-well
@@ -154,7 +161,7 @@ held-out ones, a spread of $0.132$, so gaps measured on them are not directly co
 
 What survives is narrower than what was claimed for it. The comparator-free test --- the slope of
 $\NIR$ on the cosine similarity between the real response of the drug named in the prompt and that of
-the true one --- is positive on every split: $+0.373$ on trained pairings, $+0.337$ on held-out
+the true one --- is positive on every split: $+0.373$ on trained pairings, $+0.336$ on held-out
 pairings, $+0.342$ on held-out drugs. This does \emph{not} show that the model knows held-out
 compounds. The slope is fitted over the three scrambled \emph{partner} prompts alone (\texttt{near},
 \texttt{orth}, \texttt{opposite}); the prompt naming the true target drug is never a point on the

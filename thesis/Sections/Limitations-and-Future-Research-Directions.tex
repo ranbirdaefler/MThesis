@@ -23,8 +23,9 @@ $\min(G_{\textrm{line}}, G_{\textrm{well}}) - 1$ degrees of freedom, and are rep
 clustered on the \emph{drug}; the transfer coefficient carries a multiway dyadic interval; a few
 tables retain a one-way clustered bootstrap and name its unit. They therefore capture
 between-cluster variance and not the variance introduced by sampling the model's output. With four
-generations per arm at temperature $0.8$ that second source is not negligible, and no across-seed
-replication of the generation arms was run --- not deferred, not planned. Every interval quoted
+sampled generations per condition at temperature $0.8$ in the residual-frame arms and eight in the
+expression-frame ones (\S\ref{sec:methods-data}), that second source is not negligible, and no
+across-seed replication of the generation arms was run --- not deferred, not planned. Every interval quoted
 from a generation arm is therefore a within-seed interval and should be read as conditional on the
 seed: it covers the sampling of conditions, cell lines and wells, and it does not cover the
 sampling of the model's output.
@@ -108,10 +109,11 @@ the arm against the neutral stratum throughout; the two below survive that corre
 label. The correct design is leave-one-\emph{mechanism}-out. The size of the leak is measured
 rather than assumed. Scrambling the \texttt{Mechanism} field alone moves the model's $\NIR$ by
 $+0.030$ ($n = 738$; $[-0.008, +0.069]$ clustered on drug and well), a channel small enough that it
-is not distinguishable from zero. A mechanism-only lookup says the same thing from the other side:
-pooled over the $n = 218$ conditions on which both are scored, the model is ahead of it by $+0.044$
-($[-0.048, +0.135]$ clustered two-way on cell line and well), so nothing in this comparison
-shows the class label on its own buying more than the model already has.
+is not distinguishable from zero. A mechanism-only lookup is the same measurement from the other
+side, and is equally inconclusive: pooled over the $n = 218$ conditions on which both are scored, model $-$
+\texttt{moa\_lookup} $= +0.044$ ($[-0.048, +0.135]$ clustered two-way on cell line and well), an
+interval that spans zero, so the two are not separated and the comparison settles nothing in
+either direction.
 
 The exception is the split where it would matter. On \texttt{unseen\_drug} the mechanism lookup is
 ahead of the model by $0.099$ on $44$ conditions, with an interval spanning zero
@@ -139,12 +141,12 @@ because an effect of the size the mechanism channel could deliver would sit comf
 interval. That distinction is what licenses using the arm to validate the comparator in
 Section~\ref{sec:res-generalisation} while declining to use it to argue that unseen-drug transfer
 is zero. And ``unseen'' is narrower than it sounds in any case: it means held out from Tahoe
-fine-tuning only. Pythia-1b saw drug names in natural-language pretraining, and the prompt still
-supplies \texttt{Mechanism}.
+fine-tuning only. Pythia-1b's own pretraining is natural-language text in which compound names
+occur, and the prompt still supplies \texttt{Mechanism}.
 
 \subsection{Directions}
 
-\paragraph{The arm this work closed rather than opened.} The obvious continuation of
+\paragraph{The arm to build carefully rather than eagerly.} The obvious continuation of
 Section~\ref{sec:res-scope} is a channel-conditioned prompt: append protein targets to the
 instruction, retrain, and evaluate on a leave-one-mechanism-out split. We do not recommend building it
 eagerly, and the reason is a shape of failure rather than a settled measurement.
@@ -153,8 +155,11 @@ canonical run, swapping the drug \emph{name} alone moves the output by
 \ci{+0.1026}{+0.0625}{+0.1427} ($n = 1394$) while swapping the \emph{mechanism} field alone moves it
 by $+0.0303$ \nolinebreak[3]$[-0.0078, +0.0685]$ ($n = 738$), both clustered on drug and well. All of
 those arms swap to an opposite-signature partner, which Section~\ref{sec:res-generalisation} shows is
-not a null, so each gap carries a ``how much naming a lie hurts'' term and the attribution is a
-direction rather than a result. Pending a re-run against the neutral partner, the case against a
+not a null, so each gap carries a comparator term --- and one that runs in opposite directions
+across the two rows, inflating the name arm, whose partner scores $0.434$, and suppressing the
+mechanism arm, whose partner scores $0.520$. Read instead as each row's own distance from chance
+the ordering inverts ($+0.0367$ on the name row against $+0.0506$ on the mechanism subset), so the
+split between the two spans is unresolved rather than a direction. Pending a re-run against the neutral partner, the case against a
 target-conditioned prompt rests not on demonstrated mechanism-blindness but on the size of the
 readout deficit: on the common support the model covers $13.9\%$ of the distance from chance to the
 within-well bar that a context-blind lookup covers entirely.
@@ -227,21 +232,26 @@ most predictable question an examiner can ask --- does it work if the model is b
 answer in this thesis.
 
 Two things can be said about what we would expect, and they point in different directions. The
-bottleneck this work identifies is not capacity. It is that the target tokens are overwhelmingly
+constraint this work points to is not capacity. It is that the target tokens are overwhelmingly
 shared across drugs --- only $17\%$ of them differ between two drugs in the same cell line under the
 standard target, against $59\%$ under the residual encoding (Section~\ref{sec:res-encoding}) --- so
-very little of the training signal can be carrying drug identity. No token-level loss or gradient
-attribution was computed, so no fraction of the gradient itself is claimed; a larger model receives the same diluted signal from the same
-objective, and the fact that re-encoding the target lifted the effect while leaving capacity
-untouched is evidence that the constraint binds where we say it does.
+very little of the training signal can be carrying drug identity. That last step is a hypothesis
+about the optimisation rather than a measurement: no token-level loss or gradient attribution was
+computed, so no fraction of the gradient itself is claimed. A larger model receives the same diluted
+signal from the same objective, and re-encoding the target lifted the effect while leaving capacity
+untouched --- which points away from capacity without establishing what it points towards. The
+re-encoding changed aggregation, control referencing, sign coding and length at the same time, and a
+budget-matched optimal-transport target lifts the effect too, so Section~\ref{sec:res-encoding}
+declines to identify the tokenisation as the constraint that binds.
 
 The genuinely different argument for scale is not capacity but \emph{prior knowledge}. A 27B model
 pretrained on far more text plausibly knows, as a fact about the world, that a named compound
 inhibits a named kinase --- knowledge a 1B model may simply lack. That matters here because
 Section~\ref{sec:res-field} leaves unresolved whether the model uses the \emph{mechanism} field it
 is already handed --- swapping that field alone moves the output by $+0.0303$
-\nolinebreak[3]$[-0.0078, +0.0685]$ ($n=738$), an interval containing zero, in an arm whose
-comparator is not a null --- and a model with real pharmacological knowledge is exactly the case
+\nolinebreak[3]$[-0.0078, +0.0685]$ ($n=738$), an interval containing zero in an arm whose
+comparator sits above chance and so suppresses that gap --- and a model with real pharmacological
+knowledge is exactly the case
 where that might change. This is a sharper hypothesis than ``bigger is better'' and
 it is testable cheaply with a low-rank adaptation of a mid-sized checkpoint rather than a full
 fine-tune. We did not run it, and it is the first thing we would run with more time.
@@ -253,11 +263,7 @@ capabilities do not include perturbation prediction. This cuts two ways and both
 is why the held-out splits are as clean as they are: a drug withheld here entered neither the
 fine-tuning data nor the generic that defines its target, the split being assigned from metadata
 before any expression was aggregated, so no Tahoe perturbation response for it can have been
-memorised. That is a narrower guarantee than ``unseen'', and the difference matters. The backbone is
-a Pythia language model~\cite{pythia} whose own pretraining is text, so a held-out compound's name
-may well have been read there; and the prompt supplies the \texttt{Mechanism:} field for held-out
-drugs exactly as it does for trained ones. The correct description of the held-out arms is therefore
-\emph{held out from Tahoe fine-tuning, with mechanism supplied}, not unseen by the whole pipeline. But it also means the failure we report is a failure of \emph{this} starting point, and
+memorised. But it also means the failure we report is a failure of \emph{this} starting point, and
 a reader may reasonably ask whether a checkpoint already tuned for perturbation prediction would
 behave differently. Within the C2S-Scale line that question cannot be answered from what is public:
 the perturbation-specialised model there is a Gemma-3 4B checkpoint that was not released, and the
@@ -269,8 +275,10 @@ is the obvious external check on whether a readout failure of this kind survives
 perturbation-specific pretraining, and it was not run here. That is a gap in this work, not a gap
 in the public record. What we can say is narrower and worth separating from
 the broader claim: every arm in this thesis starts from the same base and differs only in the
-variable under test, so the \emph{comparisons} between arms are unaffected by this choice even where
-the absolute level is not.
+variable under test --- with one material exception, the consensus arm, which was stopped at roughly
+$60\%$ of an epoch with its tier-1 $\NIR$ unscoreable (Table~\ref{tab:trainconfig}) --- so the
+\emph{comparisons} between arms are unaffected by this choice even where the absolute level is not,
+and that arm's null is quoted with the qualification wherever it is used.
 
 \paragraph{Generality.} Everything here is one backbone on one atlas in one representation. Whether
 the readout-specificity failure is a property of cell-sentence models specifically, or of

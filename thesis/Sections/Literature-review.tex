@@ -126,16 +126,18 @@ responses using neural optimal transport}, Nature Methods 2023; Bunne, Krause an
 
 Two properties are common to all of them, and neither holds for the model fine-tuned here. The
 prediction is a vector in a continuous space, emitted in one pass by a decoder trained on a loss
-written directly on that vector; and the drug enters through an embedding the architecture was
-built to receive. A cell-sentence model emits a token sequence sampled left to right, carries the
+written directly on that vector; and the drug enters through a channel the architecture was built
+to receive it on --- a learned embedding in CPA, chemCPA and GEARS, an estimated latent offset in
+scGen, and a separately fitted map per perturbation in CellOT, amortised over a perturbation
+embedding in its conditional extension. A cell-sentence model emits a token sequence sampled left to right, carries the
 drug as a few words of a natural-language prompt, and is trained by a per-token cross-entropy that
 weights every position equally. That difference is not decorative. In the standard
 cell-sentence target, $83\%$ of the top-$200$ token positions are identical between any two drugs
 in the same context (Section~\ref{sec:methods-residual}) --- the string to be emitted is nearly the
 same string whichever drug was named --- and a latent-transition model has no target with that
 property. Whether that property is the binding constraint is not settled here:
-Section~\ref{sec:res-encoding} reports what re-encoding the target does, and the chapter declines
-to identify tokenisation as the unique cause. What is reported below is therefore
+Section~\ref{sec:res-encoding} reports what re-encoding the target does, and the chapter does not
+establish that tokenisation is the constraint that binds. What is reported below is therefore
 specific to conditional generation over an ordering, and it is not evidence about CPA, chemCPA or
 CellOT, none of which was run here.
 
@@ -151,8 +153,10 @@ PerturBench~\cite{perturbench} assembles models and metrics for the same compari
 perturbation types. PerturBench also supplies the exception this thesis relies on, a rank-based
 score that grades a prediction against a set of candidate conditions rather than against one truth.
 
-None of these methods is run as a baseline here, and the reason is an argument rather than an
-apology: the thing they have in common is measured directly. In scGen and in CPA the drug-specific
+None of these methods is run as a baseline here, so the head-to-head a reader wants is missing;
+that is a real gap, and the results chapter concedes it as one where the comparison would fall due.
+What is offered in its place is narrower than a head-to-head: the thing these methods have in
+common is measured directly. In scGen and in CPA the drug-specific
 content carried into a new context is a single per-drug vector --- dose-scaled, in CPA's case ---
 and everything else comes from the encoder and the decoder. Section~\ref{sec:res-lookup} measures
 what such a vector is worth on this task by looking the drug up: the mean residual of the same
@@ -161,8 +165,7 @@ are defined it scores $0.913$ against the fine-tuned model's $0.549$ ($n = 1{,}1
 against $0.533$ on the $893$ held-out drug-and-cell-line combinations, where the lookup cannot
 borrow the target's own well; chance on that scale is $0.50$ by construction. That is not a score
 for CPA or chemCPA --- their decoders make the emitted effect context-dependent even when the drug
-channel is one vector, and no experiment here evaluates them --- but it does say which question is
-the informative one. It is not which architecture wins. It is whether anything improves on a
+channel is one vector --- but it does say which question is the informative one. It is not which architecture wins. It is whether anything improves on a
 per-drug constant, and that is answerable, and answered below, without fitting a second
 architecture.
 
@@ -170,10 +173,12 @@ Two gaps bear on what follows, one in this literature and one in this thesis.
 Tahoe-100M~\cite{tahoe100m} is recent enough that we are aware of no published evaluation of any of
 these methods on it, so the reference points used below are constructed rather than cited --- which
 is why so much of the next chapter is spent building baselines before anything is scored against
-them. And the atlas's own authors have since released Tahoe-x1, a family of single-cell foundation
-models pretrained on a corpus that includes this atlas; it is the natural comparison for a
-perturbation-trained backbone against the drug-free checkpoint used here, it was not evaluated in
-this thesis, and nothing measured here speaks to it.
+them. And the atlas's own authors have since released Tahoe-x1~\cite{tahoex1}, a family of
+single-cell foundation models pretrained on a corpus that includes this atlas. It is not a
+cell-sentence model, so it does not isolate the representation variable this work turns on, but it
+is the obvious external check on whether a readout failure of this kind survives
+perturbation-specific pretraining; it was not evaluated in this thesis, and nothing measured here
+speaks to it.
 
 \subsection{The dispute: do these models beat uninformative baselines?}
 \label{sec:lit-dispute}
@@ -342,8 +347,9 @@ whether the model's behaviour follows. Section~\ref{sec:res-mechanism} construct
 of exactly that test, substituting a drug's learned representation for another drug's and measuring
 whether the emitted profile moves toward the substituted drug. The account also sharpens the
 decodable/used distinction into something testable: a property can be recoverable from the residual
-stream at high accuracy and still sit outside whatever the readout consults, in which case encoding
-it more explicitly changes nothing. What the thesis does not do is test the workspace claim itself.
+stream at high accuracy and still sit outside whatever the readout consults, in which case making it
+more explicit need not change what the model emits --- a prediction
+Section~\ref{sec:res-epsilon} tests directly and Section~\ref{sec:res-encoding} bounds. What the thesis does not do is test the workspace claim itself.
 Nothing below identifies a J-space, measures its occupancy, or shows that a drug representation
 lies outside one; the substitution result is consistent with the workspace reading and equally
 consistent with a readout that reads the drug at low gain for some other reason, and

@@ -63,8 +63,8 @@ A third defect was found after the canonical run, and the channel numbers in thi
 re-run that followed it. The gate's \emph{retrieval} pool --- the partners whose mean residual forms the prediction --- was
 every retained condition in the cell line other than the target's own drug, rather than the
 training conditions only. Conditions held out of training could therefore contribute to the
-prediction made for a held-out drug, and the chapter's assurance that the gate ``uses only drugs
-that were in training'' did not hold. The code now restricts the pool to the split's training
+prediction made for a held-out drug, so the gate did not do what \S\ref{sec:res-scope} says it was
+intended to do --- draw partners only from drugs that were in training. The code now restricts the pool to the split's training
 conditions, logs the restricted size, and warns rather than silently falling back to an
 unrestricted pool, and the gate has been re-run under it. Of the $4{,}131$ retained conditions
 $2{,}523$ are training, so the old pool was around $64\%$ larger than it was entitled to be. Every channel-gate figure reported in the main text is from the corrected run; the planted
@@ -152,8 +152,11 @@ residual (holdout) & as above, 738 withheld & 1 epoch & \\
 \bottomrule
 \end{tabular}
 \caption{Learning rate $10^{-5}$, batch size 1, gradient accumulation 16, maximum length 8192, bf16,
-weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early on a flat loss;
-since it is one endpoint of the $\varepsilon$-ladder, the ladder's negative rests on the other two.
+weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early on a flat loss, so
+it is the $\varepsilon$-ladder's weakest-evidenced endpoint; and at the residual arm's generation
+budget against a neutral partner the optimal-transport endpoint is not null either
+(Section~\ref{sec:res-encoding}), so outside the scoring of Table~\ref{tab:epsilon} the ladder's
+negative rests on the single-cell endpoint alone.
 These five arms --- \texttt{single\_cell}, \texttt{consensus}, \texttt{ot\_T2},
 \texttt{residual}, \texttt{residual\_holdout} --- are also the complete family over which the
 identity test of Section~\ref{sec:res-mechanism} takes its multiplicity correction: five arms by
@@ -201,9 +204,12 @@ residual builders, which, had it been orthogonalised against, would have deleted
 construction. An \emph{injected-norm diagnostic} reports the displacement against the cell's
 centred slab component ($0.69$--$1.40$: the injection is the size of the thing it displaces, so a
 null cannot be blamed on a whisper). And a \emph{selftest with teeth} runs three planted worlds ---
-drug inert, drug read, and drug inert behind a norm-sensitive readout --- through the actual
-headline code path; it separates them ($-0.042$, $+1.520$, $-0.010$), and it failed four times
-during development, each failure a real defect that the guard list now covers.
+drug inert, drug read, and drug inert behind a readout sensitive to displacement magnitude rather
+than direction --- through the actual headline code path; it separates them ($-0.042$, $+1.520$,
+$-0.010$), and it failed four times during development, each failure a real defect that the guard
+list now covers. That third world is not a normaliser control: each planted response is a single
+token, so nothing diverges, and the state-dependent part of the normaliser is precisely what the
+selftest cannot exercise (Section~\ref{sec:res-mechanism}).
 
 \subsection{Calibration self-test}
 \label{sec:app-selftest}

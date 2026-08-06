@@ -78,12 +78,11 @@ against controls chosen so that a model which ignores the drug cannot pass. The 
 a cell-sentence model fine-tuned on this atlas learns what a particular compound does to a
 particular cell.
 
-Three things are worth keeping straight about what the model has actually seen, since the scale of
-the atlas invites an easy overstatement. Its cell pretraining is large but drug-free: tens of
-millions of cells, none of them treated with anything. The fine-tuning does not consume Tahoe
-entire --- it draws a sample of a few hundred thousand treated cells from it, which is ample for the
-task but is not a hundred million. And nothing here is unseen by the whole pipeline: the backbone is
-the Pythia-1b decoder~\cite{pythia}, a general-purpose language model pretrained on natural text,
+Two things are worth keeping straight about what the model has actually seen, since the scale of
+the atlas invites an easy overstatement. The fine-tuning does not consume Tahoe entire --- it draws
+a sample of a few hundred thousand treated cells from it, which is ample for the task but is not a
+hundred million. And nothing here is unseen by the whole pipeline: the backbone's language
+pretraining is text in which compound names, targets and mechanisms occur,
 and every prompt names the compound outright and carries a \texttt{Mechanism} field --- its
 annotated mechanism of action where one exists, the literal string \texttt{unclear} where it does
 not. What a held-out drug is held out of is the Tahoe fine-tuning, with its name and whatever
@@ -148,8 +147,9 @@ metric can be saturated by a predictor that knows nothing about drugs. We then a
 pipeline the failure lives, and the answer is not that the drug is missing. It is recoverable from
 the data wherever the task is winnable at all, and it is linearly decodable from the model's own
 activations, more explicitly the deeper one reads; what the generation readout does with that
-representation is consult it at very low gain --- a small and replicated effect, offered as the
-modest reading rather than as a mechanism. At the token budget those arms were scored at, no repair
+representation is consult it at very low gain --- a small effect, replicated across seeds in one
+training arm and absent in another, and surviving multiplicity correction only at one rung of the
+displacement ladder, offered as the modest reading rather than as a mechanism. At the token budget those arms were scored at, no repair
 that changed what the target \emph{contains} separated from its scramble, which pointed at how the
 target is \emph{written}, and re-encoding it as the drug-specific residual produces the first
 measurable drug effect in this project --- first in sequence rather than uniquely, since a
@@ -173,8 +173,8 @@ Four questions carry that argument, in order:
         direction the real response moved?
   \item \textbf{If not, where does the failure live?} Is the drug missing from the data, missing
         from the model's internal representation, or present in that representation but ignored by
-        the process that writes the output? Each answer implies a different repair, and only one of
-        them is cheap.
+        the process that writes the output? Each answer implies a different repair, and the cheapest
+        one turns out not to be the one that is needed.
   \item \textbf{Does it beat the thing it has to beat?} A table of per-drug averages, fitted on
         training conditions and blind to the cell it is predicting for, is the pre-registered win
         condition: a lookup can reproduce a memorised average, so only a model that tailors its
@@ -204,23 +204,27 @@ not. It is not that the drug is absent from the data: on the stratum where the t
 winnable the signal is there and the model still does not use it. And it is not that the drug is
 absent from the model: drug identity is linearly decodable from the residual stream, more explicitly
 the deeper one reads, while the generation readout consults that representation at very low gain.
-That dissociation between what is encoded and what is read is a small, replicated effect rather than
-a mechanism, and it is the least well-evidenced link in the chain --- which is why no argument
-downstream rests on it alone.
+That dissociation between what is encoded and what is read is a small effect rather than a
+mechanism --- present in one training arm and absent in another, and surviving multiplicity
+correction only at one rung of the displacement ladder. It is the least well-evidenced link in the
+chain, which is why no argument downstream rests on it alone.
 
 We identify the target encoding as the most probable binding constraint, and the exclusion behind
 that is narrower than an earlier framing of it claimed. What it excludes is the data and, at the
 token budget those arms were scored at, the content of the target: no repair that changed what the
 target holds separated from its scramble, which left how the target is written. It does not exclude
-the architecture. The readout is where the drug stops
-being used, and the one intervention this thesis recommends building --- a learned per-drug
+the architecture. The one intervention this thesis recommends building --- a learned per-drug
 modulation of the control-to-treated transformation --- is architectural rather than a change of
-prompt. The re-encoding that tests the diagnosis also changes aggregation, control referencing and
+prompt, and it is recommended on the size of the readout deficit rather than on the activation
+evidence above, which is too weak to carry it. The re-encoding that tests the diagnosis also changes aggregation, control referencing and
 sequence length, so the attribution is to the encoding as a package rather than to token dilution
 alone. It produces the first measurable drug effect in this project. On training conditions the model
 beats its designated comparator (\texttt{scramble\_orth}: the same prompt with the drug name replaced
 by a within-plate partner chosen so that its measured response is near-orthogonal to the target
-drug's) by $+0.0898$, with an interval excluding zero whether the resampling is clustered on cell
+drug's --- chosen that way because a comparator handed a deliberately \emph{dis}similar drug scores
+below chance and inflates the gap it defines, which is a result of this work rather than a design
+detail, and one that any label-swap ablation scored by a discrimination metric inherits) by
+$+0.0898$, with an interval excluding zero whether the resampling is clustered on cell
 line $[+0.0382,\,+0.1415]$ or on drug $[+0.0291,\,+0.1506]$. Re-encoding is first in sequence rather
 than uniquely responsible: a budget-matched re-run of the optimal-transport target clears zero as
 well, at $+0.0292$ \nolinebreak[3]$[+0.0144,\,+0.0441]$.

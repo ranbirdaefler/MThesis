@@ -75,19 +75,21 @@
 % ================================================ the invariant
 \draw[decorate, decoration={brace, amplitude=4pt}, black!55] (0.10,-0.55) -- (11.20,-0.55);
 \node[strong, anchor=north] at (5.65,-0.73)
-  {and the replicate-retrieval ceiling is \textbf{unchanged}: $0.742 \rightarrow 0.743$};
+  {and the within-well split-half retrieval reference is \textbf{unchanged}: $0.742 \rightarrow 0.743$};
 
 \end{tikzpicture}
 \caption[The residual frame and the encoding fork]{\textbf{The information was always present; the
-tokenisation discarded it.} Left: the drug-specific residual is built by two subtractions. The
+standard target's tokens barely expose it.} Left: the drug-specific residual is built by two
+subtractions. The
 control removes the cell's own state, leaving the \emph{shift}; the mean over the other drugs in the
 same plate group removes the \emph{generic} programme that every compound triggers, leaving what
 makes this drug different. Right: that same measurement, written two ways. Ranking genes by
 expression (a) puts housekeeping genes first, so only $34.6$ of the top $200$ tokens differ between
 two drugs in the same context; ranking by signed residual (b) raises that to $118.2$. (Divergence
 counts quoted at cell-line scope, as in Table~\ref{tab:divergence}; plate scope is similar.) The
-bracket is the point of the figure --- the replicate-retrieval ceiling is essentially identical
-under both encodings, so no information has been added. What changed is how much of it the token
-sequence exposes to the loss.}
+bracket is the point of the figure --- the within-well split-half retrieval reference is essentially
+identical under both encodings, so no information has been added. What changed is how much of it the
+token sequence exposes to the loss. That is a fact about the target's tokens; it does not on its own
+identify tokenisation as the binding constraint (Table~\ref{tab:divergence}).}
 \label{fig:frame}
 \end{figure}
