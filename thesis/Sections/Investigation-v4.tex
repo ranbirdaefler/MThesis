@@ -55,7 +55,10 @@ is drug-blind in the expression frame: it returns the same answer whether told t
 different one, and a baseline that copies the untreated cell matches it exactly. Third, the
 blindness is not an encoding failure. Drug identity is written into the model's activations at
 every layer measured --- increasingly explicitly with depth once cell line, plate and dose are
-projected out --- and the readout barely consults it; consistently with that, a
+projected out --- and the readout barely consults it, on the least well-evidenced measurement in
+the chapter: an effect present in one training arm and absent in another, surviving multiplicity
+correction at one rung of the displacement ladder only, and carrying nothing downstream on its own.
+Consistently with it, a
 sweep of denoised training targets --- which changed what the model had to produce but not how the
 drug was encoded --- produced no separation from its scrambles under the test available at the time.
 Fourth, re-encoding the training target as the drug-specific residual makes the model demonstrably
@@ -412,11 +415,13 @@ score is read from it, and no score in this chapter comes from a run whose valid
 inspected. Those three rates are written to each run's log rather than tabulated
 beside every score, so they are stated here once for the runs this chapter reads and not repeated
 per table. The generation configuration is recorded here for the same reason, because the intervals
-do not cover it: sampling at temperature $0.8$ with top-$p$ $0.9$ throughout, and three generation
+do not cover it: sampling at temperature $0.8$ with top-$p$ $0.9$ throughout, and four generation
 budgets --- $1200$ tokens with eight samples per condition in the expression-frame evaluations that
 feed \S\ref{sec:res-blind} and Table~\ref{tab:epsilon}, $1400$ with four in the residual-frame
-evaluations of \S\ref{sec:res-encoding}, and $600$ with four in the control arms until they were
-re-run at the residual arm's budget (\S\ref{sec:res-encoding}). Where a null turns on the budget it
+evaluations of \S\ref{sec:res-encoding}, $600$ with four in the control arms until they were
+re-run at the residual arm's budget (\S\ref{sec:res-encoding}), and $3800$ for output invariance,
+which compares whole generations to each other rather than to a truth and so is not truncated to a
+scoring panel. Where a null turns on the budget it
 was generated under, the budget is named at the null. Every
 contrast is additionally generated with a fixed per-(condition, arm) seed, so the two arms of a
 paired comparison are not drawn from different points of one global stream.
@@ -856,7 +861,9 @@ truth wins. Chance is $0.50$ by construction, and the precision reference --- th
 with a disjoint sample of the condition's own cells substituted for the prediction --- lands
 between $0.67$ and $0.83$ depending on
 cells per condition. The fourth is output invariance, which asks whether the drug token changes the
-generated text at all, without reference to any truth. For a fixed control cell, the model generates
+generated text at all, without reference to any truth. It is generated at $3800$ tokens, the
+longest budget in the chapter, because it compares two generations to each other rather than to a
+scoring panel and truncation would cut the comparison rather than the score. For a fixed control cell, the model generates
 twice from the same prompt and once from each of several prompts differing only in the drug, and the
 instrument compares
 \begin{equation}
@@ -1297,9 +1304,10 @@ single-cell arm, six depths & \multicolumn{3}{l}{nothing detectable at any depth
 \end{tabular}
 \caption{The identity test, as a fraction of that model's own clean preference gap between the two
 responses being compared (mean effect $+0.0133$ across the three seeds that measured it). Seed 44
-produced no layer-12 measurement, it lost five of seven layers to the headroom gate, so the
-pre-registered criterion of two replications in three new seeds is met with the third a
-non-measurement rather than a failure.}
+produced no layer-12 measurement: five of its seven layers were skipped because the purified slab
+retained context, not for want of headroom --- the five carry headroom of $9.7$ to $23.3$, all well
+clear of the gate. So the pre-registered criterion of two replications in three new seeds is met
+with the third a non-measurement rather than a failure.}
 \label{tab:identity}
 \end{table}
 
