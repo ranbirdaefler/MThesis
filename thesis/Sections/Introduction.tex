@@ -151,25 +151,15 @@ per-drug constant leaves on the table without establishing that a model could re
 A negative result earns its place only if it can be made specific, and that is the organising
 principle of what follows. We establish first that the failure is real rather than an artifact of
 how this field measures success --- a distinction less pedantic than it sounds, since the standard
-metric can be saturated by a predictor that knows nothing about drugs. We then ask where in the
-pipeline the failure lives, and the answer is not that the drug is missing. It is recoverable from
-the data wherever the task is winnable at all, and it is linearly decodable from the model's own
-activations at every layer measured, and more explicitly the deeper one reads once cell line, plate
-and dose are projected out; what the generation readout does with that
-representation is consult it at very low gain --- a small effect, replicated across seeds in one
-training arm and absent in another, and surviving multiplicity correction only at one rung of the
-displacement ladder, offered as the modest reading rather than as a mechanism. At the token budget those arms were scored at, no repair
-that changed what the target \emph{contains} separated from its scramble, which pointed at how the
-target is \emph{written}, and re-encoding it as the drug-specific residual produces the first
-measurable drug effect in this project --- first in sequence rather than uniquely, since a
-budget-matched re-run of the optimal-transport target clears zero as well. That is where the
-gap the thesis actually turns on opens: prompt sensitivity is not biological fidelity. The re-encoded
-model responds to the drug named in its prompt and still recovers a small fraction of that drug's
-signature --- a smaller fraction than a training-only lookup that never sees the cell it is
-predicting for. The thesis therefore ends not in closure but in the one place where no lookup can be built at
-all: the drug never seen in training. Of the three properties a compound could be
-generalised through, exactly one carries signal we are willing to call measurable, and only on one
-of the two axes it could be clustered over.
+metric can be saturated by a predictor that knows nothing about drugs. We then ask where in the pipeline the failure lives,
+and rule out the two places it is not: the drug is neither absent from the data nor absent from the
+model. What the generation readout does with a representation it demonstrably holds is the third
+question, and the weakest-evidenced of them. From there the argument turns on the target rather than
+the prompt, and re-encoding it produces the project's first measurable drug effect --- which opens
+the gap the thesis actually turns on, between responding to a drug name and reproducing that drug's
+biology. It ends in the one place where no lookup can be built at all: the drug never seen in
+training. Each of these is stated below with the qualifications the evidence carries; what the
+paragraph above gives is the order, not the strength.
 
 Four questions carry that argument, in order:
 
