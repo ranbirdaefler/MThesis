@@ -163,9 +163,12 @@ roughly $49$ cell lines simultaneously: across the three plates this project cac
 $48.6$ cell lines per well (median $49$, range $43$--$50$), with $286$ of $287$ distinct (drug, dose)
 treatments occurring in exactly one well. Those figures are properties of this cache and not of the
 atlas: Tahoe includes further plates, among them a replication plate, and where the text below says
-a treatment occurs in one well it means one well \emph{here}. No cross-plate replicate of a (drug, dose) treatment exists
-within this cache, which is what the inference rules below depend on; conditions that do appear on
-more than one of these plates differ in dose. Each drug is assayed on its own plate or plates, with
+a treatment occurs in one well it means one well \emph{here}. Cross-plate replication of a (drug, dose) treatment is all but absent
+here, and the exception is worth stating exactly because the inference rules below lean on it: of
+the $287$ treatments, $286$ occupy one well and one occupies three. That single replicated treatment
+is also the whole of the cross-plate structure at condition level --- it accounts for the $49$
+(drug, dose, cell line) groups the unit audit finds on more than one plate, one for each cell line
+in its wells. Every other condition appearing on more than one of these plates differs in dose. Each drug is assayed on its own plate or plates, with
 plate-matched controls. Three consequences run through everything below.
 Conditions from one well share a physical assignment, so they are not independent --- this sets the
 inference rules below. Drug and plate are partially confounded, so discrimination must be measured
@@ -1468,7 +1471,7 @@ shift (treated $-$ control) & 111.4 (56\%) & 0.742 \\
 context. The residual row is quoted at cell-line scope; at plate scope it reads $120.3$ and
 $0.7467$. The third column is a split-half retrieval reference, not a biological replicate ceiling:
 it scores disjoint cell subsets of one drug in one cell line on one plate against each other. It is
-near-constant across the three rows; what the target encodings differ in is the first column ---
+near-constant across the three rows; what the target encodings differ in is the second column ---
 how much drug-discriminating content lands in the top-$200$ token positions. That is a fact about the
 target's tokens; it does not on its own identify tokenisation as the binding constraint.}
 \label{tab:divergence}
@@ -1632,8 +1635,10 @@ Ranking the target by signed residual exposes $59\%$ of its top-$200$ gene posit
 cell-line scope, and $60\%$ at the plate scope this build actually uses, against $17\%$ for the
 standard target (Table~\ref{tab:divergence}), at an unchanged within-well split-half retrieval
 reference; and the residual is estimable
-without leakage --- split before fit, generic plate-scoped and drug-meaned, reliability resolved
-from the data at the matched null's $95$th percentile ($+0.109$). What that establishes is that the
+without leaking the evaluation into the fit --- split before fit, generic plate-scoped and
+drug-meaned, reliability resolved from the data at the matched null's $95$th percentile
+($+0.109$). That is a statement about the fitting procedure and not about plate structure, which
+the paragraph above leaves measured only in expectation. What that establishes is that the
 standard target's tokens hide a difference the data contain --- and that this is a fact about
 ranking genes on absolute expression rather than a fact about these drugs, since $92\%$ of the
 recoverable between-drug difference returns as soon as the cell's own control is subtracted. It
@@ -2005,8 +2010,8 @@ transferable was learned. Separating those two requires withholding data, and th
 the field's standard Leave-Pairs-Out split, and the split an earlier version of this work used ---
 leaves the held-out condition's treated well sitting in the training set through its other
 $\approx 48$ cell lines. Measured against the holdout this investigation previously used, $124$ of
-the $268$ treated wells in this cache placed a held-out condition and a training condition in the
-same physical sample. What that estimand measures is within-atlas matrix completion, not independent
+the $255$ treated wells for which split information exists placed a held-out condition and a
+training condition in the same physical sample. What that estimand measures is within-atlas matrix completion, not independent
 generalisation, and no processing of the targets changes it, because it is a property of what was
 randomised.
 
@@ -2455,7 +2460,8 @@ $94$ scored drugs received a channel arm at all.}
 Before the clustering axis, a plainer question about population. The repair of the partner pool
 restricted where the \emph{predictors} come from; it did not change which conditions are
 \emph{scored}. The gate's targets are all $4{,}131$ retained conditions, spanning $94$ drugs, of
-which $14$ are held out of training entirely --- and the target channel's arm covers $18$ drugs, of
+which $14$ are held out of training entirely --- the $10$ of the \texttt{unseen\_drug} quota plus
+four more that appear only in held-out wells --- and the target channel's arm covers $18$ drugs, of
 which \textbf{two} are held out. Restricting the targets to held-out drugs, which is the population
 the unseen-drug question is actually about, and clustered two-way on cell line and well as
 everything else in this subsection is, the target gap is
