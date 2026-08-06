@@ -552,7 +552,13 @@ def main():
     # a cell-line count and must not be reported as one -- the v3 artifact's "25 cell lines" was
     # really 25 cell-line x plate groups.
     _lines = {(g[0] if isinstance(g, (tuple, list)) else g) for g in used_groups}
-    out = {"n_celllines": len(_lines), "n_groups": used_cls, "n_drugs": len(all_rows),
+    # `n_drugs` is a misnomer kept for backward compatibility with the released artifacts: the
+    # value is the ROW count, one row per drug per group, so it exceeds the number of distinct
+    # drugs. The thesis inherited the mislabel and called 1,820 rows "1,820 drugs", which the
+    # atlas's ~1,100 compounds make impossible on its face. `n_rows` carries the same value under
+    # the name that is true.
+    out = {"n_celllines": len(_lines), "n_groups": used_cls,
+           "n_drugs": len(all_rows), "n_rows": len(all_rows),
            "mean_cells_per_drug": float(np.mean(diag_cells)) if diag_cells else 0.0,
            "mean_degs_per_drug": float(np.mean(diag_degs)) if diag_degs else 0.0,
            "drf": drf, "config": {k: v for k, v in vars(args).items()}}

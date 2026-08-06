@@ -406,13 +406,15 @@ under-budgeted arm can be reported as a null, and a null quoted without its budg
 Hence the rule --- every generation-based evaluation computes the \ENDCELL{}/\DOWN{} completion
 rate, the fraction of emitted symbols that are valid panel genes, and the duplicate rate before any
 score is read from it, and no score in this chapter comes from a run whose validity block was not
-inspected. Those three rates are written to each run's log rather than tabulated here, so what the
-chapter carries per evaluation is the generation budget, which is the part of the block a reader
-cannot reconstruct. The generation configuration itself is
-fixed and is recorded here because the intervals do not cover it: sampling at temperature $0.8$ with
-top-$p$ $0.9$, four samples per condition in the residual-frame evaluations of
-\S\ref{sec:res-encoding} and their control re-runs, and eight in the expression-frame evaluations
-that feed \S\ref{sec:res-blind} and Table~\ref{tab:epsilon}. Every
+inspected. Those three rates are written to each run's log rather than tabulated
+beside every score, so they are stated here once for the runs this chapter reads and not repeated
+per table. The generation configuration is recorded here for the same reason, because the intervals
+do not cover it: sampling at temperature $0.8$ with top-$p$ $0.9$ throughout, and three generation
+budgets --- $1200$ tokens with eight samples per condition in the expression-frame evaluations that
+feed \S\ref{sec:res-blind} and Table~\ref{tab:epsilon}, $1400$ with four in the residual-frame
+evaluations of \S\ref{sec:res-encoding}, and $600$ with four in the control arms until they were
+re-run at the residual arm's budget (\S\ref{sec:res-encoding}). Where a null turns on the budget it
+was generated under, the budget is named at the null. Every
 contrast is additionally generated with a fixed per-(condition, arm) seed, so the two arms of a
 paired comparison are not drawn from different points of one global stream.
 
@@ -618,13 +620,13 @@ imposed by centring the resampling distribution at $\DRF = 0$, no draw of $2{,}0
 observed value for $\NIR$, so the one-sided $p$ is at the resampling floor and reads $0.002$ after
 Holm correction across the five metrics. That the $p$ is at the floor is now a statement about the
 effect rather than about the resampler: the point estimate sits some forty cluster-robust standard
-errors from zero. Restricting swap partners to the same plate ($586$ drugs over $44$
+errors from zero. Restricting swap partners to the same plate ($586$ rows over $44$
 cell-line$\times$plate groups spanning $27$ cell lines) pulls every value toward zero and changes no
 sign: $\NIR$ $+0.545$ $[+0.516, +0.569]$, Holm $p = 0.002$ at the same resampling floor, against
 $-0.104$, $-0.251$, $-0.500$ and $-0.515$ in the same order, each excluding zero. The two arms are matched on the thing the comparison is about ---
 $27$ cell lines within plate against $25$ across plates --- which an earlier configuration was not:
 capping the run at $25$ \emph{groups} admitted only $18$ distinct cell lines. That narrower run gives
-$\NIR$ $+0.519$ $[+0.479, +0.546]$ over $335$ drugs, so the figure is not an artifact of how many
+$\NIR$ $+0.519$ $[+0.479, +0.546]$ over $335$ rows, so the figure is not an artifact of how many
 plate-groups are admitted. What the argument uses is the sign pattern, which is identical in every
 run for $\NIR$ and for the three rivals that carry a directional claim; no ranking among the
 negative metrics is claimed. The inversion is a
@@ -661,10 +663,11 @@ means the drug-blindness result cannot be dismissed on the grounds their own pap
 yields a higher score.} (a) A predictor carrying nothing about drug, cell or biology scores
 $\DEdr = 0.9999$, above the two-real-cell noise ceiling and above the model. Tier 2, $n=400$
 conditions. (b) Grading the metrics rather than the models: only $\NIR$ points forward. The panel
-shows the same-plate run ($586$ drugs over $44$ cell-line$\times$plate groups), the confound-free
+shows the same-plate run ($586$ rows over $44$ cell-line$\times$plate groups), the confound-free
 version, in which $\NIR$ reads $+0.545$ against $-0.104$ (\texttt{weighted\_r2}), $-0.251$
 ($\paneltau$), $-0.500$ (\texttt{spearman\_expr}) and $-0.515$ ($\DEdr$); the all-plates run
-($1{,}820$ drugs over $25$ cell lines) gives $+0.635$ for $\NIR$, $95\%$ CI $[+0.604, +0.663]$
+($1{,}820$ rows over $25$ cell lines, one row per drug per line) gives $+0.635$ for $\NIR$,
+$95\%$ CI $[+0.604, +0.663]$
 clustered on cell line, with the four rivals between $-0.163$ and $-0.686$ and all excluding zero.
 Both arms are clustered on the cell line --- $25$ across plates, $27$ within --- and every interval
 shown is a percentile cluster bootstrap with no small-sample correction (see text). \texttt{weighted\_r2} carries no directional claim: its sign tracks cell count.}
@@ -2710,7 +2713,12 @@ construction, and that coincidence is the trap: the residual frame's within-well
 reference is $0.854$ where the expression frame's is $0.576$, so the $0.537$ in one frame and the
 $0.498$ in the other are not two attempts at one task, and the difference between them is neither an
 improvement nor a decline. Each has to be read against its own frame's reference. Read that way, the
-expression-frame model does not clear chance at all, and the residual-frame model clears it by a
+expression-frame model does not clear chance at all, and the residual-frame model clears it on
+trained conditions only --- $0.598$ \nolinebreak[3]$[0.549, 0.647]$ there, against
+$0.533$ \nolinebreak[3]$[0.492, 0.575]$ and $0.459$ \nolinebreak[3]$[0.404, 0.514]$ on the two
+held-out splits, neither distinguishable from $0.50$ (\S\ref{sec:res-generalisation}). The pooled
+$0.537$ is three-quarters held-out condition, and no interval anywhere tests it against chance, so
+it is quoted as a mean and not as a clearance. What separates the frames is a
 margin \S\ref{sec:res-lookup} sizes at $13.9\%$ of the distance from chance to the reference --- a
 figure computed on the $n = 1{,}192$ common support of that comparison, where the model scores
 $0.549$ against a reference of $0.857$, and not on the $n = 1{,}394$ whose $0.537$ and $0.854$ are
