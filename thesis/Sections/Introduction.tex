@@ -95,7 +95,26 @@ the prompt while holding the input cell fixed, and the prediction barely moves; 
 metric the model is statistically indistinguishable from a baseline that copies the untreated cell
 and is told nothing about any drug at all.
 
-A second comparison is worth separating from that one, because it is weaker but more informative. A
+Stated that way it is a fact about one checkpoint, and the obvious reply is that a larger one would
+do better. We cannot answer that: none was run, and Section~\ref{sec:limitations} says so rather
+than argue around it. But two of the measurements underneath the result never touch the model. The
+first is the scoreboard: a predictor that places every gene at the middle rank, and therefore
+carries no information about drug, cell or biology, scores $0.9999$ on the field's default metric,
+above both the two-cell noise ceiling and the model. The second is the target. Because a cell
+sentence ranks genes by expression, the string the model is trained to emit is nearly the same
+string for any two drugs in the same cell line --- only $17\%$ of its top $200$ gene positions
+differ between them --- and of the divergence that re-encoding recovers, $92\%$ comes from
+subtracting the cell's own baseline state rather than the response drugs share with one another.
+The dominant reason two targets look alike is the cell, not a common reaction to being drugged.
+Neither number involves a forward pass, and the within-well retrieval reference is unmoved by the
+re-encoding ($0.742$ against $0.743$), so what changes is not how much the data distinguish the two
+drugs but how much of that distinction reaches the tokens. A larger backbone would be fitted to the
+same targets and scored on the same metric. Scale is a live question for this task, and
+Section~\ref{sec:limitations} says where we think it might bite; it is not a question about either
+of those two numbers.
+
+A second comparison is worth separating from the control-copy one, because it is weaker but more
+informative. A
 per-drug average, estimated from the same compound in \emph{other} cell lines, also outperforms the
 model --- but this is not a naive baseline. On the conditions where both are defined ($n = 1192$) it
 scores $0.913$ where the model scores $0.549$, so matching it would be a real

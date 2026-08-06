@@ -1974,7 +1974,7 @@ null result: it was never tested.
 \toprule
 Channel & Drugs (annot./scored) & $n$ & vs plate-matched null & (vs count-matched) & Verdict \\
 \midrule
-\textbf{protein target} & 264 / 18 & 712 & \ci{+0.1351}{+0.0745}{+0.1958} & $+0.1498$ & \textbf{live} \\
+\textbf{protein target} & 264 / 18 & 712 & \ci{+0.1351}{+0.0745}{+0.1958} & $+0.1498$ & \textbf{live}$^{\dagger}$ \\
 mechanism (MoA) & 180 / 26 & 921 & \ci{+0.0805}{+0.0279}{+0.1332} & $+0.0623$ & inconclusive \\
 chemical structure & 377 / 94 & 4131 & \ci{+0.0261}{+0.0035}{+0.0487} & $+0.0122$ & inconclusive \\
 
@@ -1992,7 +1992,12 @@ written as closed. The two fail it for different reasons, and the distinction ma
 lower bound falls $0.0021$ short --- a knife-edge that should not be read as a negative result in
 either direction. Chemistry's interval is the \emph{narrowest} of the three ($0.045$ wide against
 $0.121$ for target), so it is not underpowered: the effect is small and well estimated, and the
-margin simply falls inside it. One caveat bounds every row. The counts are annotations in Tahoe's
+margin simply falls inside it. $^{\dagger}$The target verdict is bolded here because it is the
+gate's own, and the gate clusters on cell line and well. It does \emph{not} survive clustering on
+the drug, which is the axis a claim about unseen drugs has to generalise across, and this section
+concludes that none of the three may be written as live without naming the axis
+(\S\ref{sec:res-scope}); read the row with that qualification and not without it. One further
+caveat bounds every row. The counts are annotations in Tahoe's
 drug metadata rather than testable coverage here: within this cache only $18$, $26$ and $94$ of the
 $94$ scored drugs received a channel arm at all.}
 \label{tab:channels}
