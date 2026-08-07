@@ -5,14 +5,18 @@
 % utilities.tex is \include-d AFTER \begin{document}, so preamble-only commands
 % (\geometry, \usepackage, ...) cannot be used here. \newgeometry is the in-body form.
 \newgeometry{margin=2.5cm}
-\onehalfspacing
+\setstretch{1.05}
 
 % blank page helper used by main.tex
 \newcommand\myemptypage{%
+  \begingroup
+  \hypersetup{pageanchor=false}%
   \null
   \thispagestyle{empty}%
   \addtocounter{page}{-1}%
   \newpage
+  \hypersetup{pageanchor=true}%
+  \endgroup
 }
 
 % ---------------------------------------------------------------------------

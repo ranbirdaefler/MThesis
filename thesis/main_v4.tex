@@ -1,6 +1,8 @@
 \documentclass[12pt, a4paper]{article}
+\usepackage[T1]{fontenc} % Scalable text fonts with proper copy/paste encoding
+\usepackage{lmodern}
+\usepackage{microtype} % Improves justification and line breaking
 \usepackage{amsmath} % Required for inserting some mathematical notations and commands
-\usepackage{hyperref} % Required for inserting hyperlinks
 \usepackage{graphicx} % Required for inserting images
 \usepackage{geometry} % Setting margins
 \usepackage{lipsum} % Sample text generation
@@ -8,18 +10,22 @@
 \usepackage{setspace} % Required for setting line spacing
 \usepackage{booktabs} % Required for tables
 \usepackage{multirow} % Required for the summary table's frame grouping
+\usepackage{array}
+\usepackage{tabularx} % Wrapping columns for wide result tables
 \usepackage{tikz} % Required for the methodology schematics
 \usetikzlibrary{arrows.meta, positioning, fit, backgrounds, calc, decorations.pathreplacing}
 \usepackage{float} % Required for figure placement control
 \usepackage{caption} % Required for figure captions
+\captionsetup{font=small,labelfont=bf}
 \usepackage{subcaption} % Required for multi-panel figures
 \usepackage[backend=biber, style=numeric, natbib=true, sorting=none]{biblatex} % Required for bibliography
+\usepackage{hyperref} % Load late so links and footnote anchors survive later package patches
 \addbibresource{ref.bib} % Adds the bibliography reference
 \graphicspath{{figs/}}
 \raggedbottom
 
 \begin{document}
-\include{utilities}
+\input{utilities}
 
 \myemptypage
 \myemptypage

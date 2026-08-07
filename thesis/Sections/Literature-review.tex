@@ -45,8 +45,8 @@ The encoding keeps rank and discards magnitude. C2S defends the loss with a reco
 expression can be recovered from rank through a fitted log-linear relationship
 $e_i = a_d\log(r_i) + b_d$, which achieves $R^2 = 0.815$ against the original values on peripheral
 blood data. On that basis they argue rank encodes expression reversibly enough across datasets for
-the discarded magnitude not to matter for downstream use. It is worth noting what kind of criterion
-this is --- reconstruction fidelity is a statement about \emph{absolute} accuracy, how close the
+the discarded magnitude not to matter for downstream use. The criterion is absolute rather than
+discriminative: reconstruction fidelity asks how close the
 recovered profile is to the true one, which is not automatically the same as preserving whatever
 distinguishes one experimental condition from another.
 
@@ -242,24 +242,23 @@ selection of five --- including our own implementation of their weighted $R^2$ v
 similarity function of the metric that survives is ours, each disclosed at the point of use. What adopting the design buys is that the verdict
 cannot be dismissed by the objection Miller et al.\ themselves raise.
 
-That verdict is where this thesis parts company with the authors whose instrument it borrowed, and
-the divergence is a result rather than an embarrassment. The audit reproduces their central
-methodological finding and then sharpens it. Metric choice dominates, and the correlation-based
-measures they flag as poorly calibrated are among the ones that fail here: four of the five metrics
-audited come out negative, each with an interval excluding zero, and three of the four are inverted
-rather than merely uninformative, scoring a drug-agnostic baseline above the noise ceiling. What
-does not transfer is the rank-based family as a family --- two of those four negatives are
-themselves rank-based, and what survives the port is the single \emph{discrimination} metric among
-them. The fourth negative is the weighted $R^2$ variant implemented here, which their analysis rates
-as calibrated; its sign tracks cell count, so Section~\ref{sec:res-metrics} draws no directional
-conclusion from it. What it does not reproduce is their conclusion about models. They
-report that deep models beat uninformative baselines once the metric is fixed; on the metric their
-own analysis endorses, the checkpoint evaluated here does not (Section~\ref{sec:res-blind}). Both
-results can stand: a repaired metric is a precondition for seeing skill, not a guarantee that there
-is skill to see. Which difference in setting accounts for the split --- genetic against chemical
-perturbation, a discriminative regression model against an autoregressive generative one, or the
-strength of the per-drug baseline in this atlas --- is taken up where the measurements are, in
-Sections~\ref{sec:res-metrics} and~\ref{sec:res-lookup}.
+The result separates from Miller et al.\ in two places, and only the first is a metric-level
+disagreement. That disagreement begins with weighted $R^2\Delta$, which Miller et al.\ endorse as
+calibrated but which is negative in both arms under our implementation. Its sign tracks cell count,
+so Section~\ref{sec:res-metrics} draws no directional conclusion from that negative, but this member
+of their calibrated set does not transfer intact. Their endorsed rank-based metric, $\NIR$, does
+survive. A broader observation about rank is separate from that comparison: $\paneltau$ and
+\texttt{spearman\_expr}, neither a member of Miller et al.'s calibrated set, both invert in this
+field-wide audit. Their failure does not generalise to $\NIR$ or to rank-based metrics as a family.
+The second separation is the conclusion about models. Miller
+et al.\ report that deep models beat uninformative baselines once the metric is fixed; on the metric
+their analysis endorses, the checkpoint evaluated here does not
+(Section~\ref{sec:res-blind}). Both results can stand: a repaired metric is a precondition for
+seeing skill, not a guarantee that there is skill to see. Which difference in setting accounts for
+the split --- genetic against chemical perturbation, a discriminative regression model against an
+autoregressive generative one, or the strength of the per-drug baseline in this atlas --- is taken
+up where the measurements are, in Sections~\ref{sec:res-metrics}
+and~\ref{sec:res-lookup}.
 
 \subsection{Six ways a drug-response benchmark can mislead}
 \label{sec:lit-dreval}
@@ -321,16 +320,19 @@ the gene panel used here, intersected with Tahoe's measured genes to give $946$.
 The premise --- that a drug's signature transfers across cellular contexts --- is normally assumed
 rather than measured, and how much of it holds determines whether a conditional model has anything
 left to predict once a per-drug constant is accounted for. Section~\ref{sec:res-transfer} measures
-it directly, at single-cell resolution and with the measurement noise divided out, and what comes
-back is a number rather than a yes or a no. On a disattenuated cross-context similarity scale the
+it on condition-level pseudobulk residuals built from single cells, with attenuation from within-well
+sampling noise corrected, and what comes back is a number rather than a yes or a no. On a
+disattenuated cross-context similarity scale the
 shared part is \ci{\Tcoef = 0.553}{0.514}{0.593}: a drug's residual signature in one context
-recovers a little over half of itself in another, far above the matched negative controls
-($-0.017$ and $-0.008$) and far below reproduction. The remaining \ci{44.7\%}{40.7\%}{48.6\%} is not
-thereby shown to be biology. The compared pairs differ in cell line, in dose and in treatment well
-at once, so the figure is not a variance share and not a drug$\times$cell-line interaction, and the
-section says so where it reports it. What the measurement delivers is a calibration of the transfer
-premise rather than a verdict on it, and we are aware of no prior estimate of that quantity for
-chemical perturbation at single-cell resolution.
+recovers a little over half of itself in another, far above the structure-matched cross-line
+negative control ($-0.008$) and far below reproduction. The earlier same-plate, different-drug
+control ($-0.017$) is not a second matched control: it differs structurally from the estimand and was
+voided on that basis. The remaining \ci{44.7\%}{40.7\%}{48.6\%} is not thereby shown to be biology.
+The compared pairs differ in cell line, in dose and in treatment well at once, so the figure is not
+a variance share and not a drug$\times$cell-line interaction, and the section says so where it
+reports it. What the measurement delivers is a calibration of the transfer premise rather than a
+verdict on it, and we are aware of no prior estimate of that quantity for chemical single-cell
+perturbation data at condition-level resolution.
 
 \subsection{Decodable, used, and the global workspace}
 \label{sec:lit-interp}
@@ -423,19 +425,20 @@ alternating matrix--vector products~\cite{cuturi}, which are cheap and paralleli
 
 The regularisation parameter $\varepsilon$ is not merely a computational convenience, and it is the
 reason this framework appears in this thesis at all. It controls how sharply mass is assigned. As
-$\varepsilon \rightarrow 0$ the coupling concentrates and approaches the unregularised solution, in
-which each control cell is matched to essentially one treated cell. As $\varepsilon$ grows the plan
-blurs, and in the limit every control cell is coupled equally to every treated cell --- the product
-of the marginals. Given a coupling, the \emph{barycentric projection} maps each control cell $x_i$ to
-the $\pi$-weighted average of its partners,
+$\varepsilon \rightarrow 0$ the plan concentrates toward an unregularised sparse coupling; without
+further conditions, that limit need not send each control cell to one observed treated cell. As
+$\varepsilon$ grows the plan blurs, and in the limit every control cell is coupled equally to every
+treated cell --- the product of the marginals. Given a coupling, the \emph{barycentric projection}
+maps each control cell $x_i$ to the $\pi$-weighted average of its partners,
 \begin{equation}
   \hat{y}(x_i) \;=\; \frac{\sum_j \pi_{ij}\, y_j}{\sum_j \pi_{ij}},
 \end{equation}
-and the two extremes of $\varepsilon$ therefore produce two familiar objects: at small $\varepsilon$
-a specific observed treated cell, and at large $\varepsilon$ the group mean. A sweep over
-$\varepsilon$ is thus a continuous interpolation between two target constructions that would
-otherwise have to be treated as unrelated alternatives, which is how Section~\ref{sec:res-epsilon}
-uses it.
+which is a convex combination inside the observed treated convex hull, not necessarily a point on
+the data manifold. The two extremes of $\varepsilon$ therefore produce a target dominated by a
+sparse set of observed treated cells at small $\varepsilon$, and the group mean at large
+$\varepsilon$. A sweep over $\varepsilon$ is thus a continuous interpolation between two target
+constructions that would otherwise have to be treated as unrelated alternatives, which is how
+Section~\ref{sec:res-epsilon} uses it.
 
 Applied to biology, this machinery has largely been put to two uses, and this thesis makes neither of
 them exactly. The first is trajectory inference. Waddington-OT
@@ -459,7 +462,9 @@ space where Euclidean distance is meaningful, and raw counts are not such a spac
 overdispersed and dominated by library size. Couplings are therefore computed in the released Tahoe
 scVI latent~\cite{scvi}, a variational autoencoder embedding that models counts with a
 negative-binomial likelihood and yields a compact continuous representation in which distances
-behave. And because the cost of a full coupling grows quadratically, transport is solved within
-matched groups --- a single cell line on a single plate --- rather than across the atlas, which is
-both computationally necessary and biologically correct, since a control cell from one cell line is
-not a plausible counterfactual partner for a treated cell from another.
+behave. And because the cost of a full coupling grows quadratically, transport is solved separately
+for each treatment condition. Each plan couples that condition's treated cells to the controls
+shared within its cell-line/plate group; it neither pools treated drugs into one group-level coupling
+nor couples across the atlas. This is both computationally necessary and biologically correct, since
+a control cell from one cell line is not a plausible counterfactual partner for a treated cell from
+another.

@@ -82,3 +82,26 @@ RESULTS_cluster/*.out
 # ---- Private review documents ----
 thesis/thesis_committee_assessment.md
 AUDIT_HANDOVER.md
+
+# ---- Internal working tooling and review documents: never published ----
+tools_verification/
+HANDOFF.md
+OPEN_FINDINGS.json
+AGENTS.md
+thesis/thesis_committee_review.md
+sim_channel_gate_plate.py
+verify_numbers.py
+
+# ---- Superseded build outputs (thesis_revised.pdf is the tracked deliverable) ----
+thesis/thesis.pdf
+thesis/thesis_verify.*
+thesis/_syncchk.*
+thesis/*-SAVE-ERROR
+thesis/thesis_revised.*
+!thesis/thesis_revised.pdf
+thesis/archive/
+thesis/main_v4_annotated.pdf
+
+# ---- Transient ----
+.pdf_review_tmp/
+artifacts_bundle.tar.gz

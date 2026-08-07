@@ -13,8 +13,11 @@ read against the broader characterisation, which used $6{,}628$ conditions.
 residual reproduces across a half-split --- $2{,}523$ of $4{,}999$ training conditions, kept at
 $\cos > 0.109$, the $95$th percentile of a null that pairs half A of one condition with half B of
 another. This is the right choice --- training on
-irreproducible residuals is training on noise --- but it means the model was taught the winnable
-fraction of the task, not all of it. A reliability filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.597$ \nolinebreak[3]$[0.563, 0.632]$ against the filtered $0.553$ \nolinebreak[3]$[0.514, 0.593]$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes. Two mismatches belong with it. The filter inside that calculation is the inherited $\cos > 0.2$ line rather than the $0.109$ line the training set actually uses, so the pair brackets the trained-on population without reproducing it. And the generation evaluation is selected differently again --- it applies the $0.109$ line to the \texttt{train} split and leaves the held-out splits unfiltered. That second mismatch is load-bearing rather than cosmetic, and it is taken up on its own below.
+residuals unresolved at this cell budget would train on unresolved variation --- but it means the
+model was taught the empirically reproducible fraction of the conditions, not all of them.
+Split-half retrieval establishes discriminability of treated populations under this sampling
+design and cell budget; it does not establish predictability from untreated input or learnability.
+A reliability filter might be expected to select \emph{toward} context-independent conditions and so bias the transfer coefficient upward. Measured, it does the opposite: the unfiltered estimate is $0.597$ \nolinebreak[3]$[0.563, 0.632]$ against the filtered $0.553$ \nolinebreak[3]$[0.514, 0.593]$. The filtered value is the one quoted, because disattenuation is unstable at the very low reliabilities the filter removes. Two mismatches belong with it. The filter inside that calculation is the inherited $\cos > 0.2$ line rather than the $0.109$ line the training set actually uses, so the pair brackets the trained-on population without reproducing it. And the generation evaluation is selected differently again --- it applies the $0.109$ line to the \texttt{train} split and leaves the held-out splits unfiltered. That second mismatch is load-bearing rather than cosmetic, and it is taken up on its own below.
 
 \paragraph{The intervals omit generation variance.} The confidence intervals in this thesis are
 cluster-robust with each condition's score treated as fixed. The headline gaps carry two-way
@@ -123,8 +126,9 @@ interval that spans zero, so the two are not separated and the comparison settle
 either direction.
 
 The exception is the split where it would matter. On \texttt{unseen\_drug} the mechanism lookup is
-ahead of the model by $0.099$ on $44$ conditions, with an interval spanning zero
-($[-0.222, +0.008]$, clustered on cell line) and far too wide to settle anything. That is not
+ahead of the model by $0.099$ on $44$ conditions: expressed in the contrast's reported direction,
+model minus lookup is $-0.099$ [$-0.222$, $+0.008$], clustered on cell line. The interval spans zero
+and is far too wide to settle anything. That is not
 evidence the leak is doing work; it is a measurement with no power at exactly the point where the
 design defect bites. So the position is: the design is wrong, the arm cannot say what the wrongness
 cost, and its proper use is as an instrument control rather than as the basis for a positive
@@ -188,15 +192,20 @@ stronger claim, it does not reduce to a lookup, and it is untested. Both questio
 defect in the gate itself --- the partner pool was not restricted to training drugs, so a held-out
 drug's response could be predicted from a partner that was also held out --- and the gate has since
 been re-run with the restriction in place. The repair narrowed what may be claimed, and the
-clustering axis narrows it again: protein target clears the relevance margin on the cell-line axis,
+clustering axis narrows it again. The target, mechanism and chemistry arms differ in support, drug
+set, partner count and annotation coverage, so their estimates are descriptive and do not identify
+a biological ranking. Protein target clears the relevance margin on the cell-line axis,
 misses it on the drug axis against both estimand-correct nulls --- clearing it there only against
 the weaker count-matched one --- and rests on $18$ annotated drugs of which two are held out;
 mechanism misses its lower bound by
 $0.0021$ on the cell-line axis and spans zero on the drug axis; chemistry's interval straddles the
-margin on both. Only the target channel supports a statement that unseen-drug generalisation is
-reachable through retrieval, and only as a direction worth testing rather than a measured effect of
-useful size. The binding limitation is coverage: $18$ drugs cannot settle it, and the experiment
-that would is a target-annotated panel broad enough to cluster on.
+margin on both. Chemistry attenuates under the different-plate construction, but that construction
+also changes support and partner availability, so the attenuation cannot be assigned causally to
+co-plating. On its restricted support, same-target retrieval is the strongest observed lead, and
+only as a direction worth testing rather than a measured effect of useful size. It is not an
+identified ordering of the three biological channels. The binding limitation is coverage: $18$
+drugs cannot settle it, and the experiment that would is a target-annotated panel broad enough to
+cluster on.
 
 \paragraph{Unseen cell lines.} A cell line never seen with any drug is a different generalisation
 axis from the held-out pairings tested here, and one the atlas's plating design does not compromise
@@ -230,7 +239,7 @@ one.
         $3.254$ BPE tokens per gene, only 8 single-token). Under teacher forcing the difficulty
         compounds: the residual target \emph{is} the drug signature, so the true prefix identifies
         the drug within a handful of symbols and the gradient vanishes exactly at the
-        drug-blind solution the loss exists to penalise.
+        readout solution whose drug discrimination the loss exists to improve.
   \item \textbf{Loss re-weighting toward differentially expressed genes.} Re-weighted cross-entropy
         against a single target contains no negatives, so nothing in it forces the output for one
         drug to differ from another's. It therefore attacks token dilution and leaves the

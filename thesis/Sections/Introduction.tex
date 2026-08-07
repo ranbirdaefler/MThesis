@@ -6,8 +6,8 @@ and in which direction is the readout the field treats as its most direct accoun
 actually does --- not what it was designed to bind, but what the cell does in response. That is a
 working premise rather than an established fact, and how far it holds in any given experiment is
 itself a measurement: \S\ref{sec:methods-data} finds a substantial share of the treated conditions
-in the atlas used here statistically inert or unidentifiable in principle, and nothing can be graded
-on those.
+in the atlas used here statistically inert or not empirically discriminable at the tested
+pseudobulk and cell budget, and those conditions cannot support this evaluation.
 Reading the response is routine. Reading it for every combination that might matter is not. A compound behaves differently
 at different doses, and differently again depending on the genetic background of the cell receiving
 it, so the space to be explored is the product of three large sets rather than any one of them. Even
@@ -90,10 +90,12 @@ not. What a held-out drug is held out of is the Tahoe fine-tuning, with its name
 mechanism annotation it carries still supplied at inference --- not the model's prior exposure to
 that name.
 
-It does learn something, and the something is the difficulty. What the model reproduces is the part
-of a treated profile that is not specific to the treatment: the cell's own state, and the programme
-that perturbed transcriptomes have in common whichever compound produced it. What it does not
-reproduce is the part that separates one compound from another --- and that part is not a remainder.
+The checkpoint-level results separate in two. The original single-cell-target checkpoint fails useful
+condition-specific prediction in the expression frame. What dominates its output is the part of a
+treated profile that is not specific to the treatment:
+the cell's own state, and the programme that perturbed transcriptomes have in common whichever
+compound produced it. What it does not recover usefully is the part that separates one compound
+from another --- and that part is not a remainder.
 Decomposing the treated-minus-control shift gives $62.1\%$ of its energy to the drug-specific
 residual against $39.0\%$ to the generic programme, the two components essentially orthogonal (a
 cross term of $-0.011$ closes the arithmetic), so the missing one is the larger of the two. Change the drug named in the prompt while holding the input
@@ -101,13 +103,16 @@ cell fixed, and the prediction barely moves. Within plate on unseen drugs the mo
 against a within-well split-half precision reference of $0.576$ --- one estimator, recomputed for
 every stratum scored, so that its value moves with the stratum, and the ``noise ceiling'' figures
 below are that same instrument on other strata --- and a baseline that copies the untreated cell and
-is told nothing about any drug scores $0.504$. Restricting to the conditions where
-the task is provably winnable does not separate them: model $0.768$, control-copy $0.766$, a paired
-contrast of $+0.002$ \nolinebreak[3]$[-0.026, +0.028]$ over $204$ conditions whose own noise ceiling
-is $0.938$. That interval is narrow relative to the range available on that stratum, so what it rules
+is told nothing about any drug scores $0.504$. Restricting to the $204$ conditions whose own
+within-well split-half precision reference clears the pre-set $0.80$ identifiability bar
+(mean $0.938$) does not separate them: model $0.768$, control-copy $0.766$, a paired
+contrast of $+0.002$ \nolinebreak[3]$[-0.026, +0.028]$. That interval is narrow relative to the range available on that stratum, so what it rules
 out is not only a large effect but a useful one.
+The later residual-target checkpoint answers a different question: it contains and weakly uses
+trained-drug information, reading the named drug and groping toward a coarse
+trained-drug-to-signature map, but it recovers only a small fraction of the per-drug average.
 
-The reply this invites is that it is a fact about one checkpoint and a larger one would do better. We
+The reply the original expression-frame result invites is that a larger backbone would do better. We
 cannot answer that directly: none was run, and Section~\ref{sec:limitations} says so rather than
 argue around it. What can be said is which parts of the result a larger checkpoint would change, and
 the two measurements that bound the reply never touch the model at all. The first is the scoreboard:
@@ -170,8 +175,8 @@ Four questions carry that argument, in order:
   \item \textbf{Does the model use the drug at all?} Holding the input cell fixed and changing only
         the compound it is told about, does the prediction move --- and does it move in the
         direction the real response moved?
-  \item \textbf{If not, where does the failure live?} Is the drug missing from the data, missing
-        from the model's internal representation, or present in that representation but ignored by
+  \item \textbf{If useful condition-specific prediction fails, where does the failure live?} Is the drug missing from the data, missing
+        from the model's internal representation, or present in that representation but underused by
         the process that writes the output? Each answer implies a different repair, and the cheapest
         one turns out not to be the one that is needed.
   \item \textbf{Does it beat the thing it has to beat?} A table of per-drug averages, fitted on
@@ -201,10 +206,14 @@ different positive control, where the same metric returns $+0.704$ \nolinebreak[
 over $42$ cell lines against a zero-drug-information negative arm --- a second calibration result,
 not a robustness check on the first.
 
-We establish drug-blindness on that one surviving metric, using several independent instruments so
-that no single measurement carries the claim alone, and we separate out two things the failure is
-not. It is not that the drug is absent from the data: on the stratum where the task is provably
-winnable the signal is there and the model still does not use it. And it is not that the drug is
+We establish the failure of useful condition-specific prediction on that one surviving metric,
+using several independent instruments so that no single measurement carries the claim alone, and
+we separate out two things the failure is not. It is not that the treated populations are
+indistinguishable at the tested pseudobulk and cell budget: on the stratum whose own within-well
+split-half precision reference clears the pre-set $0.80$ identifiability bar, the signal is there
+and this checkpoint still gains no useful condition-specific predictive advantage from it. That
+split-half result establishes empirical discriminability of the treated populations under this
+sampling design, not predictability from the untreated input or learnability. And it is not that the drug is
 absent from the model: drug identity is linearly decodable from the residual stream at every layer
 measured, and more explicitly the deeper one reads once cell line, plate and dose are projected out,
 while the generation readout consults that representation at very low gain.

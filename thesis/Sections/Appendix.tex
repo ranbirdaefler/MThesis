@@ -9,9 +9,9 @@ Three of the measurements in this thesis rest on estimators built for the purpos
 off the shelf. Each was validated by planting a known answer and checking recovery --- in both
 directions, since an estimator that only ever returns the answer one hopes for is not evidence.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
-\small
+\footnotesize
 \begin{tabular}{llrr}
 \toprule
 Estimator & Planted truth & Recovered & \\
@@ -98,9 +98,10 @@ canonical set: the two columns are the single-cell and optimal-transport checkpo
 residual arm the canonical results describe, they were scored on the unseen-drug tier of a different
 evaluation set, and their swap partners were not restricted to the same plate, whereas the canonical
 run draws partners within plate. The artifacts are \texttt{scramble\_sweep\_single.json} and
-\texttt{scramble\_sweep\_T2.json}.
+\texttt{scramble\_sweep\_T2.json}; both record \texttt{max\_new\_tokens=1200}, rather than the
+$1400$-token budget under which the later optimal-transport result is evaluated.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \begin{tabular}{lrr}
 \toprule
@@ -115,8 +116,12 @@ Bin (swap distance) & single-cell model & optimal-transport model \\
 trend, corr(distance, $\gap$) & $+0.051$ & $+0.012$ \\
 \bottomrule
 \end{tabular}
-\caption{No bin in either model has an interval excluding zero, and the trend correlations are
-$\approx 0$. 200 (drug, swap) pairs over 20 cell lines, $n=40$ per bin.}
+\caption{No bin in either model has an interval excluding zero in this historical $1200$-token run,
+and the trend correlations are $\approx 0$. 200 (drug, swap) pairs over 20 cell lines, $n=40$ per
+bin. The single-cell column bounds a large distance effect under this design; the
+optimal-transport column does not carry into the canonical result, where the same checkpoint clears
+zero at $1400$ tokens under the within-plate stratified test
+(Section~\ref{sec:res-encoding}).}
 \label{tab:sweep}
 \end{table}
 
@@ -130,7 +135,10 @@ populate the far bins, but $\gap$ uses the same drug on both arms so that drift 
 The intervals are wide --- $n=40$ per bin gives half-widths of $0.06$--$0.10$ in the
 single-cell column and $0.03$--$0.06$ in the optimal-transport column --- so this sweep
 excludes a large effect rather than establishing a null, which is why the stratified scramble
-replaced it in the body.
+replaced it in the body. The later budget-matched result also withdraws the optimal-transport
+column as evidence of a null: the optimal-transport verdict is generation-budget dependent and
+non-null at $1400$ tokens, as Section~\ref{sec:res-encoding} reports. Only the single-cell column
+remains a bound from this earlier design.
 
 \subsection{Training configuration}
 \label{sec:app-training}
@@ -139,7 +147,7 @@ Every arm was cold-started from the same base checkpoint with identical hyperpar
 target or objective is the only variable. One exception is material and is stated wherever the arm
 is quoted.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -192,8 +200,9 @@ result was geometry, not biology.
 
 \emph{Failed design three: the normaliser.} The third injected the displacement and scored
 $\Delta \log P(g_B)$ against a norm-matched random direction --- and was confounded the opposite
-way. A random direction inside the slab is off the class-mean manifold: it inflates the logsumexp
-normaliser (measured $+2.75$ nats) where the on-manifold displacement does not, so every target is
+way. A random direction inside the slab does not follow the empirical class-mean geometry: it
+inflates the logsumexp normaliser (measured $+2.75$ nats) where the observed class-mean displacement
+does not, so every target is
 depressed under the control arm whether or not it carries identity. With the scored target stripped
 of all identity information, $36\%$ of the effect still stood. Norm-matched is not
 disruption-matched. The same argument retires the simplest \emph{injection} test, ``how far did the
