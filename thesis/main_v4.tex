@@ -34,18 +34,14 @@
 \input{utilities}
 
 \pagenumbering{gobble}
-\input{Sections/Title-page}
-\clearpage
+% Bocconi supplies the official title, abstract and acknowledgements pages
+% during submission. Reserve those three physical pages here deliberately.
+\myemptypage
+\myemptypage
+\myemptypage
 
 \pagenumbering{roman}
 \setcounter{page}{1}
-\input{Sections/Abstract}
-\clearpage
-\input{Sections/Acknowledgements}
-\vspace{2.5em}
-\input{Sections/Data-Code-Compute}
-\clearpage
-
 \tableofcontents
 \clearpage
 
