@@ -58,7 +58,7 @@ legacy_whole_panel/         # superseded full-panel pipeline — kept for proven
 tests/                      # offline self-tests, incl. the split-before-fit release gate
                             #   PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q
 
-thesis/                     # the write-up (thesis/build.sh → thesis.pdf)
+thesis/                     # the write-up (thesis/build.sh → thesis/thesis_revised.pdf)
   main_v4.tex               #   document root
   Sections/Investigation-v4.tex   #   the investigation, told in the order it happened
   archive/                  #   superseded drafts, kept for provenance
@@ -193,7 +193,7 @@ python endcell/analysis/residual_eval.py --cache_dir ot_cache --model_path CKPT/
 
 ```bash
 # Build the write-up
-./thesis/build.sh          # → thesis/thesis.pdf
+./thesis/build.sh          # → thesis/thesis_revised.pdf
 ```
 
 Use `--help` on any script for exact flags; recipe values are in `docs/methods/dataset_construction.md`.

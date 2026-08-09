@@ -158,7 +158,7 @@ Arm & Target & Training & Note \\
 single cell & the observed treated cell & 1 epoch & \\
 consensus & group pseudobulk & \textbf{$\approx 60\%$ of an epoch} & tier-1 $\NIR$ unscoreable \\
 optimal transport (T2) & barycentric, $\varepsilon{=}0.5$ & 1 epoch, 23{,}842 steps & \\
-residual & signed residual signature & 1 epoch, 15{,}340 steps & \\
+residual & signed residual signature & 1 epoch, 9{,}231 steps & \\
 residual (holdout) & as above, 738 withheld & 1 epoch & \\
 \bottomrule
 \end{tabular}
@@ -171,9 +171,61 @@ negative rests on the single-cell endpoint alone.
 These five arms --- \texttt{single\_cell}, \texttt{consensus}, \texttt{ot\_T2},
 \texttt{residual}, \texttt{residual\_holdout} --- are also the complete family over which the
 identity test of Section~\ref{sec:res-mechanism} takes its multiplicity correction: five arms by
-up to seven depths, $26$ measured tests --- the family size behind the $q$-values quoted there.}
+up to seven depths, $26$ measured tests --- the family size behind the $q$-values quoted there.
+One qualification attaches to the residual row: its step count is the rebuilt target build's, the
+build the canonical behavioural results are scored on, while the identity test of that arm ran on
+the earlier target build.}
 \label{tab:trainconfig}
 \end{table}
+
+\paragraph{Training adequacy.} A negative result invites the objection that the model was simply
+not trained enough, and the objection is answerable from the job logs rather than by assertion.
+Two properties of the one-epoch logs decide how panel A of Figure~\ref{fig:training} must be read. The trainer records
+a \emph{cumulative} epoch mean rather than an instantaneous loss, and a cumulative mean flattens by
+arithmetic whatever the model is doing, so every series is de-averaged to its per-window value
+before plotting. And the learning rate follows a cosine schedule annealed to $\approx 0$ by the end
+of the single epoch --- $2.96 \times 10^{-10}$ at the last logged step against a post-warmup peak of
+$10^{-5}$ --- so the final third of each curve is flat partly because the step size has gone to
+zero, and that stretch is not independent evidence of anything. What is load-bearing is the band
+between $50\%$ and $70\%$ of the epoch, where the learning rate is still $22$--$52\%$ of peak and
+the residual arm's loss has already flattened, moving only from $1.859$ to $1.854$; its final
+held-out loss, on a matched validation file of $3{,}600$ examples, is $1.8986$ against a training
+loss of $1.8854$.
+
+Panel B tests ordinary longer optimisation directly. The fields recorded in both residual logs
+match on base model and tokenizer, training and validation files and counts, seed, effective batch,
+and peak logged learning rate; weight decay and AdamW beta coefficients are not logged and are not
+claimed as verified matches (\path{training_adequacy_long.json}). The ten-epoch run has a nominal
+scheduler horizon of $92{,}318$, but it executes $92{,}310$ optimizer updates: accumulation is reset
+at every epoch boundary, so each epoch contributes $\lfloor147{,}710/16\rfloor=9{,}231$ updates.
+This is a separate longer schedule, not a literal continuation of the canonical run: changing
+\texttt{num\_epochs} stretches the cosine learning-rate schedule across all ten epochs.
+Validation loss is best at epoch 1 ($1.9199$), then worsens to $2.0559$ at epoch 2 and $2.1708$ at
+epoch 3 before ending at $2.2568$, while training loss falls from $1.9456$ to $1.4485$. The canonical
+one-epoch run remains better on the same validation file ($1.8986$). Ordinary longer optimisation
+under this schedule therefore does not rescue held-out cross-entropy; after the first epoch the
+training and validation losses separate. That result does not show that every possible schedule
+would fail, and no long-run checkpoint was scored with $\NIR$, so it says nothing about whether
+$\NIR$ itself worsens with additional epochs. Together with the one-epoch traces, it excludes
+undertraining as a \emph{trivial} explanation rather than as a general one.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig-training}
+\caption[Training curves]{\textbf{The canonical short-run arms flatten, while a separate longer
+residual schedule overfits on held-out cross-entropy.} \textbf{A}, de-averaged training loss against
+fraction of the nominal one-epoch scheduler horizon for three target constructions. The residual
+and optimal-transport arms complete their scheduled epoch; consensus was also scheduled for one
+epoch but was terminated by the wall-clock at $61.5\%$. Three superseded residual builds are
+omitted, as is the single-cell arm, whose training log was not retained. The dashed grey curve is
+the canonical residual arm's learning rate relative to its post-warmup peak; the shaded band marks
+$50$--$70\%$ of that horizon, where loss is already flat at $22$--$52\%$ of peak learning rate.
+Absolute panel-A losses are not comparable between arms because their target strings differ.
+\textbf{B}, epoch-mean losses for the separate ten-epoch residual schedule (nominal scheduler
+horizon $92{,}318$; $92{,}310$ optimizer updates), with canonical one-epoch validation loss as a
+dashed reference. No long-run checkpoint was scored with $\NIR$.}
+\label{fig:training}
+\end{figure}
 
 \subsection{The identity test: failed designs and remaining guards}
 \label{sec:app-identity}

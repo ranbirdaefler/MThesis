@@ -7,6 +7,17 @@
 \newgeometry{margin=2.5cm}
 \setstretch{1.05}
 
+% A restrained hierarchy: the document structure is unchanged, but section
+% starts are easier to scan and subsection headings sit more clearly below them.
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {\thesection}{0.75em}{}
+\titlespacing*{\section}{0pt}{2.5ex plus 0.8ex minus 0.3ex}{1.2ex}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{0.65em}{}
+\titlespacing*{\subsection}{0pt}{2.0ex plus 0.6ex minus 0.2ex}{0.8ex}
+
 % blank page helper used by main.tex
 \newcommand\myemptypage{%
   \begingroup
@@ -36,11 +47,3 @@
 
 % confidence interval, e.g. \ci{+0.1002}{+0.0661}{+0.1368}
 \newcommand{\ci}[3]{$#1$ \,[$#2$, $#3$]}
-
-% ---------------------------------------------------------------------------
-% DRAFT MARKERS -- remove before submission.
-% \todo{...}    work still to do
-% \pending{...} a result that has not landed yet
-% ---------------------------------------------------------------------------
-\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
-\newcommand{\pending}[1]{\textbf{[PENDING: #1]}}

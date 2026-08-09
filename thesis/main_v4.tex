@@ -5,9 +5,9 @@
 \usepackage{amsmath} % Required for inserting some mathematical notations and commands
 \usepackage{graphicx} % Required for inserting images
 \usepackage{geometry} % Setting margins
-\usepackage{lipsum} % Sample text generation
 \usepackage{afterpage} % Required for \myemptypage
 \usepackage{setspace} % Required for setting line spacing
+\usepackage{titlesec} % Modest visual hierarchy for section headings
 \usepackage{booktabs} % Required for tables
 \usepackage{multirow} % Required for the summary table's frame grouping
 \usepackage{array}
@@ -19,7 +19,13 @@
 \captionsetup{font=small,labelfont=bf}
 \usepackage{subcaption} % Required for multi-panel figures
 \usepackage[backend=biber, style=numeric, natbib=true, sorting=none]{biblatex} % Required for bibliography
-\usepackage{hyperref} % Load late so links and footnote anchors survive later package patches
+\usepackage[hidelinks]{hyperref} % Load late so links and footnote anchors survive later package patches
+\hypersetup{
+  pdftitle={Do Cell-Sentence Language Models Learn Drug-Specific Perturbation Responses?},
+  pdfauthor={Florian Daefler},
+  pdfsubject={An audited evaluation of cell-sentence perturbation prediction on Tahoe-100M},
+  pdfkeywords={single-cell transcriptomics, perturbation prediction, Cell2Sentence, Tahoe-100M, evaluation}
+}
 \addbibresource{ref.bib} % Adds the bibliography reference
 \graphicspath{{figs/}}
 \raggedbottom
@@ -27,14 +33,24 @@
 \begin{document}
 \input{utilities}
 
-\myemptypage
-\myemptypage
-\include{Sections/Acknowledgements}
-\myemptypage
+\pagenumbering{gobble}
+\input{Sections/Title-page}
+\clearpage
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+\input{Sections/Abstract}
+\clearpage
+\input{Sections/Acknowledgements}
+\vspace{2.5em}
+\input{Sections/Data-Code-Compute}
+\clearpage
 
 \tableofcontents
-\newpage
+\clearpage
 
+\pagenumbering{arabic}
+\setcounter{page}{1}
 \include{Sections/Introduction}
 \include{Sections/Literature-review}
 \include{Sections/Investigation-v4}

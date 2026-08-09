@@ -1,370 +1,270 @@
 \section{Conclusions}
 \label{sec:conclusions}
 
-This thesis asked whether a cell-sentence language model fine-tuned on the largest available
-single-cell drug-perturbation atlas learns enough drug-specific biology for useful
-condition-specific prediction. The original single-cell-target checkpoint does not: in the
-expression frame it gains no useful condition-specific advantage over a drug-agnostic control. A
-later residual-target checkpoint does contain and weakly use trained-drug information --- a coarse
-trained-drug-to-signature map --- but recovers only a small fraction of the per-drug average and
-loses to retrieval.
-That subject is deliberately narrow --- one $1$B C2S-Scale Pythia checkpoint, five fine-tuning arms
-cold-started from it with identical hyperparameters at a single learning rate, none trained for
-longer than one epoch, and no larger checkpoint tested (Section~\ref{sec:limitations}) --- and
-nothing below widens it to conditional generative models in general. What travels past these
-checkpoint-level results is the chain establishing why useful prediction fails, how far the failure can be repaired,
-and what bounds the repair --- and, before any of them, the evaluation result that had to come
-first.
+This thesis asked whether a cell-sentence language model fine-tuned on Tahoe-100M learns enough
+drug-specific biology for useful condition-specific prediction. The original single-cell-target
+checkpoint does not: in the expression frame it gains no useful advantage over a drug-agnostic
+control. A later residual-target checkpoint contains and weakly uses trained-drug information, but
+recovers only a small fraction of the per-drug average and loses to retrieval. The scope is narrow:
+one $1$B C2S-Scale Pythia backbone, five canonical fine-tuning arms cold-started from it and
+configured for at most one epoch at one learning rate (the consensus arm stopped at $61.5\%$), and
+no larger checkpoint. A separate ten-epoch residual run tests ordinary undertraining only through
+held-out cross-entropy. It is not a sixth behavioural arm, and no long-run checkpoint was evaluated
+with $\NIR$. These checkpoint-level results do not establish a limit for conditional generative
+models in general.
 
-\paragraph{The evaluation had to be fixed first.} The metric the field standardises on is exploitable:
-a zero-information baseline placing every gene at the middle rank scores $\DEdr = 0.999913$
-\nolinebreak[3]$[0.999908, 0.999919]$, above both the noise ceiling and the model. Under a Dynamic Range Fraction analysis computed across plates, and replicated within plate, only
-$\NIR$ --- a discrimination metric, in which the generic response cancels --- has a positive dynamic
-range fraction: $+0.635$ across plates and $+0.545$ within plate. All four prediction metrics tested
-come out negative --- $-0.163$ to $-0.686$ across plates, $-0.104$ to $-0.515$ within plate --- and
-three of the four are inverted rather than merely uninformative. The fourth, the weighted $R^2$
-variant, sits closest to zero in both arms and its sign tracks cell count, so no directional claim
-is made for it. The released calibration artifacts clustered the drug rows as
-though each row were its own cell line, so their intervals were far too narrow. Both arms have been
-rerun with the bootstrap clustered on cell line and the null imposed: $\DRF(\NIR) = +0.635$,
-$[+0.604, +0.663]$ over $25$ cell lines across plates, and $+0.545$, $[+0.516, +0.569]$ over $27$
-within plate, each at Holm $p = 0.002$ across the family of five. That $p$ is still at the
-resampling floor, but now because the estimate sits some forty cluster-robust standard errors from
-zero rather than because each row was counted as its own cluster. The intervals are percentile
-cluster bootstraps without a small-sample correction, and plate is crossed with cell line while only
-the cell-line channel is clustered, so they are robust on that axis alone. The residual frame is
-audited separately rather than assumed to inherit that result, and reads $\DRF(\NIR) = +0.704$
-\nolinebreak[3]$[+0.667, +0.736]$ over $42$ cell lines against a zero-drug-information control, so
-both frames this thesis scores in are calibrated by measurement rather than by assertion. Three
-things here are portable, and they are portable to different places rather than ranked against one
-another: the metric audit, to any work scored on $\DEdr$-family metrics; the per-drug lookup bar of
-Section~\ref{sec:res-lookup}, to any method proposed for seen-drug transfer on this atlas, since it
-needs no checkpoint and no prompt; and the mechanistic protocol of
-Sections~\ref{sec:res-used}--\ref{sec:res-mechanism} --- purified subspace, removal gate, positive
-control, matched-norm swap --- to any model with an accessible residual stream, which is the ground
-on which Section~\ref{sec:limitations} nominates it.
+\paragraph{The evaluation had to be fixed first.} A zero-information predictor that places every
+gene at the middle rank scores $\DEdr=0.999913$ \nolinebreak[3]$[0.999908,0.999919]$, above both the
+two-cell reference and the model. Dynamic Range Fraction therefore grades each candidate metric by
+whether it rewards a real replicate more than that uninformative arm. Of the five metrics tested,
+only $\NIR$ is positive: $+0.635$ \nolinebreak[3]$[+0.604,+0.663]$ across plates over $25$ cell
+lines, and $+0.545$ \nolinebreak[3]$[+0.516,+0.569]$ within plate over $27$, each with Holm
+$p=0.002$. All four prediction metrics are negative; three are inverted rather than merely blunt.
+The weighted $R^2$ variant lies closest to zero and its sign tracks cell count, so it carries no
+directional claim. A separate residual-frame calibration returns $+0.704$
+\nolinebreak[3]$[+0.667,+0.736]$ over $42$ cell lines against a zero-drug-information control.
 
-This also settles how the thesis enters the dispute of Section~\ref{sec:lit-dispute}. Miller et
-al.~\cite{miller} argue that reports of deep models failing to beat uninformative baselines reflect
-miscalibrated evaluation rather than model failure, and on genetic perturbation they support that
-with calibrated-metric benchmarks. We port their framework and confirm its methodological claim
-that metric choice dominates. Their endorsed weighted $R^2\Delta$ inverts here under our
-implementation, though its sign tracks cell count and carries no directional claim; their endorsed
-rank-based $\NIR$ survives. The inversions of $\paneltau$ and \texttt{spearman\_expr} are separate
-rank-based failures outside Miller et al.'s calibrated set, not a failed port of their endorsed
-rank-based family. On drug perturbation the original single-cell-target checkpoint is then at chance
-\emph{on $\NIR$, the metric their own analysis endorses}.
-That is the strongest form the sceptical result can take: it cannot be answered with the objection
-their paper raises. Their conclusion is not overturned so much as bounded --- it does not extend
-from genetic perturbation to this task, and the per-drug-constant finding below suggests why.
+Those corrected intervals are percentile cluster bootstraps without a small-sample correction.
+They cluster on cell line after an earlier artifact mistakenly treated each drug row as its own
+cluster; plate remains crossed with cell line, so the intervals are robust on that axis alone. The
+portable result is not that $\NIR$ is universally sufficient. It is that a perturbation metric must
+first demonstrate positive dynamic range against a real replicate and an uninformative predictor.
+The per-drug lookup developed here is a second portable bar for seen-drug transfer, and the
+purified-subspace/removal-gate protocol is a third, narrower instrument for models with accessible
+activations.
 
-\paragraph{The original single-cell-target checkpoint fails useful condition-specific prediction, and activation-side label loss is not the reason.} On the calibrated
-metric, within plate, the model scores $0.498$ against a $0.576$ within-well split-half precision
-reference --- and a control-copy that reproduces the untreated cell, carrying no drug information
-whatever, scores $0.504$. The obvious objection is that this is a noise floor rather than a model
-failure, and the difficulty stratification answers it: on the $204$ conditions whose own split-half
-precision reference clears the pre-set $0.8$ identifiability bar and averages $0.938$, the model reaches
-$0.768$ and the same zero-drug-information control-copy reaches $0.766$ --- a paired contrast of
-\ci{+0.002}{-0.026}{+0.028} clustered over cell lines. The treated populations are empirically
-discriminable under this sampling design and cell budget, yet this checkpoint gains no useful
-condition-specific predictive advantage from that signal. That makes the shortfall a result about
-this checkpoint rather than a failure to distinguish the measured populations; split-half
-retrieval does not establish predictability from the untreated input or learnability.
+This places the result carefully in the dispute reviewed in Section~\ref{sec:lit-dispute}.
+Miller et al.~\cite{miller} argue that apparent failures of deep perturbation models can be created
+by miscalibrated metrics, and their genetic-perturbation results support that warning. This thesis
+confirms the methodological point that metric choice can dominate a benchmark, then reaches a
+different model verdict after applying it. Their rank-based $\NIR$ survives here; the checkpoint is
+at chance on that surviving metric. The negative result cannot therefore be dismissed using the
+calibration objection that motivated the audit. Nor does it overturn their conclusion beyond this
+setting: it bounds its extension from genetic perturbation to these chemical predictions.
 
-Three further instruments agree, and what they deliver is a bound rather than a zero. Replacing the
-drug name and mechanism in the prompt with a different, different-mechanism drug's leaves the output
-unchanged to within \ci{+0.014}{-0.016}{+0.042} on that same identifiable subset; the truth-free
-invariance gap is \ci{0.000}{-0.019}{+0.016}, so two generations for different drugs resemble each
-other as closely as two generations for the same one; and forced-choice grading against the
-condition's own truth sits at chance, far below the value the same test returns for a real sample of
-that condition's cells. None of these shows the drug effect to be zero. The first two bound it
-inside an interval containing zero and the third places it below a reference the same test clears on
-real cells, which together are the strongest statement measurements of this size support --- and
-a bound is what the argument needs, since an effect four independent instruments cannot resolve is
-not one a prediction task can use.
+On the calibrated metric, the original checkpoint fails useful condition-specific prediction.
+Within plate on unseen drugs it scores $0.498$ against $0.504$ for a control-copy that reproduces
+the untreated cell and $0.576$ for a within-well split-half precision reference. On the $204$
+conditions whose own reference clears the pre-set $0.80$ identifiability bar and averages $0.938$,
+the model reaches $0.768$ and control-copy $0.766$: a paired difference of
+\ci{+0.002}{-0.026}{+0.028}. These treated populations are empirically discriminable at the tested
+sampling design and cell budget, yet the checkpoint obtains no useful drug-dependent advantage.
+Split-half retrieval does not prove that a response is predictable from an untreated cell, but it
+rules out the claim that this null is merely a failure to measure distinct treated populations.
 
-The activation-side evidence rules out one narrow failure: loss of the supplied drug label before
-generation. With cell line, plate and dose projected out, drug identity becomes \emph{more} linearly
-decodable with depth, reaching $0.88$ at layer $16$ against an $8\%$ chance floor, while the
-descriptive activation fraction assigned to the purified drug-label slab stays flat at
-$\approx 0.03$ against the cell-line slab's $\approx 0.6$; those fractions are not a biological
-variance decomposition. The network is causally sensitive to removing that region --- ablating it
-costs $3.6$--$18.6\times$ a matched-dimension random subspace --- but at a bit player's weight,
-$9$--$37\%$ of what ablating cell line costs at layers $2$--$9$, with layer $12$ the single
-exception at $98\%$. So the dissociation is not between decodable label information and a region to
-which the output is wholly insensitive. It is between how explicitly the supplied label is
-decodable and how little the output changes under interventions on that activation-side signal.
+Prompt scrambles, truth-free output invariance and forced-choice grading agree with that bound.
+Changing the drug and mechanism while holding the cell fixed moves the prediction by only
+\ci{+0.014}{-0.016}{+0.042} on the identifiable subset; generations for different drugs resemble
+one another as closely as repeated generations for the same drug; and forced choice remains near
+chance where real treated samples clear the same test. None proves a literally zero drug effect.
+Together they show that any effect these instruments miss is too small to support the intended
+prediction task.
 
-How far that can be pushed toward a mechanism is limited, and the limit should be stated plainly.
-Three earlier designs for localising the failure by activation swapping were retracted once their
-controls were found confounded --- mismatched geometry, an ablate-then-add that made the treatment a
-restoration, and an isotropic direction outside the empirical class-mean geometry that inflated the
-normaliser --- and what replaces them
-(Section~\ref{sec:res-mechanism}) is a small, replicated, single-layer effect present in one training
-arm and absent in another, whose survival of multiplicity correction depends on which rung of the
-displacement ladder the correction is applied to. That supports the modest reading --- the generation
-readout is sensitive to the drug-label activation signal at very low gain --- and does not support a claim about
-privileged subspaces or global workspaces, which is offered here as an interpretive frame rather
-than a result. It is the weakest load-bearing element in the thesis, and no argument here rests on
-it alone: the one architectural intervention this thesis proposes takes its warrant from the size of
-the readout deficit, not from this.
+The agreement matters because each instrument fails differently. A truth-referenced scramble can
+be distorted by the response geometry of the replacement drug. Truth-free invariance avoids that
+gallery but asks only whether two generations differ. Forced choice is insensitive to the magnitude
+of a generic response but depends on its candidate set. The identifiable-condition slice changes
+support but directly answers whether the aggregate null was driven by noisy wells. No single test
+proves absence; their common bound makes a useful effect implausible at the evaluated resolution.
 
-\paragraph{The target's tokens barely distinguish one drug from another, and the construction that
-changed that produced the first non-null effect.} Because a cell sentence ranks genes by expression, the targets for two different
-drugs in the same context are nearly the same string: $82.7\%$ of the top-$200$ genes are shared, so
-only about a sixth of the target distinguishes one drug from another. Since the training loss weights
-every token position equally, the natural inference is that very little of the gradient can be
-carrying drug identity --- but that inference is a \emph{hypothesis} about the optimisation, not a
-measurement of it. What is measured here is the overlap of the target gene sets; no token-level loss
-or gradient attribution was computed, and the claim should be read at that strength. Its warrant is
-that it predicts correctly, twice. It predicts that changing \emph{what the target is} while leaving
-\emph{what the tokens encode} alone will not help --- and a three-point comparison of a real
-treated-cell target, an $\varepsilon=0.5$ optimal-transport barycentric target and a full pseudobulk
-collapse stays in the
-near-null regime under the random-partner test at the budget and comparator that test was run at.
-That qualification is load-bearing, and the paragraph below pays it: re-scored at a matched budget
-against the geometry-defined \texttt{orth} partner, whose score is empirically near chance in this
-sample, one of the three points is not null, and a second arm was stopped mid-epoch
-and so evidences little, which leaves the comparison's negative resting outside that scoring on the
-single-cell point alone. And it predicts that changing what the tokens encode
-will help: re-encoding the target as the drug-specific residual raises the differing fraction to
-$59\%$ at cell-line scope ($60\%$ at the plate scope the trained build uses) and produces the first
-non-null drug effect in the project, with a gap that grows
-monotonically with swap dissimilarity.
+On the original single-cell-target checkpoint, activation analysis rules out one narrow explanation:
+the supplied drug label is not simply lost
+before generation. After cell line, plate and dose are projected out, drug identity becomes more
+linearly decodable with depth, reaching $0.88$ at layer $16$ against an $8\%$ chance floor. The
+purified drug-label slab remains small relative to the cell-line slab, and removing it changes the
+output more than removing a matched random subspace but much less than removing cell-line signal at
+most layers. A separate five-arm probe suite on later target-encoding checkpoints tested whether the
+drug-specific content of that signal was read. Its more ambitious activation-swap interpretations
+do not survive their controls. The
+remaining effect is small, appears in one training arm and not another, and survives pooled
+multiplicity correction only at one displacement rung and on one of two stored bootstrap draws.
+It supports the modest statement that generation reads a decodable drug-label signal at low gain;
+it does not establish a privileged subspace or mechanism, and no downstream conclusion depends on
+it alone.
 
-Two qualifications stop that from being a demonstration that the tokenisation is the binding
-constraint, and both are load-bearing. The residual construction changes aggregation, control
-referencing, generic subtraction, sign coding and sequence length at the same time as it changes
-token divergence, and no matched-budget factorial here separates them. And \emph{first} means first
-in sequence, not uniquely responsible. Re-run at the residual arm's $1400$-token budget, the
-optimal-transport control that had been read as inert clears zero against its geometry-defined
-\texttt{orth} partner, whose observed score is near chance,
-$+0.0292$ \nolinebreak[3]$[+0.0144, +0.0441]$; at the $600$-token cap it was originally scored at,
-the same gap read $+0.0144$ \nolinebreak[3]$[-0.0051, +0.0338]$ and spanned zero. The single-cell control
-stays flat at both budgets. That correction is also a transferable measurement lesson: a generation
-token cap can manufacture a null, and the same cap had already halved the residual arm's own effect
-before anyone noticed it was doing anything.
+\paragraph{Changing the target exposes drug identity, but does not establish transfer.} Standard
+cell-sentence targets for two drugs in the same context share $82.7\%$ of their top-$200$ genes.
+That overlap is a property of the targets, not a token-level attribution of the training gradient.
+Residual encoding raises the differing fraction to $59\%$ at cell-line scope and $60\%$ at the
+plate scope used for training. Across $212{,}528$ exhaustive within-group pairs at plate scope,
+full-profile and treated-minus-control targets become progressively more different from near to
+opposite response-similarity bins, whereas residual divergence remains high without that monotone
+gradient ($118.4$, $121.0$, $118.7$). The pairs reuse drugs and groups, and these fixed bins are not
+the later per-condition extreme-partner draws, so this is descriptive geometry rather than an
+independent inferential test.
 
-\paragraph{What that drug use amounts to, and what it does not.} A second correction here
-generalises past this project, and it belongs in the record as a finding rather than as an erratum. A label-swap
-ablation --- rename the condition, leave every other byte identical, read the drop --- is the
-standard way to ask whether a conditional model uses its condition, and the swapped arm is normally
-read as a null. It is not one. Across the three strata defined by true residual geometry, the
-scrambled model's own $\NIR$ measures $0.550$, $0.501$
-and $0.423$ as the named partner moves from aligned through orthogonal to anti-aligned with the
-target. A comparator whose score is a monotone function of which drug it was handed is an active
-treatment tracking that drug, and a gap read against a deliberately dissimilar partner therefore
-adds ``how much naming a lie hurts'' --- $+0.077$ against the anti-aligned partner --- to ``how much
-naming the truth helps'', which is the only term anyone wanted. Any label-swap ablation scored by a
-discrimination metric inherits this, and the remedy is cheap: report the comparator's own score. The
-geometry-defined \texttt{orth} partner is the least contaminated available comparator because its
-observed score is empirically near chance in this sample, not because its construction establishes
-an independent null.
+Residual encoding produces the project's first measurable trained-drug effect. Against the
+geometry-defined \texttt{scramble\_orth} partner, trained pairings score $+0.0898$, with intervals
+excluding zero clustered on cell line and well \nolinebreak[3]$[+0.0382,+0.1415]$ and on drug and
+well \nolinebreak[3]$[+0.0291,+0.1506]$. The comparator choice matters: the scrambled arm itself
+scores $0.550$, $0.501$ and $0.423$ as the partner moves from aligned through orthogonal to
+anti-aligned with the truth. A deliberately dissimilar lie therefore inflates the apparent benefit
+of the correct name. Reporting the comparator's score and using the \texttt{orth} stratum avoids
+that particular inflation; it does not manufacture an independent null.
 
-It cost this thesis a claim, which is how it was found. An earlier form of this paragraph claimed
-the drug use generalises, on a holdout keyed at the (drug, cell line) level where pairings never
-seen in training scored \ci{+0.1002}{+0.0661}{+0.1368} and held-out \emph{drugs} came out null. Two
-corrections removed that claim: the targets were rebuilt so the generic is fitted after the split
-rather than over the holdout, and the non-neutral comparator was replaced by the
-geometry-defined \texttt{orth} stratum whose observed score is near chance.
-The held-out-drug arm is what exposed the comparator, by returning a positive result on a split
-where a positive result is impossible.
+The residual construction changes aggregation, control referencing, generic subtraction, sign
+coding and sequence length together. It identifies the encoding package, not token dilution alone.
+Nor is it uniquely responsible: at the matched $1{,}400$-token budget, the optimal-transport arm
+also clears zero against its geometry-defined orthogonal comparator, at $+0.0292$
+\nolinebreak[3]$[+0.0144,+0.0441]$, whereas its original $600$-token estimate spanned zero. The
+single-cell arm remains flat. A generation cap can therefore manufacture a null, and any claim
+about the residual advantage must retain the budget comparison.
 
-Measured against that \texttt{orth} comparator on the rebuilt targets, trained pairings score $+0.0898$,
-excluding zero clustered on cell line and well \nolinebreak[3]$[+0.0382, +0.1415]$ and on drug and
-well \nolinebreak[3]$[+0.0291, +0.1506]$; held-out pairings score $+0.0332$ and held-out
-\emph{drugs} $-0.0315$ \nolinebreak[3]$[-0.0836, +0.0206]$. Transfer to held-out combinations is
-\emph{not} established. Its interval excludes zero when the bootstrap is clustered on cell line and
-well \nolinebreak[3]$[+0.0069, +0.0594]$, and does not when it is clustered on drug and well
-\nolinebreak[3]$[-0.0031, +0.0695]$ --- and drug is the axis along which a claim about transferring a
-\emph{drug} signature has to generalise. The split is also mostly recombination rather than novelty:
-$30$ of its $34$ drugs and $39$ of its $42$ cell lines also appear in the trained arm, and $82\%$ of
-its conditions pair a training drug with a training cell line. The memorisation premium that earlier
-carried this
-argument goes with it. Pooled it is $+0.0567$ \nolinebreak[3]$[-0.0014, +0.1148]$, cluster-robust
-$p = 0.056$; restricted to the $30$ drugs common to both splits it changes sign, to $-0.0606$ with
-$p = 0.18$. It is confounded in any case, because the splits are scored on populations selected by
-different rules: the raw within-well split-half precision reference is $0.956$ on the trained split
-against $0.824$ and $0.836$ on the two held-out ones, but that $0.132$ spread closes to $0.006$ once
-the same reliability line is imposed on all three, so it marks a difference in selection and not a
-lower noise floor on the held-out arms. Gaps measured across the splits remain not directly
-comparable.
+The result also clarifies what ``target encoding'' means here. The standard,
+optimal-transport and pseudobulk controls alter the biological object written to an
+expression-ranked sequence; they do not reliably separate from their controls at the original
+budget. The residual construction subtracts control and generic components, aggregates to
+condition level, splits signs and lengthens generation. Its gain is evidence for changing the
+representation as a package. A factorial comparison would be needed to attribute that gain to
+aggregation, subtraction, sign coding, sequence length or token divergence separately.
 
-What survives is narrower than what was claimed for it. The comparator-free test --- the slope of
-$\NIR$ on the cosine similarity between the real response of the drug named in the prompt and that of
-the true one --- is positive on every split: $+0.373$ on trained pairings, $+0.336$ on held-out
-pairings, $+0.342$ on held-out drugs. This does \emph{not} show that the model knows held-out
-compounds. The slope is fitted over the three scrambled \emph{partner} prompts alone (\texttt{near},
-\texttt{orth}, \texttt{opposite}); the prompt naming the true target drug is never a point on the
-line, and on the held-out-drug split $82\%$ of the $597$ points name a drug that also appears in the
-trained arm. What it shows is that the model responds to the identity of a named trained drug even
-when it is scored in a context whose true drug it has never seen --- a real effect, and a much weaker
-one than zero-shot drug knowledge. Alongside it, on both held-out splits the model scores at chance
-when its output is ranked against other drugs in the same cell line ($\NIR = 0.533$
-\nolinebreak[3]$[0.492, 0.575]$ and $0.459$ \nolinebreak[3]$[0.404, 0.514]$), and its output is no
-closer to the true drug's response than to other drugs' (own-minus-other cosine $+0.011$ and
-$-0.014$, neither interval excluding zero). The map exists and is coarse: what the model gropes
-toward is a per-drug average response, and it recovers only a small fraction of that average ---
-which is why the lookup below beats it, since the lookup \emph{is} that average, measured directly.
+Ordinary undertraining was examined separately. The ten-epoch residual diagnostic has a nominal
+scheduler horizon of $92{,}318$ steps, but accumulation resets at epoch boundaries produce
+$92{,}310$ actual optimizer updates. Validation cross-entropy is best after epoch 1 ($1.9199$) and
+ends at $2.2568$ while training loss continues to fall. Because the cosine schedule is stretched
+rather than continued and no checkpoint from this run was scored with $\NIR$, the result does not
+show that every schedule or longer run must fail. It does show that simply extending this scheduled
+optimisation does not improve its held-out objective.
 
-\paragraph{But a lookup table wins --- and what it beats is not a ceiling.} On the $n = 1192$
-conditions where a training-only lookup exists at all, a per-drug mean residual measured in other
-cell lines scores $0.913$ against the model's $0.549$, and the within-well split-half precision
-reference there is $0.857$ --- so the lookup does not approach that reference, it \emph{exceeds} it,
-covering $115.7\%$ of the distance from chance to that bar against the model's $13.9\%$. Over all
-$1{,}394$ scored conditions, not all of which admit a lookup, the model reaches $0.537$ against a
-reference of $0.854$; the two populations are quoted separately throughout. The $0.913$ is itself
-pooled across the split --- $0.980$ on trained conditions, where the other cell lines it averages
-can sit in the target's own well, and $0.890$ on held-out ones, where they cannot --- and the
-ordering is the same on both. That excess over the bar is a property of the bar rather than a
-headroom estimate, for the three reasons Section~\ref{sec:res-lookup} gives. The natural reading of those numbers is that the drug's response
-is essentially a
-per-drug constant, that this conditional model therefore has almost nothing to condition on, and that
-the correct formulation of the task is retrieval rather than generation. We initially drew exactly
-that conclusion, and it is wrong.
+The trained-drug effect does not establish biological transfer. Held-out drug--cell-line pairings
+score $+0.0332$: the interval excludes zero when clustered on cell line and well
+\nolinebreak[3]$[+0.0069,+0.0594]$ but not when clustered on drug and well
+\nolinebreak[3]$[-0.0031,+0.0695]$. Drug is the axis over which a transferred drug signature must
+generalise. Moreover, $30$ of the split's $34$ drugs and $39$ of its $42$ cell lines occur in
+training, and $82\%$ of its conditions recombine a training drug with a training cell line. On
+genuinely unseen drugs the gap is $-0.0315$ \nolinebreak[3]$[-0.0836,+0.0206]$, with both clustering
+axes spanning zero. The three splits also differ in reliability selection, so their point estimates
+cannot be read as a clean decay with novelty.
 
-It is wrong because $\NIR$ compresses near the top of its range --- the same class of failure this
-thesis opens by documenting, arriving a second time in our own preferred instrument, at the top of
-the scale instead of the bottom. Measured in cosine space with measurement noise divided out, the
-transfer coefficient is \ci{\Tcoef = 0.553}{0.514}{0.593}, against a simulated null in which the
-residual is entirely shared across contexts --- a null this estimator recovers at $1.001$ --- and
-with a structure-matched negative control at \ci{-0.008}{-0.036}{+0.020}. So roughly $45\%$
-\nolinebreak[3]$[41\%, 49\%]$ of the similarity scale $\Tcoef$ is measured on is \emph{not shared
-across contexts}.
-That is deliberately weaker than the reading in an earlier draft, which took $1 - \Tcoef$ to be a
-drug$\times$cell-line interaction share. It is not one. The estimator pools pairs that differ in
-cell line, in dose and in well, and it was run with \texttt{same\_dose\_only} off,
-\texttt{loo\_generic} off and a reproducibility threshold of $0.2$; on pairs that vary dose within a
-single cell line it returns \ci{\Tcoef = 0.707}{0.632}{0.782}, so nearly $0.3$ of that same scale still
-fails to transfer with the cell line held fixed. The unshared remainder therefore mixes interaction
-with dose, well and estimator slack, and cannot be attributed to a drug$\times$cell-line term
-without a design that separates them. What can be said is that the per-drug constant is what the
-lookup captures and what the model gropes toward, and that the unshared remainder is reached by
-neither.
+The comparator-free partner slope is positive on all splits, but it is fitted only over scrambled
+partner prompts; the true target drug is not a point on that line, and most partner names on the
+unseen-drug split are trained drugs. It establishes prompt sensitivity to named trained compounds in
+a new scoring context, not knowledge of the unseen compound. Consistently, held-out outputs sit near
+chance when ranked against other drugs in the same cell line and are no closer to their own response
+than to alternatives. The checkpoint has learned a coarse trained-drug-to-signature map, not a
+transferable response model.
 
-So the honest statement of what the model does is sharper, and less flattering, than ``it misses the
-part that is not shared across contexts''. It fails to recover the \emph{shared} part that a numpy
-dictionary obtains for free, and the unshared remainder --- which mixes cell line, dose, well and
-estimator, and in which two tests looked for learnable structure and found none without settling the
-question --- is reached by no method here, ours least of all. Two different failures, and collapsing them undersells both.
+That is the distinction on which the thesis turns. Sensitivity asks whether output changes when the
+prompt changes; fidelity asks whether it changes toward the response of the named drug. The partner
+slope and trained-condition scramble gap establish the former for drugs represented in fine-tuning.
+Weak own-versus-other cosine, near-chance held-out ranking and failure against lookup show that the
+movement is not an accurate conditional response. A system can read a drug token, retrieve a coarse
+signature and still fail the biological task.
 
-That conclusion connects this work to an assumption the field has carried since the Connectivity
-Map: that a compound induces a characteristic signature stable enough across cellular contexts for
-signature-similarity querying to be meaningful. This thesis measures that assumption on
-condition-level pseudobulk residuals assembled from single cells, with a discrimination metric and
-a within-well split-half precision reference --- and the modern
-finding that a per-perturbation mean is hard to beat may be less a warning about weak baselines than
-a restatement of it.
+\paragraph{The lookup wins, but it is not a ceiling.} On the $1{,}192$ conditions where both are
+defined, a training-only per-drug mean residual from other cell lines scores $0.913$, against
+$0.549$ for the model and $0.857$ for the within-well reference. The lookup is $0.980$ on trained
+conditions and $0.890$ on held-out ones; restricted to one other cell line it still scores $0.822$.
+Its excess over the split-half reference reflects a many-line average compared with a noisy
+half-sample on a metric compressed near its upper limit, not performance beyond biological
+headroom. The conclusion is nonetheless decisive for seen drugs: nothing conditional built here
+beats direct retrieval of the drug's average response.
 
-It also places this work as the single-cell, generative instance of DrEval's
-critique~\cite{dreval}. DrEval audits drug \emph{sensitivity} prediction and finds that deep models
-barely outperform a naive additive predictor of mean drug and cell-line effects. Our
-\texttt{drug\_lookup} is that predictor's drug term, and the finding replicates on a
-$946$-dimensional transcriptomic response. On the $1{,}192$ conditions where both are defined the
-lookup scores $0.913$ against the model's $0.549$, with a within-well split-half precision reference
-of $0.857$ that the lookup exceeds. Four of DrEval's six pathologies --- pseudoreplication, data leakage
-through the split, biased evaluation metrics, and missing ablation studies --- turn out to structure
-the entire methodology of this thesis, which arrived independently at intervals clustered on cell
-line and treatment well rather than on cells, a holdout keyed at the treatment well rather than the
-(drug, cell line) pair, a discrimination metric immune to between-drug variance, and a token-level
-scramble ablation. That convergence is worth
-recording: the controls a critical benchmark demands are the same controls a single negative result
-needs in order to mean anything.
+That average is not the whole response. A disattenuated cross-context transfer coefficient is
+\ci{\Tcoef=0.553}{0.514}{0.593}; a fully shared simulated null returns $1.001$ and a
+structure-matched negative control returns \ci{-0.008}{-0.036}{+0.020}. Thus about $45\%$ of the
+similarity scale on which $\Tcoef$ is measured is not shared across compared contexts. This is
+explicitly \emph{not} a drug-by-cell-line interaction or variance share. The estimator mixes cell
+line, dose, well and target estimation, was run with \texttt{same\_dose\_only} and
+\texttt{loo\_generic} off, and still leaves roughly $0.3$ unshared when dose varies within one cell
+line. The lookup captures the shared per-drug component; neither it nor the model reaches the
+unshared remainder.
 
-\paragraph{Where the opportunity actually is.} Two further measurements bear on where it lies --- one
-unresolved, the other now settled on a corrected run --- and between them they redirect what
-follows from this work.
+This corrects a tempting interpretation of the lookup. Its $0.913$ score does not imply that drug
+response is almost entirely constant across contexts. It shows that $\NIR$ recognises the shared
+signature and compresses distinctions near its upper end. The transfer coefficient asks a different
+question in cosine space and finds context dependence after attenuation correction. Reading
+$1-\Tcoef$ as the learnable opportunity would be equally wrong: it is an upper bound on what the
+constant leaves unshared under this estimator, not evidence that a model can predict that remainder.
 
-The part of the drug-specific residual that fails to transfer across contexts is large --- roughly
-$45\%$ of the similarity scale $\Tcoef$ is measured on, which is not a variance share ---
-and we could not find structure in it. No cell line modulates different drugs in a consistent
-direction. Within-line consistency is $-0.0149$ \nolinebreak[3]$[-0.0251, -0.0050]$ against
-$+0.0003$ \nolinebreak[3]$[-0.0071, +0.0081]$ across lines, an excess of $-0.0153$; the within-line
-interval lies entirely below zero, so there is no positive consistency to find. A direct test of
-whether mechanism-matched drugs share a context term with a given cell line returned nothing
-detectable.
+Two tests sought learnable structure in that remainder and found none detectable. Within-line
+consistency is $-0.0149$ \nolinebreak[3]$[-0.0251,-0.0050]$ against $+0.0003$
+\nolinebreak[3]$[-0.0071,+0.0081]$ across lines, and a mechanism-matched context test is null. These
+do not make the remainder irreducible: the latter quantity has low split-half reliability and
+mechanism is heavily confounded with plate. Resolving it requires more cells per condition or a
+design that crosses mechanism with plate, not a different confidence interval.
 
-Those are two negative results and they do not license the conclusion that the unshared part is
-irreducible. The second test bounds its own power severely: $\kappa$'s split-half reliability is
-$0.195$ at the $0.05$ reliability floor that test runs at ($0.324$ at the stricter $0.20$ floor), so
-the quantity being correlated is barely estimable, and mechanism is so heavily confounded with plate
-that only $3$--$7\%$ of matched pairs survive a different-plate requirement. The
-honest statement is that the structure of the unshared part is \emph{unresolved here}, and that
-resolving it needs more cells per condition or a plating design that crosses mechanism with plate ---
-neither of which is an analysis choice. What can be said is that a lookup
-scoring $0.913$ on that same common support --- $0.980$ on trained conditions and $0.890$ on
-held-out ones, above the $0.857$ within-well split-half precision reference either way ---
-already outscores
-anything conditional built here, so on seen drugs nothing we built beats retrieval.
+This echoes DrEval's practical lesson~\cite{dreval} in a different output space. DrEval finds that
+deep drug-sensitivity models often add little beyond mean drug and cell-line effects. Here the
+response is a $946$-gene vector rather than scalar potency, yet a per-drug mean again dominates the
+conditional model. The lesson is not that simple baselines are biologically complete. It is that a
+conditional architecture earns its complexity only by beating the additive or retrieval component
+available from training. Pseudoreplication, split leakage, metric bias and missing ablations can
+otherwise make that increment appear much larger than it is.
 
-But a lookup requires the drug to have been seen. For drugs that have not been, the gate has now
-been re-run with its partner pool restricted to training conditions --- the construction the
-question actually asks about, since a partner the model never saw cannot stand for what training
-supplied. The three channel-specific arms differ in support, drug set, partner count and annotation
-coverage, so their estimates describe those arms and do not identify a biological ranking of
-target, mechanism and chemistry. On their respective supports one channel clears the pre-set
-relevance margin of $0.03$ and two do not --- and the one that does, does so on one clustering, and
-on the other only against the weakest of the three nulls.
-Protein target clears it on all three
-constructions clustered on cell line and well: count-matched \ci{+0.1498}{+0.0958}{+0.2038},
-plate-matched \ci{+0.1351}{+0.0745}{+0.1958}, and the stricter different-plate requirement
-\ci{+0.1322}{+0.0648}{+0.1996}. Clustered on the drug --- the unit a claim about unseen drugs
-generalises over, and one carrying only $18$ annotated drugs --- the same gaps read
-$[+0.0536, +0.2460]$, $[+0.0287, +0.2416]$ and $[+0.0199, +0.2445]$: still clear of zero, but
-clearing the margin only against the count-matched null, the weakest of the three controls, and
-falling short against both estimand-correct constructions. Mechanism excludes zero on all three constructions when clustered on
-cell line and well (plate-matched \ci{+0.0805}{+0.0279}{+0.1332}), yet its lower bound falls
-$0.0021$ short of the margin there, and on the drug axis it spans zero
-($[-0.0038, +0.1649]$ plate-matched). It is neither live nor equivalent to its null on either
-axis, but inconclusive --- on a knife-edge on the one and not separated from chance on the other.
-Chemical structure carries the narrowest interval of the three and still cannot be placed: it
-excludes zero against a plate-matched null (\ci{+0.0261}{+0.0035}{+0.0487}) and spans zero once the
-plate is held apart (\ci{+0.0118}{-0.0097}{+0.0333}), so what the interval rules out is a large
-effect rather than establishing a small one, with the margin falling inside it. Chemistry
-attenuates under the different-plate construction, but that construction also changes support and
-partner availability, so the attenuation cannot be assigned causally to co-plating.
-Tables~\ref{tab:channels} and~\ref{tab:fieldattribution} between them carry all three constructions,
-all on the cell-line axis; the drug-axis intervals quoted above are given in
-Section~\ref{sec:res-scope}. What these gaps establish is that
-protein-target annotation carries transcriptional signal that clears the relevance margin on the
-cell-line axis; that
-mechanism carries signal whose size cannot be placed on either side of usefulness; and that
-chemistry remains unresolved under constructions with different support. None of the three may be written as closed, and none may be written
-as live without naming the axis: target is live clustered on cell line and well, and short of the
-margin clustered on the drug wherever the control is estimand-correct.
+\paragraph{Unseen drugs remain an opportunity, not a result.} A lookup cannot predict a drug absent
+from training, so the final gate tests three possible channels using partners restricted to training
+conditions. The arms differ in support, annotations and partner availability and do not identify a
+biological ranking. Protein target clears the pre-set $0.03$ relevance margin under all three
+constructions when clustered on cell line and well. Clustered on drug, however, it clears the
+margin only against the weaker count-matched null and falls short against both estimand-correct
+nulls. Mechanism excludes zero on the cell-line axis but falls just below the margin and spans zero
+on the drug axis. Chemistry is narrower but remains unresolved. On the cell-line axis, chemistry
+excludes zero against the plate-matched null but spans zero in the different-plate construction; on
+the drug axis it spans zero under both.
 
-This overturns a pre-registration made earlier in this project. Two design documents concluded that
-unseen drugs were unreachable, and both inferred it from a gate that tested chemical
-\emph{structure} --- the only one of the three whose interval spans zero once the plate is held
-apart. The inference generalised one channel's result to another arm with different support, drug
-set, partner count and annotation coverage, and it was wrong. On its restricted support,
-same-target retrieval is the strongest observed lead; that is a descriptive result, not an
-identified biological ranking. The protein-target annotations carrying that lead were sitting
-unread in the atlas's own metadata throughout.
+The axis qualification changes the verdict. Cell-line clustering asks whether the channel effect is
+stable across represented cellular contexts. Drug clustering asks whether it generalises across the
+compounds on which an unseen-drug claim rests. Target can be live under the first and inconclusive
+under the second without contradiction. The three nulls also answer different questions: count
+matching balances partner number, plate matching controls local experimental structure, and
+different-plate matching reduces co-plating while changing support. Their point estimates cannot be
+compared as if only confounding changed.
 
-So the thesis does not end in closure. It ends with the opportunity located. On seen drugs this
-checkpoint has nothing here to add over retrieval --- not because the unshared part is
-irreducible, which is exactly what the two negative results above decline to establish, but because
-nothing built here reached it and a lookup already takes everything else. The different-plate
-protein-target result is not an unseen-drug result: it uses the full restricted target arm of $18$
-annotated drugs, only two of which are held out, with the partner pool restricted to training drugs.
-On that mixed-support arm target clears the pre-set relevance margin clustered on cell line and well,
-while mechanism excludes zero and falls short of the margin. Clustered on the drug, target's interval
-clears zero but not the margin under either estimand-correct null. The held-out component is too small
-and underpowered to establish unseen-drug generalisation. Target annotation is therefore the first
-place to test for something a model might do that a dictionary cannot, not an established
-Leave-Drugs-Out result.
+The strongest lead therefore rests on only $18$ target-annotated drugs, two held out. Protein-target
+annotation carries transcriptional signal on that mixed-support arm, but this is not an established
+Leave-Drugs-Out result. Mechanism and chemistry are likewise inconclusive rather than closed. The
+unseen-drug arm's estimated $80\%$-power detection threshold is about $0.079$ in $\NIR$, so effects
+materially smaller than eight points are not well powered under its drug-level support. The
+correct next experiment is a split with enough held-out drugs, and preferably held-out mechanism
+families, to make drug-clustered inference informative; descriptions or target annotations can then
+be tested as inputs rather than inferred from a mixed-support retrieval gate.
 
-\paragraph{The controls are most of the result.} In a literature whose central problem is that
-uninformative baselines score well, a negative result is worth precisely what its controls are
-worth, and that --- not any single number above --- is what this work would defend first. The
-substantive results here rest on controls that were added in
-response to specific objections: plate-matched comparison sets after a zero-information baseline
-more than doubled its score when the plate was free to vary; a swap-distance sweep after it was
-pointed out that scrambling to a
-similar drug is a weak test; a removal gate before trusting any ablation null; matched-norm
-injection before reading a swap; intervals clustered on the units that repeat --- cell line and treatment well --- rather than on conditions; and a
-pre-registered interpretation written before the decisive result, whose middle branch is the one
-that fired. Several claims were retracted along the way and are struck rather than deleted; that
-list is the reason the surviving claims can be read at the strength they are stated, and no
-stronger.
+Description conditioning would test a specific repair: an unseen name cannot be expected to map to
+a transcriptional residual from one sentinel token alone, whereas a target or mechanism description
+could supply a bridge. It must nevertheless be interpreted against the backbone's prior knowledge.
+Holding a compound out of Tahoe fine-tuning does not erase medicinal-chemistry text from language
+pretraining, and famous compounds are both easier to describe and more likely to have public L1000
+signatures. A rigorous arm therefore needs matched description quality, explicit missingness
+controls, a frozen knowledge probe and enough held-out compounds for drug-clustered intervals.
+Improvement would then establish that the supplied field is useful, not where the fact was learned.
+
+A larger backbone is also a replication, not a clean scaling law unless the model family is held
+fixed. Pythia-1b to Gemma-2 changes tokenizer, architecture, natural-language corpus and model scale
+together. The fair thesis-level question is whether the present verdict survives that backbone
+change under the same split, target, sentinel contract, token budget, validity gates, $\NIR$
+galleries and lookup baselines. A within-Gemma 2B-to-27B comparison could later isolate scale more
+cleanly, but only after the 2B arm establishes that the evaluation and target port are valid.
+
+The evidence should be read in its order. Calibration establishes that the scoreboard can reward
+drug identity. Identifiability and model-free target analyses establish that the information exists
+in the measured populations and can reach a sequence. Prompt interventions establish that the
+checkpoint is sensitive to trained drug labels. Retrieval and cross-context transfer then ask
+whether that sensitivity buys biology rather than a coarse memory. Finally, the channel gate names
+what could replace an unavailable lookup for a new drug. No activation statistic or isolated point
+estimate is allowed to leapfrog that chain.
+
+The central answer is consequently precise. The expression-target checkpoint does not make useful
+condition-specific predictions. Residual encoding reveals a real sensitivity to trained drug names,
+but the checkpoint recovers less than a simple lookup and does not establish transfer to new
+drug--context combinations or unseen drugs. Cross-context biology leaves room for a conditional
+model, but $1-\Tcoef$ is not an interaction share and nothing built here reaches that remainder.
+Prompt sensitivity is established; biological transfer is not.
+
+The ten-epoch diagnostic and target-divergence analysis reinforce that answer without enlarging it.
+The former makes ordinary one-epoch undertraining less persuasive under the tested schedule but
+supplies no behavioural score. The latter shows that residual targets expose drug identity across
+response geometry but remains descriptive because pairs are dependent. Neither converts the
+residual checkpoint into a transferred predictor; both close easy alternative explanations while
+preserving the endpoint that was actually measured.
+
+\paragraph{The controls are most of the result.} In a literature where uninformative baselines can
+score well, a negative result is worth what its controls are worth. The surviving claims rely on
+controls added in response to specific failures: plate-matched comparison sets after a
+zero-information baseline improved when plate was free to vary; a swap-distance sweep after a
+similar-drug scramble proved weak; a removal gate before any ablation null; matched-norm injection
+before interpreting a swap; intervals clustered on the units that repeat --- cell line, drug and
+treatment well as the estimand requires --- rather than on cells; and a pre-registered three-state
+interpretation whose inconclusive branch was allowed to fire. Claims that failed these controls were
+withdrawn. That record is not ancillary to the thesis: it is why the remaining claims can be read at
+the strength stated here, and no stronger.

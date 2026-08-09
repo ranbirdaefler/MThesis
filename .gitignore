@@ -78,10 +78,12 @@ docs/proposals/
 
 # ---- Cluster job logs copied back for inspection ----
 RESULTS_cluster/*.out
+training_logs/
 
 # ---- Private review documents ----
 thesis/thesis_committee_assessment.md
 AUDIT_HANDOVER.md
+THESIS_COMMITTEE_REVIEW_AND_29_POINT_PLAN.md
 
 # ---- Internal working tooling and review documents: never published ----
 tools_verification/

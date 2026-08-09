@@ -33,12 +33,14 @@ from a generation arm is therefore a within-seed interval and should be read as 
 seed: it covers the sampling of conditions, cell lines and wells, and it does not cover the
 sampling of the model's output.
 
-The one measurement here that was repeated across seeds gives a sense of what is being left out,
-though it cannot calibrate it. The activation probe of Section~\ref{sec:res-mechanism} returned
+The one measurement here that was repeated across seeds is recorded so that it is not mistaken for
+the replication that was not run. The activation probe of Section~\ref{sec:res-mechanism} returned
 $+0.0197$, $+0.0118$ and $+0.0085$ on three seeds, each excluding zero. That is a different
-instrument on a different quantity and its spread does not transfer to $\NIR$; what it does
-establish is that a factor of two between seeds is realistic in this project, which is reason
-enough not to read a generation interval as though it covered seed variation as well.
+instrument on a different quantity and its spread does not transfer to $\NIR$; what it does not
+establish is a scale for generation variance: the three runs share a checkpoint and score
+teacher-forced log-probabilities, so their seed moves the prompts, the swap and control partners and
+the bootstrap, and neither the weights nor a sampled output. They are also scored on $60$, $240$ and
+$240$ prompts in the order listed, so the largest of the three effects is also the smallest-$n$ one.
 
 \paragraph{A swing that looked like generation variance and was not.} Two superseded evaluations of
 the held-out-drug control returned values of $\gap$ far enough apart to be recorded as evidence of

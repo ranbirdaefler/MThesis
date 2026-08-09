@@ -97,6 +97,15 @@ MANIFEST = [
     dict(id="residual_holdout2", quoted=True, files=["re_holdout2.json"],
          script="endcell/analysis/residual_eval.py",
          backs="unseen_combo gap +0.1002 [+0.0661,+0.1368]; model NIR 0.657 / 0.650"),
+    dict(id="training_adequacy_long", quoted=True, files=["training_adequacy_long.json"],
+         script="endcell/analysis/training_adequacy_long.py",
+         backs="ten-epoch residual training adequacy: validation best at epoch 1 while training "
+               "loss continues to fall; canonical one-epoch comparator",
+         validator="training_adequacy_v2"),
+    dict(id="target_divergence_strat", quoted=True, files=["target_divergence_strat.json"],
+         script="endcell/analysis/target_divergence.py",
+         backs="top-200 target divergence split by near/orthogonal/opposite residual cosine",
+         validator="target_divergence_v1"),
     # ---- the repairs, not yet run ----------------------------------------------------------
     dict(id="experimental_unit_audit", quoted=False, files=["experimental_unit_audit.json"],
          script="endcell/analysis/experimental_unit_audit.py",
@@ -129,6 +138,28 @@ def _match(dirpath, pattern):
     return sorted(n for n in names if fnmatch.fnmatch(n, pattern))
 
 
+def _validate_file(kind, path):
+    """Run opt-in schema/value validators without changing legacy manifest semantics."""
+    try:
+        if kind == "training_adequacy_v2":
+            try:
+                from training_adequacy_long import load_artifact, validate_artifact
+            except ImportError:  # module import from repository root
+                from endcell.analysis.training_adequacy_long import load_artifact, validate_artifact
+            validate_artifact(load_artifact(path), production=True)
+        elif kind == "target_divergence_v1":
+            try:
+                from target_divergence import validate_production_artifact
+            except ImportError:
+                from endcell.analysis.target_divergence import validate_production_artifact
+            validate_production_artifact(path)
+        else:
+            raise ValueError("unknown artifact validator %r" % kind)
+        return None
+    except Exception as exc:
+        return "%s: %s" % (os.path.basename(path), exc)
+
+
 def scan(dirpath):
     """Match every pattern independently and keep every hit.
 
@@ -151,9 +182,16 @@ def scan(dirpath):
         # written under different filenames across pipeline generations, and demanding every
         # historical name reports a MISSING artifact for a result that is present and current.
         ok = bool(found) if m.get("any_of") else not missing
+        validation_errors = []
+        if ok and m.get("validator"):
+            validation_errors = [err for err in
+                                 (_validate_file(m["validator"], os.path.join(dirpath, name))
+                                  for name in sorted(set(found))) if err]
+            ok = not validation_errors
         rows.append({**m, "found": sorted(set(found)),
-                     "missing_patterns": [] if ok else missing,
-                     "ok": ok, "partial": (not ok) and bool(found)})
+                      "missing_patterns": [] if ok else missing,
+                      "validation_errors": validation_errors,
+                      "ok": ok, "partial": (not ok) and bool(found)})
     return rows
 
 
@@ -168,7 +206,10 @@ def report(rows, dirpath):
         logger.info(f"  {mark}  {r['id']:28s} {'[quoted]' if r['quoted'] else '        '} "
                     f"{len(r['found'])} file(s)")
         if not r["ok"]:
-            logger.info(f"        missing: {', '.join(r['missing_patterns'])}")
+            if r["missing_patterns"]:
+                logger.info(f"        missing: {', '.join(r['missing_patterns'])}")
+            if r.get("validation_errors"):
+                logger.info(f"        invalid: {'; '.join(r['validation_errors'])}")
             logger.info(f"        produced by: {r['script']}")
             logger.info(f"        backs: {r['backs']}")
         if r.get("note"):
@@ -232,6 +273,20 @@ def selftest():
             names = set(tf.getnames())
         check("channel_gate.json" in names and "probe_arm_residual.json" in names,
               "bundled members are stored under their bare filenames")
+
+        bad = tempfile.mkdtemp()
+        try:
+            open(os.path.join(bad, "training_adequacy_long.json"), "w").write("{}")
+            open(os.path.join(bad, "target_divergence_strat.json"), "w").write("{}")
+            bad_by = {r["id"]: r for r in scan(bad)}
+            check(not bad_by["training_adequacy_long"]["ok"] and
+                  bool(bad_by["training_adequacy_long"]["validation_errors"]),
+                  "an empty training artifact fails schema/value validation")
+            check(not bad_by["target_divergence_strat"]["ok"] and
+                  bool(bad_by["target_divergence_strat"]["validation_errors"]),
+                  "an empty divergence artifact fails schema/value validation")
+        finally:
+            shutil.rmtree(bad, ignore_errors=True)
 
         empty = scan(os.path.join(d, "does_not_exist"))
         check(all(not r["ok"] for r in empty), "a nonexistent directory reports everything missing")

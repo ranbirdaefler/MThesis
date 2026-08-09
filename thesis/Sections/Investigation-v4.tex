@@ -58,7 +58,8 @@ model's activations. Drug identity is written there at
 every layer measured --- increasingly explicitly with depth once cell line, plate and dose are
 projected out --- and the readout barely consults it, on the least well-evidenced measurement in
 the chapter: an effect present in one training arm and absent in another, surviving multiplicity
-correction at one rung of the displacement ladder only, and carrying nothing downstream on its own.
+correction at one rung of the displacement ladder only and on one of the two stored bootstrap
+draws, and carrying nothing downstream on its own.
 Consistently with it, a
 three-point comparison of denoised training targets --- which changed what the model had to produce but not how the
 drug was encoded --- produced no separation from its scrambles under the test available at the time.
@@ -166,8 +167,9 @@ exactly this signal, which is why it is the test that was needed.
 
 The physical layout of the atlas drives every inferential choice in this chapter, so it is stated
 before anything that depends on it. Tahoe applies one drug at one dose to one \emph{well} containing
-roughly $49$ cell lines simultaneously: across the three plates this project caches
-(\texttt{plate4}, \texttt{plate5}, \texttt{plate6}) there are $289$ treatment samples, a mean of
+roughly $49$ cell lines simultaneously: this project's cache spans more plates than the three its
+scored conditions fall on (\texttt{plate4}, \texttt{plate5}, \texttt{plate6}), and holds $289$
+treatment samples, a mean of
 $48.6$ cell lines per well (median $49$, range $43$--$50$), with $286$ of $287$ distinct (drug, dose)
 treatments occurring in exactly one well. Those figures are properties of this cache and not of the
 atlas: Tahoe includes further plates, among them a replication plate, and where the text below says
@@ -176,7 +178,7 @@ here, and the exception is worth stating exactly because the inference rules bel
 the $287$ treatments, $286$ occupy one well and one occupies three. That single replicated treatment
 is also the whole of the cross-plate structure at condition level --- it accounts for the $49$
 (drug, dose, cell line) groups the unit audit finds on more than one plate, one for each cell line
-in its wells. Every other condition appearing on more than one of these plates differs in dose. Each drug is assayed on its own plate or plates, with
+in its wells. Every other condition appearing on more than one plate in this cache differs in dose. Each drug is assayed on its own plate or plates, with
 plate-matched controls. Three consequences run through everything below.
 Conditions from one well share a physical assignment, so they are not independent --- this sets the
 inference rules below. Drug and plate are partially confounded, so discrimination must be measured
@@ -205,7 +207,7 @@ own, so chance is $0.50$ under the exchangeability condition stated in
 \S\ref{sec:res-metrics}, where empirical control arms audit that reference in each frame.
 Two populations are used and they are not interchangeable. The broad characterisation of the task
 (\S\ref{sec:res-blind}) streams a wide sample of the atlas, over more plates and more drugs than
-the three cached above, so the drug and condition counts in its block below are counts of that
+cached above, so the drug and condition counts in its block below are counts of that
 sample and not of the cache; the residual arm (\S\ref{sec:res-encoding} onward) works from a
 smaller cached subset built once and reused, so that
 every arm sees identical cells.
@@ -1247,7 +1249,8 @@ reproduce it, and of twenty-six headline tests it is the only survivor of multip
 Read at face value that says the generation readout does consult which drug the region names, at a
 gain far too small to account for anything in \S\ref{sec:res-blind}. Read with the multiplicity
 discipline set out below it says less, because which result survives correction depends on which
-rung of the magnitude ladder the correction is applied to. This is the weakest load-bearing
+rung of the magnitude ladder the correction is applied to and, at that rung, on which of the two
+stored bootstrap draws is read. This is the weakest load-bearing
 measurement in the chapter and it is carried as such: no argument downstream rests on it alone, and
 a reader who discards it entirely loses nothing that the drug-blindness result depends on.
 
@@ -1312,9 +1315,17 @@ closes, comparable across arms.
 Four guards carry the inference; the remainder --- a drug-proxy screen, an injected-norm diagnostic
 and a three-world planted selftest --- are engineering and are deferred to
 Appendix~\ref{sec:app-identity}. Uncertainty is a cluster bootstrap over ordered (A,B) pairs,
-because rows sharing a pair share both the injected vector and the scored response. Equivalence is
-by TOST: the interval must lie inside a pre-registered margin and contain zero, with the margin set
-at $10\%$ of the model's own clean preference gap. A per-layer headroom gate excludes any layer
+because rows sharing a pair share both the injected vector and the scored response; at the anchor
+seed's layer $12$ that is $60$ rows in $58$ pair clusters over $24$ anchor drugs, so the resampling
+sits close to a row bootstrap and guards against sharing within a pair but not against sharing
+across pairs that share an anchor drug or a target drug --- rows naming the same target draw on
+that drug's estimated class mean and on the same pool of held-out responses. Equivalence is by a criterion deliberately stricter
+than TOST: the interval must lie inside a pre-registered margin, set at $10\%$ of the model's own
+clean preference gap, \emph{and} contain zero. The second conjunct is not part of TOST and it runs
+one way only --- it can withhold an equivalence verdict, never manufacture one. Under textbook TOST
+the headline $+0.0197$ \nolinebreak[3]$[+0.0063, +0.0335]$ lies wholly inside the margin and would
+be returned as equivalent, and read as a null; the rule used here returns a directional effect
+smaller than the margin. A per-layer headroom gate excludes any layer
 where the cell-line positive control shows less than $5\times$ dynamic range, because a saturated
 instrument can support neither verdict. And a magnitude ladder repeats the test at $\alpha \in
 \{0.5, 1, 2, 5, 10\}$ times the natural displacement, because a real identity effect should show a
@@ -1323,22 +1334,32 @@ monotone dose--response.
 This design was run across the five training arms of Table~\ref{tab:trainconfig} and, for the two
 residual arms, replicated at three further seeds. Of $26$ headline tests --- five arms by up to
 seven depths --- exactly one survives Benjamini--Hochberg correction: the residual arm at layer $12$
-($p = 0.001$, $q = 0.026$). The consensus arm at layer $2$ ($p = 0.012$) does not survive
-($q = 0.156$).
+($q = 0.026$, pooling the $26$ tests across the five arms rather than correcting within each arm as
+the pipeline stores them). The $p$ behind that $q$ is a bootstrap quantity, and the residual arm's
+own probe file carries
+two draws of it for the same effect --- identical to sixteen digits --- at $p = 0.001$ and
+$p = 0.004$, which fall either side of the $0.05/26$ the procedure admits at rank one; recomputed
+across all $26$ on the second draw, nothing survives. The consensus arm at layer $2$ ($p = 0.012$)
+does not survive ($q = 0.156$).
 
 Which rung that correction is applied to matters, and the answer is not the one a reader would
 assume. The headline is the $\alpha = 0.5$ rung --- half the natural displacement --- and the
 ladder's first entry is therefore the headline restated in raw nats ($+0.0013$) rather than an
 independent point beside it. At the full displacement $\alpha = 1$ the effect is \emph{larger} and
 noisier: $+0.0265$ \nolinebreak[3]$[+0.0021, +0.0524]$ against $+0.0197$
-\nolinebreak[3]$[+0.0063, +0.0335]$, at $p = 0.033$ against $p = 0.001$. Each of $\alpha = 0.5$, $1$
-and $2$ excludes zero on its own, so the dose--response is real (in raw nats: $+0.0013$, $+0.0017$,
-$+0.0044$),
-and the two highest rungs do not ($\alpha = 5$ and $10$ span zero, as an empirical class-mean
-displacement amplified far beyond its observed scale can). But applying the $26$-test correction to the $\alpha = 1$ slice instead
+\nolinebreak[3]$[+0.0063, +0.0335]$, at $p = 0.033$ against $p = 0.001$ on the draw the correction uses. Each of $\alpha = 0.5$, $1$
+and $2$ excludes zero on its own and the two highest rungs do not ($\alpha = 5$ and $10$ span zero,
+as an empirical class-mean displacement amplified far beyond its observed scale can). In raw nats
+the five rungs read $+0.0013$, $+0.0017$, $+0.0044$, $+0.0061$, $+0.0046$: rising to $\alpha = 5$
+and turning over at $\alpha = 10$. That is consistent with a dose--response and does not establish
+one. All five rungs re-score the same $60$ rows at scaled injection rather than drawing
+independently, no trend statistic is computed anywhere in the probe, and the monotonicity
+pre-registered above holds over four rungs of five. But applying the $26$-test correction to the
+$\alpha = 1$ slice instead
 leaves \emph{nothing} surviving, and applying it to $\alpha = 2$ promotes a different arm at a
 different depth (\texttt{residual\_holdout} at layer $4$, $q = 0.007$) while demoting this one. The
-slice decides not merely whether a survivor exists but which one it is, which is the signature of a
+slice decides not merely whether a survivor exists but which one it is, and below that the
+bootstrap draw decides whether one exists at all, which is the signature of a
 family dominated by noise rather than one containing a single robust effect. The
 multiplicity-corrected claim is therefore a statement about the $\alpha = 0.5$ slice and is not
 robust to that choice --- which is why this section opened by discounting its own result rather
@@ -1351,14 +1372,17 @@ than closing on it.
 Arm / seed & effect & 95\% CI & $p$ \\
 \midrule
 residual, seed 42 & $+0.0197$ & $[+0.0063, +0.0335]$ & $0.0010$ \\
-residual, seed 43 & $+0.0118$ & $[+0.0060, +0.0173]$ & $0.0003$ \\
+residual, seed 43 & $+0.0118$ & $[+0.0060, +0.0173]$ & $0.00025$ \\
 residual, seed 45 & $+0.0085$ & $[+0.0029, +0.0143]$ & $0.0015$ \\
 \midrule
 single-cell arm, six depths & \multicolumn{3}{l}{nothing detectable at any depth (median $-0.0012$)} \\
 \bottomrule
 \end{tabular}
 \caption{The identity test, as a fraction of that model's own clean preference gap between the two
-responses being compared (mean effect $+0.0133$ across the three seeds that measured it). Seed 44
+responses being compared (mean effect $+0.0133$ across the three seeds that measured it). The $p$
+column is a two-sided cluster bootstrap over $4000$ resamples floored at $1/4000$; seed 43's entry
+is that floor, reached when no resample fell at or below zero, so it is a resolution limit and not
+a measurement. Seed 44
 produced no layer-12 measurement: five of its seven layers were skipped because the purified slab
 retained context, not for want of headroom --- the five carry headroom of $9.7$ to $23.3$, all well
 clear of the gate. So the pre-registered criterion of two replications in three new seeds is met
@@ -1373,12 +1397,15 @@ drug and its mechanism for an orthogonal partner costs it $+0.0898$ in $\NIR$, e
 clustered on cell line ($[+0.0382, +0.1415]$) and on drug ($[+0.0291, +0.1506]$). That is a
 behavioural result, measured without touching an activation, and it is established in
 \S\ref{sec:res-generalisation}; used here it is a forward reference, and a reader unwilling to take
-one on credit should read that section before accepting this control. Two things bound what it
+one on credit should read that section before accepting this control. Three things bound what it
 licenses. It is a training-split fact --- the same establishment does not extend to held-out
 combinations --- so the independent knowledge this control rests on is knowledge about that arm on
-conditions it was trained on. And it is behavioural, so it says the arm responds to the drug its
-prompt names, not that the response is routed through the subspace this test injects into. What the
-pairing buys is narrower than that, and it is enough: the probe detects identity reading,
+conditions it was trained on. It is behavioural, so it says the arm responds to the drug its prompt
+names, not that the response is routed through the subspace this test injects into. And the two
+measurements are not on the same weights: the swap gap is scored on the rebuilt target build and
+this probe on the earlier one (Table~\ref{tab:trainconfig}), so drug-sensitivity and identity
+reading are attributed here to residual-target training and not to any one checkpoint. What the
+pairing buys is narrower than a routing claim, and it is enough: the probe detects identity reading,
 replicably, in the arm behaviour calls drug-sensitive, and detects none at any depth it could
 measure in the arm that is behaviourally drug-blind. A null from an instrument that has never been shown to register a
 positive is uninterpretable; this one has.
@@ -1390,7 +1417,8 @@ $+0.0197$
 $+0.0133$ averaged over the three seeds that measured it --- one to two per cent, a fifth or less of
 the $10\%$ margin pre-registered for calling an effect material --- in one training arm and at one
 rung of the displacement ladder. The multiplicity-corrected version of that statement holds for the
-$\alpha = 0.5$ rung and not for its neighbours: at $\alpha = 1$ nothing survives correction, and at
+$\alpha = 0.5$ rung on one of its two stored bootstrap draws, and not for its neighbours: at
+$\alpha = 1$ nothing survives correction, and at
 $\alpha = 2$ a different arm does. The claim is not that the readout cannot read drug
 identity, and it is not the stronger mechanistic story that earlier drafts of this thesis told.
 \end{claim}
@@ -1530,7 +1558,7 @@ through each row's own representation. The two columns are different quantities 
 $200$ positions and a retrieval score --- so what compares is the rows within a column, not the
 columns with each other.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \footnotesize
 \begin{tabular}{lrr}
@@ -1551,6 +1579,24 @@ how much drug-discriminating content lands in the top-$200$ token positions. Tha
 target's tokens; it does not on its own identify tokenisation as the binding constraint.}
 \label{tab:divergence}
 \end{table}
+
+A second, descriptive summary is computed at plate scope, the scope used to construct the trained
+residual target (\path{target_divergence_strat.json}). Its aggregate residual divergence is $120.3$;
+the $118.2$ printed in Table~\ref{tab:divergence} is the corresponding cell-line-scope value. The
+plate-scope summary enumerates $212{,}528$ exhaustive within-group drug pairs and asks whether the
+aggregate hides a dependence on response similarity. Every representation is binned on the
+\emph{same} axis, the cosine between the two residual responses, using the same fixed near,
+orthogonal and opposite cut points as the later evaluation. These exhaustive bins are not the
+later per-condition extreme-partner draws. For near, orthogonal and opposite pairs respectively,
+the mean number of differing top-$200$ genes is $32.5$, $34.6$ and $35.8$ for the full profile;
+$107.4$, $111.3$ and $114.4$ for the treated-minus-control shift; and $118.4$, $121.0$ and $118.7$
+for the residual. The corresponding Spearman coefficients between residual cosine and target
+divergence are $-0.149$, $-0.282$ and $+0.019$. Thus residual-target differentiation remains high
+across all three strata and lacks the monotone dissimilarity gradient present in the full and shift
+targets. This weakens the explanation that the later swap-distance pattern is inherited trivially
+from residual-target divergence; it is not an independent test of that model result. The pairs reuse
+drugs and experimental groups, so this stratification is descriptive and no pair-level inferential
+claim is made.
 
 The natural inference is that only a small fraction of the gradient can be carrying drug identity.
 That inference is a hypothesis about the optimisation: what is measured here is the overlap of the
@@ -1738,7 +1784,12 @@ encoding problem states itself in one line: the drug-specific part is the majori
 perturbation response, $62.1\%$ of its energy, and two drugs in the same context still share $83\%$
 of the top-$200$ genes in the standard target. The drug is not a small effect in the response. The
 response is not what a cell sentence ranks. Every claim that follows is scoped by the first of those
-numbers, and it has not previously been computed for this task.
+numbers, and it has not previously been computed for this task. Its frame is not quite the
+trained-on one: the stored generic averages over conditions and keeps the condition's own
+contribution, where the training frame of \S\ref{sec:methods-residual} averages over drugs and
+leaves the condition's own drug out. Self-inclusion scales a residual by $(m-1)/m$ in a plate group
+of $m$ conditions, so that difference depresses the share quoted here rather than inflating it; the
+weighting difference has no established direction.
 
 Within the drug-specific part, two components call for different responses. Modelling
 \begin{equation}

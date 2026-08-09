@@ -1,0 +1,35 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+Cell-sentence models recast an expression-ranked transcriptome as text and use a language model to
+predict a treated cell from an untreated cell and a named perturbation. This thesis asks whether a
+fine-tuned C2S-Scale Pythia-1b checkpoint learns enough drug-specific biology from Tahoe-100M for
+useful condition-specific prediction. The evaluation is audited before the model is judged. Of five
+candidate metrics, only normalised inverse rank (\NIR) rewards a real replicate more than a
+zero-information predictor: its Dynamic Range Fraction is $+0.635$ across plates, $+0.545$ within
+plate, and $+0.704$ in a separately calibrated residual frame. The other four prediction metrics are
+negative in both expression-frame audits; they were not re-audited in the residual frame. This shows
+that apparently strong scores can reward generic expression rather than the identity of the drug.
+
+On unseen drugs in the expression frame, the original single-cell-target checkpoint scores $0.498$
+against $0.504$ for a control-copy baseline and a $0.576$ within-well split-half precision reference.
+Restricting the analysis to empirically identifiable conditions does not reveal a useful advantage.
+The target itself is part of the difficulty: standard treated profiles preserve extensive
+cell-state overlap across drugs, whereas encoding the drug-specific residual exposes substantially
+more drug-dependent token variation. The residual-target checkpoint shows sensitivity to
+trained drug identity, beating a geometry-matched prompt scramble by $+0.0898$ on trained
+conditions. That sensitivity does not establish transfer. The held-out combination estimate depends
+on whether uncertainty is clustered over cell lines or drugs, and the unseen-drug estimate is
+$-0.0315$ with intervals spanning zero on both axes.
+
+The decisive baseline is simpler than generation. On the $1{,}192$ conditions where both are
+defined, a training-only lookup of each drug's mean residual in other cell lines scores $0.913$,
+against $0.549$ for the model. Yet this does not make the response a pure per-drug constant. A
+disattenuated cross-context transfer coefficient is $\Tcoef=0.553$
+\nolinebreak[3]$[0.514,0.593]$; its complement is not an interaction or variance share because the
+estimator mixes cell line, dose, well, and target-estimation differences. A channel gate suggests
+that protein-target annotation is the strongest lead for drugs absent from fine-tuning, but the
+held-out support is too small to establish unseen-drug generalisation. The central conclusion is
+therefore narrower than successful conditioning: prompt sensitivity is established, biological
+transfer is not. The thesis contributes a calibrated evaluation protocol, a strong retrieval bar,
+and explicit bounds on what this checkpoint learned and what remains unresolved.
