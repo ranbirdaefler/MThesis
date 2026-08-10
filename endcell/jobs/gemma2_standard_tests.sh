@@ -9,6 +9,7 @@ export HF_HUB_CACHE="$HF_HOME/hub"
 
 REPO="${REPO:-$HOME/tahoe}"
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+TEST_DEPS="${GEMMA_TEST_DEPS:-/data/BuffaF-Projetcs/florian_c2s/test_deps/pytest-8.3.5}"
 OUT="$REPO/RESULTS/gemma2_standard_tests"
 CERT="$OUT/TESTS_PASSED.json"
 CONTRACT="$REPO/endcell/jobs/gemma2_standard_tests_contract.py"
@@ -70,7 +71,13 @@ bash -n \
     tests/test_gemma_phase1a_training_contract.py \
     tests/test_gemma_eval_contract.py
 "$PY" endcell/jobs/gemma2_standard_cli_contract.py --repo "$REPO"
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$PY" -m pytest \
+[[ -f "$TEST_DEPS/pytest/__init__.py" ]] || {
+    echo "[FATAL] isolated pytest 8.3.5 is missing at $TEST_DEPS" >&2
+    exit 2
+}
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+PYTHONPATH="$TEST_DEPS${PYTHONPATH:+:$PYTHONPATH}" \
+"$PY" -m pytest \
     tests/test_gemma_phase1a_training_contract.py \
     tests/test_gemma_eval_contract.py -q
 "$PY" endcell/analysis/nir_benchmark.py --selftest \

@@ -101,7 +101,32 @@ an uncommitted Git SHA is never presented as sufficient provenance.
 
 ## 1. Run the certificate-producing test gate on a CPU worker
 
-On the HPC login node, submit only this `srun`:
+The canonical `c2s` environment is intentionally not modified. First install the pinned test runner into
+an isolated additive directory on a CPU worker (this does not alter Torch, Transformers or the training
+environment):
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=2 --mem=4G --time=00:15:00 bash -lc '
+set -euo pipefail
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+ROOT=/data/BuffaF-Projetcs/florian_c2s/test_deps
+TARGET="$ROOT/pytest-8.3.5"
+mkdir -p "$ROOT"
+if [[ ! -f "$TARGET/pytest/__init__.py" ]]; then
+  TMP="$ROOT/.pytest-8.3.5.tmp.$SLURM_JOB_ID"
+  rm -rf -- "$TMP"
+  "$PY" -m pip install --no-cache-dir --target "$TMP" "pytest==8.3.5"
+  mv -- "$TMP" "$TARGET"
+fi
+PYTHONPATH="$TARGET" "$PY" -c "import pytest; assert pytest.__version__ == \"8.3.5\"; print(\"[PASS] isolated pytest\", pytest.__version__)"
+'
+```
+
+The temporary removal is narrowly confined to this job's newly-created test-dependency directory. The
+test gate exposes that directory only to the `pytest` process, then creates its environment certificate
+from the unchanged canonical `c2s` environment.
+
+After that passes, submit this `srun`:
 
 ```bash
 srun --account=3180408 --partition=defq --cpus-per-task=4 --mem=24G --time=01:00:00 bash -lc '
