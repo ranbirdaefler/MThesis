@@ -92,7 +92,12 @@ done
 
 echo "=== environment and disk ===" | tee "$OUT/environment.txt"
 hostname | tee -a "$OUT/environment.txt"
-git rev-parse HEAD | tee -a "$OUT/environment.txt"
+if git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$REPO" rev-parse HEAD | tee -a "$OUT/environment.txt"
+else
+    echo "source_bundle_git_commit=unavailable; provenance=certificate-bound-source-sha256" \
+        | tee -a "$OUT/environment.txt"
+fi
 df -h /data/BuffaF-Projetcs/florian_c2s | tee -a "$OUT/environment.txt"
 MIN_FREE_GB="${MIN_FREE_GB:-120}"
 FREE_GB=$(df --output=avail -BG /data/BuffaF-Projetcs/florian_c2s | tail -1 | tr -dc "0-9")

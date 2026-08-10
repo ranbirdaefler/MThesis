@@ -97,7 +97,9 @@ $files | Get-FileHash -Algorithm SHA256 | Format-Table Path, Hash -AutoSize
 ```
 
 The CPU preflight re-hashes the executed cluster copies and binds them into `PREFLIGHT_PASSED.json`, so
-an uncommitted Git SHA is never presented as sufficient provenance.
+an uncommitted Git SHA is never presented as sufficient provenance. A source-bundle installation need
+not contain `.git`: preflight and production record Git metadata when available and otherwise explicitly
+record that provenance comes from the certificate-bound SHA-256 inventory.
 
 ## 1. Run the certificate-producing test gate on a CPU worker
 

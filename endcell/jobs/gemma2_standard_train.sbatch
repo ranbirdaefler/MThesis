@@ -164,7 +164,12 @@ CMD=(
 )
 
 printf "%q " "${CMD[@]}" > "$RUN_META/command.txt"; printf "\n" >> "$RUN_META/command.txt"
-git rev-parse HEAD > "$RUN_META/git_commit.txt"
+if git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$REPO" rev-parse HEAD > "$RUN_META/git_commit.txt"
+else
+    printf '%s\n' "unavailable: source-bundle run; see certificate-bound source SHA-256" \
+        > "$RUN_META/git_commit.txt"
+fi
 cp "$CERT" "$RUN_META/PREFLIGHT_PASSED.json"
 nvidia-smi -q > "$RUN_META/nvidia_smi_before.txt"
 
