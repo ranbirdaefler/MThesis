@@ -1,0 +1,420 @@
+# Gemma-2 standard-target SFT: audited HPC runbook
+
+This launches the first Gemma arm only: full SFT of the pinned C2S-Gemma checkpoint on the unchanged
+standard `[END_CELL]` cell-sentence target. It never rebuilds or edits Tahoe data. Scheduler inspection
+is allowed on the login node; downloads, hashing, tokenization, testing, training and evaluation run only
+through `srun` or `sbatch`.
+
+## Frozen protocol
+
+- Model: `vandijklab/C2S-Scale-Gemma-2-2B`
+- Revision: `5ddf28b8f1c81b7ab7a9be192924da82b6c5d512`
+- Train: `/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl`
+- Development loss: adjacent `eval_tier1_seen_conditions.jsonl`
+- Primary test: canonical same-plate Tier 2 on exactly 606 rows, 35 drugs, 40 cell lines and 80 groups
+- Recipe: one epoch; batch 1; accumulation 16; BF16; length 8192; AdamW LR `1e-5`, weight decay
+  `0.01`, warm-up `0.03`, cosine schedule; seed 42; 42,198 optimizer updates
+- Output: `/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell`
+
+This is example- and fixed-recipe-matched to Pythia. It is not token-, compute-, architecture- or
+pretraining-matched. Cross-tokenizer losses are not compared as biological performance.
+
+## 0. Put the reviewed implementation on the cluster
+
+### Preferred after review: commit, push and pull the exact reviewed branch
+
+Do this only after the complete repair series is reviewed and committed. On local PowerShell:
+
+```powershell
+Set-Location C:\Users\avsd8\OneDrive\Desktop\tahoe
+git status --short
+git add endcell/train/train_c2s_tahoe_endcell.py endcell/train/gemma_tokenizer_probe.py
+git add endcell/analysis/freeze_nir_manifest.py endcell/analysis/nir_benchmark.py
+git add endcell/analysis/compare_backbones.py endcell/analysis/residual_eval.py
+git add endcell/eval/evaluate_endcell.py tests/test_gemma_phase1a_training_contract.py
+git add tests/test_gemma_eval_contract.py endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
+git add endcell/jobs/gemma2_standard_cli_contract.py endcell/jobs/gemma2_standard_preflight_contract.py
+git add endcell/jobs/gemma2_standard_tests.sh endcell/jobs/gemma2_standard_tests_contract.py
+git add endcell/jobs/gemma2_standard_preflight.sh endcell/jobs/gemma2_standard_smoke.sbatch
+git add endcell/jobs/gemma2_standard_train.sbatch endcell/jobs/gemma2_standard_eval.sbatch
+git add docs/endcell/gemma2_standard_hpc_runbook.md
+git diff --cached --check
+git commit -m "Add audited Gemma-2 standard-target SFT pipeline"
+git push origin codex/gemma2-standard-sft
+```
+
+On the cluster, use scheduler-only Git/file management on the login node; do not run Python there:
+
+```bash
+cd ~/tahoe
+git fetch origin codex/gemma2-standard-sft
+if git show-ref --verify --quiet refs/heads/codex/gemma2-standard-sft; then
+  git switch codex/gemma2-standard-sft
+else
+  git switch --track -c codex/gemma2-standard-sft origin/codex/gemma2-standard-sft
+fi
+git pull --ff-only origin codex/gemma2-standard-sft
+```
+
+### Uncommitted fallback: copy every changed implementation and test file
+
+Run each command separately in PowerShell. This fallback is complete; do not copy only the jobs.
+
+```powershell
+Set-Location C:\Users\avsd8\OneDrive\Desktop\tahoe
+scp .\endcell\train\train_c2s_tahoe_endcell.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/train/
+scp .\endcell\train\gemma_tokenizer_probe.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/train/
+scp .\endcell\analysis\freeze_nir_manifest.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/analysis/
+scp .\endcell\analysis\nir_benchmark.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/analysis/
+scp .\endcell\analysis\compare_backbones.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/analysis/
+scp .\endcell\analysis\residual_eval.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/analysis/
+scp .\endcell\eval\evaluate_endcell.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/eval/
+scp .\tests\test_gemma_phase1a_training_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/tests/
+scp .\tests\test_gemma_eval_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/tests/
+scp .\endcell\jobs\gemma2_standard_checkpoint_fingerprint.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_cli_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_preflight_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_tests_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_tests.sh 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_preflight.sh 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_smoke.sbatch 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_train.sbatch 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_eval.sbatch 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\docs\endcell\gemma2_standard_hpc_runbook.md 3180408@login.hpc.unibocconi.it:~/tahoe/docs/endcell/
+```
+
+Record the exact local source hashes in the transfer evidence:
+
+```powershell
+$files = Get-ChildItem .\endcell\jobs\gemma2_standard_* -File
+$files += Get-Item .\endcell\train\train_c2s_tahoe_endcell.py, .\endcell\train\gemma_tokenizer_probe.py
+$files += Get-Item .\endcell\analysis\freeze_nir_manifest.py, .\endcell\analysis\nir_benchmark.py
+$files += Get-Item .\endcell\analysis\compare_backbones.py, .\endcell\analysis\residual_eval.py
+$files += Get-Item .\endcell\eval\evaluate_endcell.py
+$files += Get-Item .\tests\test_gemma_phase1a_training_contract.py, .\tests\test_gemma_eval_contract.py
+$files += Get-Item .\docs\endcell\gemma2_standard_hpc_runbook.md
+$files | Get-FileHash -Algorithm SHA256 | Format-Table Path, Hash -AutoSize
+```
+
+The CPU preflight re-hashes the executed cluster copies and binds them into `PREFLIGHT_PASSED.json`, so
+an uncommitted Git SHA is never presented as sufficient provenance.
+
+## 1. Run the certificate-producing test gate on a CPU worker
+
+On the HPC login node, submit only this `srun`:
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=4 --mem=24G --time=01:00:00 bash -lc '
+set -euo pipefail
+cd ~/tahoe
+bash endcell/jobs/gemma2_standard_tests.sh
+'
+```
+
+Do not continue unless every test and self-test passes and the final line confirms the atomic artifact:
+
+```text
+~/tahoe/RESULTS/gemma2_standard_tests/TESTS_PASSED.json
+```
+
+That certificate binds the exact Section-1 command, every tested source file, the Python executable and
+version, and the normalized package environment. Preflight re-verifies all hashes and refuses to run if
+the command, source or environment changed after testing.
+
+## 2. Verify `longhpu`, download Gemma and create the atomic preflight certificate
+
+Scheduler commands only on the login node:
+
+```bash
+cd ~/tahoe
+LONG_GPU_PARTITION=longhpu
+bash endcell/jobs/gemma2_standard_preflight.sh "$LONG_GPU_PARTITION"
+```
+
+The script first verifies that the literal 47.5-hour partition advertises H200 resources. It then opens
+a CPU `srun` on `defq` and performs the only Gemma network download in the protocol:
+
+```text
+snapshot_download(
+  repo_id="vandijklab/C2S-Scale-Gemma-2-2B",
+  revision="5ddf28b8f1c81b7ab7a9be192924da82b6c5d512",
+  cache_dir="/data/BuffaF-Projetcs/florian_c2s/hf_cache/hub"
+)
+```
+
+It exports `HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache` and
+`HF_HUB_CACHE=$HF_HOME/hub` consistently for download, smoke, training and evaluation. It verifies the
+Hub-resolved commit plus `config.json`, tokenizer files, model index and exactly the two expected model
+shards. The certificate binds the exact `snapshots/<revision>` directory, its complete relative file
+inventory, every symlink target and every resolved file-content hash. After the download it switches to
+`HF_HUB_OFFLINE=1`, performs an offline `AutoConfig` load, then runs the complete five-JSONL tokenizer
+audit under `TRANSFORMERS_OFFLINE=1` and `HF_DATASETS_OFFLINE=1`.
+
+The only launch authorization is:
+
+```text
+~/tahoe/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
+```
+
+It is published atomically only after every check succeeds. It binds hashes of all five data files, the
+Section-1 test certificate, tokenizer report, trainer, evaluators, manifest/comparison code, every Gemma
+job, environment, package freeze, both focused tests, this runbook and the complete pinned snapshot.
+Smoke, training and evaluation
+re-hash those inputs. A failed
+preflight therefore cannot authorize a job through an intermediate `data_sha256.txt`.
+
+The 1,600-token generation cap is not an assumption: the certificate authorizes it only when the full
+audit proves it exceeds the maximum observed target-response token length and no semantic or sentinel
+truncation occurs. If that gate fails, stop and revise the cap/protocol before generating anything.
+
+## 3. Submit the deliberate interruption/resume smoke test
+
+```bash
+cd ~/tahoe
+sbatch --partition=gpuh200 endcell/jobs/gemma2_standard_smoke.sbatch
+squeue -u 3180408
+```
+
+The smoke requires an actual NVIDIA H200 with at least 135,000 MiB HBM. It uses the production
+42,198-step schedule, interrupts after step 50, verifies a published `checkpoint-N/training_state.pt`,
+resumes and interrupts after step 100. It measures signal-to-checkpoint completion twice and fails when
+either save exceeds 420 seconds, leaving three minutes of safety inside the ten-minute production
+warning. It also records GPU memory, throughput, utilization, temperature and power. Only after all
+checks pass does it atomically publish
+`RESULTS/gemma2_standard_smoke/SMOKE_PASSED.json`; production verifies that this marker belongs to the
+current preflight certificate, trainer and smoke job.
+
+Do not submit training unless the log ends in `[PASS]`.
+
+## 4. Submit the canonical 47.5-hour job
+
+Recheck free space on a CPU worker after the model download and smoke checkpoints. Production requires
+at least 150 GiB free on the checkpoint filesystem and repeats this gate inside the batch job:
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=1 --mem=1G --time=00:05:00 bash -lc '
+set -euo pipefail
+TARGET=/data/BuffaF-Projetcs/florian_c2s/checkpoints
+AVAILABLE=$(df -B1 --output=avail "$TARGET" | tail -1 | tr -d " ")
+REQUIRED=$((150 * 1024 * 1024 * 1024))
+test "$AVAILABLE" -ge "$REQUIRED"
+echo "[PASS] production disk gate: available_bytes=$AVAILABLE >= $REQUIRED (150 GiB)"
+'
+```
+
+Only after that command passes:
+
+```bash
+cd ~/tahoe
+LONG_GPU_PARTITION=longhpu
+sbatch --partition="$LONG_GPU_PARTITION" \
+  --export=ALL,EXPECTED_LONG_PARTITION="$LONG_GPU_PARTITION" \
+  endcell/jobs/gemma2_standard_train.sbatch
+squeue -u 3180408
+```
+
+At runtime the job verifies the partition, certificate, exact data, actual H200 name and required HBM
+plus the exact passing interruption/resume smoke before loading weights. It acquires `flock` on the
+canonical output directory and stores the Slurm job ID
+in the lock, so concurrent production writers are rejected.
+
+Only published `checkpoint-N/training_state.pt` files count as resume state. Temporary checkpoints,
+partial published directories and a nonfresh output without a valid checkpoint fail closed. Ten minutes
+before timeout Slurm sends one `USR1`; the trainer publishes an optimizer-boundary state and exits 99.
+Resubmit the identical command to continue. A successful final artifact must contain
+`final/checkpoint_manifest.json` whose complete recursive inventory and SHA-256 hashes validate, plus
+`final/training_state.pt` with `completed=true`, `global_step=42198`, `epoch=1`,
+`microbatch_position=0` and `accumulation_position=0`.
+
+## 5. Freeze Tier-2 support and all four checkpoint declarations
+
+Do this only after the Gemma SFT final checkpoint exists and before any Tier-2 generation. It proves
+Tier-2 drug disjointness against `train.jsonl`, requires the exact canonical support, and publishes a
+hash-named manifest that cannot overwrite an earlier one.
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=2 --mem=16G --time=02:00:00 bash -lc '
+set -euo pipefail
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_HUB_CACHE="$HF_HOME/hub"
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_DATASETS_OFFLINE=1
+cd ~/tahoe
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+FP=endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
+CERT=RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
+CONTRACT=endcell/jobs/gemma2_standard_preflight_contract.py
+GEMMA_PARENT=$($PY $CONTRACT verify --certificate $CERT \
+  --model-id vandijklab/C2S-Scale-Gemma-2-2B \
+  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --print-snapshot | tail -1)
+PYTHIA_PARENT=$($PY - <<"PY"
+import os
+from huggingface_hub import snapshot_download
+print(snapshot_download("vandijklab/C2S-Scale-Pythia-1b-pt",
+    revision="830e4689d4238bbb5e2ec9a89b76e6a6d48061db",
+    cache_dir=os.environ["HF_HUB_CACHE"], local_files_only=True))
+PY
+)
+GEMMA_FP=$($PY $FP \
+  --checkpoint /data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/final \
+  --require_complete_sft --expected_global_step 42198 --expected_epoch 1 \
+  --expected_microbatch_position 0 --expected_accumulation_position 0 --digest_only)
+PYTHIA_FP=$($PY $FP --checkpoint /data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final --digest_only)
+GEMMA_PARENT_FP=$($PY $FP --checkpoint "$GEMMA_PARENT" --digest_only)
+PYTHIA_PARENT_FP=$($PY $FP --checkpoint "$PYTHIA_PARENT" --digest_only)
+$PY endcell/analysis/freeze_nir_manifest.py \
+  --eval_dir /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big \
+  --scram_dir /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big_scram \
+  --train_file /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/train.jsonl \
+  --tier tier2_unseen_drugs --k_samples 8 --min_cells 8 \
+  --min_drugs_per_group 3 --max_groups 80 --same_plate_only --seed 42 \
+  --generation_contract_version nir-generation-v1 \
+  --expected_rows 606 --expected_drugs 35 --expected_cell_lines 40 --expected_groups 80 \
+  --model_fingerprint "$GEMMA_FP" --model_fingerprint "$PYTHIA_FP" \
+  --validity_only_parent "gemma_parent=$GEMMA_PARENT_FP" \
+  --validity_only_parent "pythia_parent=$PYTHIA_PARENT_FP" \
+  --hash_named --out RESULTS/gemma2_standard_tier2_manifest.json \
+  | tee RESULTS/gemma2_standard_manifest_freeze.log
+'
+```
+
+The final log prints the immutable hash-named manifest path. Use that exact path below; do not create or
+overwrite an alias after seeing outputs.
+
+## 6. Run validity and Tier-2 NIR
+
+Set `MANIFEST` to the exact hash-named path printed in step 5:
+
+```bash
+cd ~/tahoe
+MANIFEST=$(sed -nE 's/^wrote ([^:]+):.*/\1/p' RESULTS/gemma2_standard_manifest_freeze.log | tail -1)
+test -f "$MANIFEST"
+```
+
+Fine-tuned Gemma:
+
+```bash
+sbatch --partition=gpuh200 \
+  --export=ALL,CHECKPOINT_ROLE=gemma_sft,MODEL_LABEL=gemma,TIER2_MANIFEST="$MANIFEST" \
+  endcell/jobs/gemma2_standard_eval.sbatch
+```
+
+Fine-tuned Pythia, with its explicit legacy training-state exemption:
+
+```bash
+sbatch --partition=gpuh200 \
+  --export=ALL,CHECKPOINT_ROLE=pythia_sft_legacy,ALLOW_LEGACY_PYTHIA_CHECKPOINT=1,MODEL_LABEL=pythia,MODEL_PATH=/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final,TIER2_MANIFEST="$MANIFEST" \
+  endcell/jobs/gemma2_standard_eval.sbatch
+```
+
+Resolve and persist the two parent paths on a CPU worker:
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=1 --mem=8G --time=00:30:00 bash -lc '
+set -euo pipefail
+export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
+export HF_HUB_CACHE="$HF_HOME/hub"
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_DATASETS_OFFLINE=1
+cd ~/tahoe
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+GEMMA_PARENT=$($PY endcell/jobs/gemma2_standard_preflight_contract.py verify \
+  --certificate RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json \
+  --model-id vandijklab/C2S-Scale-Gemma-2-2B \
+  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --print-snapshot | tail -1)
+PYTHIA_PARENT=$($PY - <<"PY"
+import os
+from huggingface_hub import snapshot_download
+print(snapshot_download("vandijklab/C2S-Scale-Pythia-1b-pt",
+    revision="830e4689d4238bbb5e2ec9a89b76e6a6d48061db",
+    cache_dir=os.environ["HF_HUB_CACHE"], local_files_only=True))
+PY
+)
+printf "GEMMA_PARENT=%q\nPYTHIA_PARENT=%q\n" "$GEMMA_PARENT" "$PYTHIA_PARENT" \
+  > RESULTS/gemma2_standard_parent_paths.env
+'
+source RESULTS/gemma2_standard_parent_paths.env
+```
+
+Frozen Gemma parent:
+
+```bash
+sbatch --partition=gpuh200 \
+  --export=ALL,CHECKPOINT_ROLE=gemma_parent,MODEL_LABEL=gemma_parent,MODEL_PATH="$GEMMA_PARENT",TIER2_MANIFEST="$MANIFEST" \
+  endcell/jobs/gemma2_standard_eval.sbatch
+```
+
+Frozen Pythia parent:
+
+```bash
+sbatch --partition=gpuh200 \
+  --export=ALL,CHECKPOINT_ROLE=pythia_parent,MODEL_LABEL=pythia_parent,MODEL_PATH="$PYTHIA_PARENT",TIER2_MANIFEST="$MANIFEST" \
+  endcell/jobs/gemma2_standard_eval.sbatch
+```
+
+Parent jobs are validity-first and are frozen as validity-only controls. If a parent lacks an atomic
+`[END_CELL]` or emits nonsense—as frozen Pythia did in the original exploratory run—the evaluator writes
+`status=validity_failure` and exits without NIR. That is the result; it is not repaired or scored.
+
+Every inference job is offline, uses the eager attention implementation and restores KV caching through
+the repaired evaluator. The job parses both the greedy validity artifact and sampled NIR artifact; it
+does not print success for `validity_failure`.
+
+## 7. Produce the paired Gemma–Pythia comparison
+
+After both fine-tuned NIR artifacts report `status=ok`, run on a CPU worker:
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=4 --mem=32G --time=01:00:00 bash -lc '
+set -euo pipefail
+cd ~/tahoe
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+$PY endcell/analysis/compare_backbones.py \
+  --left RESULTS/gemma2_standard_eval/gemma/gemma_tier2_nir.json \
+  --right RESULTS/gemma2_standard_eval/pythia/pythia_tier2_nir.json \
+  --left_name gemma --right_name pythia --tier tier2_unseen_drugs \
+  --per_drug_bh --out RESULTS/gemma2_standard_eval/gemma_vs_pythia_tier2.json
+$PY - <<"PY"
+import json
+path = "RESULTS/gemma2_standard_eval/gemma_vs_pythia_tier2.json"
+document = json.load(open(path, encoding="utf-8"))
+required = {
+    "gemma_minus_chance", "gemma_minus_control", "gemma_minus_linear",
+    "gemma_minus_mean", "gemma_minus_wrong_condition", "gemma_minus_pythia",
+}
+estimands = document.get("estimands", {})
+if document.get("status") != "ok" or set(estimands) != required:
+    raise SystemExit(f"[FATAL] incomplete comparison contract: {estimands.keys()}")
+for name, estimand in document["estimands"].items():
+    expected = {"primary_drug_cell_line", "sensitivity_drug_well", "sensitivity_cell_line_well"}
+    if set(estimand) != expected:
+        raise SystemExit(f"[FATAL] {name} lacks declared interval set: {estimand.keys()}")
+print("[PASS] all six preregistered contrasts and all three dependence analyses are present")
+PY
+'
+```
+
+The comparator refuses status failures, manifest/config/support mismatches and duplicate rows. Negative
+multiway variance is not allowed to become a zero-width confidence interval.
+
+## 8. Copy evidence back in PowerShell
+
+```powershell
+Set-Location C:\Users\avsd8\OneDrive\Desktop\tahoe
+New-Item -ItemType Directory -Force .\gemma2_hpc_return | Out-Null
+scp "3180408@login.hpc.unibocconi.it:~/tahoe/logs/gemma2_standard_*.out" .\gemma2_hpc_return\
+scp -r "3180408@login.hpc.unibocconi.it:~/tahoe/RESULTS/gemma2_standard_*" .\gemma2_hpc_return\
+```
+
+Do not copy multi-gigabyte model weights unless a later diagnosis specifically requires them.
+
+## Stop conditions
+
+- No current `TESTS_PASSED.json`: do not run preflight.
+- No `PREFLIGHT_PASSED.json`: do not smoke, train or evaluate.
+- Token audit does not authorize 1,600 tokens: do not generate.
+- Long partition is not H200-backed or runtime GPU/HBM gate fails: do not train.
+- Either checkpoint save exceeds 420 seconds: do not rely on the 600-second warning.
+- Resume test fails, output lock is held or output contains unpublished/partial state: do not train.
+- Manifest is not exactly 606/35/40/80 or any Tier-2 drug occurs in training: do not evaluate.
+- Gemma final manifest inventory/content does not validate, or its terminal state is not exactly
+  completed at step 42,198, epoch 1, microbatch 0, accumulation 0: do not accept or evaluate it.
+- Parent validity fails: preserve the failure artifact and do not calculate parent NIR.

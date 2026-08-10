@@ -34,7 +34,7 @@ USAGE
       --n_conditions 200 --k_samples 4 --bf16 --out RESULTS/residual_eval.json
   python residual_eval.py --selftest
 """
-import argparse, json, os, sys, re, ast, zlib, logging
+import argparse, hashlib, json, os, sys, re, ast, logging
 from collections import defaultdict
 import numpy as np
 
@@ -48,7 +48,16 @@ for _p in (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.
         sys.path.insert(0, _p)
 import inference as inf                                              # noqa: E402
 
+try:
+    from freeze_nir_manifest import (PredictionCache, atomic_write_json, sha256_json,
+                                     sha256_text, stable_output_seed)
+except ImportError:  # pragma: no cover
+    from endcell.analysis.freeze_nir_manifest import (PredictionCache, atomic_write_json,
+                                                      sha256_json, sha256_text,
+                                                      stable_output_seed)
+
 END, DOWN = "[END_CELL]", "[DOWN]"
+DEFAULT_GENERATION_CONTRACT = "legacy"
 CTRL_MARKER = "Control cell:"
 
 
@@ -128,6 +137,37 @@ def nir_from_sims(own, others):
     if not o:
         return None
     return float(np.mean([1.0 if own > x else (0.5 if own == x else 0.0) for x in o]))
+
+
+def generation_validity(raw_ids, decoded, *, end_id, eos_id, max_new_tokens,
+                        gene_index, model_kind, min_genes=20):
+    """Audit native termination and the representation-specific semantic sentinel."""
+    ids = list(map(int, raw_ids))
+    end_pos = ids.index(end_id) if end_id is not None and end_id in ids else None
+    eos_pos = ids.index(eos_id) if eos_id is not None and eos_id in ids else None
+    stops = [(p, "end_cell") for p in [end_pos] if p is not None]
+    stops += [(p, "native_eos") for p in [eos_pos] if p is not None]
+    termination = min(stops)[1] if stops else (
+        "cap" if len(ids) >= max_new_tokens else "malformed_stop")
+    toks = decoded.replace(END, " ").split()
+    has_down = DOWN in toks
+    genes = [x for x in toks if x != DOWN]
+    recognized = [x for x in genes if x in gene_index]
+    malformed = [x for x in genes if x not in gene_index]
+    unique = set(recognized)
+    semantic_complete = ((termination == "end_cell") if model_kind == "cellsentence"
+                         else (has_down and termination == "end_cell"))
+    return {
+        "termination": termination, "end_cell_emitted": end_pos is not None,
+        "native_eos_emitted": eos_pos is not None, "cap_reached": termination == "cap",
+        "has_down": has_down, "malformed": bool(malformed),
+        "malformed_token_count": len(malformed),
+        "duplicate_gene_count": len(recognized) - len(unique),
+        "recognized_gene_count": len(unique),
+        "recognized_gene_rate": len(recognized) / max(1, len(genes)),
+        "complete": bool(semantic_complete and len(unique) >= min_genes
+                         and termination != "cap"),
+    }
 
 
 # ----------------------------------------------------------------- prompts
@@ -238,6 +278,18 @@ def main():
                          "HALVED a measured effect (Q15). One forgotten flag was worth +0.0716 vs +0.1429.")
     ap.add_argument("--gen_batch_size", type=int, default=8)
     ap.add_argument("--bf16", action="store_true")
+    ap.add_argument("--generation_contract", choices=["deterministic", "legacy"],
+                    default=DEFAULT_GENERATION_CONTRACT)
+    ap.add_argument("--generation_contract_version", default="residual-eval-v1")
+    ap.add_argument("--model_fingerprint", default=None)
+    ap.add_argument("--prediction_cache", default=None)
+    ap.add_argument("--attention_implementation", choices=["eager", "sdpa", "flash_attention_2"],
+                    default=None)
+    ap.add_argument("--invalid_policy", choices=["score_as_emitted", "validity_failure"],
+                    default="score_as_emitted")
+    ap.add_argument("--min_complete_rate", type=float, default=0.95)
+    ap.add_argument("--min_recognized_gene_rate", type=float, default=0.95)
+    ap.add_argument("--min_recognized_genes", type=int, default=20)
     ap.add_argument("--split_comparator", default="scramble_orth",
                     choices=["scramble_orth", "scramble_opposite", "scramble_near"],
                     help="Comparator for the by-split table. Defaults to the NEUTRAL stratum. "
@@ -383,11 +435,45 @@ def main():
     tok = AutoTokenizer.from_pretrained(args.model_path)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16 if args.bf16 else torch.float32).to(dev).eval()
+    load_kwargs = {"torch_dtype": torch.bfloat16 if args.bf16 else torch.float32}
+    if args.attention_implementation:
+        load_kwargs["attn_implementation"] = args.attention_implementation
+    model = AutoModelForCausalLM.from_pretrained(args.model_path, **load_kwargs).to(dev).eval()
+    model.config.use_cache = True
     ec = tok.encode(END, add_special_tokens=False)
-    end_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(END)
+    strict_end = (len(ec) == 1 and
+                  (tok.unk_token_id is None or int(ec[0]) != int(tok.unk_token_id)))
+    if args.generation_contract == "deterministic" and not strict_end:
+        raise ValueError(f"deterministic residual evaluation requires atomic non-UNK {END}, got {ec}")
+    end_id = ec[0] if strict_end else tok.convert_tokens_to_ids(END)
     eos = [end_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
+    if args.generation_contract == "deterministic" and not args.model_fingerprint:
+        ap.error("deterministic/paired evaluation requires immutable --model_fingerprint")
+    if not args.model_fingerprint:  # explicit legacy compatibility only
+        args.model_fingerprint = "legacy-unfingerprinted"
+    prediction_cache = None
+    if args.generation_contract == "deterministic":
+        cache_path = args.prediction_cache or (args.out + ".predictions.jsonl")
+        prediction_cache = PredictionCache(cache_path, {
+            "model_fingerprint": args.model_fingerprint,
+            "generation_contract_version": args.generation_contract_version,
+            "model_kind": args.model_kind, "temperature": args.temperature,
+            "top_p": args.top_p, "max_new_tokens": args.max_new_tokens,
+            "end_cell_id": end_id, "native_eos_id": tok.eos_token_id,
+            "min_complete_rate": args.min_complete_rate,
+            "min_recognized_gene_rate": args.min_recognized_gene_rate,
+            "min_recognized_genes": args.min_recognized_genes,
+            "invalid_policy": args.invalid_policy,
+            "attention_implementation": args.attention_implementation,
+            "use_cache": True,
+        })
+    generation_records = []
+
+    def classify(raw_ids, decoded):
+        return generation_validity(
+            raw_ids, decoded, end_id=end_id, eos_id=tok.eos_token_id,
+            max_new_tokens=args.max_new_tokens, gene_index=gene_index,
+            model_kind=args.model_kind, min_genes=args.min_recognized_genes)
 
     def generate(prompts, tag=""):
         """Sampled generation, seeded from `tag` so a rerun reproduces byte-for-byte.
@@ -400,20 +486,50 @@ def main():
         """
         prev = tok.padding_side; tok.padding_side = "left"; outs = []
         try:
-            for i in range(0, len(prompts), args.gen_batch_size):
-                enc = tok(prompts[i:i + args.gen_batch_size], return_tensors="pt", padding=True).to(dev)
-                gen = torch.Generator(device=dev)
-                gen.manual_seed((zlib.crc32(f"{args.seed}|{tag}|{i}".encode()) % (2 ** 31)) or 1)
-                with torch.no_grad():
-                    g = model.generate(**enc, max_new_tokens=args.max_new_tokens,
-                                       pad_token_id=tok.pad_token_id, eos_token_id=eos, do_sample=True,
-                                       temperature=max(args.temperature, 1e-2), top_p=args.top_p)
-                pl = enc["input_ids"].shape[1]
-                for j in range(g.shape[0]):
-                    ids = g[j][pl:].tolist()
-                    if end_id in ids:
-                        ids = ids[:ids.index(end_id)]
-                    outs.append(tok.decode(ids, skip_special_tokens=False).strip())
+            for draw_id, prompt in enumerate(prompts):
+                row_id = sha256_text(tag)
+                prompt_id = sha256_text(prompt)
+                seed = stable_output_seed(args.model_fingerprint, row_id, prompt_id, draw_id,
+                                          args.generation_contract_version)
+                output_id = sha256_json({"model": args.model_fingerprint, "row_id": row_id,
+                                         "prompt_id": prompt_id, "draw_id": draw_id,
+                                         "contract": args.generation_contract_version})
+                old = prediction_cache.get(output_id) if prediction_cache else None
+                if old is not None:
+                    record = old
+                else:
+                    enc = tok(prompt, return_tensors="pt").to(dev)
+                    devices = ([torch.cuda.current_device()] if str(dev).startswith("cuda") else [])
+                    if args.generation_contract == "deterministic":
+                        context = torch.random.fork_rng(devices=devices)
+                    else:
+                        from contextlib import nullcontext
+                        context = nullcontext()
+                    with context:
+                        if args.generation_contract == "deterministic":
+                            torch.manual_seed(seed)
+                            if devices:
+                                torch.cuda.manual_seed_all(seed)
+                        with torch.no_grad():
+                            g = model.generate(**enc, max_new_tokens=args.max_new_tokens,
+                                               pad_token_id=tok.pad_token_id, eos_token_id=eos,
+                                               do_sample=True,
+                                               temperature=max(args.temperature, 1e-2),
+                                               top_p=args.top_p)
+                    raw_ids = g[0, enc["input_ids"].shape[1]:].tolist()
+                    decoded = tok.decode(raw_ids, skip_special_tokens=False).strip()
+                    validity = classify(raw_ids, decoded)
+                    record = {"type": "prediction", "output_id": output_id,
+                              "row_id": row_id, "prompt_id": prompt_id,
+                              "prompt_sha256": prompt_id, "draw_id": draw_id, "seed": seed,
+                              "raw_token_ids": list(map(int, raw_ids)),
+                              "decoded_text": decoded,
+                              "termination_reason": validity["termination"],
+                              "validity": validity}
+                    if prediction_cache:
+                        prediction_cache.put(record)
+                generation_records.append(record)
+                outs.append(record["decoded_text"])
         finally:
             tok.padding_side = prev
         return outs
@@ -531,7 +647,11 @@ def main():
                 and (oracle or not trained or k2 in trained)]
         return np.mean(np.stack(same), 0) if same else None
 
-    gen_stats = {"n": 0, "has_down": 0, "up_len": [], "dn_len": [], "valid_frac": [], "dup_frac": []}
+    gen_stats = {"n": 0, "has_down": 0, "has_end_cell": 0, "native_eos": 0,
+                 "cap": 0, "malformed": 0, "complete": 0,
+                 "up_len": [], "dn_len": [], "valid_frac": [], "dup_frac": [],
+                 "recognized_genes": [], "prediction_cache": args.prediction_cache or
+                 (args.out + ".predictions.jsonl" if prediction_cache else None)}
 
     def track(gens):
         for g in gens:
@@ -545,6 +665,15 @@ def main():
             if genes:
                 gen_stats["valid_frac"].append(np.mean([t in gene_index for t in genes]))
                 gen_stats["dup_frac"].append(1.0 - len(set(genes)) / len(genes))
+        # generate() appends one audit record per returned string in the same order.
+        for record in generation_records[-len(gens):] if gens else []:
+            v = record["validity"]
+            gen_stats["has_end_cell"] += int(v["end_cell_emitted"])
+            gen_stats["native_eos"] += int(v["native_eos_emitted"])
+            gen_stats["cap"] += int(v["cap_reached"])
+            gen_stats["malformed"] += int(v["malformed"])
+            gen_stats["complete"] += int(v["complete"])
+            gen_stats["recognized_genes"].append(v["recognized_gene_count"])
 
     pred_by_cl = defaultdict(list)   # for the mode-collapse check
     recs = []
@@ -759,6 +888,8 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     if gen_stats and gen_stats["n"]:
         g = gen_stats
         logger.info(f"  [validity] {g['n']} generations | has [DOWN] {100*g['has_down']/g['n']:.0f}% | "
+                    f"has [END_CELL] {100*g['has_end_cell']/g['n']:.0f}% | "
+                    f"native EOS {100*g['native_eos']/g['n']:.1f}% | cap {100*g['cap']/g['n']:.1f}% | "
                     f"up-block {np.mean(g['up_len']) if g['up_len'] else 0:.0f} / "
                     f"down-block {np.mean(g['dn_len']) if g['dn_len'] else 0:.0f} genes | "
                     f"valid panel genes {100*np.mean(g['valid_frac']):.1f}% | "
@@ -772,10 +903,36 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
         g = gen_stats
         validity = {"n_generations": int(g["n"]),
                     "frac_with_down_block": float(g["has_down"] / g["n"]),
+                    "end_cell_rate": float(g["has_end_cell"] / g["n"]),
+                    "native_eos_rate": float(g["native_eos"] / g["n"]),
+                    "cap_rate": float(g["cap"] / g["n"]),
+                    "malformed_rate": float(g["malformed"] / g["n"]),
+                    "complete_rate": float(g["complete"] / g["n"]),
+                    "mean_recognized_genes": (float(np.mean(g["recognized_genes"]))
+                                              if g["recognized_genes"] else 0.0),
                     "mean_up_block_genes": float(np.mean(g["up_len"])) if g["up_len"] else 0.0,
                     "mean_down_block_genes": float(np.mean(g["dn_len"])) if g["dn_len"] else 0.0,
-                    "frac_valid_panel_genes": float(np.mean(g["valid_frac"])),
-                    "frac_duplicates": float(np.mean(g["dup_frac"]))}
+                    "frac_valid_panel_genes": (float(np.mean(g["valid_frac"]))
+                                               if g["valid_frac"] else 0.0),
+                    "frac_duplicates": (float(np.mean(g["dup_frac"])) if g["dup_frac"] else 0.0),
+                    "prediction_cache": g.get("prediction_cache")}
+        gate_pass = (validity["complete_rate"] >= args.min_complete_rate and
+                     validity["frac_valid_panel_genes"] >= args.min_recognized_gene_rate)
+        validity["gate"] = {"passed": bool(gate_pass),
+                            "min_complete_rate": args.min_complete_rate,
+                            "min_recognized_gene_rate": args.min_recognized_gene_rate,
+                            "semantic_sentinel": (END if args.model_kind == "cellsentence" else DOWN)}
+        if args.invalid_policy == "validity_failure" and not gate_pass:
+            artifact = {"status": "validity_failure", "config": vars(args),
+                        "generation_validity": validity,
+                        "failure_reason": f"{args.model_kind} checkpoint failed validity gate",
+                        "means": {}, "records": []}
+            os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+            atomic_write_json(args.out, artifact, default=float)
+            if prediction_cache is not None:
+                prediction_cache.close()
+            logger.warning("validity gate failed; NIR was withheld and a failure artifact was written")
+            return
 
     means = {}
     for a in ("ceiling", "model", "scramble_near", "scramble_orth", "scramble_opposite",
@@ -1046,9 +1203,10 @@ def report(recs, args, rng, gen_stats=None, pred_by_cl=None, kept=None):
     logger.info("=" * 100)
     means["strata"] = strat_out
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump({"config": vars(args), "generation_validity": validity,
-               "means": means, "records": recs}, open(args.out, "w"),
-              indent=2, default=float)
+    atomic_write_json(args.out, {"config": vars(args), "generation_validity": validity,
+                                 "means": means, "records": recs}, default=float)
+    if prediction_cache is not None:
+        prediction_cache.close()
     logger.info(f"-> {args.out}")
 
 

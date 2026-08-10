@@ -41,7 +41,7 @@ USAGE
 SELFTEST (no model/data/network)
   python evaluate_endcell.py --selftest --out /tmp/eval_endcell_selftest.json
 """
-import argparse, json, os, sys, logging
+import argparse, hashlib, json, os, sys, logging
 from collections import defaultdict
 import numpy as np
 
@@ -60,6 +60,15 @@ logger = logging.getLogger(__name__)
 
 SENTINEL = "[END_CELL]"
 DE_K_LIST = (20, 50, 100, 200)
+DEFAULT_GENERATION_CONTRACT = "legacy"
+
+try:
+    from freeze_nir_manifest import (PredictionCache, atomic_write_json, control_from_prompt,
+                                     file_sha256, sha256_json, sha256_text, stable_output_seed)
+except ImportError:  # pragma: no cover
+    from endcell.analysis.freeze_nir_manifest import (PredictionCache, atomic_write_json,
+                                                      control_from_prompt, file_sha256, sha256_json,
+                                                      sha256_text, stable_output_seed)
 
 
 # ----------------------------------------------------------------- rank representation
@@ -72,6 +81,17 @@ def genes_of(sentence):
             break
         out.append(t)
     return out
+
+
+def atomic_sentinel_id(tokenizer, token=SENTINEL):
+    """Reject split and unknown sentinel encodings; never manufacture a stop token."""
+    ids = tokenizer.encode(token, add_special_tokens=False)
+    if len(ids) != 1:
+        raise ValueError(f"{token} must tokenize atomically, got {ids}")
+    token_id = int(ids[0])
+    if tokenizer.unk_token_id is not None and token_id == int(tokenizer.unk_token_id):
+        raise ValueError(f"{token} maps to unk_token_id={tokenizer.unk_token_id}")
+    return token_id
 
 
 def sentence_to_rankarr(sentence, panel_index, P, fill):
@@ -154,7 +174,7 @@ def score_pair(pred_arr, true_arr, ctrl_arr, de_k_list):
     return out
 
 
-def validity(pred_sentence, true_sentence, panel_set, min_genes=20):
+def validity(pred_sentence, true_sentence, panel_set, min_genes=20, generation=None):
     """[END_CELL]-appropriate well-formedness. coverage is recall against the TRUTH expressed set
     (not fraction of 946); precision = fraction of emitted genes that are truly expressed."""
     toks = pred_sentence.strip().split()
@@ -168,12 +188,26 @@ def validity(pred_sentence, true_sentence, panel_set, min_genes=20):
     f1 = (2 * precision * recall / (precision + recall)
           if (recall and precision and (precision + recall) > 0) else 0.0)
     halluc = (len(gene_toks) - len([t for t in gene_toks if t in panel_set])) / max(1, len(gene_toks))
+    generation = generation or {}
+    end_emitted = bool(generation.get("end_cell_emitted", SENTINEL in toks))
+    native_eos = bool(generation.get("native_eos_emitted", False))
+    cap = bool(generation.get("cap_reached", False))
+    malformed = bool(generation.get("malformed", halluc > 0))
+    duplicates = len([t for t in gene_toks if t in panel_set]) - n_pred
+    complete = bool(end_emitted and n_pred >= min_genes and not cap)
     return {
         "recall": recall, "precision": precision, "f1": f1,
         "hallucination_rate": halluc,
         "n_pred_genes": n_pred, "n_true_genes": n_true,
         "len_ratio": (n_pred / n_true) if n_true else None,
-        "emits_end_cell": SENTINEL in toks,
+        "emits_end_cell": end_emitted, "native_eos": native_eos,
+        "cap_reached": cap, "malformed": malformed,
+        "duplicate_gene_count": generation.get("duplicate_gene_count", duplicates),
+        "recognized_gene_count": generation.get("recognized_gene_count", n_pred),
+        "recognized_gene_rate": generation.get("recognized_gene_rate",
+                                                  n_pred / max(1, len(gene_toks))),
+        "termination_reason": generation.get("termination", "unknown"),
+        "complete": complete,
         "degenerate": n_pred < min_genes,
     }
 
@@ -181,14 +215,12 @@ def validity(pred_sentence, true_sentence, panel_set, min_genes=20):
 CONV = None  # set in main: {"worst": P, "francesca": P//2}
 
 
-def score_example(pred_sentence, ex, panel_index, panel_set, P, de_k_list):
+def score_example(pred_sentence, ex, panel_index, panel_set, P, de_k_list, generation=None):
     """Score one prediction under BOTH conventions + validity. Returns a per-example record."""
     true_s = ex["response"]
-    ctrl_s = None
-    import evaluate_c2s_tahoe as ev
-    ctrl_s = ev.control_from_prompt(ex["prompt"])
+    ctrl_s = control_from_prompt(ex["prompt"])
     rec = {"metadata": ex.get("metadata", {}),
-           "validity": validity(pred_sentence, true_s, panel_set)}
+           "validity": validity(pred_sentence, true_s, panel_set, generation=generation)}
     if not ctrl_s:
         rec["scores"] = None
         return rec
@@ -203,9 +235,12 @@ def score_example(pred_sentence, ex, panel_index, panel_set, P, de_k_list):
 
 
 # ----------------------------------------------------------------- aggregation
-def aggregate(records, de_k_list):
-    """Mean over non-degenerate examples, per convention/metric, with bootstrap-free simple CI."""
-    good = [r for r in records if r.get("scores") and not r["validity"]["degenerate"]]
+def aggregate(records, de_k_list, invalid_policy="score_as_emitted"):
+    """Aggregate under an explicit invalid-output policy; never silently repair outputs."""
+    if invalid_policy == "drop_degenerate_legacy":
+        good = [r for r in records if r.get("scores") and not r["validity"]["degenerate"]]
+    else:
+        good = [r for r in records if r.get("scores")]
     out = {"n_total": len(records), "n_scored": len(good), "conventions": {}}
     for cname in CONV:
         mdict = {}
@@ -225,7 +260,15 @@ def aggregate(records, de_k_list):
     out["validity"] = {k: vmean(k) for k in ("recall", "precision", "f1", "hallucination_rate",
                                              "len_ratio", "n_pred_genes", "n_true_genes")}
     out["validity"]["emits_end_cell_rate"] = float(np.mean([r["validity"]["emits_end_cell"] for r in records]))
+    out["validity"]["native_eos_rate"] = float(np.mean([r["validity"]["native_eos"] for r in records]))
+    out["validity"]["cap_rate"] = float(np.mean([r["validity"]["cap_reached"] for r in records]))
+    out["validity"]["malformed_rate"] = float(np.mean([r["validity"]["malformed"] for r in records]))
+    out["validity"]["complete_rate"] = float(np.mean([r["validity"]["complete"] for r in records]))
+    out["validity"]["duplicate_gene_count"] = vmean("duplicate_gene_count")
+    out["validity"]["recognized_gene_count"] = vmean("recognized_gene_count")
+    out["validity"]["recognized_gene_rate"] = vmean("recognized_gene_rate")
     out["validity"]["degenerate_rate"] = float(np.mean([r["validity"]["degenerate"] for r in records]))
+    out["invalid_policy"] = invalid_policy
     return out
 
 
@@ -238,11 +281,13 @@ def _meanci(vals):
             "ci_high": float(a.mean() + 1.96 * se), "n": int(len(a))}
 
 
-def breakdown(records, key, de_k_list, headline_k=50, conv="worst", min_n=8):
+def breakdown(records, key, de_k_list, headline_k=50, conv="worst", min_n=8,
+              invalid_policy="score_as_emitted"):
     """Per-group (drug/moa/dose) headline DE-Δr (Pearson) — turns the aggregate into a finding."""
     groups = defaultdict(list)
     for r in records:
-        if not r.get("scores") or r["validity"]["degenerate"]:
+        if not r.get("scores") or (invalid_policy == "drop_degenerate_legacy" and
+                                   r["validity"]["degenerate"]):
             continue
         g = r["metadata"].get(key)
         v = r["scores"][conv].get(f"de_pearson_k{headline_k}")
@@ -259,21 +304,93 @@ def load_tier(data_dir, tier):
     if not os.path.exists(path):
         logger.warning(f"  missing {path}")
         return None
-    return [json.loads(l) for l in open(path)]
+    examples = []
+    with open(path, "rb") as handle:
+        for line_index, raw in enumerate(handle):
+            if not raw.strip():
+                continue
+            ex = json.loads(raw.decode("utf-8"))
+            ex["_source_line_index"] = line_index
+            ex["_source_line_sha256"] = hashlib.sha256(raw.rstrip(b"\r\n")).hexdigest()
+            examples.append(ex)
+    return examples
 
 
-def generate_endcell_batch(model, tok, prompts, args, device, end_cell_id):
-    """Generate, STOPPING at [END_CELL], and truncate at the token level. This fixes the over-
-    emission seen in the first run: the decoder strips the [END_CELL] special token, and without an
-    eos the model kept generating past the cell boundary (recall/precision + possibly DE-Δr affected).
-    Here [END_CELL] (and the natural eos) terminate generation; we cut the ids at the first
-    [END_CELL], decode the clean gene run, and re-append the sentinel so downstream scoring/validity
-    (which look for the '[END_CELL]' string) work unchanged and emits_end_cell is reliable."""
+def _generation_meta(raw_ids, decoded, end_cell_id, eos_id, max_new_tokens, panel_set):
+    ids = list(map(int, raw_ids))
+    end_pos = ids.index(end_cell_id) if end_cell_id in ids else None
+    eos_pos = ids.index(eos_id) if eos_id is not None and eos_id in ids else None
+    stops = [(p, "end_cell") for p in [end_pos] if p is not None]
+    stops += [(p, "native_eos") for p in [eos_pos] if p is not None]
+    termination = min(stops)[1] if stops else (
+        "cap" if len(ids) >= max_new_tokens else "malformed_stop")
+    toks = decoded.strip().split()
+    if SENTINEL in toks:
+        toks = toks[:toks.index(SENTINEL)]
+    recognized = [t for t in toks if t in panel_set]
+    malformed = [t for t in toks if t not in panel_set]
+    return {
+        "termination": termination, "end_cell_emitted": end_pos is not None,
+        "native_eos_emitted": eos_pos is not None, "cap_reached": termination == "cap",
+        "malformed": bool(malformed), "malformed_token_count": len(malformed),
+        "duplicate_gene_count": len(recognized) - len(set(recognized)),
+        "recognized_gene_count": len(set(recognized)),
+        "recognized_gene_rate": len(recognized) / max(1, len(toks)),
+    }
+
+
+def generate_endcell_batch(model, tok, prompts, args, device, end_cell_id, panel_set,
+                           specs=None, cache=None):
+    """Return raw generated IDs, decoded text, and the observed native termination.
+
+    Nothing is truncated or repaired before auditing. In particular `[END_CELL]` is never
+    appended in post-processing: native EOS, a token cap, and malformed stopping stay distinct.
+    """
     import torch
     prev = tok.padding_side
     tok.padding_side = "left"
     eos = [end_cell_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
     try:
+        if args.generation_contract == "deterministic":
+            records = []
+            for prompt, spec in zip(prompts, specs or []):
+                row_id, prompt_id, draw_id = spec["row_id"], spec["prompt_id"], spec["draw_id"]
+                seed = stable_output_seed(args.model_fingerprint, row_id, prompt_id, draw_id,
+                                          args.generation_contract_version)
+                output_id = sha256_json({"model": args.model_fingerprint, "row_id": row_id,
+                                         "prompt_id": prompt_id, "draw_id": draw_id,
+                                         "contract": args.generation_contract_version})
+                old = cache.get(output_id) if cache else None
+                if old is not None:
+                    records.append(old)
+                    continue
+                enc = tok(prompt, return_tensors="pt").to(device)
+                kw = dict(max_new_tokens=args.max_new_tokens, pad_token_id=tok.pad_token_id,
+                          eos_token_id=eos)
+                if args.do_sample:
+                    kw.update(do_sample=True, temperature=args.temperature, top_p=args.top_p)
+                else:
+                    kw.update(do_sample=False)
+                devices = ([torch.cuda.current_device()] if str(device).startswith("cuda") else [])
+                with torch.random.fork_rng(devices=devices):
+                    torch.manual_seed(seed)
+                    if devices:
+                        torch.cuda.manual_seed_all(seed)
+                    with torch.no_grad():
+                        out = model.generate(**enc, **kw)
+                raw_ids = out[0, enc["input_ids"].shape[1]:].tolist()
+                decoded = tok.decode(raw_ids, skip_special_tokens=False).strip()
+                meta = _generation_meta(raw_ids, decoded, end_cell_id, tok.eos_token_id,
+                                        args.max_new_tokens, panel_set)
+                record = {"type": "prediction", "output_id": output_id, "row_id": row_id,
+                          "prompt_id": prompt_id, "prompt_sha256": sha256_text(prompt),
+                          "draw_id": draw_id, "seed": seed,
+                          "raw_token_ids": list(map(int, raw_ids)), "decoded_text": decoded,
+                          "termination_reason": meta["termination"], "validity": meta}
+                if cache:
+                    cache.put(record)
+                records.append(record)
+            return records
         enc = tok(prompts, return_tensors="pt", padding=True).to(device)
         kw = dict(max_new_tokens=args.max_new_tokens, pad_token_id=tok.pad_token_id, eos_token_id=eos)
         if args.do_sample:
@@ -283,26 +400,29 @@ def generate_endcell_batch(model, tok, prompts, args, device, end_cell_id):
         with torch.no_grad():
             out = model.generate(**enc, **kw)
         plen = enc["input_ids"].shape[1]
-        texts = []
+        records = []
         for i in range(len(prompts)):
             ids = out[i][plen:].tolist()
-            emitted = end_cell_id in ids
-            if emitted:
-                ids = ids[:ids.index(end_cell_id)]
-            txt = tok.decode(ids, skip_special_tokens=True).strip()
-            if emitted:
-                txt += " " + SENTINEL
-            texts.append(txt)
-        return texts
+            txt = tok.decode(ids, skip_special_tokens=False).strip()
+            meta = _generation_meta(ids, txt, end_cell_id, tok.eos_token_id,
+                                    args.max_new_tokens, panel_set)
+            records.append({"decoded_text": txt, "raw_token_ids": list(map(int, ids)),
+                            "termination_reason": meta["termination"], "validity": meta})
+        return records
     finally:
         tok.padding_side = prev
 
 
-def run_generate(model, tok, examples, args, device):
+def run_generate(model, tok, examples, args, device, panel_set, tier, cache=None):
     gens = []
     for i in range(0, len(examples), args.gen_batch_size):
-        batch = [e["prompt"] for e in examples[i:i + args.gen_batch_size]]
-        gens.extend(generate_endcell_batch(model, tok, batch, args, device, args.end_cell_id))
+        chunk = examples[i:i + args.gen_batch_size]
+        batch = [e["prompt"] for e in chunk]
+        specs = [{"row_id": sha256_json({"tier": tier, "line": e["_source_line_index"],
+                                           "line_sha256": e["_source_line_sha256"]}),
+                  "prompt_id": sha256_text(e["prompt"]), "draw_id": 0} for e in chunk]
+        gens.extend(generate_endcell_batch(model, tok, batch, args, device, args.end_cell_id,
+                                           panel_set, specs=specs, cache=cache))
         if (i // args.gen_batch_size) % 10 == 0:
             logger.info(f"    generated {min(i + args.gen_batch_size, len(examples))}/{len(examples)}")
     return gens
@@ -326,13 +446,32 @@ def mode_model(args, panel_index, panel_set, P, model, tok, device, scram=False)
             continue
         examples = subsample(examples, args.max_eval, args.seed)
         logger.info(f"  [{'scramble' if scram else 'model'}] tier {tier}: {len(examples)} cells")
-        gens = run_generate(model, tok, examples, args, device)
-        records = [score_example(g, ex, panel_index, panel_set, P, DE_K_LIST)
-                   for g, ex in zip(gens, examples)]
-        agg = aggregate(records, DE_K_LIST)
-        agg["breakdown_by_drug"] = breakdown(records, "drug", DE_K_LIST)
-        agg["breakdown_by_moa"] = breakdown(records, "moa", DE_K_LIST)
-        agg["breakdown_by_dose"] = breakdown(records, "dose", DE_K_LIST)
+        predictions = run_generate(model, tok, examples, args, device, panel_set, tier,
+                                   cache=getattr(args, "prediction_cache_obj", None))
+        records = [score_example(pred["decoded_text"], ex, panel_index, panel_set, P, DE_K_LIST,
+                                 generation=pred.get("validity"))
+                   for pred, ex in zip(predictions, examples)]
+        agg = aggregate(records, DE_K_LIST, args.invalid_policy)
+        agg["prediction_records"] = predictions
+        gate_pass = (agg["validity"]["complete_rate"] >= args.min_complete_rate and
+                     agg["validity"]["recognized_gene_rate"]["mean"] >=
+                     args.min_recognized_gene_rate)
+        agg["validity_gate"] = {"passed": bool(gate_pass),
+                                "min_complete_rate": args.min_complete_rate,
+                                "min_recognized_gene_rate": args.min_recognized_gene_rate}
+        if args.invalid_policy == "validity_failure" and not gate_pass:
+            agg = {"status": "validity_failure", "n_total": len(records),
+                   "failure_reason": "checkpoint failed cell-sentence validity gate",
+                   "validity": agg["validity"], "validity_gate": agg["validity_gate"],
+                   "prediction_records": predictions}
+            out[tier] = agg
+            continue
+        agg["breakdown_by_drug"] = breakdown(records, "drug", DE_K_LIST,
+                                               invalid_policy=args.invalid_policy)
+        agg["breakdown_by_moa"] = breakdown(records, "moa", DE_K_LIST,
+                                              invalid_policy=args.invalid_policy)
+        agg["breakdown_by_dose"] = breakdown(records, "dose", DE_K_LIST,
+                                               invalid_policy=args.invalid_policy)
         out[tier] = agg
     return out
 
@@ -533,6 +672,10 @@ def print_report(result):
         logger.info(f"  ===== MODE: {mode} =====")
         if mode in ("model", "scramble"):
             for tier, agg in data.items():
+                if agg.get("status") == "validity_failure":
+                    logger.info(f"  [{tier}] VALIDITY FAILURE; NIR/metric scoring withheld "
+                                f"({agg['failure_reason']})")
+                    continue
                 logger.info(f"  [{tier}] scored {agg['n_scored']}/{agg['n_total']}  "
                             f"recall={_g(agg['validity']['recall'])} "
                             f"prec={_g(agg['validity']['precision'])} "
@@ -623,7 +766,7 @@ def selftest(args):
     out = {"selftest": True, "passed": bool(ok),
            "perfect_de50": pe, "shuffled_de50": sh}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump(out, open(args.out, "w"), indent=2)
+    atomic_write_json(args.out, out)
     logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'} -> {args.out}")
     if not ok:
         sys.exit(1)
@@ -654,6 +797,23 @@ def main():
     ap.add_argument("--gen_batch_size", type=int, default=48)
     ap.add_argument("--bf16", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--generation_contract", choices=["deterministic", "legacy"],
+                    default=DEFAULT_GENERATION_CONTRACT,
+                    help="legacy preserves existing Pythia commands; deterministic opts into the "
+                         "hardened paired-evaluation contract")
+    ap.add_argument("--generation_contract_version", default="endcell-validity-v1")
+    ap.add_argument("--model_fingerprint", default=None)
+    ap.add_argument("--manifest_sha256", default=None,
+                    help="frozen evaluation-manifest hash; required for deterministic caching")
+    ap.add_argument("--parent_validity_only", action="store_true")
+    ap.add_argument("--attention_implementation", choices=["eager", "sdpa", "flash_attention_2"],
+                    default=None)
+    ap.add_argument("--prediction_cache", default=None)
+    ap.add_argument("--invalid_policy",
+                    choices=["score_as_emitted", "validity_failure", "drop_degenerate_legacy"],
+                    default="score_as_emitted")
+    ap.add_argument("--min_complete_rate", type=float, default=0.95)
+    ap.add_argument("--min_recognized_gene_rate", type=float, default=0.95)
     args = ap.parse_args()
 
     if args.selftest:
@@ -687,11 +847,48 @@ def main():
         tok = AutoTokenizer.from_pretrained(args.model_path)
         if tok.pad_token is None:
             tok.pad_token = tok.eos_token
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_path, torch_dtype=torch.bfloat16 if args.bf16 else torch.float32).to(device)
+        load_kwargs = {"torch_dtype": torch.bfloat16 if args.bf16 else torch.float32}
+        if args.attention_implementation:
+            load_kwargs["attn_implementation"] = args.attention_implementation
+        model = AutoModelForCausalLM.from_pretrained(args.model_path, **load_kwargs).to(device)
+        model.config.use_cache = True
         model.eval()
-        ec = tok.encode(SENTINEL, add_special_tokens=False)
-        args.end_cell_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(SENTINEL)
+        try:
+            args.end_cell_id = atomic_sentinel_id(tok)
+        except ValueError as exc:
+            if args.generation_contract == "deterministic" or args.parent_validity_only:
+                failure = {
+                    "status": "validity_failure", "nir_eligible": False,
+                    "failure_stage": "tokenizer_contract", "failure_reason": str(exc),
+                    "parent_validity_only": args.parent_validity_only,
+                    "config": {k: v for k, v in vars(args).items()},
+                }
+                atomic_write_json(args.out, failure, default=float)
+                logger.warning("atomic END_CELL contract failed; wrote validity-failure artifact")
+                return
+            raise
+        if args.generation_contract == "deterministic":
+            if not args.model_fingerprint:
+                ap.error("deterministic generation requires immutable --model_fingerprint")
+            if not args.manifest_sha256:
+                ap.error("deterministic generation requires --manifest_sha256")
+            cache_path = args.prediction_cache or (args.out + ".predictions.jsonl")
+            args.prediction_cache_obj = PredictionCache(cache_path, {
+                "model_fingerprint": args.model_fingerprint,
+                "manifest_sha256": args.manifest_sha256,
+                "panel_sha256": file_sha256(panel_file),
+                "generation_contract_version": args.generation_contract_version,
+                "do_sample": args.do_sample, "temperature": args.temperature,
+                "top_p": args.top_p, "max_new_tokens": args.max_new_tokens,
+                "end_cell_id": args.end_cell_id, "native_eos_id": tok.eos_token_id,
+                "min_complete_rate": args.min_complete_rate,
+                "min_recognized_gene_rate": args.min_recognized_gene_rate,
+                "min_recognized_genes": 20,
+                "invalid_policy": args.invalid_policy,
+                "attention_implementation": args.attention_implementation,
+                "use_cache": True,
+            })
+        ec = [args.end_cell_id]
         logger.info(f"  model on {device}; [END_CELL] -> {ec} (id {args.end_cell_id}, "
                     f"{'atomic' if len(ec) == 1 else 'SPLIT — check tokenizer'}); generation stops at it")
 
@@ -706,8 +903,19 @@ def main():
     if "ceiling" in modes:
         result["ceiling"] = mode_ceiling(args, panel_index, panel_set, P)
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump(result, open(args.out, "w"), indent=2)
+    failures = []
+    for mode in ("model", "scramble"):
+        for tier, payload in (result.get(mode) or {}).items():
+            if payload.get("status") == "validity_failure":
+                failures.append({"mode": mode, "tier": tier,
+                                 "reason": payload.get("failure_reason")})
+    result["status"] = ("validity_failure" if failures else
+                        ("validity_only" if args.parent_validity_only else "ok"))
+    result["nir_eligible"] = not failures and not args.parent_validity_only
+    result["validity_failures"] = failures
+    atomic_write_json(args.out, result, default=float)
+    if getattr(args, "prediction_cache_obj", None) is not None:
+        args.prediction_cache_obj.close()
     print_report(result)
     logger.info(f"-> {args.out}")
 

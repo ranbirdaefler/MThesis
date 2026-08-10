@@ -5,7 +5,7 @@ nir_benchmark.py
 Half 2 of the calibration story: benchmark the model on the ONE calibrated metric (NIR), against
 fair baselines, at pseudobulk, on the held-out eval tiers.
 
-NIR (Normalized Inverse Rank) = discrimination: for a predictor's pseudobulk profile, rank its
+NIR (Normalized Inverse Rank; ties score 0.5) = discrimination: for a predictor's pseudobulk profile, rank its
 similarity to its OWN drug's truth against its similarity to ALL OTHER drugs' truths. 1.0 = own is
 the single closest (perfect identifiability); ~0.5 = chance. Reported under TWO distances:
   * rank-NIR : rank correlation over ALL genes expressed in the own-drug truth (no top-N cap; the
@@ -54,6 +54,16 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 SENTINEL = "[END_CELL]"
+GENERATION_CONTRACT_VERSION = "nir-generation-v1"
+
+try:
+    from freeze_nir_manifest import (PredictionCache, atomic_write_json, file_sha256,
+                                     sha256_json, sha256_text, stable_output_seed,
+                                     verify_manifest)
+except ImportError:  # pragma: no cover - flat cluster layout
+    from endcell.analysis.freeze_nir_manifest import (PredictionCache, atomic_write_json,
+                                                      file_sha256, sha256_json, sha256_text,
+                                                      stable_output_seed, verify_manifest)
 
 
 # ----------------------------------------------------------------- representations
@@ -118,19 +128,104 @@ def rank_corr(pred_rank, true_rank, expressed_idx):
 
 
 def nir_from_sims(sim_own, sims_other):
-    """NIR = fraction of other drugs LESS similar than own (higher sim = more similar)."""
+    """Tie-aware NIR under a similarity (win=1, loss=0, tie=0.5)."""
     s = [x for x in sims_other if x is not None]
     if sim_own is None or not s:
         return None
-    return float(np.mean([sim_own > x for x in s]))
+    return float(np.mean([1.0 if sim_own > x else (0.5 if sim_own == x else 0.0) for x in s]))
 
 
 def nir_from_dists(dist_own, dists_other):
-    """NIR under a DISTANCE (lower = more similar): fraction of others FARTHER than own."""
+    """Tie-aware NIR under a distance (win=1, loss=0, tie=0.5)."""
     d = [x for x in dists_other if x is not None]
     if dist_own is None or not d:
         return None
-    return float(np.mean([dist_own < x for x in d]))
+    return float(np.mean([1.0 if dist_own < x else (0.5 if dist_own == x else 0.0) for x in d]))
+
+
+def generation_validity(raw_ids, decoded_text, *, end_id, eos_id, max_new_tokens,
+                        panel_index, model_kind="cellsentence", min_genes=20):
+    """Classify exactly what the model emitted; never infer or append a sentinel."""
+    ids = list(map(int, raw_ids))
+    end_pos = ids.index(end_id) if end_id is not None and end_id in ids else None
+    eos_pos = ids.index(eos_id) if eos_id is not None and eos_id in ids else None
+    stops = [(p, "end_cell") for p in [end_pos] if p is not None]
+    stops += [(p, "native_eos") for p in [eos_pos] if p is not None]
+    if stops:
+        stop_pos, termination = min(stops)
+        content_ids = ids[:stop_pos]
+    else:
+        stop_pos = None
+        content_ids = ids
+        termination = "cap" if len(ids) >= max_new_tokens else "malformed_stop"
+    toks = decoded_text.strip().split()
+    if SENTINEL in toks:
+        toks = toks[:toks.index(SENTINEL)]
+    has_down = "[DOWN]" in toks
+    gene_toks = [t for t in toks if t != "[DOWN]"]
+    recognized = [t for t in gene_toks if t in panel_index]
+    unique = list(dict.fromkeys(recognized))
+    malformed = [t for t in gene_toks if t not in panel_index]
+    complete = ((termination == "end_cell") if model_kind == "cellsentence" else has_down)
+    complete = bool(complete and len(unique) >= min_genes and termination != "cap")
+    return {
+        "termination": termination, "end_cell_emitted": end_pos is not None,
+        "native_eos_emitted": eos_pos is not None, "cap_reached": termination == "cap",
+        "malformed": bool(malformed), "malformed_token_count": len(malformed),
+        "duplicate_gene_count": len(recognized) - len(unique),
+        "recognized_gene_count": len(unique), "recognized_gene_rate": (
+            len(recognized) / max(1, len(gene_toks))), "has_down": has_down,
+        "complete": complete, "content_token_count": len(content_ids),
+    }
+
+
+def atomic_sentinel_id(tokenizer, token=SENTINEL):
+    """Return a strict sentinel ID; split or UNK encodings are never accepted."""
+    ids = tokenizer.encode(token, add_special_tokens=False)
+    if len(ids) != 1:
+        raise ValueError(f"{token} must tokenize atomically, got {ids}")
+    token_id = int(ids[0])
+    if tokenizer.unk_token_id is not None and token_id == int(tokenizer.unk_token_id):
+        raise ValueError(f"{token} maps to unk_token_id={tokenizer.unk_token_id}")
+    if tokenizer.convert_ids_to_tokens(token_id) == tokenizer.unk_token:
+        raise ValueError(f"{token} resolves to the unknown token")
+    return token_id
+
+
+def summarize_generation(records):
+    if not records:
+        return {"n": 0, "complete_rate": 0.0}
+    validity = [r["validity"] for r in records]
+    mean = lambda key: float(np.mean([float(v.get(key, 0)) for v in validity]))
+    return {
+        "n": len(records), "end_cell_rate": mean("end_cell_emitted"),
+        "native_eos_rate": mean("native_eos_emitted"), "cap_rate": mean("cap_reached"),
+        "malformed_rate": mean("malformed"),
+        "duplicate_gene_rate": float(np.mean([
+            v["duplicate_gene_count"] / max(1, v["recognized_gene_count"] + v["duplicate_gene_count"])
+            for v in validity])),
+        "mean_recognized_genes": mean("recognized_gene_count"),
+        "mean_recognized_gene_rate": mean("recognized_gene_rate"),
+        "complete_rate": mean("complete"),
+    }
+
+
+def _manifest_groups(manifest, eval_file, ev):
+    examples = [json.loads(line) for line in open(eval_file, encoding="utf-8")]
+    groups = defaultdict(dict)
+    for row in manifest["rows"]:
+        specs = [{**spec, "row_id": row["row_id"]} for spec in row["prompt_specs"]]
+        slot = {
+            "resp": [examples[i]["response"] for i in row["source_line_indices"]],
+            "ctrl": [ev.control_from_prompt(examples[i]["prompt"])
+                     for i in row["source_line_indices"]],
+            "prompts": [spec["prompt"] for spec in specs],
+            "prompt_specs": specs, "manifest_row": row,
+            "truth_A": [examples[x["index"]]["response"] for x in row["truth_half_a"]],
+            "truth_B": [examples[x["index"]]["response"] for x in row["truth_half_b"]],
+        }
+        groups[(row["cell_line"], row.get("plate"))][row["drug"]] = slot
+    return groups
 
 
 # ----------------------------------------------------------------- ridge linear (control->shift)
@@ -196,6 +291,10 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_
     drugs0 = list(by_drug.keys())
     A, B = {}, {}
     for d in drugs0:
+        if by_drug[d].get("truth_A") is not None and by_drug[d].get("truth_B") is not None:
+            A[d] = list(by_drug[d]["truth_A"])
+            B[d] = list(by_drug[d]["truth_B"])
+            continue
         resp = by_drug[d]["resp"]
         if len(resp) < 4:
             continue
@@ -249,6 +348,14 @@ def score_cellline(by_drug, panel_index, P, lm, model_pb_fn, lin_fn, rng, scram_
         # per-drug identity is kept on the row so the aggregate can be decomposed later
         # (drug_stratify_geometry.py): which drugs the model wins/loses on, vs their difficulty.
         row = {"drug": d, "n_cells": len(by_drug[d]["resp"])}
+        frozen = by_drug[d].get("manifest_row")
+        if frozen:
+            row.update({
+                "row_id": frozen["row_id"], "group_id": frozen["group_id"],
+                "dose_values": frozen.get("dose_values", []),
+                "treatment_well_ids": frozen.get("treatment_well_ids", []),
+                "k_collapsed": len(frozen.get("prompt_specs", [])),
+            })
         exp_idx = expressed[d]
         for name, (pr, pe) in preds.items():
             s_own = rank_corr(pr, truth_rank[d], exp_idx)
@@ -334,7 +441,7 @@ def selftest(args):
            "scramble": {"nir_rank": s_rank, "nir_expr": s_expr},
            "control": {"nir_expr": c_expr}}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump(out, open(args.out, "w"), indent=2)
+    atomic_write_json(args.out, out)
     logger.info(f"  SELFTEST {'PASSED' if ok else 'FAILED'} -> {args.out}")
     if not ok:
         sys.exit(1)
@@ -398,6 +505,26 @@ def main():
                     help="scrambled-drug eval dir (make_scramble_endcell.py output). Adds the "
                          "'scramble' arm: same control + same truth, only the drug token swapped. "
                          "model >> scramble => real drug use; model ~= scramble => plate leakage.")
+    ap.add_argument("--manifest", default=None,
+                    help="frozen manifest from freeze_nir_manifest.py; enables deterministic, paired, "
+                         "cache-backed evaluation and refuses source/config drift")
+    ap.add_argument("--prediction_cache", default=None,
+                    help="append-only generation JSONL; required with --manifest when a model is run")
+    ap.add_argument("--model_fingerprint", default=None,
+                    help="immutable checkpoint fingerprint used in per-output seed derivation")
+    ap.add_argument("--parent_validity_only", action="store_true",
+                    help="declare this frozen parent validity-only; an absent atomic END_CELL writes "
+                         "validity_failure and NIR is never computed")
+    ap.add_argument("--attention_implementation", choices=["eager", "sdpa", "flash_attention_2"],
+                    default=None, help="explicit inference backend; hardened Gemma jobs use eager")
+    ap.add_argument("--generation_contract_version", default=GENERATION_CONTRACT_VERSION)
+    ap.add_argument("--invalid_policy", choices=["score_as_emitted", "validity_failure"],
+                    default="score_as_emitted",
+                    help="retain every output; validity_failure writes an audit artifact and skips NIR "
+                         "when the predeclared gate fails")
+    ap.add_argument("--min_complete_rate", type=float, default=0.95)
+    ap.add_argument("--min_recognized_gene_rate", type=float, default=0.95)
+    ap.add_argument("--min_recognized_genes", type=int, default=20)
     ap.add_argument("--model_path", default=None)
     ap.add_argument("--train_file", default=None)
     ap.add_argument("--drug_lookup", action="store_true",
@@ -451,9 +578,14 @@ def main():
         selftest(args)
         return
 
+    if args.manifest and not args.no_model:
+        if not args.prediction_cache or not args.model_fingerprint:
+            ap.error("--manifest model evaluation requires --prediction_cache and --model_fingerprint")
+
     import evaluate_c2s_tahoe as ev
 
-    panel = json.load(open(os.path.join(args.eval_dir, "l1000_panel.json")))
+    panel_path = os.path.join(args.eval_dir, "l1000_panel.json")
+    panel = json.load(open(panel_path))
     panel_index = {g: i for i, g in enumerate(panel)}
     P = len(panel)
     lm_path = os.path.join(args.eval_dir, "linear_model.json")
@@ -464,6 +596,9 @@ def main():
     # only, so the plate-leakage diagnostic (does control-copy fall to ~0.50 under --same_plate_only?)
     # and the clean ceiling need no GPU at all — minutes on CPU instead of hours.
     generate = None
+    generate_specs = None
+    generation_records = []
+    cache = None
     if args.no_model:
         logger.info("--no_model: skipping generation; scoring ceiling/linear/mean/control only")
         if args.scram_dir:
@@ -478,12 +613,125 @@ def main():
         tok = AutoTokenizer.from_pretrained(args.model_path)
         if tok.pad_token is None:
             tok.pad_token = tok.eos_token
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_path, torch_dtype=torch.bfloat16 if args.bf16 else torch.float32).to(device)
+        load_kwargs = {"torch_dtype": torch.bfloat16 if args.bf16 else torch.float32}
+        if args.attention_implementation:
+            load_kwargs["attn_implementation"] = args.attention_implementation
+        model = AutoModelForCausalLM.from_pretrained(args.model_path, **load_kwargs).to(device)
+        model.config.use_cache = True
         model.eval()
-        ec = tok.encode(SENTINEL, add_special_tokens=False)
-        end_id = ec[0] if len(ec) == 1 else tok.convert_tokens_to_ids(SENTINEL)
+        try:
+            end_id = atomic_sentinel_id(tok)
+        except ValueError as exc:
+            if args.manifest or args.parent_validity_only:
+                manifest_hash = None
+                if args.manifest:
+                    with open(args.manifest, encoding="utf-8") as handle:
+                        parent_manifest = json.load(handle)
+                    frozen_tier = parent_manifest["config"]["tier"]
+                    eval_file = os.path.join(args.eval_dir, f"eval_{frozen_tier}.jsonl")
+                    scram_file = (os.path.join(args.scram_dir, f"eval_{frozen_tier}.jsonl")
+                                  if args.scram_dir else None)
+                    verify_manifest(parent_manifest, eval_file, scram_file, args.train_file)
+                    declaration = next((x for x in parent_manifest.get("model_declarations", [])
+                                        if x.get("fingerprint") == args.model_fingerprint), None)
+                    expected_role = "validity_only_parent" if args.parent_validity_only else "scored"
+                    if declaration is None or declaration.get("role") != expected_role:
+                        raise ValueError("failed-tokenizer model is not frozen under the requested role")
+                    manifest_hash = parent_manifest["manifest_sha256"]
+                failure = {
+                    "status": "validity_failure", "tiers": {},
+                    "failure_reason": str(exc), "failure_stage": "tokenizer_contract",
+                    "nir_computed": False, "parent_validity_only": args.parent_validity_only,
+                    "model_fingerprint": args.model_fingerprint,
+                    "manifest_sha256": manifest_hash,
+                    "config": {k: v for k, v in vars(args).items()},
+                }
+                atomic_write_json(args.out, failure, default=float)
+                logger.warning("atomic END_CELL contract failed; wrote validity-failure artifact")
+                return
+            raise
         eos = [end_id] + ([tok.eos_token_id] if tok.eos_token_id is not None else [])
+
+        if args.manifest:
+            cache_contract = {
+                "model_fingerprint": args.model_fingerprint,
+                "generation_contract_version": args.generation_contract_version,
+                "temperature": args.temperature, "top_p": args.top_p,
+                "max_new_tokens": args.max_new_tokens, "do_sample": args.temperature > 0,
+                "end_cell_id": end_id, "native_eos_id": tok.eos_token_id,
+                "manifest_sha256": None,  # filled after manifest verification below
+                "panel_sha256": file_sha256(panel_path),
+                "min_recognized_genes": args.min_recognized_genes,
+                "min_complete_rate": args.min_complete_rate,
+                "min_recognized_gene_rate": args.min_recognized_gene_rate,
+                "invalid_policy": args.invalid_policy,
+                "attention_implementation": args.attention_implementation,
+                "use_cache": True,
+            }
+            # The manifest is loaded below; defer cache opening so its hash is part of the contract.
+            pending_cache_contract = cache_contract
+
+            def generate_specs(specs, arm="model"):
+                """Generate each frozen output in its own seed stream; batch/order/resume invariant."""
+                prev = tok.padding_side
+                tok.padding_side = "left"
+                outputs = []
+                try:
+                    for spec in specs:
+                        prompt_spec = spec.get("wrong_condition") if arm == "wrong_condition" else spec
+                        if not prompt_spec:
+                            continue
+                        prompt_id = prompt_spec["prompt_id"]
+                        row_id = spec["row_id"]
+                        draw_id = int(spec["draw_id"])
+                        frozen_seed = prompt_spec.get("seeds_by_model", {}).get(args.model_fingerprint)
+                        seed = stable_output_seed(args.model_fingerprint, row_id, prompt_id, draw_id,
+                                                  args.generation_contract_version)
+                        if frozen_seed is not None and int(frozen_seed) != seed:
+                            raise ValueError(f"frozen seed mismatch for {row_id}/{prompt_id}")
+                        output_id = sha256_json({
+                            "model": args.model_fingerprint, "row_id": row_id,
+                            "prompt_id": prompt_id, "draw_id": draw_id, "arm": arm,
+                            "contract": args.generation_contract_version,
+                        })
+                        old = cache.get(output_id)
+                        if old is not None:
+                            if old.get("prompt_sha256") != sha256_text(prompt_spec["prompt"]):
+                                raise ValueError(f"cached prompt mismatch for {output_id}")
+                            record = old
+                        else:
+                            enc = tok(prompt_spec["prompt"], return_tensors="pt").to(device)
+                            devices = ([torch.cuda.current_device()] if str(device).startswith("cuda")
+                                       else [])
+                            with torch.random.fork_rng(devices=devices):
+                                torch.manual_seed(seed)
+                                if devices:
+                                    torch.cuda.manual_seed_all(seed)
+                                with torch.no_grad():
+                                    generated = model.generate(
+                                        **enc, max_new_tokens=args.max_new_tokens,
+                                        pad_token_id=tok.pad_token_id, eos_token_id=eos,
+                                        do_sample=(args.temperature > 0),
+                                        temperature=max(args.temperature, 1e-2), top_p=args.top_p)
+                            raw_ids = generated[0, enc["input_ids"].shape[1]:].tolist()
+                            decoded = tok.decode(raw_ids, skip_special_tokens=False).strip()
+                            val = generation_validity(
+                                raw_ids, decoded, end_id=end_id, eos_id=tok.eos_token_id,
+                                max_new_tokens=args.max_new_tokens, panel_index=panel_index,
+                                model_kind="cellsentence", min_genes=args.min_recognized_genes)
+                            record = {
+                                "type": "prediction", "output_id": output_id, "row_id": row_id,
+                                "prompt_id": prompt_id, "prompt_sha256": sha256_text(prompt_spec["prompt"]),
+                                "draw_id": draw_id, "arm": arm, "seed": seed,
+                                "raw_token_ids": list(map(int, raw_ids)), "decoded_text": decoded,
+                                "termination_reason": val["termination"], "validity": val,
+                            }
+                            cache.put(record)
+                        generation_records.append(record)
+                        outputs.append(record["decoded_text"])
+                finally:
+                    tok.padding_side = prev
+                return outputs
 
         def generate(prompts, temperature):
             prev = tok.padding_side; tok.padding_side = "left"
@@ -500,9 +748,9 @@ def main():
                     plen = enc["input_ids"].shape[1]
                     for j in range(len(batch)):
                         ids = g[j][plen:].tolist()
-                        if end_id in ids:
-                            ids = ids[:ids.index(end_id)]
-                        outs.append(tok.decode(ids, skip_special_tokens=True).strip() + " " + SENTINEL)
+                        # Decode exactly what was emitted.  In particular, never manufacture
+                        # [END_CELL] for a native-EOS or max-token termination.
+                        outs.append(tok.decode(ids, skip_special_tokens=False).strip())
             finally:
                 tok.padding_side = prev
             return outs
@@ -550,24 +798,100 @@ def main():
         return pred, expr
 
     # split-sample manifest: line indices reserved for SELECTION, to be excluded from scoring
-    _manifest = None
+    _exclude_manifest = None
     if args.exclude_manifest:
-        _manifest = json.load(open(args.exclude_manifest))
+        _exclude_manifest = json.load(open(args.exclude_manifest))
         logger.info(f"Split-sample: excluding selection cells listed in {args.exclude_manifest} "
-                    f"({ {k: len(v) for k, v in _manifest.items()} })")
+                    f"({ {k: len(v) for k, v in _exclude_manifest.items()} })")
+
+    frozen_manifest = None
+    if args.manifest:
+        if args.exclude_manifest:
+            raise ValueError("--manifest already freezes support; --exclude_manifest cannot be combined")
+        with open(args.manifest, encoding="utf-8") as handle:
+            frozen_manifest = json.load(handle)
+        if frozen_manifest.get("generation_contract_version") != args.generation_contract_version:
+            raise ValueError("generation-contract version differs from frozen manifest")
+        if len({r.get("tier") for r in frozen_manifest.get("rows", [])}) != 1:
+            raise ValueError("one frozen manifest must contain exactly one tier")
+        frozen_tier = frozen_manifest["config"]["tier"]
+        requested = [x.strip() for x in args.tiers.split(",") if x.strip()]
+        if requested != [frozen_tier]:
+            raise ValueError(f"--tiers {requested} differs from frozen tier {frozen_tier}")
+        eval_file = os.path.join(args.eval_dir, f"eval_{frozen_tier}.jsonl")
+        scram_file = (os.path.join(args.scram_dir, f"eval_{frozen_tier}.jsonl")
+                      if args.scram_dir else None)
+        verify_manifest(frozen_manifest, eval_file, scram_file, args.train_file)
+        expected_cfg = {
+            "k_samples": args.k_samples, "min_cells": args.min_cells,
+            "min_drugs_per_group": args.min_drugs_per_cl,
+            "max_groups": args.max_groups, "same_plate_only": args.same_plate_only,
+            "seed": args.seed,
+        }
+        for key, value in expected_cfg.items():
+            if frozen_manifest["config"].get(key) != value:
+                raise ValueError(f"runtime {key}={value!r} differs from manifest "
+                                 f"{frozen_manifest['config'].get(key)!r}")
+        if not args.no_model:
+            declarations = frozen_manifest.get("model_declarations", [])
+            declaration = next((x for x in declarations
+                                if x.get("fingerprint") == args.model_fingerprint), None)
+            if declaration is None:
+                raise ValueError("model fingerprint was not frozen in the manifest")
+            expected_role = "validity_only_parent" if args.parent_validity_only else "scored"
+            if declaration.get("role") != expected_role:
+                raise ValueError(f"model declaration role {declaration.get('role')!r} != {expected_role!r}")
+            if args.parent_validity_only:
+                failure = {
+                    "status": "validity_failure", "tiers": {}, "nir_computed": False,
+                    "failure_stage": "parent_gate",
+                    "failure_reason": "frozen parent is declared validity-only; NIR intentionally skipped",
+                    "manifest_sha256": frozen_manifest["manifest_sha256"],
+                    "model_fingerprint": args.model_fingerprint,
+                    "config": {k: v for k, v in vars(args).items()},
+                }
+                atomic_write_json(args.out, failure, default=float)
+                logger.warning("validity-only parent declaration: NIR was intentionally skipped")
+                return
+            pending_cache_contract["manifest_sha256"] = frozen_manifest["manifest_sha256"]
+            cache = PredictionCache(args.prediction_cache, pending_cache_contract)
+        logger.info(f"frozen manifest verified: {frozen_manifest['manifest_sha256']} "
+                    f"({len(frozen_manifest['rows'])} rows)")
 
     rng = np.random.RandomState(args.seed)
-    result = {"tiers": {}, "config": {k: v for k, v in vars(args).items()}}
+    metric_config = {
+        "metric": "tie-aware NIR", "rank_similarity": "Pearson over own-truth expressed genes",
+        "expression_distance": "Euclidean", "row_weighting": "equal",
+        "same_plate_only": args.same_plate_only, "min_cells": args.min_cells,
+        "min_drugs_per_group": args.min_drugs_per_cl,
+        "k_samples": args.k_samples, "temperature": args.temperature, "top_p": args.top_p,
+        "max_new_tokens": args.max_new_tokens,
+        "generation_contract_version": args.generation_contract_version,
+        "invalid_policy": args.invalid_policy,
+        "panel_sha256": file_sha256(panel_path),
+        "min_complete_rate": args.min_complete_rate,
+        "min_recognized_gene_rate": args.min_recognized_gene_rate,
+        "min_recognized_genes": args.min_recognized_genes,
+        "attention_implementation": args.attention_implementation,
+        "use_cache": True if not args.no_model else None,
+    }
+    result = {"tiers": {}, "config": {k: v for k, v in vars(args).items()},
+              "manifest_sha256": (frozen_manifest or {}).get("manifest_sha256"),
+              "metric_config_hash": sha256_json(metric_config), "metric_config": metric_config}
     model_profiles, truth_profiles = {}, {}     # for the drug-geometry test (Test 3)
     for tier in [t.strip() for t in args.tiers.split(",") if t.strip()]:
-        _excl = set(_manifest.get(tier, [])) if _manifest else None
-        by_cl = load_tier_by_drug(args.eval_dir, tier, ev, same_plate=args.same_plate_only,
-                                  exclude_lines=_excl)
+        _excl = set(_exclude_manifest.get(tier, [])) if _exclude_manifest else None
+        if frozen_manifest:
+            eval_file = os.path.join(args.eval_dir, f"eval_{tier}.jsonl")
+            by_cl = _manifest_groups(frozen_manifest, eval_file, ev)
+        else:
+            by_cl = load_tier_by_drug(args.eval_dir, tier, ev, same_plate=args.same_plate_only,
+                                      exclude_lines=_excl)
         if not by_cl:
             continue
-        scram_by_cl = (load_tier_by_drug(args.scram_dir, tier, ev, same_plate=args.same_plate_only,
-                                         exclude_lines=_excl)
-                       if args.scram_dir else None)
+        scram_by_cl = (None if frozen_manifest else
+                       (load_tier_by_drug(args.scram_dir, tier, ev, same_plate=args.same_plate_only,
+                                          exclude_lines=_excl) if args.scram_dir else None))
         if args.scram_dir and not scram_by_cl:
             logger.warning(f"  [{tier}] no scramble data in {args.scram_dir} — skipping scramble arm")
         all_rows = []
@@ -581,14 +905,27 @@ def main():
             def model_pb_fn(d, _drugs=drugs):
                 if generate is None:                      # --no_model
                     return None, None
-                prompts = _drugs[d]["prompts"][:args.k_samples]
-                if not prompts:
+                if frozen_manifest:
+                    specs = _drugs[d]["prompt_specs"]
+                    gens = generate_specs(specs, "model")
+                else:
+                    prompts = _drugs[d]["prompts"][:args.k_samples]
+                    if not prompts:
+                        return None, None
+                    gens = generate(prompts, args.temperature)
+                if not gens:
                     return None, None
-                gens = generate(prompts, args.temperature)
                 return pb_rank(gens, panel_index, P), pb_expr(gens, panel_index, P, lm)
 
             scram_fn = None
-            if scram_by_cl and gkey in scram_by_cl:
+            if frozen_manifest and args.scram_dir:
+                def scram_fn(d, _drugs=drugs):
+                    specs = _drugs[d]["prompt_specs"]
+                    gens = generate_specs(specs, "wrong_condition")
+                    if not gens:
+                        return None, None
+                    return pb_rank(gens, panel_index, P), pb_expr(gens, panel_index, P, lm)
+            elif scram_by_cl and gkey in scram_by_cl:
                 _sdd = scram_by_cl[gkey]
 
                 def scram_fn(d, _s=_sdd):
@@ -627,8 +964,33 @@ def main():
         # (aggregates are computed exactly as before — unchanged).
         result["tiers"][tier] = {"n_drugs": len(all_rows), "agg": agg, "rows": all_rows}
 
+    if generation_records:
+        by_arm = {arm: summarize_generation([r for r in generation_records if r.get("arm") == arm])
+                  for arm in sorted({r.get("arm") for r in generation_records})}
+        result["generation_validity"] = by_arm
+        model_validity = by_arm.get("model", {"complete_rate": 0.0,
+                                               "mean_recognized_gene_rate": 0.0})
+        gate_pass = (model_validity["complete_rate"] >= args.min_complete_rate and
+                     model_validity["mean_recognized_gene_rate"] >= args.min_recognized_gene_rate)
+        result["validity_gate"] = {
+            "passed": bool(gate_pass), "policy": args.invalid_policy,
+            "min_complete_rate": args.min_complete_rate,
+            "min_recognized_gene_rate": args.min_recognized_gene_rate,
+        }
+        if args.invalid_policy == "validity_failure" and not gate_pass:
+            result["status"] = "validity_failure"
+            result["failure_reason"] = "checkpoint failed predeclared cell-sentence validity gate"
+            result["tiers"] = {}
+            logger.warning("validity gate failed; writing validity-failure artifact and skipping NIR")
+        else:
+            result["status"] = "ok"
+    else:
+        result["status"] = "no_model" if args.no_model else "legacy_no_generation_audit"
+
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump(result, open(args.out, "w"), indent=2, default=float)
+    atomic_write_json(args.out, result, default=float)
+    if cache is not None:
+        cache.close()
     if args.profiles:
         np.savez_compressed(args.profiles,
                             **{f"model||{k}": v for k, v in model_profiles.items()},
@@ -690,7 +1052,7 @@ def run_temp_sweep(args, ev, panel_index, P, generate):
         logger.info(f"  T={T}: core(all K)={np.mean(cores):.0f}  variable(1 of K)={np.mean(variables):.0f}  "
                     f"pairwise-Jaccard={out['per_temp'][str(T)]['mean_pairwise_jaccard']:.3f}")
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    json.dump(out, open(args.out, "w"), indent=2)
+    atomic_write_json(args.out, out)
     logger.info(f"-> {args.out}")
 
 
