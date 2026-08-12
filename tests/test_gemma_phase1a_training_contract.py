@@ -249,7 +249,8 @@ def test_probe_preserves_explicit_slow_tokenizer_on_serialization(monkeypatch):
     monkeypatch.setattr(probe, "AutoTokenizer", RecordingAutoTokenizer)
     monkeypatch.setattr(trainer, "AutoTokenizer", RecordingAutoTokenizer)
     result = probe.check_slow_fast_parity(
-        "fixture-model", "fixture-revision", FakeTokenizer(is_fast=True), [])
+        "fixture-model", {"revision": "fixture-revision"},
+        FakeTokenizer(is_fast=True), [])
     assert result["available"] is True
     assert result["mismatch_count"] == 0
     assert calls == [False, False]
@@ -871,7 +872,7 @@ def test_resume_substitution_and_snapshot_mutation_fail_closed(monkeypatch, tmp_
     wrong_parent = tmp_path / "other-parent"
     wrong_parent.mkdir()
     with pytest.raises(
-            checkpoint_fingerprint.CheckpointValidationError, match="training contract differs"):
+            checkpoint_fingerprint.CheckpointValidationError, match="model ancestry differs"):
         checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(
             checkpoint, **dict(expected, parent_snapshot=str(wrong_parent)),
             verify_parent_snapshot=False)
@@ -986,7 +987,9 @@ def test_probe_uses_exact_snapshot_for_config_fast_and_slow_loaders(monkeypatch,
 
     assert [entry[0] for entry in calls] == ["config", "fast", "slow"]
     assert all(entry[1] == str(snapshot.resolve()) for entry in calls)
-    assert all(entry[2] == {"local_files_only": True} for entry in calls)
+    assert calls[0][2] == {"local_files_only": True}
+    assert calls[1][2] == {"local_files_only": True, "use_fast": True}
+    assert calls[2][2] == {"local_files_only": True}
     assert result["model_name"] == trainer.GEMMA_MODEL_ID
     assert result["revision"] == trainer.GEMMA_MODEL_REVISION
     assert result["load_source"]["path"] == str(snapshot.resolve())
