@@ -4,11 +4,14 @@ set -euo pipefail
 
 export PYTHONUNBUFFERED=1
 export PYTHONNOUSERSITE=1
+unset PYTHONHOME
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
 
 REPO="${REPO:-$HOME/tahoe}"
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+PROTOBUF_ENV="$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh"
+source "$PROTOBUF_ENV"
 TEST_DEPS="${GEMMA_TEST_DEPS:-/data/BuffaF-Projetcs/florian_c2s/test_deps/pytest-8.3.5}"
 OUT="$REPO/RESULTS/gemma2_standard_tests"
 CERT="$OUT/TESTS_PASSED.json"
@@ -28,6 +31,7 @@ fi
 SOURCES=(
     "trainer=$REPO/endcell/train/train_c2s_tahoe_endcell.py"
     "tokenizer_probe=$REPO/endcell/train/gemma_tokenizer_probe.py"
+    "protobuf_env=$PROTOBUF_ENV"
     "freeze_manifest=$REPO/endcell/analysis/freeze_nir_manifest.py"
     "nir_benchmark=$REPO/endcell/analysis/nir_benchmark.py"
     "compare_backbones=$REPO/endcell/analysis/compare_backbones.py"
@@ -52,6 +56,7 @@ done
 
 bash -n \
     endcell/jobs/gemma2_standard_tests.sh \
+    endcell/jobs/gemma2_standard_protobuf_env.sh \
     endcell/jobs/gemma2_standard_preflight.sh \
     endcell/jobs/gemma2_standard_smoke.sbatch \
     endcell/jobs/gemma2_standard_train.sbatch \
@@ -76,7 +81,7 @@ bash -n \
     exit 2
 }
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
-PYTHONPATH="$TEST_DEPS${PYTHONPATH:+:$PYTHONPATH}" \
+PYTHONPATH="$TEST_DEPS:$GEMMA_PROTOBUF_DIR" \
 "$PY" -m pytest \
     tests/test_gemma_phase1a_training_contract.py \
     tests/test_gemma_eval_contract.py -q

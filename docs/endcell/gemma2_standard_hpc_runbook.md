@@ -35,6 +35,7 @@ git add endcell/eval/evaluate_endcell.py tests/test_gemma_phase1a_training_contr
 git add tests/test_gemma_eval_contract.py endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
 git add endcell/jobs/gemma2_standard_cli_contract.py endcell/jobs/gemma2_standard_preflight_contract.py
 git add endcell/jobs/gemma2_standard_tests.sh endcell/jobs/gemma2_standard_tests_contract.py
+git add endcell/jobs/gemma2_standard_protobuf_env.sh
 git add endcell/jobs/gemma2_standard_preflight.sh endcell/jobs/gemma2_standard_smoke.sbatch
 git add endcell/jobs/gemma2_standard_train.sbatch endcell/jobs/gemma2_standard_eval.sbatch
 git add docs/endcell/gemma2_standard_hpc_runbook.md
@@ -76,6 +77,7 @@ scp .\endcell\jobs\gemma2_standard_cli_contract.py 3180408@login.hpc.unibocconi.
 scp .\endcell\jobs\gemma2_standard_preflight_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_tests_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_tests.sh 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_protobuf_env.sh 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_preflight.sh 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_smoke.sbatch 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_train.sbatch 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
@@ -103,9 +105,38 @@ record that provenance comes from the certificate-bound SHA-256 inventory.
 
 ## 1. Run the certificate-producing test gate on a CPU worker
 
-The canonical `c2s` environment is intentionally not modified. First install the pinned test runner into
-an isolated additive directory on a CPU worker (this does not alter Torch, Transformers or the training
-environment):
+The canonical `c2s` environment is intentionally not modified. Gemma's tokenizer is SentencePiece and
+requires Python Protobuf for Transformers to convert `tokenizer.model`. Without it, Transformers 5.12.1
+was observed to silently construct a five-token tokenizer (four prompt tokens and two response tokens)
+from a valid 256,000-piece model. Do **not** install TikToken as a workaround and do not install anything
+inside `envs/c2s`. Install the pinned runtime dependency into its isolated additive directory on a CPU
+worker:
+
+```bash
+srun --account=3180408 --partition=defq --cpus-per-task=2 --mem=4G --time=00:15:00 bash -lc '
+set -euo pipefail
+PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+TARGET=/data/BuffaF-Projetcs/florian_c2s/test_deps/protobuf-5.29.5
+unset PYTHONHOME
+mkdir -p "$TARGET"
+if [[ ! -f "$TARGET/google/protobuf/__init__.py" ]]; then
+  "$PY" -m pip install --no-cache-dir --target "$TARGET" "protobuf==5.29.5"
+fi
+PYTHONPATH="$TARGET" "$PY" -c "import google.protobuf; assert google.protobuf.__version__ == \"5.29.5\"; print(google.protobuf.__file__)"
+'
+```
+
+Every preflight, smoke, training and evaluation job sources
+`gemma2_standard_protobuf_env.sh`. That helper replaces `PYTHONPATH` with exactly this directory (it
+does not preserve inherited entries), unsets `PYTHONHOME`, then fails unless version 5.29.5 imports from
+beneath the exact isolated path. Its digest inventory is built from every path in
+`protobuf-5.29.5.dist-info/RECORD`, safely confined to the isolated root; this explicitly includes the
+executed `google/_upb/_message.abi3.so` payload as well as Python and metadata files. Preflight records
+that digest and every smoke, training and evaluation verification recomputes it. The trainer detects Gemma from
+`AutoConfig.model_type`, requires the two Gemma flags and validates the same helper-bound payload before
+`AutoTokenizer`, so direct invocation cannot fall through to a collapsed tokenizer.
+
+Next install the pinned test runner into a separate isolated directory on a CPU worker:
 
 ```bash
 srun --account=3180408 --partition=defq --cpus-per-task=2 --mem=4G --time=00:15:00 bash -lc '
@@ -113,6 +144,7 @@ set -euo pipefail
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
 ROOT=/data/BuffaF-Projetcs/florian_c2s/test_deps
 TARGET="$ROOT/pytest-8.3.5"
+unset PYTHONHOME
 mkdir -p "$ROOT"
 if [[ ! -f "$TARGET/pytest/__init__.py" ]]; then
   TMP="$ROOT/.pytest-8.3.5.tmp.$SLURM_JOB_ID"
@@ -144,17 +176,18 @@ Do not continue unless every test and self-test passes and the final line confir
 ~/tahoe/RESULTS/gemma2_standard_tests/TESTS_PASSED.json
 ```
 
-That certificate binds the exact Section-1 command, every tested source file, the Python executable and
-version, and the normalized package environment. Preflight re-verifies all hashes and refuses to run if
-the command, source or environment changed after testing.
+That certificate binds the exact Section-1 command, the exact closed set of 19 intended source keys
+(including `protobuf_env`), the Python executable and version, and the normalized package environment.
+Missing or extra source entries are rejected. Preflight re-verifies all hashes and refuses to run if the
+command, source or environment changed after testing.
 
-## 2. Verify `longhpu`, download Gemma and create the atomic preflight certificate
+## 2. Verify `long_gpuh200`, download Gemma and create the atomic preflight certificate
 
 Scheduler commands only on the login node:
 
 ```bash
 cd ~/tahoe
-LONG_GPU_PARTITION=longhpu
+LONG_GPU_PARTITION=long_gpuh200
 bash endcell/jobs/gemma2_standard_preflight.sh "$LONG_GPU_PARTITION"
 ```
 
@@ -177,15 +210,25 @@ inventory, every symlink target and every resolved file-content hash. After the 
 `HF_HUB_OFFLINE=1`, performs an offline `AutoConfig` load, then runs the complete five-JSONL tokenizer
 audit under `TRANSFORMERS_OFFLINE=1` and `HF_DATASETS_OFFLINE=1`.
 
-The only launch authorization is:
+The CPU tokenizer gate is fail-closed: the pinned model configuration and raw base tokenizer must expose
+256,000 entries before sentinel registration; `[END_CELL]` and `[DOWN]` must then occupy IDs 256000 and
+256001 and produce a tokenizer length of 256002. All five uniquely identified, hash-bound JSONLs must
+have noncollapsed prompt/response lengths and zero unknown tokens, and 512 rows must agree under the
+slow and fast tokenizers. CPU preflight deliberately does not load the multi-gigabyte model. The real
+256,000-row parent embedding table is first proved by the mandatory H200 smoke/trainer immediately
+before any resize; resume proves that model and tokenizer are already 256002.
+
+The only launch authorization is the schema 4 certificate:
 
 ```text
 ~/tahoe/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
 ```
 
-It is published atomically only after every check succeeds. It binds hashes of all five data files, the
+It is published atomically only after every check succeeds. Schema 4 invalidates every earlier
+certificate. It binds hashes of all five data files, the
 Section-1 test certificate, tokenizer report, trainer, evaluators, manifest/comparison code, every Gemma
-job, environment, package freeze, both focused tests, this runbook and the complete pinned snapshot.
+job, environment, package freeze, the complete Protobuf `RECORD` payload inventory, both focused tests,
+this runbook and the complete pinned snapshot.
 Smoke, training and evaluation
 re-hash those inputs. A failed
 preflight therefore cannot authorize a job through an intermediate `data_sha256.txt`.
@@ -233,14 +276,15 @@ Only after that command passes:
 
 ```bash
 cd ~/tahoe
-LONG_GPU_PARTITION=longhpu
+LONG_GPU_PARTITION=long_gpuh200
 sbatch --partition="$LONG_GPU_PARTITION" \
-  --export=ALL,EXPECTED_LONG_PARTITION="$LONG_GPU_PARTITION" \
   endcell/jobs/gemma2_standard_train.sbatch
 squeue -u 3180408
 ```
 
-At runtime the job verifies the partition, certificate, exact data, actual H200 name and required HBM
+At runtime the job compares `SLURM_JOB_PARTITION` directly with the certified literal `long_gpuh200`;
+there is no user-overridable expected-partition variable. It then verifies the certificate, exact data,
+actual H200 name and required HBM
 plus the exact passing interruption/resume smoke before loading weights. It acquires `flock` on the
 canonical output directory and stores the Slurm job ID
 in the lock, so concurrent production writers are rejected.
@@ -267,6 +311,7 @@ export HF_HUB_CACHE="$HF_HOME/hub"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_DATASETS_OFFLINE=1
 cd ~/tahoe
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+source endcell/jobs/gemma2_standard_protobuf_env.sh
 FP=endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
 CERT=RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
 CONTRACT=endcell/jobs/gemma2_standard_preflight_contract.py
@@ -343,6 +388,7 @@ export HF_HUB_CACHE="$HF_HOME/hub"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_DATASETS_OFFLINE=1
 cd ~/tahoe
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+source endcell/jobs/gemma2_standard_protobuf_env.sh
 GEMMA_PARENT=$($PY endcell/jobs/gemma2_standard_preflight_contract.py verify \
   --certificate RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json \
   --model-id vandijklab/C2S-Scale-Gemma-2-2B \
@@ -437,6 +483,11 @@ Do not copy multi-gigabyte model weights unless a later diagnosis specifically r
 
 - No current `TESTS_PASSED.json`: do not run preflight.
 - No `PREFLIGHT_PASSED.json`: do not smoke, train or evaluate.
+- Isolated Protobuf 5.29.5 is absent, resolves outside its pinned directory, or any job mentions a
+  TikToken fallback: do not load the Gemma tokenizer.
+- Gemma base vocabulary/config/embedding rows are not exactly 256,000, post-sentinel length is not
+  256,002, sentinel IDs are not 256000/256001, any canonical row contains an unknown token, or minimum
+  prompt/response length is below 20 tokens: do not authorize preflight or resize the model.
 - Token audit does not authorize 1,600 tokens: do not generate.
 - Long partition is not H200-backed or runtime GPU/HBM gate fails: do not train.
 - Either checkpoint save exceeds 420 seconds: do not rely on the 600-second warning.

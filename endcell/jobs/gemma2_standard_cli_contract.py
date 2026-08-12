@@ -75,7 +75,8 @@ PARSER_REQUIREMENTS = {
             "--certificate", "--model-id", "--revision", "--snapshot-path",
             "--tokenizer-probe", "--generation-cap", "--data", "--source",
             "--hub-cache", "--tests-certificate", "--environment", "--require-generation-cap",
-            "--print-snapshot", "--verify-current-environment",
+            "--print-snapshot", "--verify-current-environment", "--protobuf-root",
+            "--protobuf-tree-sha256",
         },
     ),
     "tests_contract": (
@@ -91,7 +92,7 @@ CONSUMER_REQUIREMENTS = {
         "--max_examples", "--parity_examples", "--require_fast",
         "--certificate", "--model-id", "--snapshot-path", "--tokenizer-probe",
         "--generation-cap", "--data", "--source", "--hub-cache", "--tests-certificate",
-        "--environment",
+        "--environment", "--protobuf-root", "--protobuf-tree-sha256",
         "--require-generation-cap", "--verify-current-environment",
     },
     "endcell/jobs/gemma2_standard_tests.sh": {
@@ -142,6 +143,47 @@ CONSUMER_REQUIREMENTS = {
 }
 
 
+TEXT_REQUIREMENTS = {
+    "endcell/jobs/gemma2_standard_preflight.sh": {
+        "gemma2_standard_protobuf_env.sh", "source \"$PROTOBUF_ENV\"",
+        "unset PYTHONHOME", "[[ \"$LONG_GPU_PARTITION\" == \"long_gpuh200\" ]]",
+    },
+    "endcell/jobs/gemma2_standard_tests.sh": {
+        "source \"$PROTOBUF_ENV\"",
+        "PYTHONPATH=\"$TEST_DEPS:$GEMMA_PROTOBUF_DIR\"",
+        "unset PYTHONHOME", "protobuf_env=$PROTOBUF_ENV",
+    },
+    "endcell/jobs/gemma2_standard_protobuf_env.sh": {
+        "export PYTHONPATH=\"$GEMMA_PROTOBUF_DIR\"",
+        "GEMMA_PROTOBUF_TREE_SHA256", "unset PYTHONHOME",
+        "google/_upb/_message.abi3.so", "RECORD",
+    },
+    "endcell/jobs/gemma2_standard_smoke.sbatch": {
+        "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
+        "unset PYTHONHOME",
+    },
+    "endcell/jobs/gemma2_standard_train.sbatch": {
+        "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
+        "unset PYTHONHOME", "[[ \"${SLURM_JOB_PARTITION:-}\" == \"long_gpuh200\" ]]",
+    },
+    "endcell/jobs/gemma2_standard_eval.sbatch": {
+        "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
+        "unset PYTHONHOME",
+    },
+    "docs/endcell/gemma2_standard_hpc_runbook.md": {
+        "protobuf-5.29.5", "Do **not** install TikToken", "256002",
+        "google/_upb/_message.abi3.so", "schema 4", "literal `long_gpuh200`",
+    },
+}
+
+
+FORBIDDEN_TEXT = {
+    "endcell/jobs/gemma2_standard_preflight.sh": {"EXPECTED_LONG_PARTITION"},
+    "endcell/jobs/gemma2_standard_train.sbatch": {"EXPECTED_LONG_PARTITION"},
+    "docs/endcell/gemma2_standard_hpc_runbook.md": {"EXPECTED_LONG_PARTITION"},
+}
+
+
 def argparse_flags(path: Path) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     flags: set[str] = set()
@@ -183,6 +225,20 @@ def main() -> None:
         if unknown_required:
             failures.append(f"{relative} requires unknown application flags {unknown_required}")
         print(f"[CLI] {relative}: required={len(required)} missing={len(missing)}")
+
+    for relative, required in TEXT_REQUIREMENTS.items():
+        text = (repo / relative).read_text(encoding="utf-8")
+        missing = sorted(fragment for fragment in required if fragment not in text)
+        if missing:
+            failures.append(f"{relative} lacks required contract text {missing}")
+        print(f"[TEXT] {relative}: required={len(required)} missing={len(missing)}")
+
+    for relative, forbidden in FORBIDDEN_TEXT.items():
+        text = (repo / relative).read_text(encoding="utf-8")
+        present = sorted(fragment for fragment in forbidden if fragment in text)
+        if present:
+            failures.append(f"{relative} contains forbidden contract text {present}")
+        print(f"[TEXT] {relative}: forbidden={len(forbidden)} present={len(present)}")
 
     if failures:
         for failure in failures:

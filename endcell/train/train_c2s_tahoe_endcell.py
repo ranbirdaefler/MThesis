@@ -26,7 +26,9 @@ Usage:
 """
 
 import argparse
+import csv
 import hashlib
+import importlib
 import json
 import os
 import random
@@ -38,11 +40,13 @@ import signal
 import tempfile
 import time
 from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler
 import transformers
 from transformers import (
+    AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     get_cosine_schedule_with_warmup,
@@ -52,6 +56,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 SENTINELS = ("[END_CELL]", "[DOWN]")
+GEMMA_BASE_VOCAB_SIZE = 256_000
+GEMMA_TOKENIZER_LENGTH = GEMMA_BASE_VOCAB_SIZE + len(SENTINELS)
+GEMMA_SENTINEL_IDS = dict(zip(SENTINELS, range(GEMMA_BASE_VOCAB_SIZE,
+                                                GEMMA_TOKENIZER_LENGTH)))
+GEMMA_PROTOBUF_VERSION = "5.29.5"
+GEMMA_PROTOBUF_ROOT = Path(
+    "/data/BuffaF-Projetcs/florian_c2s/test_deps/protobuf-5.29.5")
 TRAINING_STATE = "training_state.pt"
 PROVENANCE_FILE = "run_provenance.json"
 CHECKPOINT_MANIFEST = "checkpoint_manifest.json"
@@ -114,6 +125,187 @@ def semantic_tokenizer_fingerprint(tokenizer):
     """Hash token semantics while allowing an equivalent slow/fast implementation reload."""
     contract = _tokenizer_contract(tokenizer, include_implementation=False)
     return _stable_json_hash(contract)
+
+
+def protobuf_tree_digest(root=GEMMA_PROTOBUF_ROOT, version=GEMMA_PROTOBUF_VERSION):
+    """Digest every installed Protobuf payload named by dist-info/RECORD."""
+    root = Path(root).resolve()
+    record = root / f"protobuf-{version}.dist-info" / "RECORD"
+    if not record.is_file():
+        raise RuntimeError(f"protobuf installation RECORD is missing: {record}")
+    inventory = []
+    seen = set()
+    with record.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    for row in rows:
+        if not row or not row[0]:
+            raise RuntimeError("protobuf RECORD contains an empty path")
+        raw = row[0]
+        relative = PurePosixPath(raw)
+        if (relative.is_absolute() or "\\" in raw or
+                relative.as_posix() != raw or ".." in relative.parts):
+            raise RuntimeError(f"unsafe protobuf RECORD path: {raw!r}")
+        candidate = root / Path(*relative.parts)
+        if candidate.is_symlink():
+            raise RuntimeError(f"protobuf RECORD payload is a symlink: {raw!r}")
+        try:
+            path = candidate.resolve(strict=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"protobuf RECORD payload is missing: {raw!r}: {exc}") from exc
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"protobuf RECORD path escapes isolated root: {raw!r}") from exc
+        normalized = relative.as_posix()
+        if normalized in seen:
+            raise RuntimeError(f"duplicate protobuf RECORD payload: {normalized}")
+        seen.add(normalized)
+        if not path.is_file():
+            raise RuntimeError(f"protobuf RECORD payload is not a file: {path}")
+        inventory.append({
+            "path": normalized,
+            "size": path.stat().st_size,
+            "sha256": sha256_file(path),
+        })
+    if not inventory:
+        raise RuntimeError("protobuf digest inventory is empty")
+    if "google/_upb/_message.abi3.so" not in seen:
+        raise RuntimeError("protobuf RECORD omits google/_upb/_message.abi3.so")
+    return _stable_json_hash(inventory)
+
+
+def require_gemma_protobuf_runtime():
+    """Fail before AutoTokenizer can silently fall back from SentencePiece.
+
+    Transformers 5.12.1 can construct a five-token tokenizer when the Python protobuf package is
+    absent even though Gemma's ``tokenizer.model`` contains 256,000 pieces.  Cluster launchers also
+    pin and verify the isolated package path; this import check protects direct trainer/probe use.
+    """
+    try:
+        module = importlib.import_module("google.protobuf")
+    except Exception as exc:
+        raise RuntimeError(
+            "Gemma requires Python protobuf to load tokenizer.model; refusing any tiktoken "
+            "fallback or collapsed tokenizer") from exc
+    observed = getattr(module, "__version__", None)
+    if observed != GEMMA_PROTOBUF_VERSION:
+        raise RuntimeError(
+            f"Gemma requires Python protobuf {GEMMA_PROTOBUF_VERSION}; observed {observed!r}")
+    expected_root = GEMMA_PROTOBUF_ROOT.resolve()
+    module_path = Path(module.__file__).resolve()
+    try:
+        module_path.relative_to(expected_root)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Gemma protobuf resolved outside isolated root: {module_path}") from exc
+    if os.environ.get("PYTHONPATH") != str(expected_root):
+        raise RuntimeError("Gemma requires PYTHONPATH to equal the isolated Protobuf directory")
+    if "PYTHONHOME" in os.environ:
+        raise RuntimeError("Gemma requires PYTHONHOME to be unset")
+    observed_digest = protobuf_tree_digest(expected_root)
+    expected_digest = os.environ.get("GEMMA_PROTOBUF_TREE_SHA256")
+    if expected_digest != observed_digest:
+        raise RuntimeError(
+            "Gemma Protobuf payload is not helper-bound or its content digest changed")
+    return {"version": observed, "path": str(module_path),
+            "tree_sha256": observed_digest}
+
+
+def gemma_mode_from_config(config, *, prepend_bos, strict_token_contract):
+    """Select Gemma safeguards from model identity, never from user-provided flags."""
+    is_gemma = getattr(config, "model_type", None) == "gemma2"
+    if is_gemma and not (prepend_bos and strict_token_contract):
+        raise ValueError(
+            "Gemma-2 requires both --prepend_bos and --strict_token_contract")
+    return is_gemma
+
+
+def validate_gemma_base_tokenizer_contract(tokenizer, model_config_vocab_size):
+    """Validate the pinned Gemma tokenizer before Tahoe sentinels are registered."""
+    observed_vocab = int(getattr(tokenizer, "vocab_size", -1))
+    observed_length = len(tokenizer)
+    config_vocab = int(model_config_vocab_size)
+    if config_vocab != GEMMA_BASE_VOCAB_SIZE:
+        raise ValueError(
+            f"pinned Gemma config vocab_size={config_vocab}, expected "
+            f"{GEMMA_BASE_VOCAB_SIZE}")
+    if observed_vocab != config_vocab or observed_length != config_vocab:
+        raise ValueError(
+            "collapsed or mismatched Gemma tokenizer before sentinels: "
+            f"tokenizer.vocab_size={observed_vocab}, len(tokenizer)={observed_length}, "
+            f"model config vocab_size={config_vocab}")
+    sanity = tokenizer.encode("TP53 GAPDH EGFR BRCA1", add_special_tokens=False)
+    unknowns = (sum(token_id == tokenizer.unk_token_id for token_id in sanity)
+                if tokenizer.unk_token_id is not None else 0)
+    if len(sanity) < 4 or unknowns:
+        raise ValueError(
+            "Gemma tokenizer failed the noncollapsed biological-text sanity check: "
+            f"tokens={len(sanity)}, unknowns={unknowns}")
+    return {
+        "vocab_size": observed_vocab,
+        "length": observed_length,
+        "sanity_tokens": len(sanity),
+        "sanity_unknowns": unknowns,
+    }
+
+
+def validate_gemma_registered_tokenizer_contract(tokenizer, sentinel_result):
+    """Validate the exact post-registration Gemma/Tahoe vocabulary contract."""
+    observed_vocab = int(getattr(tokenizer, "vocab_size", -1))
+    observed_length = len(tokenizer)
+    observed_ids = {token: int(token_id)
+                    for token, token_id in sentinel_result["ids"].items()}
+    if observed_vocab != GEMMA_BASE_VOCAB_SIZE:
+        raise ValueError(
+            f"Gemma base vocabulary changed after sentinels: {observed_vocab} != "
+            f"{GEMMA_BASE_VOCAB_SIZE}")
+    if observed_length != GEMMA_TOKENIZER_LENGTH:
+        raise ValueError(
+            f"Gemma tokenizer length {observed_length} != {GEMMA_TOKENIZER_LENGTH}")
+    if observed_ids != GEMMA_SENTINEL_IDS:
+        raise ValueError(
+            f"Gemma sentinel ids {observed_ids} != {GEMMA_SENTINEL_IDS}")
+    return {"vocab_size": observed_vocab, "length": observed_length,
+            "sentinel_ids": observed_ids}
+
+
+def validate_model_embedding_rows_before_resize(model, tokenizer, *, strict_gemma,
+                                                resume, base_tokenizer_length):
+    """Prove a resize cannot shrink the pinned Gemma embedding table.
+
+    Cold starts must present the untouched 256,000-row parent before adding two rows. Resumes must
+    already contain the fully resized 256,002-row table. Legacy Pythia retains its historical
+    resize behavior because ``strict_gemma`` is false there.
+    """
+    rows = int(model.get_input_embeddings().weight.shape[0])
+    if not strict_gemma:
+        return {"embedding_rows": rows, "strict_gemma": False}
+    config_vocab = int(getattr(model.config, "vocab_size", -1))
+    if resume:
+        if rows != GEMMA_TOKENIZER_LENGTH or config_vocab != GEMMA_TOKENIZER_LENGTH:
+            raise ValueError(
+                "Gemma resume checkpoint is not already resized: "
+                f"embedding_rows={rows}, config.vocab_size={config_vocab}, "
+                f"expected={GEMMA_TOKENIZER_LENGTH}")
+        if len(tokenizer) != rows:
+            raise ValueError(
+                f"Gemma resume tokenizer/model mismatch: len(tokenizer)={len(tokenizer)}, "
+                f"embedding_rows={rows}")
+    else:
+        if base_tokenizer_length != GEMMA_BASE_VOCAB_SIZE:
+            raise ValueError(
+                "refusing Gemma resize from a collapsed/mismatched tokenizer: "
+                f"base tokenizer length={base_tokenizer_length}, expected "
+                f"{GEMMA_BASE_VOCAB_SIZE}")
+        if rows != GEMMA_BASE_VOCAB_SIZE or config_vocab != GEMMA_BASE_VOCAB_SIZE:
+            raise ValueError(
+                "pinned Gemma parent embedding/config mismatch before resize: "
+                f"embedding_rows={rows}, config.vocab_size={config_vocab}, expected "
+                f"{GEMMA_BASE_VOCAB_SIZE}")
+    return {"embedding_rows": rows, "config_vocab_size": config_vocab,
+            "strict_gemma": True, "resume": bool(resume)}
 
 
 def _canonical_model_config(config):
@@ -908,10 +1100,28 @@ def train(args):
     if resume_dir:
         logger.info(f"Resuming model and tokenizer from {resume_dir}")
 
+    identity_config = AutoConfig.from_pretrained(
+        load_source, **({"revision": load_revision} if load_revision is not None else {}))
+    strict_gemma = gemma_mode_from_config(
+        identity_config, prepend_bos=args.prepend_bos,
+        strict_token_contract=args.strict_token_contract)
+    if strict_gemma:
+        protobuf_runtime = require_gemma_protobuf_runtime()
+        logger.info("  Helper-bound Python protobuf available for Gemma SentencePiece: "
+                    f"{protobuf_runtime['version']} ({protobuf_runtime['tree_sha256']})")
+
     # --- Load tokenizer ---
     logger.info(f"Loading tokenizer from {load_source}...")
     tokenizer_kwargs = {"revision": load_revision} if load_revision is not None else {}
     tokenizer = AutoTokenizer.from_pretrained(load_source, **tokenizer_kwargs)
+    base_tokenizer_length = len(tokenizer)
+    if strict_gemma and not resume_dir:
+        base_contract = validate_gemma_base_tokenizer_contract(
+            tokenizer, identity_config.vocab_size)
+        logger.info("  Verified pinned Gemma base tokenizer: "
+                    f"vocab={base_contract['vocab_size']}, "
+                    f"length={base_contract['length']}, "
+                    f"sanity_tokens={base_contract['sanity_tokens']}")
     if tokenizer.pad_token is None:
         if args.strict_token_contract:
             raise ValueError("strict token contract requires a native PAD token; refusing PAD=EOS")
@@ -928,6 +1138,8 @@ def train(args):
     # [END_CELL] datasets (the token simply never appears). add_special_tokens returns the number of
     # NEW tokens added (0 if already present); we resize embeddings only if >0.
     sentinel_result = register_sentinels(tokenizer, strict=args.strict_token_contract)
+    if strict_gemma:
+        validate_gemma_registered_tokenizer_contract(tokenizer, sentinel_result)
     if sentinel_result["added"]:
         logger.info(f"  Added {sentinel_result['added']} special token(s): "
                     + ", ".join(f"{t} -> id {i}" for t, i in sentinel_result["ids"].items()))
@@ -964,6 +1176,14 @@ def train(args):
             **model_kwargs,
         )
 
+    embedding_contract = validate_model_embedding_rows_before_resize(
+        model, tokenizer, strict_gemma=strict_gemma, resume=bool(resume_dir),
+        base_tokenizer_length=base_tokenizer_length)
+    if strict_gemma:
+        logger.info("  Verified Gemma embeddings before resize: "
+                    f"rows={embedding_contract['embedding_rows']}, "
+                    f"resume={embedding_contract['resume']}")
+
     if args.gradient_checkpointing:
         model.gradient_checkpointing_enable()
         logger.info("  Gradient checkpointing enabled")
@@ -975,6 +1195,14 @@ def train(args):
     if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
         model.resize_token_embeddings(len(tokenizer))
         logger.info(f"  Resized token embeddings to {len(tokenizer)} (for {list(SENTINELS)})")
+    if strict_gemma:
+        final_rows = int(model.get_input_embeddings().weight.shape[0])
+        final_config_vocab = int(getattr(model.config, "vocab_size", -1))
+        if (final_rows, final_config_vocab) != (GEMMA_TOKENIZER_LENGTH,
+                                                GEMMA_TOKENIZER_LENGTH):
+            raise ValueError(
+                "Gemma resize did not produce the certified 256002-row state: "
+                f"embedding_rows={final_rows}, config.vocab_size={final_config_vocab}")
 
     model.to(device)
     n_params = sum(p.numel() for p in model.parameters())

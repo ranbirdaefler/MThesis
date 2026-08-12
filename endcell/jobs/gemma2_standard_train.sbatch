@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=gemma2_std_sft
 #SBATCH --account=3180408
-#SBATCH --partition=longhpu
+#SBATCH --partition=long_gpuh200
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=120G
@@ -12,6 +12,7 @@
 set -euo pipefail
 export PYTHONUNBUFFERED=1
 export PYTHONNOUSERSITE=1
+unset PYTHONHOME
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
 export HF_HUB_DISABLE_XET=1
@@ -21,6 +22,7 @@ export HF_DATASETS_OFFLINE=1
 
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
 REPO="${REPO:-$HOME/tahoe}"
+source "$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh"
 DATA=/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big
 MODEL=vandijklab/C2S-Scale-Gemma-2-2B
 REVISION=5ddf28b8f1c81b7ab7a9be192924da82b6c5d512
@@ -31,14 +33,13 @@ CERT="$REPO/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json"
 SMOKE_CERT="$REPO/RESULTS/gemma2_standard_smoke/SMOKE_PASSED.json"
 OUT=/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell
 RUN_META="$REPO/RESULTS/gemma2_standard_train_${SLURM_JOB_ID}"
-EXPECTED_LONG_PARTITION="${EXPECTED_LONG_PARTITION:-longhpu}"
 MIN_HBM_MIB="${MIN_HBM_MIB:-135000}"
 MIN_FREE_GIB=150
 mkdir -p "$REPO/logs" "$REPO/RESULTS" "$RUN_META" "$OUT"
 cd "$REPO"
 
-[[ "${SLURM_JOB_PARTITION:-}" == "$EXPECTED_LONG_PARTITION" ]] || {
-    echo "[FATAL] submitted to '${SLURM_JOB_PARTITION:-unknown}', expected '$EXPECTED_LONG_PARTITION'" >&2
+[[ "${SLURM_JOB_PARTITION:-}" == "long_gpuh200" ]] || {
+    echo "[FATAL] submitted to '${SLURM_JOB_PARTITION:-unknown}', expected 'long_gpuh200'" >&2
     exit 2
 }
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL" \

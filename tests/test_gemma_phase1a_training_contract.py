@@ -12,15 +12,19 @@ import json
 import os
 import random
 import sys
+from types import SimpleNamespace
 
 import pytest
 import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "endcell", "train"))
+sys.path.insert(0, os.path.join(ROOT, "endcell", "jobs"))
 
 import train_c2s_tahoe_endcell as trainer  # noqa: E402
 import gemma_tokenizer_probe as probe  # noqa: E402
+import gemma2_standard_preflight_contract as preflight_contract  # noqa: E402
+import gemma2_standard_tests_contract as tests_contract  # noqa: E402
 
 
 class FakeTokenizer:
@@ -476,3 +480,400 @@ def test_probe_detects_semantic_truncation_and_sentinel_loss():
         tok, "PROMPT", "GENE1 GENE2 [END_CELL]", prepend_bos=True, max_length=4)
     assert stats["truncated_response_tokens"] > 0
     assert stats["sentinel_loss"] is True
+
+
+class GemmaContractTokenizer:
+    def __init__(self, vocab_size=256_000, length=256_000, unknown=False):
+        self.vocab_size = vocab_size
+        self._length = length
+        self.unk_token_id = 3
+        self.unknown = unknown
+
+    def __len__(self):
+        return self._length
+
+    def encode(self, _text, add_special_tokens=False):
+        assert add_special_tokens is False
+        return [self.unk_token_id] if self.unknown else [10, 11, 12, 13]
+
+
+class GemmaEmbeddingModel:
+    def __init__(self, rows, config_vocab):
+        self.embedding = SimpleNamespace(weight=torch.empty(rows, 1))
+        self.config = SimpleNamespace(vocab_size=config_vocab)
+
+    def get_input_embeddings(self):
+        return self.embedding
+
+
+def test_gemma_base_contract_rejects_planted_five_token_collapse():
+    collapsed = GemmaContractTokenizer(vocab_size=5, length=5, unknown=True)
+    with pytest.raises(ValueError, match="collapsed or mismatched"):
+        trainer.validate_gemma_base_tokenizer_contract(collapsed, 256_000)
+
+
+def test_gemma_base_contract_rejects_model_vocabulary_mismatch():
+    tokenizer = GemmaContractTokenizer()
+    with pytest.raises(ValueError, match="config vocab_size"):
+        trainer.validate_gemma_base_tokenizer_contract(tokenizer, 255_999)
+
+
+def test_gemma_registered_and_embedding_contracts_split_cold_start_from_resume():
+    tokenizer = GemmaContractTokenizer(length=256_002)
+    sentinel_result = {
+        "added": 2,
+        "ids": {"[END_CELL]": 256_000, "[DOWN]": 256_001},
+    }
+    registered = trainer.validate_gemma_registered_tokenizer_contract(
+        tokenizer, sentinel_result)
+    assert registered["length"] == 256_002
+
+    cold = GemmaEmbeddingModel(256_000, 256_000)
+    result = trainer.validate_model_embedding_rows_before_resize(
+        cold, tokenizer, strict_gemma=True, resume=False,
+        base_tokenizer_length=256_000)
+    assert result["embedding_rows"] == 256_000
+
+    resumed = GemmaEmbeddingModel(256_002, 256_002)
+    result = trainer.validate_model_embedding_rows_before_resize(
+        resumed, tokenizer, strict_gemma=True, resume=True,
+        base_tokenizer_length=256_002)
+    assert result["embedding_rows"] == 256_002
+
+
+@pytest.mark.parametrize(
+    "tokenizer,sentinel_result,match",
+    [
+        (GemmaContractTokenizer(length=256_001),
+         {"added": 2, "ids": {"[END_CELL]": 256_000, "[DOWN]": 256_001}},
+         "tokenizer length"),
+        (GemmaContractTokenizer(length=256_002),
+         {"added": 2, "ids": {"[END_CELL]": 256_001, "[DOWN]": 256_000}},
+         "sentinel ids"),
+    ],
+)
+def test_gemma_registered_contract_rejects_wrong_length_or_ids(
+        tokenizer, sentinel_result, match):
+    with pytest.raises(ValueError, match=match):
+        trainer.validate_gemma_registered_tokenizer_contract(tokenizer, sentinel_result)
+
+
+def test_gemma_embedding_contract_rejects_collapse_before_resize():
+    tokenizer = GemmaContractTokenizer(length=7)
+    parent = GemmaEmbeddingModel(256_000, 256_000)
+    with pytest.raises(ValueError, match="refusing Gemma resize"):
+        trainer.validate_model_embedding_rows_before_resize(
+            parent, tokenizer, strict_gemma=True, resume=False,
+            base_tokenizer_length=5)
+
+
+@pytest.mark.parametrize(
+    "model,resume,match",
+    [
+        (GemmaEmbeddingModel(255_999, 256_000), False, "parent embedding/config mismatch"),
+        (GemmaEmbeddingModel(256_001, 256_002), True, "resume checkpoint is not already resized"),
+        (GemmaEmbeddingModel(256_002, 256_001), True, "resume checkpoint is not already resized"),
+    ],
+)
+def test_gemma_embedding_contract_rejects_cold_or_resume_row_mismatch(model, resume, match):
+    tokenizer = GemmaContractTokenizer(length=256_002)
+    with pytest.raises(ValueError, match=match):
+        trainer.validate_model_embedding_rows_before_resize(
+            model, tokenizer, strict_gemma=True, resume=resume,
+            base_tokenizer_length=256_002 if resume else 256_000)
+
+
+def test_gemma_identity_enforces_flags_and_never_misclassifies_pythia():
+    gemma = SimpleNamespace(model_type="gemma2")
+    pythia = SimpleNamespace(model_type="gpt_neox")
+    with pytest.raises(ValueError, match="requires both"):
+        trainer.gemma_mode_from_config(
+            gemma, prepend_bos=False, strict_token_contract=True)
+    assert trainer.gemma_mode_from_config(
+        gemma, prepend_bos=True, strict_token_contract=True) is True
+    assert trainer.gemma_mode_from_config(
+        pythia, prepend_bos=True, strict_token_contract=True) is False
+
+
+def test_missing_protobuf_fails_before_gemma_tokenizer_load(monkeypatch):
+    def missing(_name):
+        raise ModuleNotFoundError("planted missing protobuf")
+
+    monkeypatch.setattr(trainer.importlib, "import_module", missing)
+    with pytest.raises(RuntimeError, match="refusing any tiktoken fallback"):
+        trainer.require_gemma_protobuf_runtime()
+
+
+def test_wrong_protobuf_version_fails_before_gemma_tokenizer_load(monkeypatch):
+    monkeypatch.setattr(
+        trainer.importlib, "import_module", lambda _name: SimpleNamespace(__version__="6.0.0"))
+    with pytest.raises(RuntimeError, match="requires Python protobuf 5.29.5"):
+        trainer.require_gemma_protobuf_runtime()
+
+
+def _protobuf_distribution_fixture(root):
+    package = root / "google" / "protobuf"
+    upb = root / "google" / "_upb"
+    metadata = root / "protobuf-5.29.5.dist-info"
+    package.mkdir(parents=True)
+    upb.mkdir(parents=True)
+    metadata.mkdir(parents=True)
+    (package / "__init__.py").write_text('__version__ = "5.29.5"\n', encoding="utf-8")
+    (upb / "_message.abi3.so").write_bytes(b"planted compiled payload\n")
+    (metadata / "METADATA").write_text("Version: 5.29.5\n", encoding="utf-8")
+    record = metadata / "RECORD"
+    record.write_text(
+        "google/protobuf/__init__.py,,\n"
+        "google/_upb/_message.abi3.so,,\n"
+        "protobuf-5.29.5.dist-info/METADATA,,\n"
+        "protobuf-5.29.5.dist-info/RECORD,,\n",
+        encoding="utf-8",
+    )
+    return package, upb, metadata, record
+
+
+def test_protobuf_record_digest_binds_compiled_upb_payload(tmp_path):
+    root = tmp_path / "protobuf"
+    _, upb, _, _ = _protobuf_distribution_fixture(root)
+    before, count = preflight_contract.protobuf_tree_digest(root)
+    assert count == 4
+    assert trainer.protobuf_tree_digest(root) == before
+    (upb / "_message.abi3.so").write_bytes(b"mutated compiled payload\n")
+    after, _ = preflight_contract.protobuf_tree_digest(root)
+    assert before != after
+    assert trainer.protobuf_tree_digest(root) == after
+
+
+def test_protobuf_record_digest_rejects_missing_record(tmp_path):
+    root = tmp_path / "protobuf"
+    _, _, _, record = _protobuf_distribution_fixture(root)
+    record.unlink()
+    with pytest.raises(SystemExit, match="RECORD is missing"):
+        preflight_contract.protobuf_tree_digest(root)
+
+
+def test_protobuf_record_digest_rejects_path_traversal(tmp_path):
+    root = tmp_path / "protobuf"
+    _, _, _, record = _protobuf_distribution_fixture(root)
+    with record.open("a", encoding="utf-8") as handle:
+        handle.write("../outside-payload,,\n")
+    with pytest.raises(SystemExit, match="unsafe protobuf RECORD path"):
+        preflight_contract.protobuf_tree_digest(root)
+
+
+def test_helper_bound_protobuf_rejects_wrong_payload(monkeypatch, tmp_path):
+    root = tmp_path / "protobuf"
+    package, _, _, _ = _protobuf_distribution_fixture(root)
+    module_file = package / "__init__.py"
+    module = SimpleNamespace(__version__="5.29.5", __file__=str(module_file))
+    monkeypatch.setattr(trainer.importlib, "import_module", lambda _name: module)
+    monkeypatch.setattr(trainer, "GEMMA_PROTOBUF_ROOT", root)
+    monkeypatch.setenv("PYTHONPATH", str(root.resolve()))
+    monkeypatch.setenv("GEMMA_PROTOBUF_TREE_SHA256", "0" * 64)
+    with pytest.raises(RuntimeError, match="content digest changed"):
+        trainer.require_gemma_protobuf_runtime()
+
+
+def test_gemma_runtime_rejects_inherited_pythonhome(monkeypatch, tmp_path):
+    root = tmp_path / "protobuf"
+    package, _, _, _ = _protobuf_distribution_fixture(root)
+    module = SimpleNamespace(
+        __version__="5.29.5", __file__=str(package / "__init__.py"))
+    monkeypatch.setattr(trainer.importlib, "import_module", lambda _name: module)
+    monkeypatch.setattr(trainer, "GEMMA_PROTOBUF_ROOT", root)
+    monkeypatch.setenv("PYTHONPATH", str(root.resolve()))
+    monkeypatch.setenv("GEMMA_PROTOBUF_TREE_SHA256", trainer.protobuf_tree_digest(root))
+    monkeypatch.setenv("PYTHONHOME", "/planted/shadow/runtime")
+    with pytest.raises(RuntimeError, match="PYTHONHOME to be unset"):
+        trainer.require_gemma_protobuf_runtime()
+
+
+def _valid_probe_document(tmp_path):
+    reports = []
+    expected_data = {}
+    input_hashes = {}
+    for index, name in enumerate(("train", "tier1", "tier2", "tier3", "tier4")):
+        path = (tmp_path / f"{name}.jsonl").resolve()
+        path.write_text(f'{{"fixture": {index}}}\n', encoding="utf-8")
+        digest = preflight_contract.sha256_file(path)
+        expected_data[name] = {"path": str(path), "sha256": digest}
+        input_hashes[str(path)] = digest
+        reports.append({
+            "path": str(path),
+            "sha256": digest,
+            "counts": {
+                "rows": 1,
+                "semantic_truncations": 0,
+                "prompt_truncations": 0,
+                "sentinel_losses": 0,
+                "response_missing_end_cell": 0,
+                "response_contains_down": 0,
+                "prompt_unk_tokens": 0,
+                "response_unk_tokens": 0,
+                "prompt_token_count": 395,
+                "response_token_count": 481,
+            },
+            "distributions": {
+                "prompt_tokens": {"min": 395, "max": 395},
+                "response_tokens": {"min": 481, "max": 481},
+            },
+        })
+    document = {
+        "schema_version": 1,
+        "max_examples_per_file": 0,
+        "input_hashes": input_hashes,
+        "models": [{
+            "model_name": "vandijklab/C2S-Scale-Gemma-2-2B",
+            "revision": probe.GEMMA_REVISION,
+            "model_config_vocab_size": 256_000,
+            "base_tokenizer_contract": {"vocab_size": 256_000, "length": 256_000},
+            "tokenizer": {
+                "is_fast": True,
+                "vocab_size": 256_000,
+                "length_after_sentinels": 256_002,
+                "pad_token_id": 0,
+                "eos_token_id": 1,
+                "bos_token_id": 2,
+                "sentinels": {"[END_CELL]": 256_000, "[DOWN]": 256_001},
+            },
+            "slow_fast_parity": {
+                "available": True, "mismatch_count": 0, "rows_checked": 512},
+            "files": reports,
+        }],
+    }
+    return document, expected_data
+
+
+def _write_probe(tmp_path, document):
+    path = tmp_path / "probe.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    return str(path)
+
+
+def test_preflight_contract_accepts_only_complete_gemma_vocabulary(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    path = _write_probe(tmp_path, document)
+    result = preflight_contract.validate_probe(
+        path, 1600, "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
+        expected_data)
+    assert result["generation_cap_authorized"] is True
+    assert result["maximum_truth_response_tokens"] == 481
+
+
+def test_preflight_contract_rejects_five_token_probe(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    model = document["models"][0]
+    model["base_tokenizer_contract"] = {"vocab_size": 5, "length": 5}
+    model["tokenizer"]["vocab_size"] = 5
+    model["tokenizer"]["length_after_sentinels"] = 7
+    with pytest.raises(SystemExit, match="base tokenizer is collapsed"):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+
+
+def test_preflight_contract_rejects_model_config_vocabulary_mismatch(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    document["models"][0]["model_config_vocab_size"] = 255_999
+    with pytest.raises(SystemExit, match="model config vocab_size"):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+
+
+def test_preflight_contract_rejects_unknown_token_collapse(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    document["models"][0]["files"][2]["counts"]["prompt_unk_tokens"] = 1
+    with pytest.raises(SystemExit, match="contains unknown tokens"):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+
+
+def test_preflight_contract_rejects_negative_unknown_counter(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    document["models"][0]["files"][0]["counts"]["prompt_unk_tokens"] = -1
+    with pytest.raises(SystemExit, match="invalid prompt_unk_tokens"):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+
+
+def test_preflight_contract_rejects_opposing_unknown_counters(tmp_path):
+    document, expected_data = _valid_probe_document(tmp_path)
+    counts = document["models"][0]["files"][0]["counts"]
+    counts["prompt_unk_tokens"] = 1
+    counts["response_unk_tokens"] = -1
+    with pytest.raises(SystemExit, match="prompt_unk_tokens=1"):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+
+
+@pytest.mark.parametrize("mutation,match", [
+    ("duplicate", "duplicated or incomplete"),
+    ("missing_counter", "omitted counters"),
+    ("missing_input_hash", "input_hashes do not match"),
+    ("zero_parity", "parity was not proved"),
+    ("slow_tokenizer", "required fast tokenizer"),
+])
+def test_preflight_contract_rejects_incomplete_probe_binding(tmp_path, mutation, match):
+    document, expected_data = _valid_probe_document(tmp_path)
+    model = document["models"][0]
+    if mutation == "duplicate":
+        model["files"][-1] = copy.deepcopy(model["files"][0])
+    elif mutation == "missing_counter":
+        del model["files"][0]["counts"]["prompt_unk_tokens"]
+    elif mutation == "missing_input_hash":
+        document["input_hashes"].pop(next(iter(document["input_hashes"])))
+    elif mutation == "zero_parity":
+        model["slow_fast_parity"]["rows_checked"] = 0
+    elif mutation == "slow_tokenizer":
+        model["tokenizer"]["is_fast"] = False
+    with pytest.raises(SystemExit, match=match):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
+            expected_data)
+
+
+@pytest.mark.parametrize("field,value,match", [
+    ("length_after_sentinels", 256_001, "tokenizer contract"),
+    ("sentinels", {"[END_CELL]": 256_001, "[DOWN]": 256_000}, "sentinel ids"),
+])
+def test_preflight_contract_rejects_wrong_sentinel_contract(tmp_path, field, value, match):
+    document, expected_data = _valid_probe_document(tmp_path)
+    document["models"][0]["tokenizer"][field] = value
+    with pytest.raises(SystemExit, match=match):
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
+            expected_data)
+
+
+@pytest.mark.parametrize("schema", [2, 3])
+def test_preflight_verify_rejects_older_schema_before_trusting_contents(tmp_path, schema):
+    certificate = tmp_path / "certificate.json"
+    certificate.write_text(
+        json.dumps({"schema_version": schema, "preflight_passed": True}), encoding="utf-8")
+    args = SimpleNamespace(
+        certificate=str(certificate),
+        model_id="vandijklab/C2S-Scale-Gemma-2-2B",
+        revision=probe.GEMMA_REVISION,
+        require_generation_cap=None,
+        print_snapshot=False,
+        verify_current_environment=False,
+    )
+    with pytest.raises(SystemExit, match="invalid or unsuccessful"):
+        preflight_contract.verify(args)
+
+
+@pytest.mark.parametrize("mutation", ["omit", "extra"])
+def test_tests_certificate_rejects_nonexact_source_set(mutation):
+    sources = {name: {} for name in tests_contract.EXPECTED_SOURCE_KEYS}
+    if mutation == "omit":
+        sources.pop("protobuf_env")
+    else:
+        sources["unexpected"] = {}
+    with pytest.raises(SystemExit, match="source keys differ from contract"):
+        tests_contract.require_exact_source_keys(sources)

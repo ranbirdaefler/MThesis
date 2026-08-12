@@ -11,6 +11,7 @@
 set -euo pipefail
 export PYTHONUNBUFFERED=1
 export PYTHONNOUSERSITE=1
+unset PYTHONHOME
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
 export HF_HUB_DISABLE_XET=1
@@ -20,6 +21,7 @@ export HF_DATASETS_OFFLINE=1
 
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
 REPO="${REPO:-$HOME/tahoe}"
+source "$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh"
 DATA=/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big
 SCRAM=/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big_scram
 MODEL_ID=vandijklab/C2S-Scale-Gemma-2-2B

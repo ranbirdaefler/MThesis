@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 # Scheduler inspection may run on the login node; all model/data work runs in srun.
 set -euo pipefail
+unset PYTHONHOME
 
 ACCOUNT="${ACCOUNT:-3180408}"
 CPU_PARTITION="${CPU_PARTITION:-defq}"
 CPU_TIME="${CPU_TIME:-06:00:00}"
-LONG_GPU_PARTITION="${1:-${LONG_GPU_PARTITION:-longhpu}}"
+LONG_GPU_PARTITION="${1:-${LONG_GPU_PARTITION:-long_gpuh200}}"
 REPO="${REPO:-$HOME/tahoe}"
 MODEL_ID="vandijklab/C2S-Scale-Gemma-2-2B"
 REVISION="5ddf28b8f1c81b7ab7a9be192924da82b6c5d512"
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
+
+[[ "$LONG_GPU_PARTITION" == "long_gpuh200" ]] || {
+    echo "[FATAL] canonical Gemma training partition is literal 'long_gpuh200', got '$LONG_GPU_PARTITION'" >&2
+    exit 2
+}
 
 # Invalidate authorization before even inspecting the scheduler. Any failure in
 # this attempt must leave no current certificate behind.
@@ -42,7 +48,6 @@ grep -Eiq 'h200' <<<"$PARTITION_VIEW" || {
 }
 if sbatch --help 2>&1 | grep -Fq -- '--test-only'; then
     sbatch --test-only --partition="$LONG_GPU_PARTITION" \
-        --export=ALL,EXPECTED_LONG_PARTITION="$LONG_GPU_PARTITION" \
         "$REPO/endcell/jobs/gemma2_standard_train.sbatch"
 else
     echo "[WARN] sbatch --test-only unavailable; existence/GRES were verified, policy was not"
@@ -54,12 +59,15 @@ srun --account="$ACCOUNT" --partition="$CPU_PARTITION" --cpus-per-task=4 --mem=3
 set -euo pipefail
 export PYTHONUNBUFFERED=1
 export PYTHONNOUSERSITE=1
+unset PYTHONHOME
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
 export HF_HUB_DISABLE_XET=1
 if [[ -r "$HOME/.hf_token" ]]; then export HF_TOKEN="$(<"$HOME/.hf_token")"; fi
 
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
+PROTOBUF_ENV="$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh"
+source "$PROTOBUF_ENV"
 DATA=/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big
 OUT="$REPO/RESULTS/gemma2_standard_preflight"
 CERT="$OUT/PREFLIGHT_PASSED.json"
@@ -82,7 +90,7 @@ if [[ -f "$CERT" ]]; then
     mv "$CERT" "$OUT/PREFLIGHT_PASSED.previous.postlock.$(date -u +%Y%m%dT%H%M%SZ).$$.json"
 fi
 
-for required in "$PY" "$TRAINER" "$TOKENIZER_PROBE" "$CONTRACT" "$CLI_CONTRACT" \
+for required in "$PY" "$PROTOBUF_ENV" "$TRAINER" "$TOKENIZER_PROBE" "$CONTRACT" "$CLI_CONTRACT" \
     "$TEST_CONTRACT" "$TEST_CERT" \
     "$DATA/train.jsonl" "$DATA/eval_tier1_seen_conditions.jsonl" \
     "$DATA/eval_tier2_unseen_drugs.jsonl" "$DATA/eval_tier3_unseen_combos.jsonl" \
@@ -106,12 +114,14 @@ FREE_GB=$(df --output=avail -BG /data/BuffaF-Projetcs/florian_c2s | tail -1 | tr
     exit 3
 }
 "$PY" - <<"PY" | tee -a "$OUT/environment.txt"
-import platform, torch, transformers, tokenizers, huggingface_hub
+import platform, torch, transformers, tokenizers, huggingface_hub, google.protobuf
 print("python", platform.python_version())
 print("torch", torch.__version__)
 print("transformers", transformers.__version__)
 print("tokenizers", tokenizers.__version__)
 print("huggingface_hub", huggingface_hub.__version__)
+print("protobuf", google.protobuf.__version__)
+print("protobuf_file", google.protobuf.__file__)
 print("cuda_available", torch.cuda.is_available())
 PY
 "$PY" -m pip freeze | LC_ALL=C sort > "$OUT/pip_freeze.txt"
@@ -193,6 +203,7 @@ PY
 SOURCES=(
     "trainer=$TRAINER"
     "tokenizer_probe=$TOKENIZER_PROBE"
+    "protobuf_env=$PROTOBUF_ENV"
     "evaluate_endcell=$REPO/endcell/eval/evaluate_endcell.py"
     "nir_benchmark=$REPO/endcell/analysis/nir_benchmark.py"
     "freeze_manifest=$REPO/endcell/analysis/freeze_nir_manifest.py"
@@ -224,6 +235,8 @@ CREATE=("$PY" "$CONTRACT" create --certificate "$CANDIDATE" --model-id "$MODEL_I
     --revision "$REVISION" --snapshot-path "$SNAPSHOT_PATH" \
     --hub-cache "$HF_HUB_CACHE" --tests-certificate "$TEST_CERT" \
     --tokenizer-probe "$OUT/gemma_tokenizer_probe.json" --generation-cap 1600 \
+    --protobuf-root "$GEMMA_PROTOBUF_DIR" \
+    --protobuf-tree-sha256 "$GEMMA_PROTOBUF_TREE_SHA256" \
     --environment "environment=$OUT/environment.txt" --environment "pip_freeze=$OUT/pip_freeze.txt")
 for item in "${DATA_ARGS[@]}"; do CREATE+=(--data "$item"); done
 for item in "${SOURCES[@]}"; do CREATE+=(--source "$item"); done

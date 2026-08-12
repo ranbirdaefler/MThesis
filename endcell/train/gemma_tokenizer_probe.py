@@ -13,14 +13,18 @@ from collections import Counter
 
 import numpy as np
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from train_c2s_tahoe_endcell import (
     SENTINELS,
     _atomic_write_json,
     register_sentinels,
+    require_gemma_protobuf_runtime,
     sha256_file,
     tokenizer_fingerprint,
+    validate_gemma_base_tokenizer_contract,
+    validate_gemma_registered_tokenizer_contract,
+    validate_model_embedding_rows_before_resize,
 )
 
 
@@ -143,6 +147,13 @@ def audit_file(path, tokenizer, prepend_bos, max_length, limit=0, parity_sink=No
         for (row_index, ex), pids, rids in zip(rows, prompt_ids, response_ids):
             stats = _semantic_lengths_from_ids(
                 tokenizer, pids, rids, prepend_bos, max_length)
+            if tokenizer.unk_token_id is not None:
+                counts["prompt_unk_tokens"] += sum(
+                    token_id == tokenizer.unk_token_id for token_id in pids)
+                counts["response_unk_tokens"] += sum(
+                    token_id == tokenizer.unk_token_id for token_id in rids)
+            counts["prompt_token_count"] += len(pids)
+            counts["response_token_count"] += len(rids)
             for key in ("prompt_tokens", "response_tokens", "supervised_tokens", "total_tokens"):
                 vectors[key].append(stats[key])
             control_n = len(_control_genes(ex["prompt"]))
@@ -224,12 +235,16 @@ def check_slow_fast_parity(model_name, revision, fast_tokenizer, rows):
     }
 
 
-def load_parameter_count(model_name, revision, tokenizer, attention_implementation):
+def load_parameter_count(model_name, revision, tokenizer, attention_implementation,
+                         base_tokenizer_length, is_gemma):
     kwargs = {"revision": revision, "torch_dtype": torch.bfloat16}
     if attention_implementation:
         kwargs["attn_implementation"] = attention_implementation
     model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
     before = sum(p.numel() for p in model.parameters())
+    validate_model_embedding_rows_before_resize(
+        model, tokenizer, strict_gemma=is_gemma, resume=False,
+        base_tokenizer_length=base_tokenizer_length)
     if model.get_input_embeddings().weight.shape[0] != len(tokenizer):
         model.resize_token_embeddings(len(tokenizer))
     after = sum(p.numel() for p in model.parameters())
@@ -246,10 +261,21 @@ def load_parameter_count(model_name, revision, tokenizer, attention_implementati
 
 
 def audit_model(model_name, revision, jsonls, file_hashes, args):
+    config = AutoConfig.from_pretrained(model_name, revision=revision)
+    is_gemma = getattr(config, "model_type", None) == "gemma2"
+    if is_gemma:
+        require_gemma_protobuf_runtime()
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, revision=revision, use_fast=True)
+    base_tokenizer_length = len(tokenizer)
+    base_contract = None
+    if is_gemma:
+        base_contract = validate_gemma_base_tokenizer_contract(
+            tokenizer, config.vocab_size)
     sentinel = register_sentinels(tokenizer, strict=True, reload_use_fast=True)
-    prepend_bos = "gemma" in model_name.lower()
+    if is_gemma:
+        validate_gemma_registered_tokenizer_contract(tokenizer, sentinel)
+    prepend_bos = is_gemma
     if prepend_bos and (tokenizer.pad_token_id is None or
                         tokenizer.pad_token_id == tokenizer.eos_token_id):
         raise ValueError("Gemma must retain native PAD distinct from EOS")
@@ -261,6 +287,21 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
                         limit=args.max_examples, parity_sink=parity_rows,
                         batch_size=args.batch_size, file_hash=file_hashes[path])
              for path in jsonls]
+    if is_gemma:
+        for file_report in files:
+            counts = file_report["counts"]
+            unknowns = (counts.get("prompt_unk_tokens", 0) +
+                        counts.get("response_unk_tokens", 0))
+            prompt_min = file_report["distributions"]["prompt_tokens"]["min"]
+            response_min = file_report["distributions"]["response_tokens"]["min"]
+            if unknowns:
+                raise ValueError(
+                    f"Gemma unknown-token collapse in {file_report['path']}: "
+                    f"unknown_tokens={unknowns}")
+            if prompt_min < 20 or response_min < 20:
+                raise ValueError(
+                    f"Gemma tokenization is not meaningful in {file_report['path']}: "
+                    f"minimum prompt/response tokens={prompt_min}/{response_min}")
     parity = check_slow_fast_parity(model_name, revision, tokenizer, parity_rows)
     if parity.get("available") and parity["mismatch_count"]:
         raise ValueError(f"slow/fast tokenizer parity failed for {model_name}: {parity}")
@@ -268,6 +309,8 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
     result = {
         "model_name": model_name,
         "revision": revision,
+        "model_config_vocab_size": int(config.vocab_size),
+        "base_tokenizer_contract": base_contract,
         "prepend_exactly_one_bos": prepend_bos,
         "chat_template_used": False,
         "tokenizer": {
@@ -287,7 +330,8 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
     }
     if args.load_model:
         result["model"] = load_parameter_count(
-            model_name, revision, tokenizer, args.attn_implementation)
+            model_name, revision, tokenizer, args.attn_implementation,
+            base_tokenizer_length, is_gemma)
     return result
 
 

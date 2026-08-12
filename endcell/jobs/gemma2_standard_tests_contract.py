@@ -15,6 +15,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+EXPECTED_SOURCE_KEYS = {
+    "trainer", "tokenizer_probe", "protobuf_env", "freeze_manifest",
+    "nir_benchmark", "compare_backbones", "residual_eval", "evaluate_endcell",
+    "fingerprint", "cli_contract", "preflight_contract", "tests_contract",
+    "preflight", "smoke", "train_job", "eval_job", "phase1a_test",
+    "eval_test", "runbook",
+}
+
+
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -38,6 +47,15 @@ def named_files(items: list[str]) -> dict[str, dict[str, object]]:
             "sha256": sha256_file(path),
         }
     return result
+
+
+def require_exact_source_keys(entries: dict[str, object]) -> None:
+    observed = set(entries)
+    if observed != EXPECTED_SOURCE_KEYS:
+        raise SystemExit(
+            "[FATAL] tests-certificate source keys differ from contract: "
+            f"missing={sorted(EXPECTED_SOURCE_KEYS - observed)}, "
+            f"extra={sorted(observed - EXPECTED_SOURCE_KEYS)}")
 
 
 def normalized_pip_freeze() -> str:
@@ -82,6 +100,8 @@ def create(args: argparse.Namespace) -> None:
     if not command.is_file():
         raise SystemExit(f"[FATAL] test command is missing: {command}")
     pip_freeze = normalized_pip_freeze()
+    sources = named_files(args.source)
+    require_exact_source_keys(sources)
     document = {
         "schema_version": 1,
         "tests_passed": True,
@@ -91,7 +111,7 @@ def create(args: argparse.Namespace) -> None:
             "size": command.stat().st_size,
             "sha256": sha256_file(command),
         },
-        "sources": named_files(args.source),
+        "sources": sources,
         "environment": {
             "python_executable": str(Path(sys.executable).resolve()),
             "python_version": platform.python_version(),
@@ -109,7 +129,11 @@ def verify(args: argparse.Namespace) -> None:
     if document.get("schema_version") != 1 or document.get("tests_passed") is not True:
         raise SystemExit("[FATAL] invalid or unsuccessful tests certificate")
     verify_file_group("command", {"section1": document.get("command", {})})
-    verify_file_group("sources", document.get("sources", {}))
+    sources = document.get("sources", {})
+    if not isinstance(sources, dict):
+        raise SystemExit("[FATAL] tests certificate has malformed sources")
+    require_exact_source_keys(sources)
+    verify_file_group("sources", sources)
     environment = document.get("environment", {})
     if args.verify_current_environment:
         if str(Path(sys.executable).resolve()) != environment.get("python_executable"):
