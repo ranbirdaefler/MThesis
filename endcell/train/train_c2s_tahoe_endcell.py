@@ -193,18 +193,26 @@ def require_gemma_protobuf_runtime():
     if observed != GEMMA_PROTOBUF_VERSION:
         raise RuntimeError(
             f"Gemma requires Python protobuf {GEMMA_PROTOBUF_VERSION}; observed {observed!r}")
-    expected_root = GEMMA_PROTOBUF_ROOT.resolve()
+    # PYTHONPATH is intentionally bound to the canonical lexical path exported by
+    # gemma2_standard_protobuf_env.sh.  On the cluster that path can resolve through
+    # a BeeGFS alias (for example /data -> /mnt/beegfsnew), so resolving it before
+    # the string comparison would reject the helper's own valid environment.
+    expected_pythonpath = str(GEMMA_PROTOBUF_ROOT)
+    resolved_root = GEMMA_PROTOBUF_ROOT.resolve()
     module_path = Path(module.__file__).resolve()
     try:
-        module_path.relative_to(expected_root)
+        module_path.relative_to(resolved_root)
     except ValueError as exc:
         raise RuntimeError(
             f"Gemma protobuf resolved outside isolated root: {module_path}") from exc
-    if os.environ.get("PYTHONPATH") != str(expected_root):
-        raise RuntimeError("Gemma requires PYTHONPATH to equal the isolated Protobuf directory")
+    observed_pythonpath = os.environ.get("PYTHONPATH")
+    if observed_pythonpath != expected_pythonpath:
+        raise RuntimeError(
+            "Gemma requires PYTHONPATH to equal the isolated Protobuf directory: "
+            f"observed={observed_pythonpath!r}, expected={expected_pythonpath!r}")
     if "PYTHONHOME" in os.environ:
         raise RuntimeError("Gemma requires PYTHONHOME to be unset")
-    observed_digest = protobuf_tree_digest(expected_root)
+    observed_digest = protobuf_tree_digest(resolved_root)
     expected_digest = os.environ.get("GEMMA_PROTOBUF_TREE_SHA256")
     if expected_digest != observed_digest:
         raise RuntimeError(

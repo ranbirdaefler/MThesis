@@ -674,6 +674,40 @@ def test_helper_bound_protobuf_rejects_wrong_payload(monkeypatch, tmp_path):
         trainer.require_gemma_protobuf_runtime()
 
 
+def test_gemma_runtime_accepts_literal_alias_pythonpath(monkeypatch, tmp_path):
+    root = tmp_path / "protobuf"
+    package, _, _, _ = _protobuf_distribution_fixture(root)
+    module = SimpleNamespace(
+        __version__="5.29.5", __file__=str(package / "__init__.py"))
+    lexical_alias = root / "nonexistent-alias-component" / ".."
+    assert str(lexical_alias) != str(lexical_alias.resolve())
+    assert lexical_alias.resolve() == root.resolve()
+    monkeypatch.setattr(trainer.importlib, "import_module", lambda _name: module)
+    monkeypatch.setattr(trainer, "GEMMA_PROTOBUF_ROOT", lexical_alias)
+    monkeypatch.setenv("PYTHONPATH", str(lexical_alias))
+    monkeypatch.setenv("GEMMA_PROTOBUF_TREE_SHA256", trainer.protobuf_tree_digest(root))
+    monkeypatch.delenv("PYTHONHOME", raising=False)
+
+    runtime = trainer.require_gemma_protobuf_runtime()
+
+    assert runtime["tree_sha256"] == trainer.protobuf_tree_digest(root)
+
+
+def test_gemma_runtime_rejects_different_pythonpath(monkeypatch, tmp_path):
+    root = tmp_path / "protobuf"
+    package, _, _, _ = _protobuf_distribution_fixture(root)
+    module = SimpleNamespace(
+        __version__="5.29.5", __file__=str(package / "__init__.py"))
+    monkeypatch.setattr(trainer.importlib, "import_module", lambda _name: module)
+    monkeypatch.setattr(trainer, "GEMMA_PROTOBUF_ROOT", root)
+    monkeypatch.setenv("PYTHONPATH", str(tmp_path / "different-protobuf"))
+    monkeypatch.setenv("GEMMA_PROTOBUF_TREE_SHA256", trainer.protobuf_tree_digest(root))
+    monkeypatch.delenv("PYTHONHOME", raising=False)
+
+    with pytest.raises(RuntimeError, match=r"observed=.*expected="):
+        trainer.require_gemma_protobuf_runtime()
+
+
 def test_gemma_runtime_rejects_inherited_pythonhome(monkeypatch, tmp_path):
     root = tmp_path / "protobuf"
     package, _, _, _ = _protobuf_distribution_fixture(root)
