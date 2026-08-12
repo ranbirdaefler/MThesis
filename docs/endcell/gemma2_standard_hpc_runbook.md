@@ -260,7 +260,7 @@ Smoke, training and evaluation
 re-hash those inputs. A failed
 preflight therefore cannot authorize a job through an intermediate `data_sha256.txt`.
 
-The 1,600-token generation cap is not an assumption: the certificate authorizes it only when the full
+The 1,800-token generation cap is not an assumption: the certificate authorizes it only when the full
 audit proves it exceeds the maximum observed target-response token length and no semantic or sentinel
 truncation occurs. If that gate fails, stop and revise the cap/protocol before generating anything.
 
@@ -572,7 +572,7 @@ Do not copy multi-gigabyte model weights unless a later diagnosis specifically r
 - Gemma base vocabulary/config/embedding rows are not exactly 256,000, post-sentinel length is not
   256,002, sentinel IDs are not 256000/256001, any canonical row contains an unknown token, or minimum
   prompt/response length is below 20 tokens: do not authorize preflight or resize the model.
-- Token audit does not authorize 1,600 tokens: do not generate.
+- Token audit does not authorize 1,800 tokens: do not generate.
 - Long partition is not H200-backed or runtime GPU/HBM gate fails: do not train.
 - Either checkpoint save exceeds 420 seconds: do not rely on the 600-second warning.
 - Resume test fails, output lock is held or output contains unpublished/partial state: do not train.

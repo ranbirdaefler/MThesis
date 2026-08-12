@@ -34,7 +34,7 @@ VALIDITY="$REPO/endcell/eval/evaluate_endcell.py"
 NIR="$REPO/endcell/analysis/nir_benchmark.py"
 FINGERPRINT_TOOL="$REPO/endcell/jobs/gemma2_standard_checkpoint_fingerprint.py"
 MANIFEST="${TIER2_MANIFEST:?Set TIER2_MANIFEST to the immutable hash-named manifest from freeze_nir_manifest.py}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1600}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1800}"
 GEN_BATCH_SIZE="${GEN_BATCH_SIZE:-8}"
 case "$CHECKPOINT_ROLE" in
     gemma_sft) EXPECTED_MODEL_LABEL=gemma; EXPECTED_MODEL_TYPE=gemma2 ;;

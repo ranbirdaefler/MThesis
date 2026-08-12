@@ -247,7 +247,7 @@ trap "rm -f \"$CANDIDATE\"" EXIT
 CREATE=("$PY" "$CONTRACT" create --certificate "$CANDIDATE" --model-id "$MODEL_ID" \
     --revision "$REVISION" --snapshot-path "$SNAPSHOT_PATH" \
     --hub-cache "$HF_HUB_CACHE" --tests-certificate "$TEST_CERT" \
-    --tokenizer-probe "$OUT/gemma_tokenizer_probe.json" --generation-cap 1600 \
+    --tokenizer-probe "$OUT/gemma_tokenizer_probe.json" --generation-cap 1800 \
     --protobuf-root "$GEMMA_PROTOBUF_DIR" \
     --protobuf-tree-sha256 "$GEMMA_PROTOBUF_TREE_SHA256" \
     --environment "environment=$OUT/environment.txt" --environment "pip_freeze=$OUT/pip_freeze.txt")
@@ -256,10 +256,10 @@ for item in "${SOURCES[@]}"; do CREATE+=(--source "$item"); done
 "${CREATE[@]}" > "$OUT/PREFLIGHT_PASSED.candidate.printed.json"
 
 "$PY" "$CONTRACT" verify --certificate "$CANDIDATE" --model-id "$MODEL_ID" \
-    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment
+    --revision "$REVISION" --require-generation-cap 1800 --verify-current-environment
 mv "$CANDIDATE" "$CERT"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL_ID" \
-    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment \
+    --revision "$REVISION" --require-generation-cap 1800 --verify-current-environment \
     --runtime-contract-out "$OUT/PREFLIGHT_RUNTIME_CONTRACT.json"
 echo "[PASS] atomic launch certificate created only after scheduler, download, environment, data and tokenizer checks"
 '

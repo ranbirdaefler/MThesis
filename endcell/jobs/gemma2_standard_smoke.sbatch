@@ -44,7 +44,7 @@ fi
 
 RUNTIME_CONTRACT="${SLURM_TMPDIR:-/tmp}/gemma2-preflight-runtime-${SLURM_JOB_ID}.json"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL" \
-    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment \
+    --revision "$REVISION" --require-generation-cap 1800 --verify-current-environment \
     --runtime-contract-out "$RUNTIME_CONTRACT"
 mapfile -t RUNTIME_VALUES < <("$PY" - "$RUNTIME_CONTRACT" <<'PY'
 import json, sys
