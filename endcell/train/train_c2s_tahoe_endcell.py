@@ -37,6 +37,7 @@ import shutil
 import logging
 import math
 import signal
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
@@ -50,6 +51,26 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     get_cosine_schedule_with_warmup,
+)
+
+_JOBS_DIR = Path(__file__).resolve().parents[1] / "jobs"
+if str(_JOBS_DIR) not in sys.path:
+    sys.path.insert(0, str(_JOBS_DIR))
+from gemma2_standard_checkpoint_fingerprint import (  # noqa: E402
+    CHECKPOINT_MANIFEST_SCHEMA,
+    PROVENANCE_SCHEMA,
+    CheckpointValidationError,
+    validate_gemma_checkpoint_ancestry,
+)
+from gemma2_standard_provenance import (  # noqa: E402
+    GEMMA_MODEL_ID,
+    GEMMA_MODEL_REVISION,
+    ProvenanceError,
+    authoritative_revision_files_sha256,
+    guarded_snapshot_load,
+    require_sha256,
+    require_snapshot_digest,
+    verify_authoritative_snapshot,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -66,7 +87,7 @@ GEMMA_PROTOBUF_ROOT = Path(
 TRAINING_STATE = "training_state.pt"
 PROVENANCE_FILE = "run_provenance.json"
 CHECKPOINT_MANIFEST = "checkpoint_manifest.json"
-CHECKPOINT_MANIFEST_SCHEMA = 2
+TRAINING_STATE_SCHEMA = 2
 
 
 def _sha256_bytes(data):
@@ -221,6 +242,78 @@ def require_gemma_protobuf_runtime():
             "tree_sha256": observed_digest}
 
 
+def expected_hf_snapshot_path(model_name, model_revision, hub_cache=None):
+    """Return the lexical cache path for one logical Hub model/revision.
+
+    The lexical path is intentional: on the cluster ``/data`` resolves through a BeeGFS alias, while
+    Hugging Face and the preflight certificate both retain the canonical ``/data`` spelling.
+    """
+    if not model_name or not model_revision:
+        raise ValueError("an exact snapshot load requires both model_name and model_revision")
+    cache = hub_cache or os.environ.get("HF_HUB_CACHE")
+    if not cache:
+        raise ValueError("an exact snapshot load requires HF_HUB_CACHE")
+    escaped = model_name.replace("/", "--")
+    return os.path.abspath(os.path.join(
+        cache, f"models--{escaped}", "snapshots", model_revision))
+
+
+def validate_gemma_model_load_path(model_name, model_revision, model_load_path,
+                                    hub_cache=None, require_exists=True):
+    """Bind canonical Gemma provenance to its exact local snapshot directory.
+
+    ``model_name`` and ``model_revision`` remain the scientific identity.  ``model_load_path`` is
+    only the byte source for a cold start.  Requiring the exact Hugging Face cache location prevents
+    the observed model-ID route from silently constructing a five-token tokenizer and prevents an
+    arbitrary local directory from being presented as the pinned parent.
+    """
+    if (model_name, model_revision) != (GEMMA_MODEL_ID, GEMMA_MODEL_REVISION):
+        raise ValueError(
+            "strict Gemma training is pinned to the canonical logical model and revision: "
+            f"observed={(model_name, model_revision)!r}")
+    if not model_load_path:
+        raise ValueError(
+            "canonical Gemma requires --model_load_path pointing to the certified exact snapshot; "
+            "the model-ID tokenizer route is forbidden")
+    observed = os.path.abspath(os.fspath(model_load_path))
+    expected = expected_hf_snapshot_path(model_name, model_revision, hub_cache=hub_cache)
+    if observed != expected:
+        raise ValueError(
+            "Gemma model_load_path is not the pinned snapshot authorized by logical provenance: "
+            f"observed={observed!r}, expected={expected!r}")
+    if require_exists and not os.path.isdir(observed):
+        raise ValueError(f"certified Gemma snapshot directory is missing: {observed}")
+    return observed
+
+
+def resolve_model_load_contract(model_name, model_revision, model_load_path,
+                                resume_dir=None, hub_cache=None):
+    """Select loader bytes without conflating them with logical model provenance."""
+    parent_snapshot = None
+    if model_name == GEMMA_MODEL_ID:
+        parent_snapshot = validate_gemma_model_load_path(
+            model_name, model_revision, model_load_path, hub_cache=hub_cache)
+    elif model_load_path:
+        raise ValueError(
+            "--model_load_path is reserved for the canonical Gemma exact-snapshot contract; "
+            "legacy Pythia/local-path behavior uses --model_name")
+    cold_start_source = parent_snapshot or model_name
+    active_source = os.path.abspath(resume_dir) if resume_dir else cold_start_source
+    active_revision = None if (resume_dir or parent_snapshot) else model_revision
+    loader_kwargs = {"local_files_only": True} if (resume_dir or parent_snapshot) else {}
+    if active_revision is not None:
+        loader_kwargs["revision"] = active_revision
+    return {
+        "logical_model_name": model_name,
+        "logical_model_revision": model_revision,
+        "parent_snapshot_path": parent_snapshot,
+        "active_source": active_source,
+        "active_role": "resume_checkpoint" if resume_dir else (
+            "exact_parent_snapshot" if parent_snapshot else "logical_model"),
+        "loader_kwargs": loader_kwargs,
+    }
+
+
 def gemma_mode_from_config(config, *, prepend_bos, strict_token_contract):
     """Select Gemma safeguards from model identity, never from user-provided flags."""
     is_gemma = getattr(config, "model_type", None) == "gemma2"
@@ -228,6 +321,61 @@ def gemma_mode_from_config(config, *, prepend_bos, strict_token_contract):
         raise ValueError(
             "Gemma-2 requires both --prepend_bos and --strict_token_contract")
     return is_gemma
+
+
+def validate_gemma_runtime_provenance(
+    config,
+    *,
+    model_name,
+    model_revision,
+    model_load_path,
+    preflight_certificate_sha256,
+    parent_snapshot_inventory_sha256,
+    parent_authoritative_files_sha256,
+    prepend_bos,
+    strict_token_contract,
+    hub_cache=None,
+):
+    """Bind any loaded Gemma-2 config to the one certificate-authorized parent.
+
+    Detection is based on ``AutoConfig.model_type`` rather than CLI spelling.  Thus a
+    local directory or alternate Hub ID containing a Gemma-2 config is rejected before
+    tokenizer or model weights are opened unless its logical identity, revision, parent
+    path and all three certificate digests are exactly canonical.
+    """
+    strict_gemma = gemma_mode_from_config(
+        config, prepend_bos=prepend_bos, strict_token_contract=strict_token_contract)
+    if not strict_gemma:
+        if model_name == GEMMA_MODEL_ID or model_load_path:
+            raise ValueError(
+                "canonical Gemma provenance was supplied but AutoConfig.model_type is not gemma2")
+        return None
+    parent = validate_gemma_model_load_path(
+        model_name, model_revision, model_load_path, hub_cache=hub_cache)
+    try:
+        certificate_digest = require_sha256(
+            preflight_certificate_sha256, "preflight certificate")
+        snapshot_digest = require_sha256(
+            parent_snapshot_inventory_sha256, "parent snapshot inventory")
+        authoritative_digest = require_sha256(
+            parent_authoritative_files_sha256, "authoritative revision files")
+    except ProvenanceError as exc:
+        raise ValueError(str(exc)) from exc
+    return {
+        "model_name": GEMMA_MODEL_ID,
+        "model_revision": GEMMA_MODEL_REVISION,
+        "parent_snapshot_path": parent,
+        "preflight_certificate_sha256": certificate_digest,
+        "parent_snapshot_inventory_sha256": snapshot_digest,
+        "parent_authoritative_files_sha256": authoritative_digest,
+    }
+
+
+def verify_gemma_parent_snapshot(parent_snapshot_path, expected_sha256, *, stage):
+    try:
+        return require_snapshot_digest(parent_snapshot_path, expected_sha256, stage=stage)
+    except ProvenanceError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def validate_gemma_base_tokenizer_contract(tokenizer, model_config_vocab_size):
@@ -911,6 +1059,8 @@ def _training_contract(args, tokenizer, model):
         "data_order_contract": "torch.randperm(seed + epoch), then resume by row offset; v1",
         "model_name": args.model_name,
         "model_revision": args.model_revision,
+        "parent_model_load_path": (os.path.abspath(args.model_load_path)
+                                   if args.model_load_path else None),
         "attn_implementation": args.attn_implementation,
         "model_fingerprint": model_fingerprint(model, args.model_name, args.model_revision),
         "config_fingerprint": _stable_json_hash(_canonical_model_config(model.config)),
@@ -931,23 +1081,43 @@ def _training_contract(args, tokenizer, model):
         "strict_token_contract": bool(args.strict_token_contract),
         "seed": args.seed,
     }
+    if args.model_name == GEMMA_MODEL_ID:
+        contract.update({
+            "preflight_certificate_sha256": args.preflight_certificate_sha256,
+            "parent_snapshot_inventory_sha256": args.parent_snapshot_inventory_sha256,
+            "parent_authoritative_files_sha256": args.parent_authoritative_files_sha256,
+        })
     return contract
 
 
-def _build_provenance(args, tokenizer, model, contract, sentinel_result):
+def _build_provenance(args, tokenizer, model, contract, sentinel_result, resume_dir=None):
+    model_provenance = {
+        "requested_source": args.model_name,
+        "requested_revision": args.model_revision,
+        "certified_parent_snapshot_path": (os.path.abspath(args.model_load_path)
+                                             if args.model_load_path else None),
+        "runtime_load_role": ("resume_checkpoint" if resume_dir else
+                              ("exact_parent_snapshot" if args.model_load_path else
+                               "logical_model")),
+        "runtime_load_path": (os.path.abspath(resume_dir or args.model_load_path)
+                              if (resume_dir or args.model_load_path) else args.model_name),
+        "resolved_commit": getattr(model.config, "_commit_hash", None) or args.model_revision,
+        "architecture": model.__class__.__name__,
+        "parameters_total": sum(p.numel() for p in model.parameters()),
+        "parameters_trainable": sum(p.numel() for p in model.parameters() if p.requires_grad),
+        "attention_implementation": args.attn_implementation,
+    }
+    if args.model_name == GEMMA_MODEL_ID:
+        model_provenance.update({
+            "preflight_certificate_sha256": args.preflight_certificate_sha256,
+            "parent_snapshot_inventory_sha256": args.parent_snapshot_inventory_sha256,
+            "parent_authoritative_files_sha256": args.parent_authoritative_files_sha256,
+        })
     return {
-        "schema_version": 1,
+        "schema_version": PROVENANCE_SCHEMA,
         "scientific_checkpoint": "final",
         "validation_role": "development loss only; never used to select the scientific checkpoint",
-        "model": {
-            "requested_source": args.model_name,
-            "requested_revision": args.model_revision,
-            "resolved_commit": getattr(model.config, "_commit_hash", None) or args.model_revision,
-            "architecture": model.__class__.__name__,
-            "parameters_total": sum(p.numel() for p in model.parameters()),
-            "parameters_trainable": sum(p.numel() for p in model.parameters() if p.requires_grad),
-            "attention_implementation": args.attn_implementation,
-        },
+        "model": model_provenance,
         "tokenizer": {
             "class": tokenizer.__class__.__name__,
             "length": len(tokenizer),
@@ -1043,7 +1213,7 @@ def _resume_state_payload(optimizer, scheduler, *, epoch, microbatch_position, g
     if microbatch_position < 0:
         raise ValueError("microbatch_position must be non-negative")
     return {
-        "schema_version": 1,
+        "schema_version": TRAINING_STATE_SCHEMA,
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
         "epoch": int(epoch),
@@ -1103,25 +1273,100 @@ def train(args):
     if args.resume_from_checkpoint and not args.resumable:
         raise ValueError("--resume_from_checkpoint requires --resumable")
     resume_dir = resolve_resume_checkpoint(args.resume_from_checkpoint, args.output_dir)
-    load_source = resume_dir or args.model_name
-    load_revision = None if resume_dir else args.model_revision
+
+    # The canonical Gemma parent must never be loaded through its logical Hub ID.  Transformers
+    # 5.12.1 was observed to resolve that route to a five-token tokenizer even with the full pinned
+    # snapshot cached.  The exact snapshot path is certificate-derived by the launch jobs.  Resume
+    # still loads model and tokenizer exclusively from the published checkpoint.
+    load_contract = resolve_model_load_contract(
+        args.model_name, args.model_revision, args.model_load_path, resume_dir=resume_dir)
+    args.model_load_path = load_contract["parent_snapshot_path"]
+    load_source = load_contract["active_source"]
     if resume_dir:
         logger.info(f"Resuming model and tokenizer from {resume_dir}")
+    elif args.model_load_path:
+        logger.info("Cold-starting from certificate-bound exact snapshot while retaining logical "
+                    f"provenance {args.model_name}@{args.model_revision}: "
+                    f"{args.model_load_path}")
 
-    identity_config = AutoConfig.from_pretrained(
-        load_source, **({"revision": load_revision} if load_revision is not None else {}))
-    strict_gemma = gemma_mode_from_config(
-        identity_config, prepend_bos=args.prepend_bos,
-        strict_token_contract=args.strict_token_contract)
+    if args.model_name == GEMMA_MODEL_ID:
+        # Verify the certificate-bound parent before either cold loading or resume ancestry checks.
+        validate_gemma_model_load_path(
+            args.model_name, args.model_revision, args.model_load_path)
+        try:
+            require_sha256(args.preflight_certificate_sha256, "preflight certificate")
+            require_sha256(
+                args.parent_snapshot_inventory_sha256, "parent snapshot inventory")
+            require_sha256(
+                args.parent_authoritative_files_sha256, "authoritative revision files")
+        except ProvenanceError as exc:
+            raise ValueError(str(exc)) from exc
+        observed_authoritative = authoritative_revision_files_sha256()
+        if args.parent_authoritative_files_sha256 != observed_authoritative:
+            raise ValueError(
+                "authoritative Gemma revision manifest differs from the certified runtime: "
+                f"observed={observed_authoritative}, "
+                f"expected={args.parent_authoritative_files_sha256}")
+        try:
+            verify_authoritative_snapshot(args.model_load_path)
+        except ProvenanceError as exc:
+            raise ValueError(str(exc)) from exc
+        if resume_dir:
+            # Resume reads config/tokenizer/model bytes from the immutable checkpoint, not the
+            # parent. One parent check still proves its recorded ancestry remains available.
+            verify_gemma_parent_snapshot(
+                args.model_load_path, args.parent_snapshot_inventory_sha256,
+                stage="before resume ancestry validation")
+
+    config_load = lambda: AutoConfig.from_pretrained(
+        load_source, **load_contract["loader_kwargs"])
+    identity_config = (guarded_snapshot_load(
+        config_load, args.model_load_path, args.parent_snapshot_inventory_sha256,
+        stage="trainer AutoConfig load")
+        if args.model_name == GEMMA_MODEL_ID and not resume_dir else config_load())
+    gemma_provenance = validate_gemma_runtime_provenance(
+        identity_config,
+        model_name=args.model_name,
+        model_revision=args.model_revision,
+        model_load_path=args.model_load_path,
+        preflight_certificate_sha256=args.preflight_certificate_sha256,
+        parent_snapshot_inventory_sha256=args.parent_snapshot_inventory_sha256,
+        parent_authoritative_files_sha256=args.parent_authoritative_files_sha256,
+        prepend_bos=args.prepend_bos,
+        strict_token_contract=args.strict_token_contract,
+    )
+    strict_gemma = gemma_provenance is not None
     if strict_gemma:
         protobuf_runtime = require_gemma_protobuf_runtime()
         logger.info("  Helper-bound Python protobuf available for Gemma SentencePiece: "
                     f"{protobuf_runtime['version']} ({protobuf_runtime['tree_sha256']})")
+        if resume_dir:
+            try:
+                validate_gemma_checkpoint_ancestry(
+                    resume_dir,
+                    model_id=gemma_provenance["model_name"],
+                    revision=gemma_provenance["model_revision"],
+                    parent_snapshot=gemma_provenance["parent_snapshot_path"],
+                    preflight_certificate_sha256=(
+                        gemma_provenance["preflight_certificate_sha256"]),
+                    snapshot_inventory_sha256=(
+                        gemma_provenance["parent_snapshot_inventory_sha256"]),
+                    authoritative_files_sha256=(
+                        gemma_provenance["parent_authoritative_files_sha256"]),
+                    verify_parent_snapshot=False,
+                )
+            except CheckpointValidationError as exc:
+                raise RuntimeError(f"REFUSING TO RESUME: {exc}") from exc
 
     # --- Load tokenizer ---
     logger.info(f"Loading tokenizer from {load_source}...")
-    tokenizer_kwargs = {"revision": load_revision} if load_revision is not None else {}
-    tokenizer = AutoTokenizer.from_pretrained(load_source, **tokenizer_kwargs)
+    tokenizer_kwargs = dict(load_contract["loader_kwargs"])
+    tokenizer_load = lambda: AutoTokenizer.from_pretrained(load_source, **tokenizer_kwargs)
+    tokenizer = (guarded_snapshot_load(
+        tokenizer_load, gemma_provenance["parent_snapshot_path"],
+        gemma_provenance["parent_snapshot_inventory_sha256"],
+        stage="trainer AutoTokenizer load")
+        if strict_gemma and not resume_dir else tokenizer_load())
     base_tokenizer_length = len(tokenizer)
     if strict_gemma and not resume_dir:
         base_contract = validate_gemma_base_tokenizer_contract(
@@ -1167,22 +1412,29 @@ def train(args):
     # --- Load model ---
     logger.info(f"Loading model from {load_source}...")
     dtype = torch.bfloat16 if args.bf16 else torch.float32
-    model_kwargs = {"revision": load_revision} if load_revision is not None else {}
+    model_kwargs = dict(load_contract["loader_kwargs"])
     if args.attn_implementation is not None:
         model_kwargs["attn_implementation"] = args.attn_implementation
-    try:
-        # transformers >= 5 renamed torch_dtype -> dtype
-        model = AutoModelForCausalLM.from_pretrained(
-            load_source,
-            dtype=dtype,
-            **model_kwargs,
-        )
-    except TypeError:
-        model = AutoModelForCausalLM.from_pretrained(
-            load_source,
-            torch_dtype=dtype,
-            **model_kwargs,
-        )
+    def load_model():
+        try:
+            # transformers >= 5 renamed torch_dtype -> dtype
+            return AutoModelForCausalLM.from_pretrained(
+                load_source,
+                dtype=dtype,
+                **model_kwargs,
+            )
+        except TypeError:
+            return AutoModelForCausalLM.from_pretrained(
+                load_source,
+                torch_dtype=dtype,
+                **model_kwargs,
+            )
+
+    model = (guarded_snapshot_load(
+        load_model, gemma_provenance["parent_snapshot_path"],
+        gemma_provenance["parent_snapshot_inventory_sha256"],
+        stage="trainer AutoModelForCausalLM load")
+        if strict_gemma and not resume_dir else load_model())
 
     embedding_contract = validate_model_embedding_rows_before_resize(
         model, tokenizer, strict_gemma=strict_gemma, resume=bool(resume_dir),
@@ -1312,7 +1564,8 @@ def train(args):
     # --- Training ---
     os.makedirs(args.output_dir, exist_ok=True)
     contract = _training_contract(args, tokenizer, model)
-    provenance = _build_provenance(args, tokenizer, model, contract, sentinel_result)
+    provenance = _build_provenance(
+        args, tokenizer, model, contract, sentinel_result, resume_dir=resume_dir)
     if args.resumable or args.strict_token_contract or args.prepend_bos:
         _atomic_write_json(os.path.join(args.output_dir, PROVENANCE_FILE), provenance)
         logger.info(f"  Contract fingerprint: {provenance['contract_fingerprint']}")
@@ -1667,8 +1920,23 @@ def main():
                         default="vandijklab/C2S-Scale-Pythia-1b-pt",
                         help="HuggingFace model name or local path")
     parser.add_argument("--model_revision", type=str, default=None,
-                        help="Pinned Hugging Face revision/commit. Recorded in provenance and "
-                             "passed to both model and tokenizer loaders.")
+                        help="Pinned logical Hugging Face revision/commit. Recorded in provenance. "
+                             "For canonical Gemma, bytes are loaded from --model_load_path instead.")
+    parser.add_argument("--model_load_path", type=str, default=None,
+                        help="Exact certificate-authorized local parent snapshot for canonical "
+                             "Gemma cold start. Logical provenance remains --model_name and "
+                             "--model_revision. On resume this path is verified and recorded but "
+                             "model/tokenizer bytes are loaded only from the resume checkpoint.")
+    parser.add_argument("--preflight_certificate_sha256", type=str, default=None,
+                        help="SHA-256 of the exact verified preflight certificate. Required for "
+                             "Gemma and bound into every resumable checkpoint.")
+    parser.add_argument("--parent_snapshot_inventory_sha256", type=str, default=None,
+                        help="Certificate-derived complete parent-snapshot inventory digest. "
+                             "Required for Gemma and rechecked immediately before each cold load.")
+    parser.add_argument("--parent_authoritative_files_sha256", type=str, default=None,
+                        help="Certificate-derived digest of the independently pinned official "
+                             "Gemma revision-file manifest. Required for Gemma and bound into "
+                             "every resumable checkpoint.")
     parser.add_argument("--attn_implementation", type=str, default=None,
                         help="Documented Transformers attention backend, e.g. eager, sdpa, or "
                              "flash_attention_2. Omitted preserves the model/library default.")

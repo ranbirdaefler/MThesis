@@ -22,10 +22,15 @@ export HF_HUB_CACHE="$HF_HOME/hub"
 # this attempt must leave no current certificate behind.
 PREFLIGHT_OUT="$REPO/RESULTS/gemma2_standard_preflight"
 PREFLIGHT_CERT="$PREFLIGHT_OUT/PREFLIGHT_PASSED.json"
+PREFLIGHT_RUNTIME="$PREFLIGHT_OUT/PREFLIGHT_RUNTIME_CONTRACT.json"
 mkdir -p "$PREFLIGHT_OUT"
 if [[ -f "$PREFLIGHT_CERT" ]]; then
     mv "$PREFLIGHT_CERT" \
         "$PREFLIGHT_OUT/PREFLIGHT_PASSED.previous.$(date -u +%Y%m%dT%H%M%SZ).$$.json"
+fi
+if [[ -f "$PREFLIGHT_RUNTIME" ]]; then
+    mv "$PREFLIGHT_RUNTIME" \
+        "$PREFLIGHT_OUT/PREFLIGHT_RUNTIME_CONTRACT.previous.$(date -u +%Y%m%dT%H%M%SZ).$$.json"
 fi
 
 for command_name in scontrol sinfo srun sbatch; do
@@ -183,27 +188,35 @@ wc -l \
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
-"$PY" - "$MODEL_ID" "$REVISION" <<"PY" | tee "$OUT/autoconfig_offline.txt"
+"$PY" - "$SNAPSHOT_PATH" "$REPO/endcell/jobs" <<"PY" | tee "$OUT/autoconfig_offline.txt"
 import sys
+sys.path.insert(0, sys.argv[2])
 from transformers import AutoConfig
-model_id, revision = sys.argv[1:]
-config = AutoConfig.from_pretrained(
-    model_id, revision=revision, local_files_only=True)
+from gemma2_standard_provenance import (
+    guarded_snapshot_load, snapshot_inventory_sha256, verify_authoritative_snapshot)
+snapshot_path = sys.argv[1]
+verify_authoritative_snapshot(snapshot_path)
+snapshot_digest = snapshot_inventory_sha256(snapshot_path)
+config = guarded_snapshot_load(
+    lambda: AutoConfig.from_pretrained(snapshot_path, local_files_only=True),
+    snapshot_path, snapshot_digest, stage="preflight offline AutoConfig load")
 if getattr(config, "model_type", None) != "gemma2":
     raise SystemExit(f"[FATAL] expected Gemma-2 config, got {config.model_type!r}")
-print(f"[PASS] offline AutoConfig load: {config.__class__.__name__}, model_type={config.model_type}")
+print(f"[PASS] exact-snapshot offline AutoConfig load: {config.__class__.__name__}, "
+      f"model_type={config.model_type}, source={snapshot_path}, inventory={snapshot_digest}")
 PY
 "$PY" "$CLI_CONTRACT" --repo "$REPO" | tee "$OUT/cli_contract.txt"
 "$PY" "$TRAINER" --help > "$OUT/trainer_help.txt"
 "$PY" "$TOKENIZER_PROBE" \
     --model "$MODEL_ID" --data_dir "$DATA" --output "$OUT/gemma_tokenizer_probe.json" \
     --max_length 8192 --max_examples 0 --parity_examples 512 --require_fast \
-    --revision "$MODEL_ID=$REVISION"
+    --revision "$MODEL_ID=$REVISION" --load-source "$MODEL_ID=$SNAPSHOT_PATH"
 
 SOURCES=(
     "trainer=$TRAINER"
     "tokenizer_probe=$TOKENIZER_PROBE"
     "protobuf_env=$PROTOBUF_ENV"
+    "provenance=$REPO/endcell/jobs/gemma2_standard_provenance.py"
     "evaluate_endcell=$REPO/endcell/eval/evaluate_endcell.py"
     "nir_benchmark=$REPO/endcell/analysis/nir_benchmark.py"
     "freeze_manifest=$REPO/endcell/analysis/freeze_nir_manifest.py"
@@ -246,6 +259,7 @@ for item in "${SOURCES[@]}"; do CREATE+=(--source "$item"); done
     --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment
 mv "$CANDIDATE" "$CERT"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL_ID" \
-    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment
+    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment \
+    --runtime-contract-out "$OUT/PREFLIGHT_RUNTIME_CONTRACT.json"
 echo "[PASS] atomic launch certificate created only after scheduler, download, environment, data and tokenizer checks"
 '

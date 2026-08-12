@@ -11,7 +11,10 @@ PARSER_REQUIREMENTS = {
     "trainer": (
         "endcell/train/train_c2s_tahoe_endcell.py",
         {
-            "--mode", "--model_name", "--model_revision", "--attn_implementation",
+            "--mode", "--model_name", "--model_revision", "--model_load_path",
+            "--preflight_certificate_sha256", "--parent_snapshot_inventory_sha256",
+            "--parent_authoritative_files_sha256",
+            "--attn_implementation",
             "--train_file", "--eval_file", "--output_dir", "--de_weight", "--max_length",
             "--num_epochs", "--batch_size", "--grad_accum", "--learning_rate",
             "--weight_decay", "--warmup_ratio", "--bf16", "--gradient_checkpointing",
@@ -23,7 +26,7 @@ PARSER_REQUIREMENTS = {
     "tokenizer_probe": (
         "endcell/train/gemma_tokenizer_probe.py",
         {
-            "--model", "--revision", "--data_dir", "--output", "--max_length",
+            "--model", "--revision", "--load-source", "--data_dir", "--output", "--max_length",
             "--max_examples", "--parity_examples", "--require_fast",
         },
     ),
@@ -67,7 +70,14 @@ PARSER_REQUIREMENTS = {
     ),
     "fingerprint": (
         "endcell/jobs/gemma2_standard_checkpoint_fingerprint.py",
-        {"--checkpoint", "--out", "--digest_only"},
+        {
+            "--checkpoint", "--out", "--digest_only", "--require_complete_sft",
+            "--require_gemma_ancestry", "--require_gemma_parent",
+            "--expected_model_id", "--expected_revision", "--expected_parent_snapshot",
+            "--expected_preflight_certificate_sha256",
+            "--expected_snapshot_inventory_sha256",
+            "--expected_authoritative_files_sha256",
+        },
     ),
     "preflight_contract": (
         "endcell/jobs/gemma2_standard_preflight_contract.py",
@@ -75,7 +85,8 @@ PARSER_REQUIREMENTS = {
             "--certificate", "--model-id", "--revision", "--snapshot-path",
             "--tokenizer-probe", "--generation-cap", "--data", "--source",
             "--hub-cache", "--tests-certificate", "--environment", "--require-generation-cap",
-            "--print-snapshot", "--verify-current-environment", "--protobuf-root",
+            "--print-snapshot", "--print-runtime-contract", "--runtime-contract-out",
+            "--verify-current-environment", "--protobuf-root",
             "--protobuf-tree-sha256",
         },
     ),
@@ -88,7 +99,7 @@ PARSER_REQUIREMENTS = {
 
 CONSUMER_REQUIREMENTS = {
     "endcell/jobs/gemma2_standard_preflight.sh": {
-        "--model", "--revision", "--data_dir", "--output", "--max_length",
+        "--model", "--revision", "--load-source", "--data_dir", "--output", "--max_length",
         "--max_examples", "--parity_examples", "--require_fast",
         "--certificate", "--model-id", "--snapshot-path", "--tokenizer-probe",
         "--generation-cap", "--data", "--source", "--hub-cache", "--tests-certificate",
@@ -99,24 +110,30 @@ CONSUMER_REQUIREMENTS = {
         "--certificate", "--command", "--source", "--verify-current-environment",
     },
     "endcell/jobs/gemma2_standard_smoke.sbatch": {
-        "--mode", "--model_name", "--model_revision", "--attn_implementation",
+        "--mode", "--model_name", "--model_revision", "--model_load_path",
+        "--preflight_certificate_sha256", "--parent_snapshot_inventory_sha256",
+        "--parent_authoritative_files_sha256",
+        "--attn_implementation",
         "--train_file", "--eval_file", "--output_dir", "--num_epochs", "--batch_size",
         "--grad_accum", "--bf16", "--gradient_checkpointing", "--max_length",
         "--learning_rate", "--weight_decay", "--warmup_ratio", "--de_weight",
         "--log_every", "--save_every", "--keep_checkpoints", "--seed", "--prepend_bos",
         "--strict_token_contract", "--resumable", "--resume_from_checkpoint",
         "--certificate", "--model-id", "--revision", "--require-generation-cap",
-        "--verify-current-environment",
+        "--verify-current-environment", "--runtime-contract-out",
     },
     "endcell/jobs/gemma2_standard_train.sbatch": {
-        "--mode", "--model_name", "--model_revision", "--attn_implementation",
+        "--mode", "--model_name", "--model_revision", "--model_load_path",
+        "--preflight_certificate_sha256", "--parent_snapshot_inventory_sha256",
+        "--parent_authoritative_files_sha256",
+        "--attn_implementation",
         "--train_file", "--eval_file", "--output_dir", "--num_epochs", "--batch_size",
         "--grad_accum", "--bf16", "--gradient_checkpointing", "--max_length",
         "--learning_rate", "--weight_decay", "--warmup_ratio", "--de_weight",
         "--log_every", "--save_every", "--keep_checkpoints", "--seed", "--prepend_bos",
         "--strict_token_contract", "--resumable", "--resume_from_checkpoint",
         "--certificate", "--model-id", "--revision", "--require-generation-cap",
-        "--verify-current-environment",
+        "--verify-current-environment", "--runtime-contract-out",
     },
     "endcell/jobs/gemma2_standard_eval.sbatch": {
         "--checkpoint", "--digest_only", "--selftest", "--mode", "--eval_dir",
@@ -129,7 +146,11 @@ CONSUMER_REQUIREMENTS = {
         "--min_cells", "--min_drugs_per_cl", "--max_groups", "--manifest",
         "--min_recognized_genes", "--out", "--profiles",
         "--certificate", "--model-id", "--revision", "--require-generation-cap",
-        "--verify-current-environment",
+        "--verify-current-environment", "--runtime-contract-out",
+        "--require_complete_sft", "--require_gemma_ancestry", "--require_gemma_parent",
+        "--expected_model_id", "--expected_revision", "--expected_parent_snapshot",
+        "--expected_preflight_certificate_sha256", "--expected_snapshot_inventory_sha256",
+        "--expected_authoritative_files_sha256",
     },
     "docs/endcell/gemma2_standard_hpc_runbook.md": {
         "--eval_dir", "--scram_dir", "--train_file", "--tier", "--k_samples",
@@ -138,15 +159,36 @@ CONSUMER_REQUIREMENTS = {
         "--expected_cell_lines", "--expected_groups", "--model_fingerprint",
         "--validity_only_parent", "--hash_named", "--out", "--checkpoint", "--digest_only",
         "--left", "--right", "--left_name", "--right_name", "--per_drug_bh",
-        "--certificate", "--model-id", "--revision", "--print-snapshot",
+        "--certificate", "--model-id", "--revision", "--runtime-contract-out",
     },
 }
 
 
 TEXT_REQUIREMENTS = {
+    "endcell/jobs/gemma2_standard_provenance.py": {
+        "OFFICIAL_SNAPSHOT_TOP_LEVEL_FILES", "CANONICAL_TAHOE_DATA_SHA256",
+        "official Gemma snapshot filename set changed",
+    },
+    "endcell/jobs/gemma2_standard_preflight_contract.py": {
+        "SCHEMA_VERSION = 8", "require_canonical_data_hashes(data)",
+        "a new certificate cannot bless different data",
+    },
+    "endcell/train/train_c2s_tahoe_endcell.py": {
+        "--model_load_path", "model-ID tokenizer route is forbidden",
+        '"active_source": active_source', '"logical_model_name": model_name',
+    },
+    "endcell/train/gemma_tokenizer_probe.py": {
+        "--load-source", "exact_local_snapshot",
+        "AutoConfig.from_pretrained(load_source", "AutoTokenizer.from_pretrained(",
+        "AutoModelForCausalLM.from_pretrained(load_source", "guarded_snapshot_load",
+        "slow_vocab_file", '"vocab_file"',
+    },
     "endcell/jobs/gemma2_standard_preflight.sh": {
         "gemma2_standard_protobuf_env.sh", "source \"$PROTOBUF_ENV\"",
         "unset PYTHONHOME", "[[ \"$LONG_GPU_PARTITION\" == \"long_gpuh200\" ]]",
+        "--load-source \"$MODEL_ID=$SNAPSHOT_PATH\"",
+        "AutoConfig.from_pretrained(snapshot_path, local_files_only=True)",
+        "verify_authoritative_snapshot", "guarded_snapshot_load",
     },
     "endcell/jobs/gemma2_standard_tests.sh": {
         "source \"$PROTOBUF_ENV\"",
@@ -160,26 +202,47 @@ TEXT_REQUIREMENTS = {
     },
     "endcell/jobs/gemma2_standard_smoke.sbatch": {
         "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
-        "unset PYTHONHOME",
+        "unset PYTHONHOME", "--model_load_path \"$SNAPSHOT_PATH\"",
+        "--runtime-contract-out", '"schema_version": 4',
+        '"parent_snapshot_path"', '"parent_snapshot_inventory_sha256"',
+        '"parent_authoritative_files_sha256"',
     },
     "endcell/jobs/gemma2_standard_train.sbatch": {
         "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
         "unset PYTHONHOME", "[[ \"${SLURM_JOB_PARTITION:-}\" == \"long_gpuh200\" ]]",
+        "--model_load_path \"$SNAPSHOT_PATH\"", "--runtime-contract-out",
+        'document.get("schema_version") != 4',
+        "--require_gemma_ancestry", "--expected_snapshot_inventory_sha256",
+        "--expected_authoritative_files_sha256",
     },
     "endcell/jobs/gemma2_standard_eval.sbatch": {
         "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
-        "unset PYTHONHOME",
+        "unset PYTHONHOME", "--runtime-contract-out", "--require_gemma_ancestry",
+        "--require_gemma_parent", "EXPECTED_MODEL_LABEL", "EXPECTED_MODEL_TYPE",
+        'VALIDITY="$REPO/endcell/eval/evaluate_endcell.py"',
+        'NIR="$REPO/endcell/analysis/nir_benchmark.py"',
+        "fixed production evaluator entrypoints match preflight path and SHA-256",
     },
     "docs/endcell/gemma2_standard_hpc_runbook.md": {
         "protobuf-5.29.5", "Do **not** install TikToken", "256002",
-        "google/_upb/_message.abi3.so", "schema 4", "literal `long_gpuh200`",
+        "google/_upb/_message.abi3.so", "schema 8", "literal `long_gpuh200`",
+        "exact local snapshot", "logical model ID and revision",
+        "schema-4 smoke certificate", "Production validity and NIR entrypoints are fixed",
     },
 }
 
 
 FORBIDDEN_TEXT = {
+    "endcell/train/gemma_tokenizer_probe.py": {
+        "AutoConfig.from_pretrained(model_name",
+        "AutoTokenizer.from_pretrained(\n            model_name",
+        "AutoModelForCausalLM.from_pretrained(model_name",
+    },
     "endcell/jobs/gemma2_standard_preflight.sh": {"EXPECTED_LONG_PARTITION"},
     "endcell/jobs/gemma2_standard_train.sbatch": {"EXPECTED_LONG_PARTITION"},
+    "endcell/jobs/gemma2_standard_eval.sbatch": {
+        "VALIDITY_ENTRYPOINT", "NIR_ENTRYPOINT",
+    },
     "docs/endcell/gemma2_standard_hpc_runbook.md": {"EXPECTED_LONG_PARTITION"},
 }
 

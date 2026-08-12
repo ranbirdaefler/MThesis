@@ -32,6 +32,7 @@ SOURCES=(
     "trainer=$REPO/endcell/train/train_c2s_tahoe_endcell.py"
     "tokenizer_probe=$REPO/endcell/train/gemma_tokenizer_probe.py"
     "protobuf_env=$PROTOBUF_ENV"
+    "provenance=$REPO/endcell/jobs/gemma2_standard_provenance.py"
     "freeze_manifest=$REPO/endcell/analysis/freeze_nir_manifest.py"
     "nir_benchmark=$REPO/endcell/analysis/nir_benchmark.py"
     "compare_backbones=$REPO/endcell/analysis/compare_backbones.py"
@@ -70,6 +71,7 @@ bash -n \
     endcell/analysis/residual_eval.py \
     endcell/eval/evaluate_endcell.py \
     endcell/jobs/gemma2_standard_checkpoint_fingerprint.py \
+    endcell/jobs/gemma2_standard_provenance.py \
     endcell/jobs/gemma2_standard_cli_contract.py \
     endcell/jobs/gemma2_standard_preflight_contract.py \
     endcell/jobs/gemma2_standard_tests_contract.py \

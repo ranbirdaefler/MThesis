@@ -16,9 +16,21 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
+from gemma2_standard_provenance import (
+    AUTHORITATIVE_REVISION_FILES,
+    CANONICAL_TAHOE_DATA_SHA256,
+    OFFICIAL_SNAPSHOT_TOP_LEVEL_FILES,
+    ProvenanceError,
+    authoritative_revision_files_sha256,
+    snapshot_inventory,
+    stable_json_sha256,
+    verify_authoritative_snapshot,
+)
 
-SCHEMA_VERSION = 4
-PROBE_SCHEMA_VERSION = 1
+
+SCHEMA_VERSION = 8
+PROBE_SCHEMA_VERSION = 3
+RUNTIME_CONTRACT_SCHEMA_VERSION = 2
 PARITY_ROWS = 512
 PROTOBUF_VERSION = "5.29.5"
 PROTOBUF_ROOT = Path(
@@ -26,7 +38,7 @@ PROTOBUF_ROOT = Path(
 EXPECTED_KEYS = {
     "data": {"train", "tier1", "tier2", "tier3", "tier4"},
     "sources": {
-        "trainer", "tokenizer_probe", "protobuf_env", "evaluate_endcell",
+        "trainer", "tokenizer_probe", "protobuf_env", "provenance", "evaluate_endcell",
         "nir_benchmark", "freeze_manifest", "compare_backbones", "residual_eval",
         "preflight", "contract", "cli_contract", "tests_contract", "tests_command",
         "fingerprint", "smoke", "train_job", "eval_job", "phase1a_test", "eval_test",
@@ -108,6 +120,20 @@ def require_exact_keys(group_name, entries):
             f"missing={sorted(expected - observed)}, extra={sorted(observed - expected)}")
 
 
+def require_canonical_data_hashes(entries):
+    """Reject both stale data and a freshly regenerated certificate over altered data."""
+    require_exact_keys("data", entries)
+    observed = {name: entry.get("sha256") for name, entry in entries.items()}
+    if observed != CANONICAL_TAHOE_DATA_SHA256:
+        mismatches = {
+            name: {"observed": observed.get(name), "expected": expected}
+            for name, expected in CANONICAL_TAHOE_DATA_SHA256.items()
+            if observed.get(name) != expected
+        }
+        message = "[FATAL] canonical Tahoe data hashes changed; a new certificate cannot bless different data"
+        raise SystemExit(f"{message}: {mismatches}")
+
+
 def parse_named_paths(items):
     result = {}
     for item in items:
@@ -123,28 +149,6 @@ def parse_named_paths(items):
     return result
 
 
-def snapshot_inventory(snapshot_path):
-    root = Path(snapshot_path)
-    if not root.is_dir():
-        raise SystemExit(f"[FATAL] model snapshot is missing: {root}")
-    inventory = {}
-    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
-        if path.is_dir() and not path.is_symlink():
-            continue
-        relative = path.relative_to(root).as_posix()
-        if not path.is_file():
-            raise SystemExit(f"[FATAL] snapshot entry is not a readable file: {relative}")
-        inventory[relative] = {
-            "relative_path": relative,
-            "symlink_target": os.readlink(path) if path.is_symlink() else None,
-            "size": path.stat().st_size,
-            "sha256": sha256_file(path),
-        }
-    if not inventory:
-        raise SystemExit("[FATAL] model snapshot inventory is empty")
-    return inventory
-
-
 def certified_snapshot(model_id, revision, snapshot_path, hub_cache):
     cache = Path(os.path.abspath(hub_cache))
     snapshot = Path(os.path.abspath(snapshot_path))
@@ -153,11 +157,20 @@ def certified_snapshot(model_id, revision, snapshot_path, hub_cache):
         raise SystemExit(
             f"[FATAL] snapshot path is not the exact pinned revision directory: "
             f"{snapshot} != {expected}")
+    try:
+        authoritative = verify_authoritative_snapshot(snapshot)
+        inventory = snapshot_inventory(snapshot)
+    except ProvenanceError as exc:
+        raise SystemExit(f"[FATAL] {exc}") from exc
     return {
         "hub_cache": str(cache),
         "snapshot_path": str(snapshot),
         "snapshot_relative_to_hub_cache": snapshot.relative_to(cache).as_posix(),
-        "inventory": snapshot_inventory(snapshot),
+        "inventory": inventory,
+        "inventory_sha256": stable_json_sha256(inventory),
+        "authoritative_revision_files": authoritative,
+        "authoritative_revision_files_sha256": authoritative_revision_files_sha256(),
+        "official_snapshot_top_level_files": sorted(OFFICIAL_SNAPSHOT_TOP_LEVEL_FILES),
     }
 
 
@@ -178,7 +191,9 @@ def atomic_json(path, document):
             os.unlink(temporary)
 
 
-def validate_probe(path, generation_cap, expected_model_id, expected_revision, expected_data):
+def validate_probe(path, generation_cap, expected_model_id, expected_revision,
+                   expected_snapshot_path, expected_snapshot_inventory_sha256,
+                   expected_authoritative_files_sha256, expected_data):
     report = json.load(open(path, encoding="utf-8"))
     if report.get("schema_version") != PROBE_SCHEMA_VERSION:
         raise SystemExit("[FATAL] unsupported tokenizer-probe schema")
@@ -206,6 +221,28 @@ def validate_probe(path, generation_cap, expected_model_id, expected_revision, e
     if (model.get("model_name"), model.get("revision")) != (
             expected_model_id, expected_revision):
         raise SystemExit("[FATAL] tokenizer audit used a different model or revision")
+    expected_load_source = {
+        "kind": "exact_local_snapshot",
+        "path": os.path.abspath(expected_snapshot_path),
+        "local_files_only": True,
+        "revision_argument": None,
+    }
+    if model.get("load_source") != expected_load_source:
+        raise SystemExit(
+            "[FATAL] tokenizer audit did not load the exact certified snapshot while retaining "
+            "logical model/revision provenance")
+    if model.get("parent_snapshot_inventory_sha256") != expected_snapshot_inventory_sha256:
+        raise SystemExit("[FATAL] tokenizer audit used a different snapshot inventory")
+    if model.get("authoritative_revision_files_sha256") != \
+            expected_authoritative_files_sha256:
+        raise SystemExit("[FATAL] tokenizer audit lacks the official revision manifest binding")
+    expected_guard = {
+        "before_and_after_each_load": True,
+        "operations": ["config", "fast_tokenizer", "slow_tokenizer"],
+    }
+    if model.get("snapshot_load_guard") != expected_guard:
+        raise SystemExit("[FATAL] tokenizer audit did not guard every exact-snapshot load")
+    expected_vocab_file = os.path.join(expected_load_source["path"], "tokenizer.model")
     tokenizer = model.get("tokenizer", {})
     if tokenizer.get("is_fast") is not True:
         raise SystemExit("[FATAL] tokenizer audit did not use the required fast tokenizer")
@@ -222,12 +259,16 @@ def validate_probe(path, generation_cap, expected_model_id, expected_revision, e
             "[FATAL] Gemma tokenizer contract is not 256000 base / 256002 with sentinels")
     if tokenizer.get("sentinels") != {"[END_CELL]": 256_000, "[DOWN]": 256_001}:
         raise SystemExit("[FATAL] Gemma sentinel ids are not 256000/256001")
+    if tokenizer.get("vocab_file") != expected_vocab_file:
+        raise SystemExit(
+            "[FATAL] fast Gemma tokenizer did not open the certified snapshot tokenizer.model")
     if (tokenizer.get("pad_token_id"), tokenizer.get("eos_token_id"),
             tokenizer.get("bos_token_id")) != (0, 1, 2):
         raise SystemExit("[FATAL] Gemma PAD/EOS/BOS contract is not 0/1/2")
     parity = model.get("slow_fast_parity", {})
     if (parity.get("available") is not True or parity.get("mismatch_count") != 0 or
-            parity.get("rows_checked") != PARITY_ROWS):
+            parity.get("rows_checked") != PARITY_ROWS or
+            parity.get("slow_vocab_file") != expected_vocab_file):
         raise SystemExit("[FATAL] Gemma slow/fast tokenizer parity was not proved")
     maximum_response = 0
     files = model.get("files", [])
@@ -295,6 +336,10 @@ def validate_probe(path, generation_cap, expected_model_id, expected_revision, e
         "generation_cap": generation_cap,
         "maximum_truth_response_tokens": maximum_response,
         "generation_cap_authorized": True,
+        "logical_model_id": expected_model_id,
+        "logical_revision": expected_revision,
+        "certified_load_source": expected_load_source,
+        "snapshot_load_guard": expected_guard,
     }
 
 
@@ -302,6 +347,7 @@ def create(args):
     snapshot = certified_snapshot(
         args.model_id, args.revision, args.snapshot_path, args.hub_cache)
     data = parse_named_paths(args.data)
+    require_canonical_data_hashes(data)
     sources = parse_named_paths(args.source)
     environment = parse_named_paths(args.environment)
     tests = parse_named_paths([f"section1={args.tests_certificate}"])
@@ -331,7 +377,9 @@ def create(args):
             "file_count": protobuf_file_count,
         },
         "tokenizer_probe": validate_probe(
-            args.tokenizer_probe, args.generation_cap, args.model_id, args.revision, data),
+            args.tokenizer_probe, args.generation_cap, args.model_id, args.revision,
+            snapshot["snapshot_path"], snapshot["inventory_sha256"],
+            snapshot["authoritative_revision_files_sha256"], data),
     }
     atomic_json(args.certificate, certificate)
     print(json.dumps(certificate, indent=2, sort_keys=True))
@@ -351,6 +399,21 @@ def verify_entries(group_name, entries):
                 f"[FATAL] certified {group_name}.{name} changed: {observed} != {expected}")
 
 
+def runtime_contract_document(certificate, *, model_id, revision, snapshot_path,
+                              snapshot_inventory_sha256,
+                              authoritative_revision_files_sha256):
+    return {
+        "schema_version": RUNTIME_CONTRACT_SCHEMA_VERSION,
+        "preflight_certificate_path": str(Path(certificate).resolve()),
+        "preflight_certificate_sha256": sha256_file(certificate),
+        "model_id": model_id,
+        "revision": revision,
+        "snapshot_path": str(Path(snapshot_path).absolute()),
+        "snapshot_inventory_sha256": snapshot_inventory_sha256,
+        "authoritative_revision_files_sha256": authoritative_revision_files_sha256,
+    }
+
+
 def verify(args):
     document = json.load(open(args.certificate, encoding="utf-8"))
     if (document.get("schema_version") != SCHEMA_VERSION or
@@ -367,9 +430,29 @@ def verify(args):
         raise SystemExit("[FATAL] certified snapshot-relative path changed")
     if model.get("inventory") != expected_snapshot.get("inventory"):
         raise SystemExit("[FATAL] pinned snapshot inventory, symlinks or contents changed")
+    if model.get("inventory_sha256") != expected_snapshot.get("inventory_sha256"):
+        raise SystemExit("[FATAL] pinned snapshot inventory digest changed")
+    if model.get("authoritative_revision_files") != AUTHORITATIVE_REVISION_FILES:
+        raise SystemExit("[FATAL] certificate does not contain the pinned official revision files")
+    if model.get("official_snapshot_top_level_files") != sorted(
+            OFFICIAL_SNAPSHOT_TOP_LEVEL_FILES):
+        raise SystemExit("[FATAL] certificate does not contain the official snapshot filename set")
+    if model.get("official_snapshot_top_level_files") != expected_snapshot.get(
+            "official_snapshot_top_level_files"):
+        raise SystemExit("[FATAL] official Gemma snapshot filename set changed")
+    if model.get("authoritative_revision_files") != expected_snapshot.get(
+            "authoritative_revision_files"):
+        raise SystemExit("[FATAL] official Gemma revision bytes changed")
+    expected_authoritative_digest = authoritative_revision_files_sha256()
+    if (model.get("authoritative_revision_files_sha256") != expected_authoritative_digest or
+            expected_snapshot.get("authoritative_revision_files_sha256") !=
+            expected_authoritative_digest):
+        raise SystemExit("[FATAL] official Gemma revision manifest digest changed")
     for group in ("data", "sources", "environment", "tests"):
         entries = document.get(group, {})
         require_exact_keys(group, entries)
+        if group == "data":
+            require_canonical_data_hashes(entries)
         verify_entries(group, entries)
     protobuf = document.get("protobuf_runtime", {})
     expected_protobuf = {
@@ -407,7 +490,17 @@ def verify(args):
                 probe.get("generation_cap") != args.require_generation_cap):
             raise SystemExit(
                 f"[FATAL] generation cap {args.require_generation_cap} was not authorized")
-    if args.print_snapshot:
+    runtime_contract = runtime_contract_document(
+        args.certificate, model_id=args.model_id, revision=args.revision,
+        snapshot_path=snapshot,
+        snapshot_inventory_sha256=model["inventory_sha256"],
+        authoritative_revision_files_sha256=model[
+            "authoritative_revision_files_sha256"])
+    if args.runtime_contract_out:
+        atomic_json(args.runtime_contract_out, runtime_contract)
+    if args.print_runtime_contract:
+        print(json.dumps(runtime_contract, sort_keys=True, separators=(",", ":")))
+    elif args.print_snapshot:
         print(str(snapshot))
     else:
         print(f"[PASS] verified preflight certificate {Path(args.certificate).resolve()}")
@@ -437,6 +530,8 @@ def main():
     verify_parser = subparsers.add_parser("verify", parents=[common])
     verify_parser.add_argument("--require-generation-cap", type=int)
     verify_parser.add_argument("--print-snapshot", action="store_true")
+    verify_parser.add_argument("--print-runtime-contract", action="store_true")
+    verify_parser.add_argument("--runtime-contract-out")
     verify_parser.add_argument("--verify-current-environment", action="store_true")
     verify_parser.set_defaults(func=verify)
 

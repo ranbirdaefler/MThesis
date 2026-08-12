@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 EXPECTED_SOURCE_KEYS = {
-    "trainer", "tokenizer_probe", "protobuf_env", "freeze_manifest",
+    "trainer", "tokenizer_probe", "protobuf_env", "provenance", "freeze_manifest",
     "nir_benchmark", "compare_backbones", "residual_eval", "evaluate_endcell",
     "fingerprint", "cli_contract", "preflight_contract", "tests_contract",
     "preflight", "smoke", "train_job", "eval_job", "phase1a_test",

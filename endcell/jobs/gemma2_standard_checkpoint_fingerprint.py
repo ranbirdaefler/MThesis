@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate and fingerprint local Hugging Face checkpoints.
 
-Trainer-produced checkpoints are verified against their immutable schema-2
+Trainer-produced checkpoints are verified against their immutable schema-3
 ``checkpoint_manifest.json`` before any inference fingerprint is emitted.
 Legacy and upstream checkpoints may omit that manifest unless the caller
 explicitly requires the canonical completed-SFT contract.
@@ -15,9 +15,22 @@ import os
 import tempfile
 from pathlib import Path
 
+from gemma2_standard_provenance import (
+    GEMMA_MODEL_ID,
+    GEMMA_MODEL_REVISION,
+    ProvenanceError,
+    authoritative_revision_files_sha256,
+    paths_refer_to_same_location,
+    require_sha256,
+    require_snapshot_digest,
+    stable_json_sha256,
+    verify_authoritative_snapshot,
+)
+
 
 CHECKPOINT_MANIFEST = "checkpoint_manifest.json"
-CHECKPOINT_MANIFEST_SCHEMA = 2
+CHECKPOINT_MANIFEST_SCHEMA = 3
+PROVENANCE_SCHEMA = 4
 TRAINING_STATE = "training_state.pt"
 PROVENANCE_FILE = "run_provenance.json"
 MANIFEST_KEYS = {"schema_version", "identity", "files"}
@@ -159,7 +172,140 @@ def validate_checkpoint_manifest(
         if _checkpoint_identity(state, provenance) != identity:
             raise CheckpointValidationError(
                 f"checkpoint state disagrees with its manifest: {checkpoint}")
+        contract = provenance.get("contract")
+        if (not isinstance(contract, dict) or state.get("contract") != contract or
+                state.get("contract_fingerprint") != stable_json_sha256(contract) or
+                provenance.get("contract_fingerprint") != stable_json_sha256(contract)):
+            raise CheckpointValidationError(
+                f"checkpoint state and provenance do not share one bound training contract: "
+                f"{checkpoint}")
     return {"manifest": manifest, "state": state, "manifest_sha256": file_hash(manifest_path)}
+
+
+def _expected_ancestry(*, model_id: str, revision: str, parent_snapshot: str,
+                       preflight_certificate_sha256: str,
+                       snapshot_inventory_sha256: str,
+                       authoritative_files_sha256: str) -> dict[str, str]:
+    if (model_id, revision) != (GEMMA_MODEL_ID, GEMMA_MODEL_REVISION):
+        raise CheckpointValidationError(
+            f"Gemma ancestry must use canonical logical identity: {(model_id, revision)!r}")
+    try:
+        cert_digest = require_sha256(
+            preflight_certificate_sha256, "preflight certificate")
+        snapshot_digest = require_sha256(
+            snapshot_inventory_sha256, "snapshot inventory")
+        authoritative_digest = require_sha256(
+            authoritative_files_sha256, "authoritative revision files")
+    except ProvenanceError as exc:
+        raise CheckpointValidationError(str(exc)) from exc
+    pinned_authoritative_digest = authoritative_revision_files_sha256()
+    if authoritative_digest != pinned_authoritative_digest:
+        raise CheckpointValidationError(
+            "Gemma ancestry authoritative manifest differs from the pinned official revision: "
+            f"{authoritative_digest} != {pinned_authoritative_digest}")
+    return {
+        "model_id": model_id,
+        "revision": revision,
+        "parent_snapshot": os.path.abspath(parent_snapshot),
+        "preflight_certificate_sha256": cert_digest,
+        "snapshot_inventory_sha256": snapshot_digest,
+        "authoritative_files_sha256": authoritative_digest,
+    }
+
+
+def validate_gemma_checkpoint_ancestry(
+    checkpoint: str | Path,
+    *,
+    model_id: str,
+    revision: str,
+    parent_snapshot: str,
+    preflight_certificate_sha256: str,
+    snapshot_inventory_sha256: str,
+    authoritative_files_sha256: str,
+    verify_parent_snapshot: bool = True,
+) -> dict:
+    """Validate one completed/resumable checkpoint against its certified Gemma parent."""
+    checkpoint = Path(checkpoint).resolve()
+    expected = _expected_ancestry(
+        model_id=model_id, revision=revision, parent_snapshot=parent_snapshot,
+        preflight_certificate_sha256=preflight_certificate_sha256,
+        snapshot_inventory_sha256=snapshot_inventory_sha256,
+        authoritative_files_sha256=authoritative_files_sha256)
+    if verify_parent_snapshot:
+        try:
+            verify_authoritative_snapshot(expected["parent_snapshot"])
+            require_snapshot_digest(
+                expected["parent_snapshot"], expected["snapshot_inventory_sha256"],
+                stage="during checkpoint ancestry validation")
+        except ProvenanceError as exc:
+            raise CheckpointValidationError(str(exc)) from exc
+    try:
+        provenance = json.loads((checkpoint / PROVENANCE_FILE).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CheckpointValidationError(
+            f"invalid checkpoint provenance: {checkpoint / PROVENANCE_FILE}") from exc
+    if provenance.get("schema_version") != PROVENANCE_SCHEMA:
+        raise CheckpointValidationError(
+            f"checkpoint provenance schema is not {PROVENANCE_SCHEMA}: {checkpoint}")
+    model = provenance.get("model", {})
+    expected_model = {
+        "requested_source": expected["model_id"],
+        "requested_revision": expected["revision"],
+        "certified_parent_snapshot_path": expected["parent_snapshot"],
+        "preflight_certificate_sha256": expected["preflight_certificate_sha256"],
+        "parent_snapshot_inventory_sha256": expected["snapshot_inventory_sha256"],
+        "parent_authoritative_files_sha256": expected["authoritative_files_sha256"],
+    }
+    if {key: model.get(key) for key in expected_model} != expected_model:
+        raise CheckpointValidationError(
+            f"checkpoint model ancestry differs from certified Gemma parent: {checkpoint}")
+    contract = provenance.get("contract", {})
+    expected_contract = {
+        "model_name": expected["model_id"],
+        "model_revision": expected["revision"],
+        "parent_model_load_path": expected["parent_snapshot"],
+        "preflight_certificate_sha256": expected["preflight_certificate_sha256"],
+        "parent_snapshot_inventory_sha256": expected["snapshot_inventory_sha256"],
+        "parent_authoritative_files_sha256": expected["authoritative_files_sha256"],
+    }
+    if {key: contract.get(key) for key in expected_contract} != expected_contract:
+        raise CheckpointValidationError(
+            f"checkpoint training contract differs from certified Gemma parent: {checkpoint}")
+    if provenance.get("contract_fingerprint") != stable_json_sha256(contract):
+        raise CheckpointValidationError(
+            f"checkpoint provenance contract fingerprint is invalid: {checkpoint}")
+    return provenance
+
+
+def validate_gemma_parent_snapshot(
+    checkpoint: str | Path,
+    *,
+    model_id: str,
+    revision: str,
+    parent_snapshot: str,
+    preflight_certificate_sha256: str,
+    snapshot_inventory_sha256: str,
+    authoritative_files_sha256: str,
+) -> dict[str, str]:
+    """Validate the frozen-parent role without requiring trainer provenance."""
+    expected = _expected_ancestry(
+        model_id=model_id, revision=revision, parent_snapshot=parent_snapshot,
+        preflight_certificate_sha256=preflight_certificate_sha256,
+        snapshot_inventory_sha256=snapshot_inventory_sha256,
+        authoritative_files_sha256=authoritative_files_sha256)
+    observed = os.path.abspath(os.fspath(checkpoint))
+    if not paths_refer_to_same_location(observed, expected["parent_snapshot"]):
+        raise CheckpointValidationError(
+            f"gemma_parent checkpoint is not the certificate snapshot: "
+            f"observed={observed}, expected={expected['parent_snapshot']}")
+    try:
+        verify_authoritative_snapshot(expected["parent_snapshot"])
+        require_snapshot_digest(
+            expected["parent_snapshot"], expected["snapshot_inventory_sha256"],
+            stage="during frozen-parent validation")
+    except ProvenanceError as exc:
+        raise CheckpointValidationError(str(exc)) from exc
+    return expected
 
 
 def validate_terminal_state(state: dict, args: argparse.Namespace) -> None:
@@ -270,6 +416,14 @@ def main() -> None:
     parser.add_argument("--out")
     parser.add_argument("--digest_only", action="store_true")
     parser.add_argument("--require_complete_sft", action="store_true")
+    parser.add_argument("--require_gemma_ancestry", action="store_true")
+    parser.add_argument("--require_gemma_parent", action="store_true")
+    parser.add_argument("--expected_model_id")
+    parser.add_argument("--expected_revision")
+    parser.add_argument("--expected_parent_snapshot")
+    parser.add_argument("--expected_preflight_certificate_sha256")
+    parser.add_argument("--expected_snapshot_inventory_sha256")
+    parser.add_argument("--expected_authoritative_files_sha256")
     parser.add_argument("--expected_global_step", type=int, default=42198)
     parser.add_argument("--expected_epoch", type=int, default=1)
     parser.add_argument("--expected_microbatch_position", type=int, default=0)
@@ -290,6 +444,28 @@ def main() -> None:
         checkpoint, required=args.require_complete_sft, verify_state_identity=True)
     if args.require_complete_sft:
         validate_terminal_state(validation["state"], args)
+    if args.require_gemma_ancestry and args.require_gemma_parent:
+        parser.error("--require_gemma_ancestry and --require_gemma_parent are mutually exclusive")
+    ancestry_args = {
+        "model_id": args.expected_model_id,
+        "revision": args.expected_revision,
+        "parent_snapshot": args.expected_parent_snapshot,
+        "preflight_certificate_sha256": args.expected_preflight_certificate_sha256,
+        "snapshot_inventory_sha256": args.expected_snapshot_inventory_sha256,
+        "authoritative_files_sha256": args.expected_authoritative_files_sha256,
+    }
+    ancestry_validated = False
+    parent_snapshot_validated = False
+    if args.require_gemma_ancestry:
+        if not all(ancestry_args.values()):
+            parser.error("Gemma ancestry validation requires every --expected-* argument")
+        validate_gemma_checkpoint_ancestry(checkpoint, **ancestry_args)
+        ancestry_validated = True
+    if args.require_gemma_parent:
+        if not all(ancestry_args.values()):
+            parser.error("Gemma parent validation requires every --expected-* argument")
+        validate_gemma_parent_snapshot(checkpoint, **ancestry_args)
+        parent_snapshot_validated = True
 
     files = sorted((path for path in checkpoint.iterdir() if path.is_file() and included(path)),
                    key=lambda path: path.name)
@@ -301,7 +477,7 @@ def main() -> None:
             for path in files]
     payload = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
     report = {
-        "schema_version": 2,
+        "schema_version": 4,
         "checkpoint": str(checkpoint),
         "fingerprint": hashlib.sha256(payload).hexdigest(),
         "files": rows,
@@ -309,6 +485,8 @@ def main() -> None:
         "trainer_manifest_validated": validation is not None,
         "trainer_manifest_sha256": None if validation is None else validation["manifest_sha256"],
         "terminal_training_state_validated": bool(args.require_complete_sft),
+        "gemma_checkpoint_ancestry_validated": ancestry_validated,
+        "gemma_parent_snapshot_validated": parent_snapshot_validated,
     }
     if args.out:
         _write_json_atomic(Path(args.out), report)

@@ -16,19 +16,26 @@ import torch
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from train_c2s_tahoe_endcell import (
+    GEMMA_MODEL_ID,
+    GEMMA_MODEL_REVISION,
     SENTINELS,
     _atomic_write_json,
+    authoritative_revision_files_sha256,
+    guarded_snapshot_load,
     register_sentinels,
     require_gemma_protobuf_runtime,
     sha256_file,
     tokenizer_fingerprint,
+    validate_gemma_model_load_path,
     validate_gemma_base_tokenizer_contract,
     validate_gemma_registered_tokenizer_contract,
     validate_model_embedding_rows_before_resize,
+    verify_authoritative_snapshot,
 )
+from gemma2_standard_provenance import snapshot_inventory_sha256
 
 
-GEMMA_REVISION = "5ddf28b8f1c81b7ab7a9be192924da82b6c5d512"
+GEMMA_REVISION = GEMMA_MODEL_REVISION
 PYTHIA_REVISION = "830e4689d4238bbb5e2ec9a89b76e6a6d48061db"
 DEFAULT_MODELS = (
     "vandijklab/C2S-Scale-Pythia-1b-pt",
@@ -204,10 +211,10 @@ class ParityRows(list):
         self.maxlen = maxlen
 
 
-def check_slow_fast_parity(model_name, revision, fast_tokenizer, rows):
+def check_slow_fast_parity(load_source, loader_kwargs, fast_tokenizer, rows):
     try:
         slow = AutoTokenizer.from_pretrained(
-            model_name, revision=revision, use_fast=False)
+            load_source, use_fast=False, **loader_kwargs)
     except Exception as exc:
         return {"available": False, "error": repr(exc), "rows_checked": 0}
     # Preserve the explicitly requested slow implementation for its serialization check.  The
@@ -229,18 +236,23 @@ def check_slow_fast_parity(model_name, revision, fast_tokenizer, rows):
     return {
         "available": True,
         "slow_class": slow.__class__.__name__,
+        "slow_vocab_file": (os.path.abspath(slow.vocab_file)
+                             if getattr(slow, "vocab_file", None) else None),
         "rows_checked": len(rows),
         "mismatch_count": len(mismatches),
         "mismatches_first_20": mismatches,
     }
 
 
-def load_parameter_count(model_name, revision, tokenizer, attention_implementation,
-                         base_tokenizer_length, is_gemma):
-    kwargs = {"revision": revision, "torch_dtype": torch.bfloat16}
+def load_parameter_count(load_source, loader_kwargs, tokenizer, attention_implementation,
+                         base_tokenizer_length, is_gemma, snapshot_digest=None):
+    kwargs = {**loader_kwargs, "torch_dtype": torch.bfloat16}
     if attention_implementation:
         kwargs["attn_implementation"] = attention_implementation
-    model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
+    load = lambda: AutoModelForCausalLM.from_pretrained(load_source, **kwargs)
+    model = (guarded_snapshot_load(
+        load, load_source, snapshot_digest, stage="tokenizer-probe model load")
+        if is_gemma else load())
     before = sum(p.numel() for p in model.parameters())
     validate_model_embedding_rows_before_resize(
         model, tokenizer, strict_gemma=is_gemma, resume=False,
@@ -260,13 +272,48 @@ def load_parameter_count(model_name, revision, tokenizer, attention_implementati
     return result
 
 
-def audit_model(model_name, revision, jsonls, file_hashes, args):
-    config = AutoConfig.from_pretrained(model_name, revision=revision)
+def audit_model(model_name, revision, load_source, jsonls, file_hashes, args):
+    snapshot_digest = None
+    authoritative_digest = None
+    if model_name == GEMMA_MODEL_ID:
+        load_source = validate_gemma_model_load_path(
+            model_name, revision, load_source)
+        verify_authoritative_snapshot(load_source)
+        authoritative_digest = authoritative_revision_files_sha256()
+        snapshot_digest = snapshot_inventory_sha256(load_source)
+        loader_kwargs = {"local_files_only": True}
+        load_contract = {
+            "kind": "exact_local_snapshot",
+            "path": load_source,
+            "local_files_only": True,
+            "revision_argument": None,
+        }
+    elif load_source:
+        raise ValueError(
+            "--load-source is reserved for the canonical Gemma snapshot; other models retain "
+            "their logical model/revision loader")
+    else:
+        load_source = model_name
+        loader_kwargs = {"revision": revision} if revision is not None else {}
+        load_contract = {
+            "kind": "logical_hub_identity",
+            "path": model_name,
+            "local_files_only": False,
+            "revision_argument": revision,
+        }
+    config_load = lambda: AutoConfig.from_pretrained(load_source, **loader_kwargs)
+    config = (guarded_snapshot_load(
+        config_load, load_source, snapshot_digest, stage="tokenizer-probe config load")
+        if snapshot_digest else config_load())
     is_gemma = getattr(config, "model_type", None) == "gemma2"
     if is_gemma:
         require_gemma_protobuf_runtime()
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name, revision=revision, use_fast=True)
+    tokenizer_load = lambda: AutoTokenizer.from_pretrained(
+        load_source, use_fast=True, **loader_kwargs)
+    tokenizer = (guarded_snapshot_load(
+        tokenizer_load, load_source, snapshot_digest,
+        stage="tokenizer-probe fast-tokenizer load")
+        if snapshot_digest else tokenizer_load())
     base_tokenizer_length = len(tokenizer)
     base_contract = None
     if is_gemma:
@@ -302,13 +349,26 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
                 raise ValueError(
                     f"Gemma tokenization is not meaningful in {file_report['path']}: "
                     f"minimum prompt/response tokens={prompt_min}/{response_min}")
-    parity = check_slow_fast_parity(model_name, revision, tokenizer, parity_rows)
+    parity_load = lambda: check_slow_fast_parity(
+        load_source, loader_kwargs, tokenizer, parity_rows)
+    parity = (guarded_snapshot_load(
+        parity_load, load_source, snapshot_digest,
+        stage="tokenizer-probe slow-tokenizer load")
+        if snapshot_digest else parity_load())
     if parity.get("available") and parity["mismatch_count"]:
         raise ValueError(f"slow/fast tokenizer parity failed for {model_name}: {parity}")
 
     result = {
         "model_name": model_name,
         "revision": revision,
+        "load_source": load_contract,
+        "parent_snapshot_inventory_sha256": snapshot_digest,
+        "authoritative_revision_files_sha256": authoritative_digest,
+        "snapshot_load_guard": {
+            "before_and_after_each_load": bool(snapshot_digest),
+            "operations": (["config", "fast_tokenizer", "slow_tokenizer"] +
+                           (["model"] if args.load_model else [])) if snapshot_digest else [],
+        },
         "model_config_vocab_size": int(config.vocab_size),
         "base_tokenizer_contract": base_contract,
         "prepend_exactly_one_bos": prepend_bos,
@@ -322,6 +382,8 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
             "eos_token_id": tokenizer.eos_token_id,
             "bos_token_id": tokenizer.bos_token_id,
             "unk_token_id": tokenizer.unk_token_id,
+            "vocab_file": (os.path.abspath(tokenizer.vocab_file)
+                           if getattr(tokenizer, "vocab_file", None) else None),
             "sentinels": sentinel["ids"],
             "fingerprint": tokenizer_fingerprint(tokenizer),
         },
@@ -330,8 +392,8 @@ def audit_model(model_name, revision, jsonls, file_hashes, args):
     }
     if args.load_model:
         result["model"] = load_parameter_count(
-            model_name, revision, tokenizer, args.attn_implementation,
-            base_tokenizer_length, is_gemma)
+            load_source, loader_kwargs, tokenizer, args.attn_implementation,
+            base_tokenizer_length, is_gemma, snapshot_digest=snapshot_digest)
     return result
 
 
@@ -348,12 +410,28 @@ def _parse_revisions(items):
     return out
 
 
+def _parse_load_sources(items):
+    out = {}
+    for item in items or []:
+        if "=" not in item:
+            raise ValueError("--load-source must be MODEL=LOCAL_SNAPSHOT_PATH")
+        model, path = item.split("=", 1)
+        if not model or not path or model in out:
+            raise ValueError(f"invalid or duplicate --load-source {item!r}")
+        out[model] = path
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", action="append", dest="models",
                         help="Model to audit; repeat. Defaults to canonical Pythia and Gemma.")
     parser.add_argument("--revision", action="append",
                         help="Pinned MODEL=REVISION mapping; repeat as needed.")
+    parser.add_argument("--load-source", action="append",
+                        help="Logical MODEL=LOCAL_SNAPSHOT_PATH mapping. Required for canonical "
+                             "Gemma; all config/tokenizer/parity/model bytes load from that exact "
+                             "snapshot while MODEL and --revision remain report provenance.")
     parser.add_argument("--jsonl", action="append", dest="jsonls",
                         help="Canonical JSONL; repeat. Defaults to all five cluster files.")
     parser.add_argument("--data_dir", default=DEFAULT_DATA_DIR)
@@ -372,6 +450,7 @@ def main():
 
     models = args.models or list(DEFAULT_MODELS)
     revisions = _parse_revisions(args.revision)
+    load_sources = _parse_load_sources(args.load_source)
     jsonls = args.jsonls or [os.path.join(args.data_dir, x) for x in DEFAULT_JSONLS]
     missing = [x for x in jsonls if not os.path.isfile(x)]
     if missing:
@@ -379,11 +458,12 @@ def main():
     file_hashes = {path: sha256_file(path) for path in jsonls}
 
     report = {
-        "schema_version": 1,
+        "schema_version": 3,
         "max_length": args.max_length,
         "max_examples_per_file": args.max_examples,
         "input_hashes": file_hashes,
-        "models": [audit_model(model, revisions.get(model), jsonls, file_hashes, args)
+        "models": [audit_model(model, revisions.get(model), load_sources.get(model),
+                               jsonls, file_hashes, args)
                    for model in models],
     }
     _atomic_write_json(os.path.abspath(args.output), report)

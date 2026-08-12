@@ -29,41 +29,124 @@ REVISION=5ddf28b8f1c81b7ab7a9be192924da82b6c5d512
 CONTRACT="$REPO/endcell/jobs/gemma2_standard_preflight_contract.py"
 CERT="$REPO/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json"
 CHECKPOINT_ROLE="${CHECKPOINT_ROLE:-gemma_sft}"
-MODEL_LABEL="${MODEL_LABEL:-gemma}"
 MODEL="${MODEL_PATH:-/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/final}"
-VALIDITY="${VALIDITY_ENTRYPOINT:-$REPO/endcell/eval/evaluate_endcell.py}"
-NIR="${NIR_ENTRYPOINT:-$REPO/endcell/analysis/nir_benchmark.py}"
+VALIDITY="$REPO/endcell/eval/evaluate_endcell.py"
+NIR="$REPO/endcell/analysis/nir_benchmark.py"
 FINGERPRINT_TOOL="$REPO/endcell/jobs/gemma2_standard_checkpoint_fingerprint.py"
 MANIFEST="${TIER2_MANIFEST:?Set TIER2_MANIFEST to the immutable hash-named manifest from freeze_nir_manifest.py}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1600}"
 GEN_BATCH_SIZE="${GEN_BATCH_SIZE:-8}"
+case "$CHECKPOINT_ROLE" in
+    gemma_sft) EXPECTED_MODEL_LABEL=gemma; EXPECTED_MODEL_TYPE=gemma2 ;;
+    gemma_parent) EXPECTED_MODEL_LABEL=gemma_parent; EXPECTED_MODEL_TYPE=gemma2 ;;
+    pythia_sft_legacy) EXPECTED_MODEL_LABEL=pythia; EXPECTED_MODEL_TYPE=gpt_neox ;;
+    pythia_parent) EXPECTED_MODEL_LABEL=pythia_parent; EXPECTED_MODEL_TYPE=gpt_neox ;;
+    *) echo "[FATAL] invalid CHECKPOINT_ROLE: $CHECKPOINT_ROLE" >&2; exit 2 ;;
+esac
+if [[ -n "${MODEL_LABEL:-}" && "$MODEL_LABEL" != "$EXPECTED_MODEL_LABEL" ]]; then
+    echo "[FATAL] CHECKPOINT_ROLE=$CHECKPOINT_ROLE requires MODEL_LABEL=$EXPECTED_MODEL_LABEL; got $MODEL_LABEL" >&2
+    exit 2
+fi
+MODEL_LABEL="$EXPECTED_MODEL_LABEL"
 OUT="$REPO/RESULTS/gemma2_standard_eval/$MODEL_LABEL"
 mkdir -p "$REPO/logs" "$OUT"
 cd "$REPO"
 
-[[ "$MODEL_LABEL" =~ ^[A-Za-z0-9_-]+$ ]] || {
-    echo "[FATAL] unsafe MODEL_LABEL: $MODEL_LABEL" >&2; exit 2;
-}
-case "$CHECKPOINT_ROLE" in
-    gemma_sft|pythia_sft_legacy|gemma_parent|pythia_parent) ;;
-    *) echo "[FATAL] invalid CHECKPOINT_ROLE: $CHECKPOINT_ROLE" >&2; exit 2 ;;
-esac
-
+RUNTIME_CONTRACT="${SLURM_TMPDIR:-/tmp}/gemma2-preflight-runtime-${SLURM_JOB_ID}.json"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL_ID" \
     --revision "$REVISION" --require-generation-cap "$MAX_NEW_TOKENS" \
-    --verify-current-environment
+    --verify-current-environment --runtime-contract-out "$RUNTIME_CONTRACT"
+mapfile -t RUNTIME_VALUES < <("$PY" - "$RUNTIME_CONTRACT" <<'PY'
+import json, sys
+document = json.load(open(sys.argv[1], encoding="utf-8"))
+if document.get("schema_version") != 2:
+    raise SystemExit("[FATAL] invalid preflight runtime-contract schema")
+for key in ("snapshot_path", "preflight_certificate_sha256", "snapshot_inventory_sha256",
+            "authoritative_revision_files_sha256"):
+    value = document.get(key)
+    if not isinstance(value, str) or not value:
+        raise SystemExit(f"[FATAL] runtime contract lacks {key}")
+    print(value)
+PY
+)
+[[ "${#RUNTIME_VALUES[@]}" -eq 4 ]] || { echo "[FATAL] incomplete runtime contract" >&2; exit 20; }
+SNAPSHOT_PATH="${RUNTIME_VALUES[0]}"
+PREFLIGHT_SHA256="${RUNTIME_VALUES[1]}"
+SNAPSHOT_INVENTORY_SHA256="${RUNTIME_VALUES[2]}"
+AUTHORITATIVE_FILES_SHA256="${RUNTIME_VALUES[3]}"
 [[ -d "$MODEL" && -f "$MODEL/config.json" ]] || {
     echo "[FATAL] local offline checkpoint directory missing: $MODEL" >&2; exit 20;
 }
+"$PY" - "$MODEL/config.json" "$CHECKPOINT_ROLE" "$EXPECTED_MODEL_TYPE" <<'PY'
+import json, sys
+config_path, role, expected = sys.argv[1:]
+document = json.load(open(config_path, encoding="utf-8"))
+observed = document.get("model_type")
+if observed != expected:
+    raise SystemExit(
+        f"[FATAL] CHECKPOINT_ROLE={role} requires config.model_type={expected!r}; "
+        f"observed={observed!r}")
+print(f"[PASS] role/label/family bound: {role} -> {expected}")
+PY
 for required in "$VALIDITY" "$NIR" "$FINGERPRINT_TOOL" "$MANIFEST"; do
     [[ -f "$required" ]] || { echo "[FATAL] required evaluation artifact missing: $required" >&2; exit 20; }
 done
+
+# Production evaluators are fixed repo entrypoints.  Bind the exact paths selected
+# for execution to the already verified preflight source hashes so inherited shell
+# variables or a same-name replacement cannot redirect the scientific readout.
+"$PY" - "$CERT" "$VALIDITY" "$NIR" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+certificate_path, validity_path, nir_path = sys.argv[1:]
+certificate = json.load(open(certificate_path, encoding="utf-8"))
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+for name, selected in (("evaluate_endcell", validity_path), ("nir_benchmark", nir_path)):
+    entry = certificate.get("sources", {}).get(name, {})
+    selected_resolved = str(Path(selected).resolve())
+    certified_resolved = str(Path(entry.get("path", "")).resolve())
+    if selected_resolved != certified_resolved:
+        raise SystemExit(
+            f"[FATAL] production evaluator path differs from preflight sources.{name}: "
+            f"selected={selected_resolved}, certified={certified_resolved}")
+    observed = sha256_file(selected_resolved)
+    if observed != entry.get("sha256"):
+        raise SystemExit(
+            f"[FATAL] production evaluator hash differs from preflight sources.{name}: "
+            f"observed={observed}, certified={entry.get('sha256')}")
+print("[PASS] fixed production evaluator entrypoints match preflight path and SHA-256")
+PY
 
 FINGERPRINT_ARGS=()
 if [[ "$CHECKPOINT_ROLE" == gemma_sft ]]; then
     FINGERPRINT_ARGS=(
         --require_complete_sft --expected_global_step 42198 --expected_epoch 1
         --expected_microbatch_position 0 --expected_accumulation_position 0
+        --require_gemma_ancestry
+        --expected_model_id "$MODEL_ID" --expected_revision "$REVISION"
+        --expected_parent_snapshot "$SNAPSHOT_PATH"
+        --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256"
+        --expected_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
+        --expected_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
+    )
+elif [[ "$CHECKPOINT_ROLE" == gemma_parent ]]; then
+    FINGERPRINT_ARGS=(
+        --require_gemma_parent
+        --expected_model_id "$MODEL_ID" --expected_revision "$REVISION"
+        --expected_parent_snapshot "$SNAPSHOT_PATH"
+        --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256"
+        --expected_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
+        --expected_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
     )
 elif [[ "$CHECKPOINT_ROLE" == pythia_sft_legacy ]]; then
     [[ "${ALLOW_LEGACY_PYTHIA_CHECKPOINT:-0}" == 1 ]] || {
@@ -97,7 +180,9 @@ MODEL_FINGERPRINT="$($PY "$FINGERPRINT_TOOL" --checkpoint "$MODEL" \
     echo "[FATAL] invalid checkpoint fingerprint: $MODEL_FINGERPRINT" >&2; exit 22;
 }
 if [[ "$CHECKPOINT_ROLE" == gemma_sft ]]; then
-    echo "[PASS] Gemma manifest/content and terminal state validated before fingerprinting"
+    echo "[PASS] Gemma manifest/content, terminal state, and certified ancestry validated"
+elif [[ "$CHECKPOINT_ROLE" == gemma_parent ]]; then
+    echo "[PASS] Gemma frozen-parent path and snapshot inventory validated"
 fi
 mv "$FINGERPRINT_TMP" "$OUT/${MODEL_LABEL}_checkpoint_fingerprint.json"
 MANIFEST_SHA256="$($PY - "$MANIFEST" <<"PY"

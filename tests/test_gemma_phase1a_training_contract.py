@@ -25,6 +25,8 @@ import train_c2s_tahoe_endcell as trainer  # noqa: E402
 import gemma_tokenizer_probe as probe  # noqa: E402
 import gemma2_standard_preflight_contract as preflight_contract  # noqa: E402
 import gemma2_standard_tests_contract as tests_contract  # noqa: E402
+import gemma2_standard_checkpoint_fingerprint as checkpoint_fingerprint  # noqa: E402
+import gemma2_standard_provenance as shared_provenance  # noqa: E402
 
 
 class FakeTokenizer:
@@ -126,8 +128,9 @@ class TinySaveModel(torch.nn.Module):
 
 def _checkpoint_state(step, optimizer=None, scheduler=None, rng=None, completed=False,
                       microbatch_position=None):
+    contract = {"fixture": "phase1a"}
     return {
-        "schema_version": 1,
+        "schema_version": trainer.TRAINING_STATE_SCHEMA,
         "optimizer": {} if optimizer is None else optimizer.state_dict(),
         "scheduler": {} if scheduler is None else scheduler.state_dict(),
         "epoch": 0,
@@ -137,8 +140,8 @@ def _checkpoint_state(step, optimizer=None, scheduler=None, rng=None, completed=
         "global_step": step,
         "best_eval_loss": 1.0,
         "rng": trainer._capture_rng_state() if rng is None else rng,
-        "contract": {"fixture": "phase1a"},
-        "contract_fingerprint": "fixture-contract",
+        "contract": contract,
+        "contract_fingerprint": trainer._stable_json_hash(contract),
         "epoch_loss_sum": 0.0,
         "epoch_tokens": 0,
         "window_loss_sum": 0.0,
@@ -149,7 +152,13 @@ def _checkpoint_state(step, optimizer=None, scheduler=None, rng=None, completed=
 
 
 def _checkpoint_provenance():
-    return {"contract_fingerprint": "fixture-contract", "fixture": True}
+    contract = {"fixture": "phase1a"}
+    return {
+        "schema_version": trainer.PROVENANCE_SCHEMA,
+        "contract": contract,
+        "contract_fingerprint": trainer._stable_json_hash(contract),
+        "fixture": True,
+    }
 
 
 def _write_jsonl(tmp_path, n=1):
@@ -595,6 +604,395 @@ def test_gemma_identity_enforces_flags_and_never_misclassifies_pythia():
         pythia, prepend_bos=True, strict_token_contract=True) is False
 
 
+def _canonical_gemma_snapshot(tmp_path):
+    hub = tmp_path / "hub"
+    snapshot = (hub / "models--vandijklab--C2S-Scale-Gemma-2-2B" / "snapshots" /
+                trainer.GEMMA_MODEL_REVISION)
+    snapshot.mkdir(parents=True)
+    return hub, snapshot
+
+
+def _planted_official_snapshot(monkeypatch, tmp_path):
+    """Build the exact official filename tree with tiny independently pinned bytes."""
+    hub, snapshot = _canonical_gemma_snapshot(tmp_path)
+    expected = {}
+    for index, name in enumerate(sorted(shared_provenance.OFFICIAL_SNAPSHOT_TOP_LEVEL_FILES)):
+        payload = f"planted-official-{index}-{name}".encode("utf-8")
+        path = snapshot / name
+        path.write_bytes(payload)
+        if name in shared_provenance.AUTHORITATIVE_REVISION_FILES:
+            expected[name] = {
+                "size": len(payload),
+                "sha256": shared_provenance.sha256_file(path),
+                "upstream_hash_kind": "planted-authoritative-sha256",
+            }
+    monkeypatch.setattr(shared_provenance, "AUTHORITATIVE_REVISION_FILES", expected)
+    monkeypatch.setattr(preflight_contract, "AUTHORITATIVE_REVISION_FILES", expected)
+    return hub, snapshot, expected
+
+
+def test_gemma_cold_start_retains_logical_identity_but_loads_exact_snapshot(tmp_path):
+    hub, snapshot = _canonical_gemma_snapshot(tmp_path)
+    contract = trainer.resolve_model_load_contract(
+        trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, str(snapshot),
+        hub_cache=str(hub))
+    assert contract["logical_model_name"] == trainer.GEMMA_MODEL_ID
+    assert contract["logical_model_revision"] == trainer.GEMMA_MODEL_REVISION
+    assert contract["parent_snapshot_path"] == str(snapshot.resolve())
+    assert contract["active_source"] == str(snapshot.resolve())
+    assert contract["active_role"] == "exact_parent_snapshot"
+    assert contract["loader_kwargs"] == {"local_files_only": True}
+
+
+def test_gemma_model_id_route_and_arbitrary_local_path_are_rejected(tmp_path):
+    hub, snapshot = _canonical_gemma_snapshot(tmp_path)
+    with pytest.raises(ValueError, match="model-ID tokenizer route is forbidden"):
+        trainer.resolve_model_load_contract(
+            trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, None,
+            hub_cache=str(hub))
+    arbitrary = tmp_path / "arbitrary-model"
+    arbitrary.mkdir()
+    with pytest.raises(ValueError, match="not the pinned snapshot"):
+        trainer.resolve_model_load_contract(
+            trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, str(arbitrary),
+            hub_cache=str(hub))
+    assert snapshot.is_dir()
+
+
+def test_authoritative_revision_mismatch_cannot_be_blessed_by_new_certificate(
+        monkeypatch, tmp_path):
+    hub, snapshot, expected = _planted_official_snapshot(monkeypatch, tmp_path)
+    payload = snapshot / "config.json"
+    certified = preflight_contract.certified_snapshot(
+        trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, snapshot, hub)
+    assert certified["authoritative_revision_files"] == expected
+
+    payload.write_bytes(b"tampered-bytes!")
+    with pytest.raises(SystemExit, match="authoritative Gemma revision mismatch"):
+        preflight_contract.certified_snapshot(
+            trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, snapshot, hub)
+
+
+@pytest.mark.parametrize("override_name", ["model.safetensors", "tokenizer.json"])
+def test_certificate_creation_rejects_transformers_override_file(
+        monkeypatch, tmp_path, override_name):
+    hub, snapshot, _ = _planted_official_snapshot(monkeypatch, tmp_path)
+    (snapshot / override_name).write_bytes(b"planted-override")
+    args = SimpleNamespace(
+        model_id=trainer.GEMMA_MODEL_ID,
+        revision=trainer.GEMMA_MODEL_REVISION,
+        snapshot_path=str(snapshot),
+        hub_cache=str(hub),
+    )
+    with pytest.raises(SystemExit, match="unexpected=.*" + override_name.replace(".", r"\.")):
+        preflight_contract.create(args)
+
+
+@pytest.mark.parametrize("override_name", ["model.safetensors", "tokenizer.json"])
+def test_certificate_verification_rejects_transformers_override_file(
+        monkeypatch, tmp_path, override_name):
+    hub, snapshot, _ = _planted_official_snapshot(monkeypatch, tmp_path)
+    (snapshot / override_name).write_bytes(b"planted-override")
+    certificate = tmp_path / "PREFLIGHT_PASSED.json"
+    certificate.write_text(json.dumps({
+        "schema_version": preflight_contract.SCHEMA_VERSION,
+        "preflight_passed": True,
+        "model": {
+            "repo_id": trainer.GEMMA_MODEL_ID,
+            "revision": trainer.GEMMA_MODEL_REVISION,
+            "snapshot_path": str(snapshot),
+            "hub_cache": str(hub),
+        },
+    }), encoding="utf-8")
+    args = SimpleNamespace(
+        certificate=str(certificate),
+        model_id=trainer.GEMMA_MODEL_ID,
+        revision=trainer.GEMMA_MODEL_REVISION,
+    )
+    with pytest.raises(SystemExit, match="unexpected=.*" + override_name.replace(".", r"\.")):
+        preflight_contract.verify(args)
+
+
+def test_snapshot_guard_rechecks_after_load_and_rejects_persistent_mutation(tmp_path):
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    payload = snapshot / "tokenizer.model"
+    payload.write_bytes(b"stable")
+    digest = shared_provenance.snapshot_inventory_sha256(snapshot)
+
+    def mutating_load():
+        payload.write_bytes(b"changed")
+        return "loaded"
+
+    with pytest.raises(shared_provenance.ProvenanceError, match="after planted load"):
+        shared_provenance.guarded_snapshot_load(
+            mutating_load, snapshot, digest, stage="planted load")
+
+
+def test_frozen_parent_accepts_beegfs_alias_but_retains_certificate_path(
+        monkeypatch, tmp_path):
+    _, snapshot, expected = _ancestry_fixture(tmp_path)
+    alias = tmp_path / "mnt-beegfsnew-alias"
+    try:
+        alias.symlink_to(snapshot, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"platform cannot create directory symlink: {exc}")
+    monkeypatch.setattr(
+        checkpoint_fingerprint, "verify_authoritative_snapshot", lambda _path: {})
+    assert shared_provenance.paths_refer_to_same_location(alias, snapshot)
+    result = checkpoint_fingerprint.validate_gemma_parent_snapshot(alias, **expected)
+    assert result["parent_snapshot"] == str(snapshot.resolve())
+    different = tmp_path / "genuinely-different-parent"
+    different.mkdir()
+    assert not shared_provenance.paths_refer_to_same_location(different, snapshot)
+    with pytest.raises(
+            checkpoint_fingerprint.CheckpointValidationError,
+            match="not the certificate snapshot"):
+        checkpoint_fingerprint.validate_gemma_parent_snapshot(different, **expected)
+
+
+def test_gemma_resume_loads_checkpoint_not_parent_and_retains_parent_provenance(tmp_path):
+    hub, snapshot = _canonical_gemma_snapshot(tmp_path)
+    checkpoint = tmp_path / "checkpoint-100"
+    checkpoint.mkdir()
+    contract = trainer.resolve_model_load_contract(
+        trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, str(snapshot),
+        resume_dir=str(checkpoint), hub_cache=str(hub))
+    assert contract["active_source"] == str(checkpoint.resolve())
+    assert contract["active_role"] == "resume_checkpoint"
+    assert contract["parent_snapshot_path"] == str(snapshot.resolve())
+    assert contract["loader_kwargs"] == {"local_files_only": True}
+
+
+def test_pythia_loader_contract_is_unchanged_by_gemma_snapshot_option():
+    contract = trainer.resolve_model_load_contract(
+        "vandijklab/C2S-Scale-Pythia-1b-pt", probe.PYTHIA_REVISION, None)
+    assert contract["active_source"] == "vandijklab/C2S-Scale-Pythia-1b-pt"
+    assert contract["parent_snapshot_path"] is None
+    assert contract["loader_kwargs"] == {"revision": probe.PYTHIA_REVISION}
+
+
+def test_any_gemma2_config_rejects_arbitrary_model_name_before_tokenizer(tmp_path):
+    arbitrary = tmp_path / "arbitrary-gemma2"
+    arbitrary.mkdir()
+    with pytest.raises(ValueError, match="canonical logical model and revision"):
+        trainer.validate_gemma_runtime_provenance(
+            SimpleNamespace(model_type="gemma2"),
+            model_name=str(arbitrary), model_revision="different", model_load_path=None,
+            preflight_certificate_sha256="a" * 64,
+            parent_snapshot_inventory_sha256="b" * 64,
+            parent_authoritative_files_sha256="c" * 64,
+            prepend_bos=True, strict_token_contract=True,
+            hub_cache=str(tmp_path / "hub"),
+        )
+    assert trainer.validate_gemma_runtime_provenance(
+        SimpleNamespace(model_type="gpt_neox"),
+        model_name="vandijklab/C2S-Scale-Pythia-1b-pt",
+        model_revision=probe.PYTHIA_REVISION, model_load_path=None,
+        preflight_certificate_sha256=None,
+        parent_snapshot_inventory_sha256=None,
+        parent_authoritative_files_sha256=None,
+        prepend_bos=False, strict_token_contract=False,
+    ) is None
+
+
+def _ancestry_fixture(tmp_path):
+    _, snapshot = _canonical_gemma_snapshot(tmp_path)
+    (snapshot / "config.json").write_text('{"model_type":"gemma2"}\n', encoding="utf-8")
+    (snapshot / "tokenizer.model").write_bytes(b"sentencepiece")
+    (snapshot / "model.safetensors").write_bytes(b"parent-weights")
+    snapshot_digest = shared_provenance.snapshot_inventory_sha256(snapshot)
+    authoritative_digest = shared_provenance.authoritative_revision_files_sha256()
+    certificate_digest = "a" * 64
+    contract = {
+        "model_name": trainer.GEMMA_MODEL_ID,
+        "model_revision": trainer.GEMMA_MODEL_REVISION,
+        "parent_model_load_path": str(snapshot.resolve()),
+        "preflight_certificate_sha256": certificate_digest,
+        "parent_snapshot_inventory_sha256": snapshot_digest,
+        "parent_authoritative_files_sha256": authoritative_digest,
+    }
+    contract_fingerprint = trainer._stable_json_hash(contract)
+    provenance = {
+        "schema_version": trainer.PROVENANCE_SCHEMA,
+        "model": {
+            "requested_source": trainer.GEMMA_MODEL_ID,
+            "requested_revision": trainer.GEMMA_MODEL_REVISION,
+            "certified_parent_snapshot_path": str(snapshot.resolve()),
+            "preflight_certificate_sha256": certificate_digest,
+            "parent_snapshot_inventory_sha256": snapshot_digest,
+            "parent_authoritative_files_sha256": authoritative_digest,
+        },
+        "contract": contract,
+        "contract_fingerprint": contract_fingerprint,
+    }
+    state = _checkpoint_state(5, completed=False)
+    state["contract"] = contract
+    state["contract_fingerprint"] = contract_fingerprint
+    checkpoint = tmp_path / "checkpoint-5-mb5"
+    trainer._save_checkpoint_atomic(
+        str(checkpoint), TinySaveModel(), FakeTokenizer(), state, provenance)
+    expected = {
+        "model_id": trainer.GEMMA_MODEL_ID,
+        "revision": trainer.GEMMA_MODEL_REVISION,
+        "parent_snapshot": str(snapshot.resolve()),
+        "preflight_certificate_sha256": certificate_digest,
+        "snapshot_inventory_sha256": snapshot_digest,
+        "authoritative_files_sha256": authoritative_digest,
+    }
+    return checkpoint, snapshot, expected
+
+
+def test_shared_checkpoint_ancestry_accepts_exact_parent_and_rejects_cert_substitution(tmp_path):
+    checkpoint, _, expected = _ancestry_fixture(tmp_path)
+    checkpoint_fingerprint.validate_checkpoint_manifest(
+        checkpoint, required=True, verify_state_identity=True)
+    checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(
+        checkpoint, **expected, verify_parent_snapshot=False)
+    substituted = dict(expected, preflight_certificate_sha256="b" * 64)
+    with pytest.raises(
+            checkpoint_fingerprint.CheckpointValidationError, match="ancestry differs"):
+        checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(
+            checkpoint, **substituted, verify_parent_snapshot=False)
+
+
+def test_final_checkpoint_ancestry_uses_the_same_shared_validator(tmp_path):
+    checkpoint, _, expected = _ancestry_fixture(tmp_path)
+    final = tmp_path / "final"
+    checkpoint.rename(final)
+    checkpoint_fingerprint.validate_checkpoint_manifest(
+        final, required=True, verify_state_identity=True)
+    checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(
+        final, **expected, verify_parent_snapshot=False)
+
+
+def test_resume_substitution_and_snapshot_mutation_fail_closed(monkeypatch, tmp_path):
+    checkpoint, snapshot, expected = _ancestry_fixture(tmp_path)
+    wrong_parent = tmp_path / "other-parent"
+    wrong_parent.mkdir()
+    with pytest.raises(
+            checkpoint_fingerprint.CheckpointValidationError, match="training contract differs"):
+        checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(
+            checkpoint, **dict(expected, parent_snapshot=str(wrong_parent)),
+            verify_parent_snapshot=False)
+    with open(snapshot / "tokenizer.model", "ab") as handle:
+        handle.write(b"mutation")
+    monkeypatch.setattr(
+        checkpoint_fingerprint, "verify_authoritative_snapshot", lambda _path: {})
+    with pytest.raises(
+            checkpoint_fingerprint.CheckpointValidationError, match="snapshot changed"):
+        checkpoint_fingerprint.validate_gemma_checkpoint_ancestry(checkpoint, **expected)
+
+
+def test_gemma_parent_role_rejects_substituted_path(monkeypatch, tmp_path):
+    _, snapshot, expected = _ancestry_fixture(tmp_path)
+    monkeypatch.setattr(
+        checkpoint_fingerprint, "verify_authoritative_snapshot", lambda _path: {})
+    checkpoint_fingerprint.validate_gemma_parent_snapshot(snapshot, **expected)
+    other = tmp_path / "other-parent"
+    other.mkdir()
+    with pytest.raises(
+            checkpoint_fingerprint.CheckpointValidationError,
+            match="not the certificate snapshot"):
+        checkpoint_fingerprint.validate_gemma_parent_snapshot(other, **expected)
+
+
+def test_inference_fingerprint_excludes_mutable_training_outputs(tmp_path):
+    for name in ("training_state.pt", "run_provenance.json", "metrics.json", "notes.txt"):
+        assert checkpoint_fingerprint.included(tmp_path / name) is False
+    for name in ("config.json", "tokenizer.model", "model.safetensors"):
+        assert checkpoint_fingerprint.included(tmp_path / name) is True
+
+
+def test_probe_uses_exact_snapshot_for_config_fast_and_slow_loaders(monkeypatch, tmp_path):
+    _, snapshot = _canonical_gemma_snapshot(tmp_path)
+    data = tmp_path / "train.jsonl"
+    data.write_text('{"prompt":"p","response":"r"}\n', encoding="utf-8")
+    calls = []
+
+    class ProbeTokenizer:
+        is_fast = True
+        vocab_size = 256_000
+        pad_token_id = 0
+        eos_token_id = 1
+        bos_token_id = 2
+        unk_token_id = 3
+
+        def __init__(self):
+            self.length = 256_000
+            self.vocab_file = str(snapshot / "tokenizer.model")
+
+        def __len__(self):
+            return self.length
+
+    tokenizer = ProbeTokenizer()
+
+    class ConfigLoader:
+        @staticmethod
+        def from_pretrained(source, **kwargs):
+            calls.append(("config", source, kwargs))
+            return SimpleNamespace(model_type="gemma2", vocab_size=256_000)
+
+    class TokenizerLoader:
+        @staticmethod
+        def from_pretrained(source, **kwargs):
+            calls.append(("fast", source, kwargs))
+            return tokenizer
+
+    monkeypatch.setattr(probe, "AutoConfig", ConfigLoader)
+    monkeypatch.setattr(probe, "AutoTokenizer", TokenizerLoader)
+    monkeypatch.setattr(probe, "require_gemma_protobuf_runtime", lambda: {})
+    monkeypatch.setattr(probe, "verify_authoritative_snapshot", lambda _path: {})
+    monkeypatch.setattr(probe, "snapshot_inventory_sha256", lambda _path: "d" * 64)
+    monkeypatch.setattr(
+        probe, "authoritative_revision_files_sha256", lambda: "e" * 64)
+    monkeypatch.setattr(
+        probe, "guarded_snapshot_load", lambda load, *_args, **_kwargs: load())
+    monkeypatch.setattr(
+        probe, "validate_gemma_model_load_path",
+        lambda model, revision, source: str(snapshot.resolve()))
+    monkeypatch.setattr(
+        probe, "validate_gemma_base_tokenizer_contract",
+        lambda tok, vocab: {"vocab_size": vocab, "length": len(tok)})
+
+    def register(tok, **_kwargs):
+        tok.length = 256_002
+        return {"added": 2, "ids": {"[END_CELL]": 256_000, "[DOWN]": 256_001}}
+
+    monkeypatch.setattr(probe, "register_sentinels", register)
+    monkeypatch.setattr(probe, "validate_gemma_registered_tokenizer_contract", lambda *_: {})
+    monkeypatch.setattr(probe, "tokenizer_fingerprint", lambda _tok: "tokenizer-fingerprint")
+    monkeypatch.setattr(
+        probe, "audit_file",
+        lambda path, *_args, **_kwargs: {
+            "path": str(data.resolve()), "sha256": "data-sha",
+            "counts": {"prompt_unk_tokens": 0, "response_unk_tokens": 0},
+            "distributions": {
+                "prompt_tokens": {"min": 395}, "response_tokens": {"min": 481}},
+        })
+
+    def parity(source, kwargs, _tokenizer, _rows):
+        calls.append(("slow", source, kwargs))
+        return {"available": True, "mismatch_count": 0, "rows_checked": 1,
+                "slow_vocab_file": str(snapshot / "tokenizer.model")}
+
+    monkeypatch.setattr(probe, "check_slow_fast_parity", parity)
+    args = SimpleNamespace(
+        parity_examples=1, max_length=8192, max_examples=0, batch_size=1,
+        require_fast=True, load_model=False, attn_implementation="eager")
+    result = probe.audit_model(
+        trainer.GEMMA_MODEL_ID, trainer.GEMMA_MODEL_REVISION, str(snapshot),
+        [str(data)], {str(data): "data-sha"}, args)
+
+    assert [entry[0] for entry in calls] == ["config", "fast", "slow"]
+    assert all(entry[1] == str(snapshot.resolve()) for entry in calls)
+    assert all(entry[2] == {"local_files_only": True} for entry in calls)
+    assert result["model_name"] == trainer.GEMMA_MODEL_ID
+    assert result["revision"] == trainer.GEMMA_MODEL_REVISION
+    assert result["load_source"]["path"] == str(snapshot.resolve())
+    assert result["snapshot_load_guard"]["before_and_after_each_load"] is True
+
+
 def test_missing_protobuf_fails_before_gemma_tokenizer_load(monkeypatch):
     def missing(_name):
         raise ModuleNotFoundError("planted missing protobuf")
@@ -723,6 +1121,10 @@ def test_gemma_runtime_rejects_inherited_pythonhome(monkeypatch, tmp_path):
 
 
 def _valid_probe_document(tmp_path):
+    snapshot = (tmp_path / "hub" /
+                "models--vandijklab--C2S-Scale-Gemma-2-2B" / "snapshots" /
+                probe.GEMMA_REVISION).resolve()
+    snapshot.mkdir(parents=True)
     reports = []
     expected_data = {}
     input_hashes = {}
@@ -753,12 +1155,25 @@ def _valid_probe_document(tmp_path):
             },
         })
     document = {
-        "schema_version": 1,
+        "schema_version": 3,
         "max_examples_per_file": 0,
         "input_hashes": input_hashes,
         "models": [{
             "model_name": "vandijklab/C2S-Scale-Gemma-2-2B",
             "revision": probe.GEMMA_REVISION,
+            "load_source": {
+                "kind": "exact_local_snapshot",
+                "path": str(snapshot),
+                "local_files_only": True,
+                "revision_argument": None,
+            },
+            "parent_snapshot_inventory_sha256": "b" * 64,
+            "authoritative_revision_files_sha256": (
+                shared_provenance.authoritative_revision_files_sha256()),
+            "snapshot_load_guard": {
+                "before_and_after_each_load": True,
+                "operations": ["config", "fast_tokenizer", "slow_tokenizer"],
+            },
             "model_config_vocab_size": 256_000,
             "base_tokenizer_contract": {"vocab_size": 256_000, "length": 256_000},
             "tokenizer": {
@@ -768,10 +1183,12 @@ def _valid_probe_document(tmp_path):
                 "pad_token_id": 0,
                 "eos_token_id": 1,
                 "bos_token_id": 2,
+                "vocab_file": str(snapshot / "tokenizer.model"),
                 "sentinels": {"[END_CELL]": 256_000, "[DOWN]": 256_001},
             },
             "slow_fast_parity": {
-                "available": True, "mismatch_count": 0, "rows_checked": 512},
+                "available": True, "mismatch_count": 0, "rows_checked": 512,
+                "slow_vocab_file": str(snapshot / "tokenizer.model")},
             "files": reports,
         }],
     }
@@ -784,14 +1201,52 @@ def _write_probe(tmp_path, document):
     return str(path)
 
 
+def _probe_snapshot(document):
+    return document["models"][0]["load_source"]["path"]
+
+
+def _validate_probe(tmp_path, document, expected_data):
+    model = document["models"][0]
+    return preflight_contract.validate_probe(
+        _write_probe(tmp_path, document), 1600,
+        "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
+        _probe_snapshot(document), model["parent_snapshot_inventory_sha256"],
+        model["authoritative_revision_files_sha256"], expected_data)
+
+
 def test_preflight_contract_accepts_only_complete_gemma_vocabulary(tmp_path):
     document, expected_data = _valid_probe_document(tmp_path)
-    path = _write_probe(tmp_path, document)
-    result = preflight_contract.validate_probe(
-        path, 1600, "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
-        expected_data)
+    result = _validate_probe(tmp_path, document, expected_data)
     assert result["generation_cap_authorized"] is True
     assert result["maximum_truth_response_tokens"] == 481
+
+
+@pytest.mark.parametrize("mutation,match", [
+    ("load_path", "exact certified snapshot"),
+    ("fast_vocab_file", "fast Gemma tokenizer did not open"),
+    ("slow_vocab_file", "parity was not proved"),
+    ("logical_model", "different model or revision"),
+])
+def test_preflight_contract_binds_logical_identity_to_exact_snapshot(
+        tmp_path, mutation, match):
+    document, expected_data = _valid_probe_document(tmp_path)
+    expected_snapshot = _probe_snapshot(document)
+    if mutation == "load_path":
+        document["models"][0]["load_source"]["path"] = str(
+            (tmp_path / "arbitrary-snapshot").resolve())
+    elif mutation == "fast_vocab_file":
+        document["models"][0]["tokenizer"]["vocab_file"] = None
+    elif mutation == "slow_vocab_file":
+        document["models"][0]["slow_fast_parity"]["slow_vocab_file"] = None
+    else:
+        document["models"][0]["model_name"] = "attacker/substituted-model"
+    with pytest.raises(SystemExit, match=match):
+        model = document["models"][0]
+        preflight_contract.validate_probe(
+            _write_probe(tmp_path, document), 1600,
+            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
+            expected_snapshot, model["parent_snapshot_inventory_sha256"],
+            model["authoritative_revision_files_sha256"], expected_data)
 
 
 def test_preflight_contract_rejects_five_token_probe(tmp_path):
@@ -801,36 +1256,28 @@ def test_preflight_contract_rejects_five_token_probe(tmp_path):
     model["tokenizer"]["vocab_size"] = 5
     model["tokenizer"]["length_after_sentinels"] = 7
     with pytest.raises(SystemExit, match="base tokenizer is collapsed"):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 def test_preflight_contract_rejects_model_config_vocabulary_mismatch(tmp_path):
     document, expected_data = _valid_probe_document(tmp_path)
     document["models"][0]["model_config_vocab_size"] = 255_999
     with pytest.raises(SystemExit, match="model config vocab_size"):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 def test_preflight_contract_rejects_unknown_token_collapse(tmp_path):
     document, expected_data = _valid_probe_document(tmp_path)
     document["models"][0]["files"][2]["counts"]["prompt_unk_tokens"] = 1
     with pytest.raises(SystemExit, match="contains unknown tokens"):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 def test_preflight_contract_rejects_negative_unknown_counter(tmp_path):
     document, expected_data = _valid_probe_document(tmp_path)
     document["models"][0]["files"][0]["counts"]["prompt_unk_tokens"] = -1
     with pytest.raises(SystemExit, match="invalid prompt_unk_tokens"):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 def test_preflight_contract_rejects_opposing_unknown_counters(tmp_path):
@@ -839,9 +1286,7 @@ def test_preflight_contract_rejects_opposing_unknown_counters(tmp_path):
     counts["prompt_unk_tokens"] = 1
     counts["response_unk_tokens"] = -1
     with pytest.raises(SystemExit, match="prompt_unk_tokens=1"):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION, expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 @pytest.mark.parametrize("mutation,match", [
@@ -865,10 +1310,7 @@ def test_preflight_contract_rejects_incomplete_probe_binding(tmp_path, mutation,
     elif mutation == "slow_tokenizer":
         model["tokenizer"]["is_fast"] = False
     with pytest.raises(SystemExit, match=match):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
-            expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
 @pytest.mark.parametrize("field,value,match", [
@@ -879,13 +1321,10 @@ def test_preflight_contract_rejects_wrong_sentinel_contract(tmp_path, field, val
     document, expected_data = _valid_probe_document(tmp_path)
     document["models"][0]["tokenizer"][field] = value
     with pytest.raises(SystemExit, match=match):
-        preflight_contract.validate_probe(
-            _write_probe(tmp_path, document), 1600,
-            "vandijklab/C2S-Scale-Gemma-2-2B", probe.GEMMA_REVISION,
-            expected_data)
+        _validate_probe(tmp_path, document, expected_data)
 
 
-@pytest.mark.parametrize("schema", [2, 3])
+@pytest.mark.parametrize("schema", [1, 2, 3, 4, 5, 6, 7])
 def test_preflight_verify_rejects_older_schema_before_trusting_contents(tmp_path, schema):
     certificate = tmp_path / "certificate.json"
     certificate.write_text(
@@ -902,6 +1341,59 @@ def test_preflight_verify_rejects_older_schema_before_trusting_contents(tmp_path
         preflight_contract.verify(args)
 
 
+def test_canonical_tahoe_hashes_are_exactly_pinned():
+    assert shared_provenance.CANONICAL_TAHOE_DATA_SHA256 == {
+        "train": "4bed186da4c5348dbb899182f2ab0f635c0f73ce7994be8738a23f8e6c61d000",
+        "tier1": "bb2d8f45c32b7f64f0e874c3e29d3e4e086194c3cc18d97fea5016c494f8bb21",
+        "tier2": "054dc5370103fb9da381046b13cc7235b556bb39d7ffced4976fd45768727c39",
+        "tier3": "29c8cb31e82ce39d988983457ebea34b78a15369b5dbd69cb2db76185ca1d2d8",
+        "tier4": "0015f09ce47bc45a574ef7d9dbd54e8342929d56fc965b50869a61fb75722d75",
+    }
+
+
+def test_fresh_certificate_cannot_bless_mutated_tahoe_data(monkeypatch, tmp_path):
+    entries = {
+        name: {"path": str(tmp_path / f"{name}.jsonl"), "sha256": digest}
+        for name, digest in shared_provenance.CANONICAL_TAHOE_DATA_SHA256.items()
+    }
+    mutated = tmp_path / "tier2.jsonl"
+    mutated.write_text('{"mutated": true}\n', encoding="utf-8")
+    entries["tier2"]["sha256"] = preflight_contract.sha256_file(mutated)
+    monkeypatch.setattr(preflight_contract, "certified_snapshot", lambda *_args: {})
+    monkeypatch.setattr(preflight_contract, "parse_named_paths", lambda _items: entries)
+    args = SimpleNamespace(
+        model_id=trainer.GEMMA_MODEL_ID,
+        revision=trainer.GEMMA_MODEL_REVISION,
+        snapshot_path=str(tmp_path / "snapshot"),
+        hub_cache=str(tmp_path / "hub"),
+        data=["not-used"],
+    )
+    with pytest.raises(SystemExit, match="new certificate cannot bless different data"):
+        preflight_contract.create(args)
+
+
+def test_runtime_contract_binds_exact_certificate_bytes_and_snapshot_digest(tmp_path):
+    certificate = tmp_path / "PREFLIGHT_PASSED.json"
+    certificate.write_text('{"schema_version":8}\n', encoding="utf-8")
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    first = preflight_contract.runtime_contract_document(
+        certificate, model_id=trainer.GEMMA_MODEL_ID,
+        revision=trainer.GEMMA_MODEL_REVISION, snapshot_path=snapshot,
+        snapshot_inventory_sha256="b" * 64,
+        authoritative_revision_files_sha256="c" * 64)
+    assert first["schema_version"] == 2
+    assert first["preflight_certificate_sha256"] == preflight_contract.sha256_file(certificate)
+    assert first["snapshot_inventory_sha256"] == "b" * 64
+    certificate.write_text('{"schema_version":8,"substituted":true}\n', encoding="utf-8")
+    second = preflight_contract.runtime_contract_document(
+        certificate, model_id=trainer.GEMMA_MODEL_ID,
+        revision=trainer.GEMMA_MODEL_REVISION, snapshot_path=snapshot,
+        snapshot_inventory_sha256="b" * 64,
+        authoritative_revision_files_sha256="c" * 64)
+    assert second["preflight_certificate_sha256"] != first["preflight_certificate_sha256"]
+
+
 @pytest.mark.parametrize("mutation", ["omit", "extra"])
 def test_tests_certificate_rejects_nonexact_source_set(mutation):
     sources = {name: {} for name in tests_contract.EXPECTED_SOURCE_KEYS}
@@ -911,3 +1403,52 @@ def test_tests_certificate_rejects_nonexact_source_set(mutation):
         sources["unexpected"] = {}
     with pytest.raises(SystemExit, match="source keys differ from contract"):
         tests_contract.require_exact_source_keys(sources)
+
+
+def test_jobs_make_model_id_tokenizer_route_impossible():
+    preflight = open(
+        os.path.join(ROOT, "endcell", "jobs", "gemma2_standard_preflight.sh"),
+        encoding="utf-8").read()
+    smoke = open(
+        os.path.join(ROOT, "endcell", "jobs", "gemma2_standard_smoke.sbatch"),
+        encoding="utf-8").read()
+    train_job = open(
+        os.path.join(ROOT, "endcell", "jobs", "gemma2_standard_train.sbatch"),
+        encoding="utf-8").read()
+    assert '--load-source "$MODEL_ID=$SNAPSHOT_PATH"' in preflight
+    assert "AutoConfig.from_pretrained(snapshot_path, local_files_only=True)" in preflight
+    for job in (smoke, train_job):
+        assert "--runtime-contract-out" in job
+        assert '--model_load_path "$SNAPSHOT_PATH"' in job
+        assert '--model_name "$MODEL"' in job
+    assert "verify_parent_load_provenance" not in train_job
+    assert "--require_gemma_ancestry" in train_job
+    trainer_source = open(
+        os.path.join(ROOT, "endcell", "train", "train_c2s_tahoe_endcell.py"),
+        encoding="utf-8").read()
+    for stage in ("trainer AutoConfig load", "trainer AutoTokenizer load",
+                  "trainer AutoModelForCausalLM load"):
+        assert stage in trainer_source
+
+
+def test_eval_role_fixes_label_and_model_family_without_losing_pythia_comparator():
+    source = open(
+        os.path.join(ROOT, "endcell", "jobs", "gemma2_standard_eval.sbatch"),
+        encoding="utf-8").read()
+    expected = {
+        "gemma_sft": ("gemma", "gemma2"),
+        "gemma_parent": ("gemma_parent", "gemma2"),
+        "pythia_sft_legacy": ("pythia", "gpt_neox"),
+        "pythia_parent": ("pythia_parent", "gpt_neox"),
+    }
+    for role, (label, model_type) in expected.items():
+        assert (f"{role}) EXPECTED_MODEL_LABEL={label}; "
+                f"EXPECTED_MODEL_TYPE={model_type}") in source
+    assert 'MODEL_LABEL="$EXPECTED_MODEL_LABEL"' in source
+    assert "requires MODEL_LABEL=$EXPECTED_MODEL_LABEL" in source
+    assert 'document.get("model_type")' in source
+    assert 'VALIDITY="$REPO/endcell/eval/evaluate_endcell.py"' in source
+    assert 'NIR="$REPO/endcell/analysis/nir_benchmark.py"' in source
+    assert "VALIDITY_ENTRYPOINT" not in source
+    assert "NIR_ENTRYPOINT" not in source
+    assert "fixed production evaluator entrypoints match preflight path and SHA-256" in source

@@ -33,6 +33,7 @@ git add endcell/analysis/freeze_nir_manifest.py endcell/analysis/nir_benchmark.p
 git add endcell/analysis/compare_backbones.py endcell/analysis/residual_eval.py
 git add endcell/eval/evaluate_endcell.py tests/test_gemma_phase1a_training_contract.py
 git add tests/test_gemma_eval_contract.py endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
+git add endcell/jobs/gemma2_standard_provenance.py
 git add endcell/jobs/gemma2_standard_cli_contract.py endcell/jobs/gemma2_standard_preflight_contract.py
 git add endcell/jobs/gemma2_standard_tests.sh endcell/jobs/gemma2_standard_tests_contract.py
 git add endcell/jobs/gemma2_standard_protobuf_env.sh
@@ -73,6 +74,7 @@ scp .\endcell\eval\evaluate_endcell.py 3180408@login.hpc.unibocconi.it:~/tahoe/e
 scp .\tests\test_gemma_phase1a_training_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/tests/
 scp .\tests\test_gemma_eval_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/tests/
 scp .\endcell\jobs\gemma2_standard_checkpoint_fingerprint.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
+scp .\endcell\jobs\gemma2_standard_provenance.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_cli_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_preflight_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
 scp .\endcell\jobs\gemma2_standard_tests_contract.py 3180408@login.hpc.unibocconi.it:~/tahoe/endcell/jobs/
@@ -134,7 +136,9 @@ beneath the exact isolated path. Its digest inventory is built from every path i
 executed `google/_upb/_message.abi3.so` payload as well as Python and metadata files. Preflight records
 that digest and every smoke, training and evaluation verification recomputes it. The trainer detects Gemma from
 `AutoConfig.model_type`, requires the two Gemma flags and validates the same helper-bound payload before
-`AutoTokenizer`, so direct invocation cannot fall through to a collapsed tokenizer.
+`AutoTokenizer`. In addition, canonical Gemma training requires `--model_load_path` to equal the exact
+cache path implied by the logical model ID and revision, so direct invocation cannot fall through to a
+collapsed model-ID tokenizer.
 
 Next install the pinned test runner into a separate isolated directory on a CPU worker:
 
@@ -176,8 +180,9 @@ Do not continue unless every test and self-test passes and the final line confir
 ~/tahoe/RESULTS/gemma2_standard_tests/TESTS_PASSED.json
 ```
 
-That certificate binds the exact Section-1 command, the exact closed set of 19 intended source keys
-(including `protobuf_env`), the Python executable and version, and the normalized package environment.
+That certificate binds the exact Section-1 command, the exact closed set of 20 intended source keys
+(including `protobuf_env` and the shared provenance module), the Python executable and version, and the
+normalized package environment.
 Missing or extra source entries are rejected. Preflight re-verifies all hashes and refuses to run if the
 command, source or environment changed after testing.
 
@@ -206,26 +211,48 @@ It exports `HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache` and
 `HF_HUB_CACHE=$HF_HOME/hub` consistently for download, smoke, training and evaluation. It verifies the
 Hub-resolved commit plus `config.json`, tokenizer files, model index and exactly the two expected model
 shards. The certificate binds the exact `snapshots/<revision>` directory, its complete relative file
-inventory, every symlink target and every resolved file-content hash. After the download it switches to
-`HF_HUB_OFFLINE=1`, performs an offline `AutoConfig` load, then runs the complete five-JSONL tokenizer
-audit under `TRANSFORMERS_OFFLINE=1` and `HF_DATASETS_OFFLINE=1`.
+inventory, every symlink target and every resolved file-content hash. Independently of that generated
+inventory, preflight verifies eight load-bearing files against immutable upstream pins: Hugging Face LFS
+SHA-256 values for `tokenizer.model` and both model shards, and SHA-256 values independently computed from
+the official raw immutable-revision URLs for the five small configuration/index files. It also requires
+the exact eleven-file top-level tree published at that revision; additional Transformers-recognized files
+such as `model.safetensors`, `tokenizer.json`, or adapter sidecars are rejected rather than allowed to
+override the pinned sharded model or SentencePiece tokenizer. A changed cache
+therefore cannot be blessed merely by regenerating a certificate. After the download it switches to
+`HF_HUB_OFFLINE=1`. The logical model ID and revision remain the scientific provenance, but every
+Transformers cold-parent `AutoConfig`, fast/slow `AutoTokenizer`, and model load uses the exact local
+snapshot path with `local_files_only=True` and no revision argument; resume loads only the immutable
+checkpoint after proving that checkpoint's exact parent ancestry. This distinction is load-bearing: on this
+cluster, Transformers 5.12.1 was observed to produce `vocab_size=5` and `vocab_file=None` from the cached
+model-ID route, while the same pinned bytes loaded by exact snapshot produce `vocab_size=256000` and the
+correct `tokenizer.model`. Preflight then runs the complete five-JSONL tokenizer audit under
+`TRANSFORMERS_OFFLINE=1` and `HF_DATASETS_OFFLINE=1` and binds the report's load source to that certified
+snapshot. Every config, tokenizer and model load from the parent is bracketed by complete snapshot-digest
+checks. This detects persistent shared-cache mutation during a load. The explicit trust boundary is a
+non-adversarial shared cache: the protocol does not claim to defeat a same-account process that can alter
+and restore bytes between checks, and it does not copy approximately 5.2 GB into each job's scratch space.
 
 The CPU tokenizer gate is fail-closed: the pinned model configuration and raw base tokenizer must expose
 256,000 entries before sentinel registration; `[END_CELL]` and `[DOWN]` must then occupy IDs 256000 and
 256001 and produce a tokenizer length of 256002. All five uniquely identified, hash-bound JSONLs must
 have noncollapsed prompt/response lengths and zero unknown tokens, and 512 rows must agree under the
-slow and fast tokenizers. CPU preflight deliberately does not load the multi-gigabyte model. The real
+slow and fast tokenizers. Both reports must identify the certified snapshot's `tokenizer.model` as their
+opened vocabulary file; a missing or different `vocab_file` fails authorization. CPU preflight
+deliberately does not load the multi-gigabyte model. The real
 256,000-row parent embedding table is first proved by the mandatory H200 smoke/trainer immediately
 before any resize; resume proves that model and tokenizer are already 256002.
 
-The only launch authorization is the schema 4 certificate:
+The only launch authorization is the schema 8 certificate:
 
 ```text
 ~/tahoe/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
 ```
 
-It is published atomically only after every check succeeds. Schema 4 invalidates every earlier
-certificate. It binds hashes of all five data files, the
+It is published atomically only after every check succeeds. Schema 8 invalidates every earlier
+certificate: schema 7 independently pinned the official model files but did not reject overriding
+snapshot filenames or compare the five Tahoe inputs against immutable canonical hashes. The schema 8
+creator and verifier both require the pre-registered train/Tier-1/Tier-2/Tier-3/Tier-4 SHA-256 values, so
+regenerating preflight cannot bless altered data. It binds the
 Section-1 test certificate, tokenizer report, trainer, evaluators, manifest/comparison code, every Gemma
 job, environment, package freeze, the complete Protobuf `RECORD` payload inventory, both focused tests,
 this runbook and the complete pinned snapshot.
@@ -253,6 +280,11 @@ warning. It also records GPU memory, throughput, utilization, temperature and po
 checks pass does it atomically publish
 `RESULTS/gemma2_standard_smoke/SMOKE_PASSED.json`; production verifies that this marker belongs to the
 current preflight certificate, trainer and smoke job.
+The smoke resolves the exact local snapshot from the verified certificate and passes it separately as
+`--model_load_path`; `--model_name` and `--model_revision` remain the logical provenance. Its first segment
+cold-starts from that snapshot. Its second segment passes the same parent identity but loads model and
+tokenizer exclusively from the published resume checkpoint. The schema-4 smoke certificate binds the
+parent snapshot path, complete inventory digest and preflight certificate.
 
 Do not submit training unless the log ends in `[PASS]`.
 
@@ -290,12 +322,24 @@ canonical output directory and stores the Slurm job ID
 in the lock, so concurrent production writers are rejected.
 
 Only published `checkpoint-N/training_state.pt` files count as resume state. Temporary checkpoints,
-partial published directories and a nonfresh output without a valid checkpoint fail closed. Ten minutes
+partial published directories and a nonfresh output without a valid checkpoint fail closed.
+The production job independently resolves the same exact local snapshot from the verified preflight
+certificate. A cold start loads that path; a resume loads only the selected checkpoint while retaining
+the logical parent ID/revision, certificate SHA-256, certified snapshot inventory digest and official
+revision-manifest digest in the
+training contract, training state and provenance. The trainer recomputes that complete inventory
+before and after configuration, tokenizer and model loading; this closes persistent substitutions under
+the non-adversarial shared-cache boundary stated above.
+Ten minutes
 before timeout Slurm sends one `USR1`; the trainer publishes an optimizer-boundary state and exits 99.
 Resubmit the identical command to continue. A successful final artifact must contain
 `final/checkpoint_manifest.json` whose complete recursive inventory and SHA-256 hashes validate, plus
 `final/training_state.pt` with `completed=true`, `global_step=42198`, `epoch=1`,
-`microbatch_position=0` and `accumulation_position=0`.
+`microbatch_position=0` and `accumulation_position=0`. Whether the final checkpoint already exists or is
+created by the current job, production also verifies provenance schema 4 through the same checkpoint
+validator used by evaluation. Its model block and training contract must bind the logical model
+ID/revision, certificate hash, exact parent path, complete snapshot inventory digest and official
+revision-manifest digest.
 
 ## 5. Freeze Tier-2 support and all four checkpoint declarations
 
@@ -315,9 +359,23 @@ source endcell/jobs/gemma2_standard_protobuf_env.sh
 FP=endcell/jobs/gemma2_standard_checkpoint_fingerprint.py
 CERT=RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json
 CONTRACT=endcell/jobs/gemma2_standard_preflight_contract.py
-GEMMA_PARENT=$($PY $CONTRACT verify --certificate $CERT \
+RUNTIME=RESULTS/gemma2_standard_preflight/PREFLIGHT_RUNTIME_CONTRACT.json
+$PY $CONTRACT verify --certificate $CERT \
   --model-id vandijklab/C2S-Scale-Gemma-2-2B \
-  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --print-snapshot | tail -1)
+  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --runtime-contract-out "$RUNTIME"
+mapfile -t GEMMA_BINDING < <($PY - "$RUNTIME" <<"PY"
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+for key in ("snapshot_path", "preflight_certificate_sha256", "snapshot_inventory_sha256",
+            "authoritative_revision_files_sha256"):
+    print(d[key])
+PY
+)
+test "${#GEMMA_BINDING[@]}" -eq 4
+GEMMA_PARENT="${GEMMA_BINDING[0]}"
+PREFLIGHT_SHA256="${GEMMA_BINDING[1]}"
+SNAPSHOT_SHA256="${GEMMA_BINDING[2]}"
+AUTHORITATIVE_SHA256="${GEMMA_BINDING[3]}"
 PYTHIA_PARENT=$($PY - <<"PY"
 import os
 from huggingface_hub import snapshot_download
@@ -329,9 +387,21 @@ PY
 GEMMA_FP=$($PY $FP \
   --checkpoint /data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/final \
   --require_complete_sft --expected_global_step 42198 --expected_epoch 1 \
-  --expected_microbatch_position 0 --expected_accumulation_position 0 --digest_only)
+  --expected_microbatch_position 0 --expected_accumulation_position 0 \
+  --require_gemma_ancestry --expected_model_id vandijklab/C2S-Scale-Gemma-2-2B \
+  --expected_revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 \
+  --expected_parent_snapshot "$GEMMA_PARENT" \
+  --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256" \
+  --expected_snapshot_inventory_sha256 "$SNAPSHOT_SHA256" \
+  --expected_authoritative_files_sha256 "$AUTHORITATIVE_SHA256" --digest_only)
 PYTHIA_FP=$($PY $FP --checkpoint /data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final --digest_only)
-GEMMA_PARENT_FP=$($PY $FP --checkpoint "$GEMMA_PARENT" --digest_only)
+GEMMA_PARENT_FP=$($PY $FP --checkpoint "$GEMMA_PARENT" --require_gemma_parent \
+  --expected_model_id vandijklab/C2S-Scale-Gemma-2-2B \
+  --expected_revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 \
+  --expected_parent_snapshot "$GEMMA_PARENT" \
+  --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256" \
+  --expected_snapshot_inventory_sha256 "$SNAPSHOT_SHA256" \
+  --expected_authoritative_files_sha256 "$AUTHORITATIVE_SHA256" --digest_only)
 PYTHIA_PARENT_FP=$($PY $FP --checkpoint "$PYTHIA_PARENT" --digest_only)
 $PY endcell/analysis/freeze_nir_manifest.py \
   --eval_dir /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big \
@@ -366,7 +436,7 @@ Fine-tuned Gemma:
 
 ```bash
 sbatch --partition=gpuh200 \
-  --export=ALL,CHECKPOINT_ROLE=gemma_sft,MODEL_LABEL=gemma,TIER2_MANIFEST="$MANIFEST" \
+  --export=ALL,CHECKPOINT_ROLE=gemma_sft,TIER2_MANIFEST="$MANIFEST" \
   endcell/jobs/gemma2_standard_eval.sbatch
 ```
 
@@ -374,7 +444,7 @@ Fine-tuned Pythia, with its explicit legacy training-state exemption:
 
 ```bash
 sbatch --partition=gpuh200 \
-  --export=ALL,CHECKPOINT_ROLE=pythia_sft_legacy,ALLOW_LEGACY_PYTHIA_CHECKPOINT=1,MODEL_LABEL=pythia,MODEL_PATH=/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final,TIER2_MANIFEST="$MANIFEST" \
+  --export=ALL,CHECKPOINT_ROLE=pythia_sft_legacy,ALLOW_LEGACY_PYTHIA_CHECKPOINT=1,MODEL_PATH=/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final,TIER2_MANIFEST="$MANIFEST" \
   endcell/jobs/gemma2_standard_eval.sbatch
 ```
 
@@ -389,10 +459,16 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_DATASETS_OFFLINE=1
 cd ~/tahoe
 PY=/data/BuffaF-Projetcs/florian_c2s/envs/c2s/bin/python
 source endcell/jobs/gemma2_standard_protobuf_env.sh
-GEMMA_PARENT=$($PY endcell/jobs/gemma2_standard_preflight_contract.py verify \
+RUNTIME=RESULTS/gemma2_standard_preflight/PREFLIGHT_RUNTIME_CONTRACT.json
+$PY endcell/jobs/gemma2_standard_preflight_contract.py verify \
   --certificate RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json \
   --model-id vandijklab/C2S-Scale-Gemma-2-2B \
-  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --print-snapshot | tail -1)
+  --revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 --runtime-contract-out "$RUNTIME"
+GEMMA_PARENT=$($PY - "$RUNTIME" <<"PY"
+import json, sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["snapshot_path"])
+PY
+)
 PYTHIA_PARENT=$($PY - <<"PY"
 import os
 from huggingface_hub import snapshot_download
@@ -411,7 +487,7 @@ Frozen Gemma parent:
 
 ```bash
 sbatch --partition=gpuh200 \
-  --export=ALL,CHECKPOINT_ROLE=gemma_parent,MODEL_LABEL=gemma_parent,MODEL_PATH="$GEMMA_PARENT",TIER2_MANIFEST="$MANIFEST" \
+  --export=ALL,CHECKPOINT_ROLE=gemma_parent,MODEL_PATH="$GEMMA_PARENT",TIER2_MANIFEST="$MANIFEST" \
   endcell/jobs/gemma2_standard_eval.sbatch
 ```
 
@@ -419,17 +495,25 @@ Frozen Pythia parent:
 
 ```bash
 sbatch --partition=gpuh200 \
-  --export=ALL,CHECKPOINT_ROLE=pythia_parent,MODEL_LABEL=pythia_parent,MODEL_PATH="$PYTHIA_PARENT",TIER2_MANIFEST="$MANIFEST" \
+  --export=ALL,CHECKPOINT_ROLE=pythia_parent,MODEL_PATH="$PYTHIA_PARENT",TIER2_MANIFEST="$MANIFEST" \
   endcell/jobs/gemma2_standard_eval.sbatch
 ```
 
 Parent jobs are validity-first and are frozen as validity-only controls. If a parent lacks an atomic
 `[END_CELL]` or emits nonsense—as frozen Pythia did in the original exploratory run—the evaluator writes
 `status=validity_failure` and exits without NIR. That is the result; it is not repaired or scored.
+The evaluation launcher derives each output label from `CHECKPOINT_ROLE` and rejects a conflicting
+`MODEL_LABEL`; it also reads `config.json` and enforces `gemma2` for both Gemma roles and `gpt_neox` for
+both Pythia roles. This preserves the Pythia comparators without allowing a Gemma checkpoint to bypass
+ancestry validation under a Pythia label. Frozen-parent path comparison is filesystem-identity aware, so
+the cluster's `/data` and `/mnt/beegfsnew` spellings may identify the same certified bytes while the
+certificate retains its canonical lexical `/data` path.
 
 Every inference job is offline, uses the eager attention implementation and restores KV caching through
-the repaired evaluator. The job parses both the greedy validity artifact and sampled NIR artifact; it
-does not print success for `validity_failure`.
+the repaired evaluator. Production validity and NIR entrypoints are fixed to the canonical repo files;
+environment-variable substitution is disabled, and each selected resolved path and SHA-256 must match
+the corresponding source in the preflight certificate before execution. The job parses both the greedy
+validity artifact and sampled NIR artifact; it does not print success for `validity_failure`.
 
 ## 7. Produce the paired Gemma–Pythia comparison
 

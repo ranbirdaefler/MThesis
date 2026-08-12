@@ -42,16 +42,41 @@ cd "$REPO"
     echo "[FATAL] submitted to '${SLURM_JOB_PARTITION:-unknown}', expected 'long_gpuh200'" >&2
     exit 2
 }
+RUNTIME_CONTRACT="${SLURM_TMPDIR:-/tmp}/gemma2-preflight-runtime-${SLURM_JOB_ID}.json"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL" \
-    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment
+    --revision "$REVISION" --require-generation-cap 1600 --verify-current-environment \
+    --runtime-contract-out "$RUNTIME_CONTRACT"
+mapfile -t RUNTIME_VALUES < <("$PY" - "$RUNTIME_CONTRACT" <<'PY'
+import json, sys
+document = json.load(open(sys.argv[1], encoding="utf-8"))
+if document.get("schema_version") != 2:
+    raise SystemExit("[FATAL] invalid preflight runtime-contract schema")
+for key in ("snapshot_path", "preflight_certificate_sha256", "snapshot_inventory_sha256",
+            "authoritative_revision_files_sha256"):
+    value = document.get(key)
+    if not isinstance(value, str) or not value:
+        raise SystemExit(f"[FATAL] runtime contract lacks {key}")
+    print(value)
+PY
+)
+[[ "${#RUNTIME_VALUES[@]}" -eq 4 ]] || { echo "[FATAL] incomplete runtime contract" >&2; exit 2; }
+SNAPSHOT_PATH="${RUNTIME_VALUES[0]}"
+PREFLIGHT_SHA256="${RUNTIME_VALUES[1]}"
+SNAPSHOT_INVENTORY_SHA256="${RUNTIME_VALUES[2]}"
+AUTHORITATIVE_FILES_SHA256="${RUNTIME_VALUES[3]}"
+[[ -d "$SNAPSHOT_PATH" ]] || {
+    echo "[FATAL] certificate returned no exact Gemma snapshot: $SNAPSHOT_PATH" >&2; exit 2;
+}
 [[ -f "$SMOKE_CERT" ]] || {
     echo "[FATAL] no canonical interruption/resume smoke authorization: $SMOKE_CERT" >&2; exit 2;
 }
-"$PY" - "$SMOKE_CERT" "$CERT" "$TRAINER" "$REPO/endcell/jobs/gemma2_standard_smoke.sbatch" <<'PY'
+"$PY" - "$SMOKE_CERT" "$CERT" "$SNAPSHOT_PATH" "$SNAPSHOT_INVENTORY_SHA256" \
+    "$AUTHORITATIVE_FILES_SHA256" "$TRAINER" \
+    "$REPO/endcell/jobs/gemma2_standard_smoke.sbatch" <<'PY'
 import hashlib, json, sys
 from pathlib import Path
 
-smoke_path, cert_path, trainer_path, smoke_job_path = sys.argv[1:]
+smoke_path, cert_path, parent_snapshot, expected_snapshot_digest, expected_authoritative_digest, trainer_path, smoke_job_path = sys.argv[1:]
 
 def sha256(path):
     digest = hashlib.sha256()
@@ -61,10 +86,16 @@ def sha256(path):
     return digest.hexdigest()
 
 document = json.load(open(smoke_path, encoding="utf-8"))
-if document.get("schema_version") != 1 or document.get("smoke_passed") is not True:
+if document.get("schema_version") != 4 or document.get("smoke_passed") is not True:
     raise SystemExit("[FATAL] invalid smoke authorization")
 if document.get("preflight_certificate", {}).get("sha256") != sha256(cert_path):
     raise SystemExit("[FATAL] smoke was authorized by a different preflight certificate")
+if document.get("parent_snapshot_path") != str(Path(parent_snapshot).absolute()):
+    raise SystemExit("[FATAL] smoke used a different parent snapshot load source")
+if document.get("parent_snapshot_inventory_sha256") != expected_snapshot_digest:
+    raise SystemExit("[FATAL] smoke used a different parent snapshot inventory")
+if document.get("parent_authoritative_files_sha256") != expected_authoritative_digest:
+    raise SystemExit("[FATAL] smoke used a different official revision manifest")
 if document.get("sources", {}).get("trainer", {}).get("sha256") != sha256(trainer_path):
     raise SystemExit("[FATAL] trainer changed since interruption/resume smoke")
 if document.get("sources", {}).get("smoke_job", {}).get("sha256") != sha256(smoke_job_path):
@@ -114,11 +145,22 @@ printf "job_id=%s host=%s started_utc=%s\n" "$SLURM_JOB_ID" "$(hostname)" "$(dat
 
 HELP="$($PY "$TRAINER" --help 2>&1)"
 for flag in --prepend_bos --strict_token_contract --resumable \
-    --resume_from_checkpoint --model_revision --attn_implementation; do
+    --resume_from_checkpoint --model_revision --model_load_path --attn_implementation \
+    --preflight_certificate_sha256 --parent_snapshot_inventory_sha256 \
+    --parent_authoritative_files_sha256; do
     grep -Fq -- "$flag" <<<"$HELP" || { echo "[FATAL] trainer interface missing $flag" >&2; exit 3; }
 done
 
 RESUME_ARGS=()
+ANCESTRY_ARGS=(
+    --require_gemma_ancestry
+    --expected_model_id "$MODEL"
+    --expected_revision "$REVISION"
+    --expected_parent_snapshot "$SNAPSHOT_PATH"
+    --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256"
+    --expected_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
+    --expected_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
+)
 mapfile -t PUBLISHED_STATES < <(find "$OUT" -maxdepth 2 -type f \
     -path "$OUT/checkpoint-[0-9]*/training_state.pt" | sort -V)
 mapfile -t PUBLISHED_DIRS < <(find "$OUT" -mindepth 1 -maxdepth 1 -type d \
@@ -137,7 +179,7 @@ if [[ -f "$OUT/final/config.json" ]]; then
     "$PY" "$FINGERPRINT_TOOL" --checkpoint "$OUT/final" --require_complete_sft \
         --expected_global_step 42198 --expected_epoch 1 \
         --expected_microbatch_position 0 --expected_accumulation_position 0 \
-        --digest_only >/dev/null
+        "${ANCESTRY_ARGS[@]}" --digest_only >/dev/null
     echo "[PASS] canonical final checkpoint manifest, content, and terminal state validated; no rerun"
     exit 0
 elif [[ "${#PUBLISHED_STATES[@]}" -gt 0 ]]; then
@@ -154,7 +196,11 @@ else
 fi
 
 CMD=(
-    "$PY" "$TRAINER" --mode full --model_name "$MODEL" --model_revision "$REVISION"
+    "$PY" "$TRAINER" --mode full --model_name "$MODEL" --model_revision "$REVISION" \
+    --model_load_path "$SNAPSHOT_PATH"
+    --preflight_certificate_sha256 "$PREFLIGHT_SHA256"
+    --parent_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
+    --parent_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
     --train_file "$DATA/train.jsonl" --eval_file "$DATA/eval_tier1_seen_conditions.jsonl"
     --output_dir "$OUT" --num_epochs 1 --batch_size 1 --grad_accum 16
     --bf16 --gradient_checkpointing --max_length 8192
@@ -207,6 +253,6 @@ TRAIN_PID=""
 "$PY" "$FINGERPRINT_TOOL" --checkpoint "$OUT/final" --require_complete_sft \
     --expected_global_step 42198 --expected_epoch 1 \
     --expected_microbatch_position 0 --expected_accumulation_position 0 \
-    --digest_only >/dev/null
+    "${ANCESTRY_ARGS[@]}" --digest_only >/dev/null
 echo "[PASS] final manifest/content and terminal state: completed=true, step=42198, epoch=1, microbatch=0, accumulation=0"
 echo "[PASS] canonical one-epoch standard-target SFT completed -> $OUT/final"
