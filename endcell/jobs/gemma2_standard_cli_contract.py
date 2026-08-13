@@ -185,7 +185,7 @@ TEXT_REQUIREMENTS = {
     },
     "endcell/jobs/gemma2_standard_preflight.sh": {
         "gemma2_standard_protobuf_env.sh", "source \"$PROTOBUF_ENV\"",
-        "unset PYTHONHOME", "[[ \"$LONG_GPU_PARTITION\" == \"long_gpuh200\" ]]",
+        "unset PYTHONHOME", "[[ \"$GPU_PARTITION\" == \"gpuh200\" ]]",
         "--load-source \"$MODEL_ID=$SNAPSHOT_PATH\"",
         "AutoConfig.from_pretrained(snapshot_path, local_files_only=True)",
         "verify_authoritative_snapshot", "guarded_snapshot_load",
@@ -209,7 +209,7 @@ TEXT_REQUIREMENTS = {
     },
     "endcell/jobs/gemma2_standard_train.sbatch": {
         "source \"$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh\"",
-        "unset PYTHONHOME", "[[ \"${SLURM_JOB_PARTITION:-}\" == \"long_gpuh200\" ]]",
+        "unset PYTHONHOME", "[[ \"${SLURM_JOB_PARTITION:-}\" == \"gpuh200\" ]]",
         "--model_load_path \"$SNAPSHOT_PATH\"", "--runtime-contract-out",
         'document.get("schema_version") != 4',
         "--require_gemma_ancestry", "--expected_snapshot_inventory_sha256",
@@ -225,7 +225,7 @@ TEXT_REQUIREMENTS = {
     },
     "docs/endcell/gemma2_standard_hpc_runbook.md": {
         "protobuf-5.29.5", "Do **not** install TikToken", "256002",
-        "google/_upb/_message.abi3.so", "schema 8", "literal `long_gpuh200`",
+        "google/_upb/_message.abi3.so", "schema 8", "literal `gpuh200`",
         "exact local snapshot", "logical model ID and revision",
         "schema-4 smoke certificate", "Production validity and NIR entrypoints are fixed",
     },

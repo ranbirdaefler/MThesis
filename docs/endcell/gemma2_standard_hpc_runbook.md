@@ -186,17 +186,17 @@ normalized package environment.
 Missing or extra source entries are rejected. Preflight re-verifies all hashes and refuses to run if the
 command, source or environment changed after testing.
 
-## 2. Verify `long_gpuh200`, download Gemma and create the atomic preflight certificate
+## 2. Verify `gpuh200`, download Gemma and create the atomic preflight certificate
 
 Scheduler commands only on the login node:
 
 ```bash
 cd ~/tahoe
-LONG_GPU_PARTITION=long_gpuh200
-bash endcell/jobs/gemma2_standard_preflight.sh "$LONG_GPU_PARTITION"
+GPU_PARTITION=gpuh200
+bash endcell/jobs/gemma2_standard_preflight.sh "$GPU_PARTITION"
 ```
 
-The script first verifies that the literal 47.5-hour partition advertises H200 resources. It then opens
+The script first verifies that the regular, sub-24-hour partition advertises H200 resources. It then opens
 a CPU `srun` on `defq` and performs the only Gemma network download in the protocol:
 
 ```text
@@ -308,13 +308,13 @@ Only after that command passes:
 
 ```bash
 cd ~/tahoe
-LONG_GPU_PARTITION=long_gpuh200
-sbatch --partition="$LONG_GPU_PARTITION" \
+GPU_PARTITION=gpuh200
+sbatch --partition="$GPU_PARTITION" \
   endcell/jobs/gemma2_standard_train.sbatch
 squeue -u 3180408
 ```
 
-At runtime the job compares `SLURM_JOB_PARTITION` directly with the certified literal `long_gpuh200`;
+At runtime the job compares `SLURM_JOB_PARTITION` directly with the certified literal `gpuh200`;
 there is no user-overridable expected-partition variable. It then verifies the certificate, exact data,
 actual H200 name and required HBM
 plus the exact passing interruption/resume smoke before loading weights. It acquires `flock` on the

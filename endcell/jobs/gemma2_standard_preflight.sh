@@ -6,15 +6,15 @@ unset PYTHONHOME
 ACCOUNT="${ACCOUNT:-3180408}"
 CPU_PARTITION="${CPU_PARTITION:-defq}"
 CPU_TIME="${CPU_TIME:-06:00:00}"
-LONG_GPU_PARTITION="${1:-${LONG_GPU_PARTITION:-long_gpuh200}}"
+GPU_PARTITION="${1:-${GPU_PARTITION:-gpuh200}}"
 REPO="${REPO:-$HOME/tahoe}"
 MODEL_ID="vandijklab/C2S-Scale-Gemma-2-2B"
 REVISION="5ddf28b8f1c81b7ab7a9be192924da82b6c5d512"
 export HF_HOME=/data/BuffaF-Projetcs/florian_c2s/hf_cache
 export HF_HUB_CACHE="$HF_HOME/hub"
 
-[[ "$LONG_GPU_PARTITION" == "long_gpuh200" ]] || {
-    echo "[FATAL] canonical Gemma training partition is literal 'long_gpuh200', got '$LONG_GPU_PARTITION'" >&2
+[[ "$GPU_PARTITION" == "gpuh200" ]] || {
+    echo "[FATAL] canonical Gemma training partition is literal 'gpuh200', got '$GPU_PARTITION'" >&2
     exit 2
 }
 
@@ -41,24 +41,24 @@ for command_name in scontrol sinfo srun sbatch; do
 done
 
 echo "=== scheduler-only checks (login node) ==="
-scontrol show partition "$LONG_GPU_PARTITION" || {
-    echo "[FATAL] partition '$LONG_GPU_PARTITION' was not verified" >&2
+scontrol show partition "$GPU_PARTITION" || {
+    echo "[FATAL] partition '$GPU_PARTITION' was not verified" >&2
     exit 2
 }
-PARTITION_VIEW="$(sinfo -p "$LONG_GPU_PARTITION" -N -h -o '%N|%l|%G|%t')"
+PARTITION_VIEW="$(sinfo -p "$GPU_PARTITION" -N -h -o '%N|%l|%G|%t')"
 printf '%s\n' "$PARTITION_VIEW"
 grep -Eiq 'h200' <<<"$PARTITION_VIEW" || {
-    echo "[FATAL] partition '$LONG_GPU_PARTITION' exposes no H200 GRES in sinfo" >&2
+    echo "[FATAL] partition '$GPU_PARTITION' exposes no H200 GRES in sinfo" >&2
     exit 2
 }
 if sbatch --help 2>&1 | grep -Fq -- '--test-only'; then
-    sbatch --test-only --partition="$LONG_GPU_PARTITION" \
+    sbatch --test-only --partition="$GPU_PARTITION" \
         "$REPO/endcell/jobs/gemma2_standard_train.sbatch"
 else
     echo "[WARN] sbatch --test-only unavailable; existence/GRES were verified, policy was not"
 fi
 
-export ACCOUNT CPU_PARTITION CPU_TIME LONG_GPU_PARTITION REPO MODEL_ID REVISION HF_HOME HF_HUB_CACHE
+export ACCOUNT CPU_PARTITION CPU_TIME GPU_PARTITION REPO MODEL_ID REVISION HF_HOME HF_HUB_CACHE
 srun --account="$ACCOUNT" --partition="$CPU_PARTITION" --cpus-per-task=4 --mem=32G \
     --time="$CPU_TIME" --export=ALL bash -lc '
 set -euo pipefail

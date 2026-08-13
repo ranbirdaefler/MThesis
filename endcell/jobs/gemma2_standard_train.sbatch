@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=gemma2_std_sft
 #SBATCH --account=3180408
-#SBATCH --partition=long_gpuh200
+#SBATCH --partition=gpuh200
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=120G
-#SBATCH --time=47:30:00
+#SBATCH --time=23:50:00
 #SBATCH --signal=B:USR1@600
 #SBATCH --output=logs/gemma2_standard_train_%j.out
 
@@ -38,8 +38,8 @@ MIN_FREE_GIB=150
 mkdir -p "$REPO/logs" "$REPO/RESULTS" "$RUN_META" "$OUT"
 cd "$REPO"
 
-[[ "${SLURM_JOB_PARTITION:-}" == "long_gpuh200" ]] || {
-    echo "[FATAL] submitted to '${SLURM_JOB_PARTITION:-unknown}', expected 'long_gpuh200'" >&2
+[[ "${SLURM_JOB_PARTITION:-}" == "gpuh200" ]] || {
+    echo "[FATAL] submitted to '${SLURM_JOB_PARTITION:-unknown}', expected 'gpuh200'" >&2
     exit 2
 }
 RUNTIME_CONTRACT="${SLURM_TMPDIR:-/tmp}/gemma2-preflight-runtime-${SLURM_JOB_ID}.json"
