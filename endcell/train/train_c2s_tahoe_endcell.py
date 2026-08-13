@@ -497,9 +497,17 @@ def register_sentinels(tokenizer, sentinels=SENTINELS, strict=False,
     # A resumed tokenizer legitimately already carries Tahoe's sentinels. Exclude those exact
     # registered tokens from the set of *other* special ids against which collisions are checked.
     registered = set(getattr(tokenizer, "additional_special_tokens", []) or [])
+    registered.update(getattr(tokenizer, "all_special_tokens", []) or [])
     for token in sentinels:
-        if token in registered:
-            token_id = tokenizer.convert_tokens_to_ids(token)
+        token_id = tokenizer.convert_tokens_to_ids(token)
+        roundtrip = None
+        if hasattr(tokenizer, "convert_ids_to_tokens"):
+            roundtrip = tokenizer.convert_ids_to_tokens(token_id)
+        # Some SentencePiece tokenizers reload added special tokens into the added-token
+        # decoder/all_special_ids but leave additional_special_tokens empty.  Exact lexical
+        # round-trip therefore also proves this is the saved Tahoe sentinel, not a collision
+        # with PAD/EOS/BOS/UNK or another pre-existing special token.
+        if token in registered or roundtrip == token:
             preexisting_special_ids.discard(token_id)
     existing = list(getattr(tokenizer, "additional_special_tokens", []) or [])
     requested = existing + [token for token in sentinels if token not in existing]

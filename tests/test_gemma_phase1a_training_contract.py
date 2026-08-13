@@ -205,6 +205,29 @@ def test_strict_sentinels_are_atomic_distinct_non_unk_and_survive_reload(tmp_pat
     assert tok.unk_token_id not in result["ids"].values()
 
 
+def test_strict_sentinels_are_idempotent_when_resume_reload_omits_additional_list(monkeypatch):
+    class ResumeTokenizer(FakeTokenizer):
+        forced_special_ids = []
+
+        @property
+        def all_special_ids(self):
+            return super().all_special_ids + list(self.forced_special_ids)
+
+    monkeypatch.setattr(trainer, "AutoTokenizer", FakeAutoTokenizer)
+    tok = ResumeTokenizer()
+    trainer.register_sentinels(tok)
+    sentinel_ids = {tok.convert_tokens_to_ids(token) for token in trainer.SENTINELS}
+    tok.additional_special_tokens = []
+    tok.forced_special_ids = sorted(sentinel_ids)
+    tok.convert_ids_to_tokens = lambda token_id: next(
+        (token for token, value in tok.vocab.items() if value == token_id), "<unk>")
+
+    result = trainer.register_sentinels(tok, strict=True)
+
+    assert result["added"] == 0
+    assert set(result["ids"].values()) == sentinel_ids
+
+
 def test_strict_reload_accepts_semantic_equivalence_across_tokenizer_class(monkeypatch):
     class ReloadedFastTokenizer(FakeTokenizer):
         pass
