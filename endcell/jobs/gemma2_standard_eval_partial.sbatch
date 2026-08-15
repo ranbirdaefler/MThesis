@@ -48,6 +48,8 @@ substitutions = (
      "--expected_global_step 42198"),
     ("--verify-current-environment --runtime-contract-out",
      "--runtime-contract-out"),
+    ('echo "[PASS] Gemma manifest/content, terminal state, and certified ancestry validated"',
+     'echo "[PASS] Gemma manifest/content and certified ancestry validated; partial state admitted by wrapper"'),
 )
 patched = text
 for needle, replacement in substitutions:
@@ -85,7 +87,7 @@ document = {
     "wrapper_sha256": digest(wrapper.resolve()),
     "certified_eval_sha256": digest(original.resolve()),
     "runtime_patched_eval_sha256": digest(patched.resolve()),
-    "substitution_count": 2,
+    "substitution_count": 3,
     "scientific_evaluator_hash_checks_preserved": ["evaluate_endcell", "nir_benchmark"],
 }
 payload = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
