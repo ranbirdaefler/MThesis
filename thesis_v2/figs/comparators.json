@@ -1,0 +1,184 @@
+{
+  "figure": "comparators",
+  "label": "fig:comparators",
+  "file": "thesis_v2/figs/comparators.tex",
+  "kind": "tikz",
+  "action": "rework of the inline tikzpicture at thesis_v2/Sections/04b-representation.tex:80-184",
+  "width_measured": {
+    "graphics_bbox_pt": 443.63,
+    "graphics_bbox_mm": 156.5,
+    "height_pt": 227.34,
+    "height_mm": 80.2,
+    "fullwidth_available_mm": 171.0,
+    "scaled": false,
+    "note": "1cm of tikz coordinate = 1cm on the page. Nothing is resized."
+  },
+  "what_changed": [
+    "Row B: seven marks, one labelled; now every mark is named by its layer. The three at 3.6/3.8/4.2 (layers 16, 12, 9) are 1.1mm and 2.2mm apart and are braced and named as an ordered set rather than given three converging leaders.",
+    "Row A: 'slab projected out' now carries a leader back to its 0.121 mark, which it previously stood 0.4cm to the right of, nearer the shuffled-label rule than its own point.",
+    "Row C: 'single-cell arm' marker changed from a hollow ring to a solid fill; the dotted zero rule is interrupted across the marker's height (nearest approach now 4.8pt centre-to-rule-end, 3.4pt edge-to-rule-end); label starts 0.30cm clear of the marker edge with a leader through the interruption.",
+    "Rows C and D: label gap after an interval bar raised from 0.13cm to 0.30cm, so 'optimal-transport barycentric' and 'single cell' no longer read as continuations of their bars.",
+    "Row spacing opened (dividers -0.70 / -2.76 / -5.82; axes 0 / -2.05 / -5.05 / -7.40) to pay for the added labels. Figure is 13mm taller than v1.",
+    "No mark moved, no scale changed, no value changed, caption unchanged."
+  ],
+  "rows": [
+    {
+      "row": "A",
+      "question": "Is it there?",
+      "quantity": "twelve-way drug decode accuracy from the residual stream",
+      "map": "value * 10.5 cm, domain 0 to 1",
+      "ticks": [0, 0.25, 0.5, 0.75, 1],
+      "comparator": {
+        "kind": "dotted rule",
+        "label": "shuffled labels",
+        "drawn": 0.083,
+        "source_value": 0.08333333333333333,
+        "source": "RESULTS_cluster/workspace_probe.json :: chance",
+        "thesis": "04b-representation.tex: \"$1/12 \\approx 8\\%$\"; tab:workspace caption \"chance is $0.083$\""
+      },
+      "marks": [
+        {
+          "label": "slab projected out",
+          "drawn": 0.121,
+          "source_value": 0.12083333333333332,
+          "source": "RESULTS_cluster/workspace_probe.json :: layers.*.drug_decode_ablated (constant across all seven layers)",
+          "thesis": "\"Accuracy falls from $0.41$--$0.82$ to a constant $0.121$ floor\""
+        },
+        {
+          "label": "raw probe, peak",
+          "drawn": 0.821,
+          "source_value": 0.8208333333333333,
+          "source": "RESULTS_cluster/workspace_probe.json :: layers.9.drug_decode",
+          "thesis": "tab:workspace layer 9 raw = 0.821; prose \"reads $82\\%$ at layer 9\""
+        },
+        {
+          "label": "context removed",
+          "drawn": 0.883,
+          "source_value": 0.8833333333333333,
+          "source": "RESULTS_cluster/workspace_probe.json :: layers.16.drug_decode_context_removed",
+          "thesis": "tab:workspace layer 16 context-removed = 0.883; prose \"to $0.883$ ($88\\%$) at the deepest layer\""
+        }
+      ]
+    },
+    {
+      "row": "B",
+      "question": "Is it used?",
+      "quantity": "mean KL cost of ablating the purified drug slab, divided by the matched-dimension random null at the same layer",
+      "map": "value / 20 * 10.5 cm, domain 0 to 20",
+      "ticks": [0, 5, 10, 15, 20],
+      "comparator": {
+        "kind": "dotted rule",
+        "label": "matched-dimension random subspace",
+        "drawn": 1,
+        "note": "the null is the unit of this axis by construction"
+      },
+      "marks": [
+        {"layer": 16, "drawn": 3.6, "kl_pure_drug": 0.015104130066269466, "kl_random_matched": 0.004215709141184521, "ratio": 3.583},
+        {"layer": 12, "drawn": 3.8, "kl_pure_drug": 0.13309352414374343, "kl_random_matched": 0.03482442172428613, "ratio": 3.822},
+        {"layer": 9,  "drawn": 4.2, "kl_pure_drug": 0.41756509529374266, "kl_random_matched": 0.10037096018224545, "ratio": 4.160},
+        {"layer": 6,  "drawn": 5.7, "kl_pure_drug": 1.4348760298960015, "kl_random_matched": 0.25051546056382686, "ratio": 5.728},
+        {"layer": 2,  "drawn": 12.7, "kl_pure_drug": 0.15465423787633578, "kl_random_matched": 0.012193409151708086, "ratio": 12.684},
+        {"layer": 8,  "drawn": 14.1, "kl_pure_drug": 0.5960704311728478, "kl_random_matched": 0.04218148594713092, "ratio": 14.131},
+        {"layer": 4,  "drawn": 18.6, "kl_pure_drug": 1.5630274420322638, "kl_random_matched": 0.08388874216653897, "ratio": 18.632}
+      ],
+      "marks_source": "RESULTS_cluster/workspace_probe.json :: layers.<L>.kl.pure_drug[0] / layers.<L>.kl.random_matched[0]",
+      "thesis": "tab:workspace Ratio column, all seven rows, identical to one decimal; prose \"costs $3.6$--$18.6\\times$ the matched-dimension random null\"",
+      "layer_to_ratio_check": "the seven ratios are drawn in value order, not layer order; the layer labels restore the mapping the v1 figure omitted"
+    },
+    {
+      "row": "C",
+      "question": "Is it which drug?",
+      "quantity": "swap-minus-permuted effect as a fraction of that model's own clean preference gap, alpha = 0.5 rung, layer 12",
+      "map": "(value + 0.02) / 0.13 * 10.5 cm, domain -0.02 to 0.11",
+      "ticks": [-0.02, 0, 0.02, 0.04, 0.06, 0.08, 0.10],
+      "comparators": [
+        {"kind": "dotted rule", "label": "zero", "drawn": 0.0},
+        {
+          "kind": "dotted rule",
+          "label": "pre-registered margin",
+          "drawn": 0.10,
+          "thesis": "\"a $10\\%$ margin pre-registered for calling an effect material\"; the margin is stored per arm in absolute nats (seed 43: 0.007536, seed 45: 0.008158) and is 10% of that arm's clean gap by construction"
+        }
+      ],
+      "marks": [
+        {
+          "label": "residual arm, anchor seed",
+          "point_drawn": 0.0197, "lo_drawn": 0.0063, "hi_drawn": 0.0335,
+          "source_point": 0.019654724813287512,
+          "source_ci": [0.0062694480403512436, 0.03350395145788292],
+          "clean_ab_gap": 0.06420005919957501,
+          "source": "RESULTS_cluster/probe_arm_residual.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 1 and \\ci{+0.0197}{+0.0063}{+0.0335} in the prose"
+        },
+        {
+          "label": "second seed",
+          "point_drawn": 0.0118, "lo_drawn": 0.0060, "hi_drawn": 0.0173,
+          "source_point": 0.01179,
+          "source_ci": [0.00603, 0.01735],
+          "source": "RESULTS_cluster/probe_rep_residual_s43.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 2, residual seed 43"
+        },
+        {
+          "label": "third seed",
+          "point_drawn": 0.0085, "lo_drawn": 0.0029, "hi_drawn": 0.0143,
+          "source_point": 0.00854,
+          "source_ci": [0.00289, 0.01428],
+          "source": "RESULTS_cluster/probe_rep_residual_s45.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 3, residual seed 45"
+        },
+        {
+          "label": "single-cell arm, median over its depths",
+          "point_drawn": -0.0012,
+          "source_point": -0.001155,
+          "per_depth": {"2": -0.00336, "4": -0.00016, "6": 0.00296, "8": -0.00036, "9": -0.00195, "16": -0.00562},
+          "source": "RESULTS_cluster/probe_arm_single_cell.json :: median over layers.*.swap.diff_perm_norm, six depths (layer 12 absent, cell-line headroom 3.88x < the 5x gate)",
+          "thesis": "tab:identity last row \"nothing detectable at any depth (median $-0.0012$)\"",
+          "no_interval_by_design": "drawn as a bare marker; the per-depth median is not an estimator the pipeline returns an interval for"
+        }
+      ]
+    },
+    {
+      "row": "D",
+      "question": "Does a better target help?",
+      "quantity": "model NIR minus its random-partner scramble's NIR, identifiable stratum, n = 204 conditions, clustered over 40 cell lines",
+      "map": "(value + 0.03) / 0.08 * 10.5 cm, domain -0.03 to 0.05",
+      "ticks": [-0.02, 0, 0.02, 0.04],
+      "comparator": {"kind": "dotted rule", "label": "zero", "drawn": 0.0},
+      "marks": [
+        {
+          "label": "single cell",
+          "point_drawn": 0.014, "lo_drawn": -0.016, "hi_drawn": 0.042,
+          "source_point": 0.013529022720199194,
+          "source_ci": [-0.016375577271889354, 0.041935753108340475],
+          "source": "RESULTS_cluster/stratify_sameplate_final.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered",
+          "thesis": "tab:epsilon row 1, \\ci{+0.014}{-0.016}{+0.042}"
+        },
+        {
+          "label": "optimal-transport barycentric",
+          "point_drawn": -0.001, "lo_drawn": -0.018, "hi_drawn": 0.016,
+          "source_point": -0.0014203661262484797,
+          "source_ci": [-0.017795956326540144, 0.015714227646347452],
+          "source": "RESULTS_cluster/stratify_ot_T2.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered",
+          "thesis": "tab:epsilon row 2, \\ci{-0.001}{-0.018}{+0.016}"
+        },
+        {
+          "label": "consensus",
+          "point_drawn": -0.010, "lo_drawn": -0.022, "hi_drawn": 0.003,
+          "source_point": -0.010111443567325918,
+          "source_ci": [-0.022181169294411666, 0.0028747377612014288],
+          "source": "RESULTS_cluster/stratify_consensus.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered",
+          "thesis": "tab:epsilon row 3, \\ci{-0.010}{-0.022}{+0.003}"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "result": "no disagreement. Every value drawn was recomputed from RESULTS_cluster and matches the thesis text at the precision the thesis prints.",
+    "provenance_note_not_a_disagreement": "Row D's single-cell row comes from stratify_sameplate_final.json (model 0.7677, control-copy 0.7655, stratum reference 0.9382 -- the 0.768 / 0.766 / 0.938 the section quotes). A second single-cell run exists, stratify_singlecell_t1t2.json, whose scramble gap is +0.0114 [-0.0182, +0.0408] and whose model NIR is 0.7707. The thesis consistently uses the first in both v1 and v2, so the figure does too; the second is a different run, not a competing value for the same row.",
+    "banned_term_check": "the string 'noise ceiling' does not appear in the figure. The row C and row D comparators are named 'pre-registered margin' and zero; the stratum reference is not drawn."
+  },
+  "integration": {
+    "how": "in thesis_v2/Sections/04b-representation.tex replace the inline tikzpicture (lines 80-184) with \\input{figs/comparators}; the surrounding figure/fullwidth float, \\caption and \\label stay as they are.",
+    "tested_by": "thesis_v2/figs/_harness_comparators.tex -- a minimal document that \\input{preamble} and builds the figure inside \\begin{figure}\\begin{fullwidth}, with the real caption. Builds clean under pdflatex; only undefined-\\cref warnings, which are expected in a harness that has no tables."
+  }
+}

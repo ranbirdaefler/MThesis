@@ -85,8 +85,8 @@ exists and the literal string \texttt{unclear} otherwise. ``Held out'' means abs
 fine-tuning, not absent from the model's prior world knowledge or from the inference prompt.
 
 The split has corresponding levels of difficulty. Trained conditions test whether the model can
-reproduce information available during fine-tuning. Unseen combinations hold out a treatment well
-or pairing but often recombine a drug and cell line encountered separately. Unseen drugs remove all
+reproduce information available during fine-tuning. Unseen combinations hold out a whole treatment well
+but often recombine a drug and cell line encountered separately. Unseen drugs remove all
 retained fine-tuning conditions for those compounds. These are not rungs on one clean learning
 curve: they differ in support and empirical reliability, and only the last asks for a response
 without a Tahoe-trained per-drug memory. The thesis therefore avoids calling all held-out examples

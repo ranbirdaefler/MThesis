@@ -1,0 +1,329 @@
+% ===========================================================================
+% slab.tex -- "represented but not consulted", drawn.
+% \input by Sections/04b-representation.tex inside \beatsection sec:res-used.
+% Compiles against thesis_v2/preamble.tex and nothing else: no \includegraphics,
+% no external data, no TikZ library beyond the ones preamble.tex already loads
+% (this file uses arrows.meta, calc and decorations.pathreplacing).
+%
+% EVERY NUMBER DRAWN, AND WHERE IT COMES FROM
+% -------------------------------------------
+% Source: RESULTS_cluster/workspace_probe.json, key layers.<L>.variance_share,
+% over the seven layers the probe ran (2, 4, 6, 8, 9, 12, 16). Config there:
+% n_drugs 12, n_per_drug 40, n_dims 10, chance 0.08333. Sibling ledger of the
+% exact values drawn: thesis_v2/figs/slab.json.
+%
+%   quantity            per-layer values (2,4,6,8,9,12,16)              mean
+%   context        .701714 .738805 .756182 .749826 .741689 .838166 .838560  0.76642
+%   cell_line      .579634 .641342 .665019 .667029 .654599 .567865 .492515  0.60971
+%   drug_pure      .035747 .030703 .030347 .029881 .030620 .029807 .033109  0.03146
+%
+% The two WEDGE AREAS are the only scaled marks in the top panel:
+%   context wedge   0.766420 of the disc -> 275.9113 deg
+%   V_pure wedge    0.031459 of the disc ->  11.3252 deg
+%   unshaded rest   0.202121 of the disc ->  72.7635 deg   (1 - the other two;
+%                   the two subspaces are orthogonal, so the shares add and the
+%                   remainder is what is left. It carries NO printed number.)
+% Sum check: 275.9113 + 11.3252 + 72.7635 = 360.0000.
+%
+% AGREEMENT WITH THE TEXT (checked, not assumed):
+%   04b-representation.tex:341  "stays flat at ~0.03 against ~0.6 for cell line"
+%                               -> drawn 0.031 and quoted 0.610.               OK
+%   04b-representation.tex:350  "cell line measures 15-22x the purified slab"
+%                               -> per-layer ratios 14.9 16.2 19.0 20.9 21.4
+%                                  21.9 22.3, i.e. 15-22x to two figures.      OK
+%   04b-representation.tex:376  "flat at ~0.03, roughly 5% of the cell line's
+%                               ~0.6"                                          OK
+%   07-Appendix.tex:446-448     "roughly 99.5% of the control's energy ...
+%                               cell-line directions at ~0.6 variance share"   OK
+%   07-Appendix.tex:456-457     control delivers 5.3x the perturbation         OK
+%   07-Appendix.tex:466         normaliser inflation "+2.75 nats"              OK
+%   04b-representation.tex:260  "twelve centred class means span at most eleven
+%                               directions"; top TEN kept (pure_drug_dims 10)  OK
+% The context subspace's own share, 0.766, appears in NO sentence of the thesis;
+% it is a new reading of the same JSON field, and it is labelled as the context
+% subspace so it cannot be mistaken for the cell-line 0.61 the text quotes.
+%
+% INSET 1's ANGLE is a drawn quantity, not a decoration: a direction drawn
+% isotropically in 2048 dimensions puts 10/2048 = 0.49% of its energy in a
+% ten-dimensional slab, which is the appendix's "roughly 99.5%". An arrow at
+% 86 deg to the slab axis has cos^2(86) = 0.0049 of its energy along that axis,
+% so the arrow IS the number. Nothing else in the insets is to scale.
+%
+% LAYOUT NOTES, all forced by a build:
+%   * fullwidth = textwidth 142mm + marginparwidth 28mm + marginparsep 4mm
+%     = 174mm. Content is kept inside x in [0.00, 17.28]; a text-width block
+%     starting at 12.00 must not exceed 5.20cm, because at 5.30cm the node's
+%     inner sep pushed the picture 0.75pt over the measure and TeX said so.
+%     (The "171mm" in preamble.tex's comment at \newenvironment{fullwidth} is
+%     stale arithmetic; the geometry keys give 174mm.)
+%   * the slab wedge is 11.3 deg wide and at radius 3cm is 5.9mm across at the
+%     rim. Three class means and two arrows do not fit in it at true scale, so
+%     the slab's interior is drawn ONCE, magnified, in the dashed panel, with
+%     the two leader lines that make it a magnifier. The magnification is the
+%     whole reason the size asymmetry can stay true: nothing was enlarged to
+%     make a label fit.
+%   * insets 2 and 3 repeat the leader-line device into their own small strips,
+%     inset 1 does not. That is meaningful and not an inconsistency: failure
+%     one happens OUTSIDE the slab and is legible at disc scale, failures two
+%     and three happen inside it.
+%   * the arm names sit UNDER mu_B and mu_C, not along the arrows. Along the
+%     arrows they collided with each other in the wedge between them, because
+%     the two displacements share an anchor; and mu_A had to be pushed left of
+%     its dot, because directly above it is where Pi(mu_B - mu_A) begins.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+% --- the three wedge angles, computed above, written once --------------------
+\newcommand{\slabHalf}{5.6626}     % half of 11.3252 deg  = 0.031459 of the disc
+\newcommand{\slabCtxA}{5.6626}     % context wedge starts where the slab ends
+\newcommand{\slabCtxB}{281.5739}   % 5.6626 + 275.9113
+% --- one disc, drawn at whatever radius is asked for -------------------------
+\newcommand{\slabdisc}[1]{%
+  \filldraw[fill=panelbg, draw=rulegrey, line width=0.35pt]
+    (0,0) -- (\slabCtxA:#1)
+    arc[start angle=\slabCtxA, end angle=\slabCtxB, radius=#1] -- cycle;
+  \filldraw[fill=accent, draw=accent, line width=0.3pt]
+    (0,0) -- (-\slabHalf:#1)
+    arc[start angle=-\slabHalf, end angle=\slabHalf, radius=#1] -- cycle;
+  \draw[rulegrey, line width=0.5pt] (0,0) circle (#1);}
+
+\begin{tikzpicture}[x=1cm, y=1cm, font=\footnotesize,
+                    every node/.style={inner sep=1.6pt}]
+  \tikzset{
+    lab/.style     ={text=ink, font=\footnotesize},
+    quiet/.style   ={text=quietink, font=\scriptsize},
+    ttl/.style     ={text=accent, font=\scriptsize\bfseries\sffamily},
+    lead/.style    ={draw=rulegrey, line width=0.3pt},
+    swaparm/.style ={draw=accent, line width=1.0pt,
+                     -{Latex[length=3.4pt,width=2.8pt]}},
+    ctrlarm/.style ={draw=ink, line width=1.0pt,
+                     -{Latex[length=3.4pt,width=2.8pt]}},
+    dot/.style     ={circle, fill=ink, inner sep=0pt, minimum size=3.0pt},
+    adot/.style    ={circle, fill=accent, inner sep=0pt, minimum size=3.4pt}}
+
+% ###########################################################################
+% # TOP BAND -- the stream, and the slab magnified
+% ###########################################################################
+
+  % ---------------- the disc ------------------------------------------------
+  \begin{scope}[shift={(3.55,8.50)}]
+    \slabdisc{3.0}
+
+    \node[ttl, anchor=south] at (0,3.16)
+      {THE 2048-DIMENSIONAL RESIDUAL STREAM};
+
+    % the context subspace, labelled inside its own wedge
+    \node[lab, align=center, text width=3.2cm] at (150:1.18)
+      {\textbf{context subspace}\\ cell line, plate, dose};
+
+    % the unshaded remainder carries no number
+    \node[quiet, align=center, text width=2.1cm] at (318:1.95)
+      {the remaining\\ directions};
+
+    % the slab itself, too thin to hold a label
+    \node[text=accent, font=\footnotesize, anchor=west]
+      at (0:3.14) {$V_{\mathrm{pure}}$};
+
+    % leaders to the magnified panel. Panel corners in OUTER coordinates are
+    % (8.15,11.00) and (8.15,5.65); this scope's origin sits at (3.55,8.50).
+    \draw[lead] (\slabHalf:3.0)  -- (4.60,2.50);
+    \draw[lead] (-\slabHalf:3.0) -- (4.60,-2.85);
+  \end{scope}
+
+  % ---------------- the slab, magnified -------------------------------------
+  \draw[rulegrey, line width=0.35pt, densely dashed, rounded corners=2pt]
+    (8.15,5.65) rectangle (14.10,11.00);
+
+  \node[ttl, anchor=north west] at (8.35,10.86) {THE SLAB, MAGNIFIED};
+  \node[quiet, anchor=north west, align=left, text width=5.5cm] at (8.35,10.48)
+    {at most ten of the $2048$ directions; $0.031$ of the stream's variance.
+     The geometry below is schematic.};
+
+  \coordinate (muA) at (9.40,7.90);
+  \coordinate (muB) at ($(muA)+(30:2.05)$);
+  \coordinate (muC) at ($(muA)+(-16:2.05)$);
+
+  % equal norm, drawn as the one arc both heads land on
+  \draw[rulegrey, line width=0.35pt, densely dashed]
+    ($(muA)+(-16:2.05)$) arc[start angle=-16, end angle=30, radius=2.05];
+  \node[quiet, anchor=west] at ($(muA)+(7:2.17)$) {identical norm};
+
+  \draw[swaparm] (muA) -- (muB);
+  \draw[ctrlarm] (muA) -- (muC);
+  \node[lab, rotate=30,  anchor=south, inner sep=3pt]
+    at ($(muA)!0.50!(muB)$) {$\Pi(\mu_B-\mu_A)$};
+  \node[lab, rotate=-16, anchor=north, inner sep=3pt]
+    at ($(muA)!0.50!(muC)$) {$\Pi(\mu_C-\mu_A)$};
+
+  \node[adot] at (muA) {};
+  \node[dot]  at (muB) {};
+  \node[dot]  at (muC) {};
+  \node[lab, anchor=east]       at ($(muA)+(-0.16,-0.06)$) {$\mu_A$};
+  \node[lab, anchor=west]       at ($(muB)+(0.10,0.06)$)   {$\mu_B$};
+  \node[lab, anchor=west]       at ($(muC)+(0.10,0.06)$)   {$\mu_C$};
+  \node[quiet, anchor=west]     at ($(muB)+(0.10,-0.20)$)  {\textsc{swap} arm};
+  \node[quiet, anchor=west]     at ($(muC)+(0.10,-0.18)$)  {\textsc{permuted} arm};
+
+  \node[quiet, anchor=north west, align=left, text width=5.5cm] at (8.35,6.95)
+    {Equal length is what makes \textsc{permuted} a matched control: same
+     anchor, same construction, same norm, wrong drug.};
+
+  % ---------------- the measured shares -------------------------------------
+  \node[ttl, anchor=north west] at (14.30,10.86) {VARIANCE SHARE};
+  \node[quiet, anchor=north west] at (14.30,10.50) {seven layers, mean};
+  \draw[rulegrey, line width=0.4pt] (14.30,10.16) -- (17.25,10.16);
+  \node[anchor=north west, text=ink, font=\scriptsize] at (14.30,10.06)
+    {\begin{tabular}{@{}l@{\hspace{20pt}}r@{}}
+       context & $0.766$\\[1.5pt]
+       \textcolor{quietink}{cell line} & \textcolor{quietink}{$0.610$}\\[1.5pt]
+       $V_{\mathrm{pure}}$ & \textcolor{accent}{$0.031$}\\
+     \end{tabular}};
+  \draw[rulegrey, line width=0.4pt] (14.30,8.86) -- (17.25,8.86);
+  \node[quiet, anchor=north west, align=left, text width=2.90cm] at (14.30,8.74)
+    {Only the wedge areas are drawn to scale. $V_{\mathrm{pure}}$ is
+     orthogonal to the context subspace, so the two wedges share no direction.
+     Cell line, the positive control, lies inside it, at $15$--$22\times$ the
+     slab's share.};
+
+% ###########################################################################
+% # the divider
+% ###########################################################################
+  \draw[rulegrey, line width=0.4pt] (0,5.05) -- (17.25,5.05);
+  \node[anchor=north west, font=\scriptsize\itshape, text=quietink]
+    at (0,4.99) {three intervention designs failed on this geometry, and each
+                 failure is a constraint on the fourth};
+
+% ###########################################################################
+% # INSET 1 -- mismatched geometry
+% ###########################################################################
+  \node[ttl, anchor=north west] at (0,4.60) {ONE\quad MISMATCHED GEOMETRY};
+
+  \begin{scope}[shift={(1.25,2.92)}]
+    \slabdisc{1.05}
+    % 86 deg to the slab axis: cos^2(86) = 0.0049, i.e. 0.5% of the energy in
+    % the slab and 99.5% outside it. The angle IS the number.
+    \draw[ctrlarm] (0,0) -- (86:1.32);
+    \draw[rulegrey, line width=0.3pt, densely dotted] (86:1.32) -- (0.092,0);
+    \draw[accent, line width=1.8pt] (0,0) -- (0.092,0);
+    \draw[lead] (0.12,0.02) -- (1.15,0.38);
+    \node[quiet, anchor=west] at (0.16,1.15) {control};
+  \end{scope}
+
+  \node[quiet, anchor=west, align=left, text width=2.45cm] at (2.45,3.30)
+    {its part inside the slab: $0.5\%$ of its energy};
+
+  \node[lab, anchor=north west, align=left, text width=5.20cm] at (0,1.92)
+    {The control was drawn in the full $2048$-dimensional stream while the
+     intervention acts in at most ten directions, so $\approx 99.5\%$ of its
+     energy lay where the hook never reached. ``The swap moves the prediction
+     less than noise'' is what that geometry predicts, whatever the readout
+     does.};
+
+% ###########################################################################
+% # INSET 2 -- ablate-then-add
+% ###########################################################################
+  \node[ttl, anchor=north west] at (6.00,4.60) {TWO\quad ABLATE-THEN-ADD};
+
+  \begin{scope}[shift={(7.25,2.92)}]
+    \slabdisc{1.05}
+    \draw[lead] (\slabHalf:1.05)  -- (1.55,1.02);
+    \draw[lead] (-\slabHalf:1.05) -- (1.55,-0.68);
+  \end{scope}
+
+  \begin{scope}[shift={(8.85,2.85)}]
+    % added: an uncentred class mean = the shared global mean + its own part
+    \node[quiet, anchor=south west] at (0,1.02) {added: $\mu_B$, uncentred};
+    \fill[rulegrey!45] (0,0.84)    rectangle (1.25,1.00);
+    \fill[accent]      (1.25,0.84) rectangle (2.00,1.00);
+    % removed: the cell's own slab component, carrying the same global mean
+    \node[quiet, anchor=south west] at (0,0.48) {removed: $\Pi h$};
+    \fill[rulegrey!45] (0,0.30)    rectangle (1.25,0.46);
+    \fill[accent]      (1.25,0.30) rectangle (1.70,0.46);
+    \draw[rulegrey, line width=0.4pt, decorate,
+          decoration={brace, amplitude=3pt, mirror}] (0,0.24) -- (1.25,0.24);
+    \node[quiet, anchor=north] at (0.62,0.08) {$\bar m$, shared};
+    % what the hook actually delivers
+    \node[quiet, anchor=south west] at (0,-0.62) {what the hook delivers};
+    \fill[accent] (0,-0.80) rectangle (0.30,-0.64);
+    \node[quiet, anchor=west] at (0.40,-0.72) {$\bar m$ cancels};
+  \end{scope}
+
+  \node[lab, anchor=north west, align=left, text width=5.20cm] at (6.00,1.92)
+    {The hook ablates before it adds, so what is delivered is
+     (added $-$ removed), and an uncentred class mean shares its global-mean
+     component with the thing removed. Substitution becomes restoration, and
+     the control arm --- a real displacement --- delivers $5.3\times$ the
+     perturbation.};
+
+% ###########################################################################
+% # INSET 3 -- the normaliser
+% ###########################################################################
+  \node[ttl, anchor=north west] at (12.00,4.60) {THREE\quad THE NORMALISER};
+
+  \begin{scope}[shift={(13.25,2.92)}]
+    \slabdisc{1.05}
+    \draw[ctrlarm] (0,0) -- (2.2:0.95);
+    \draw[lead] (\slabHalf:1.05)  -- (1.20,0.84);
+    \draw[lead] (-\slabHalf:1.05) -- (1.20,0.06);
+  \end{scope}
+
+  % The four targets are drawn identically on purpose: the normaliser does not
+  % know which of them carries identity, and that is the whole failure.
+  \begin{scope}[shift={(14.45,2.92)}]
+    \node[quiet, anchor=south west] at (0,0.84) {clean $\log P$};
+    \draw[rulegrey, line width=0.4pt] (0,0.78) -- (1.70,0.78);
+    \draw[rulegrey, line width=0.4pt] (0,0.06) -- (1.70,0.06);
+    \foreach \x in {0.20,0.65,1.10,1.55}{
+      \fill[ink] (\x,0.78) circle (1.5pt);
+      \fill[ink] (\x,0.06) circle (1.5pt);
+      \draw[quietink, line width=0.5pt, -{Latex[length=2.6pt,width=2.2pt]}]
+        (\x,0.72) -- (\x,0.14);}
+    \node[quiet, anchor=north west] at (0,-0.06) {the control arm};
+    % anchor=west under rotate=90 puts the START of the string at this point and
+    % grows it UPWARD, so the label spans the two rules it measures between
+    % instead of hanging below the lower one. Centred at 0.42 it reached y=-0.23
+    % and collided with the descender line of "the control arm".
+    \node[quiet, rotate=90, anchor=west] at (2.04,0.10) {$+2.75$ nats};
+  \end{scope}
+
+  \node[lab, anchor=north west, align=left, text width=5.20cm] at (12.00,1.92)
+    {A random direction \emph{inside} the slab inflates the logsumexp
+     normaliser by a measured $+2.75$ nats, where the observed class-mean
+     displacement does not. Every target is depressed by it, carrying identity
+     or not: norm-matched is not disruption-matched.};
+
+  % bounding box, so the picture is exactly the fullwidth measure
+  \path (0,0.05) rectangle (17.28,11.75);
+\end{tikzpicture}
+
+\caption[The drug slab and the context subspace, by variance
+share]{\textbf{The purified drug slab is a thin wedge of the residual stream
+beside the context subspace, and each of the three failed identity tests turns
+on that geometry.} The disc is the
+$2048$-dimensional residual stream at one layer. \emph{The two wedge areas are
+the only scaled marks in the figure}, drawn to the measured subspace variance
+shares in \texttt{workspace\_probe.json} (twelve drug classes, forty cells
+each, chance $0.083$), averaged over the seven probed layers: $0.766$ for the
+context subspace of cell line, plate and dose, and $0.031$ for the purified
+drug slab $V_{\mathrm{pure}}$. Cell line alone, the positive control, reads
+$0.610$ and lies inside the context subspace, so it is quoted as a number
+rather than drawn as a third wedge. $V_{\mathrm{pure}}$ is what remains after
+the drug slab --- spanned by at most eleven directions, since it is built from
+twelve centred class means, of which the top ten are kept --- is orthogonalised
+against that context subspace, which is why the two wedges share no direction.
+The unshaded remainder closes the disc and carries no number. Everything else
+is schematic and has no scale: the slab is $11.3^{\circ}$ wide and cannot hold
+three class means at true size, so its interior is magnified, where the
+\textsc{swap} and \textsc{permuted} displacements are drawn at equal length
+because equal length is what makes \textsc{permuted} a matched control. The one
+exception among the insets is inset one's angle, which is drawn true: a
+direction drawn isotropically in $2048$ dimensions puts $10/2048$ of its energy
+in a ten-dimensional slab, the appendix's $\approx 99.5\%$ lying outside it. No
+decode accuracy, layer axis or KL divergence appears here; those are
+\cref{fig:mechanism}. The three insets are the failed designs of
+\cref{sec:app-identity}.}
+\label{fig:slab}
+\end{fullwidth}
+\end{figure}
+

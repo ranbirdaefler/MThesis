@@ -1,0 +1,183 @@
+% ===========================================================================
+% figs/comparators.tex -- fig:comparators, reworked for thesis_v2.
+% FIGURE BODY ONLY. No preamble, no document environment. \input it from
+% inside a figure/fullwidth float in Sections/04b-representation.tex.
+%
+% Four instruments, four deliberately incommensurable value-to-position maps,
+% one comparator each. The premise and all four scales are v1's and unchanged.
+% What changed is labelling only; no mark moved, no number changed.
+%
+%   (1) ROW B plotted seven marks and named one ("all seven layers"), leaving
+%       six unidentifiable. Every mark is now named by the layer it is, with a
+%       fanned leader for the three that crowd at 3.6/3.8/4.2, and the stub
+%       carries "one mark per layer" so a bare accent numeral above the axis
+%       cannot be misread as a second set of tick labels (ticks are quietink
+%       and below the axis; layer numbers are accent and above it).
+%   (2) ROW A's "slab projected out" sat to the right of its own point and
+%       nearer the shuffled-label rule than to the mark it names. It now has a
+%       leader back to the 0.121 dot.
+%   (3) ROW C's single-cell marker was a hollow ring sitting on the dotted zero
+%       rule (-0.0012 against 0.000: 0.10cm apart on this scale). It is now
+%       solid, the zero rule is interrupted across its height so nothing runs
+%       into it, and its label starts 0.30cm clear with a leader through the
+%       interruption -- necessary because the zero rule lies between mark and
+%       label and would otherwise claim the label.
+%   (4) Bar labels in ROWS C and D moved from a 0.13cm to a 0.30cm gap, so
+%       "optimal-transport barycentric" no longer reads as a continuation of
+%       its own interval bar.
+%   General rule applied throughout: a label more than ~0.3cm from its mark
+%   gets a short leader.
+%   Row heights grew (rows now 0.70/0.77/0.98 apart rather than colliding) to
+%   pay for the new labels. Nothing is rescaled: 1cm here is 1cm on the page.
+%
+% PROVENANCE of every number drawn is in comparators.json, sibling to this
+% file. All four rows were checked against RESULTS_cluster and against the
+% thesis text; they agree. Sources:
+%   row A, B  RESULTS_cluster/workspace_probe.json
+%   row C     RESULTS_cluster/probe_arm_residual.json,
+%             probe_rep_residual_s43.json, probe_rep_residual_s45.json,
+%             probe_arm_single_cell.json
+%   row D     RESULTS_cluster/stratify_sameplate_final.json,
+%             stratify_ot_T2.json, stratify_consensus.json
+% ===========================================================================
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small]
+  % Four deliberately different value-to-position maps, one per rule.
+  \def\xa#1{{(#1)*10.5}}
+  \def\xb#1{{(#1)/20*10.5}}
+  \def\xc#1{{((#1)+0.02)/0.13*10.5}}
+  \def\xd#1{{((#1)+0.03)/0.08*10.5}}
+  % Same maps shifted by a label gap; the shift MUST sit inside the braces --
+  % \xa{v}+0.05 is not a pgfmath expression and does not compile.
+  % 0.30cm, not v1's 0.13cm: at 0.13cm a label abutted the end of its own
+  % interval bar and read as part of it.
+  \def\xcR#1{{((#1)+0.02)/0.13*10.5+0.30}}
+  \def\xdR#1{{((#1)+0.03)/0.08*10.5+0.30}}
+  % leader/label shims: +0.05 and +0.06 clear a 1.4pt marker, -0.10 and +0.10
+  % keep row A's two abutting labels off their own dots, +0.35 puts row C's
+  % single-cell label 0.30cm clear of the marker's edge.
+  \def\xaN#1{{(#1)*10.5+0.05}}
+  \def\xaL#1{{(#1)*10.5-0.10}}
+  \def\xaP#1{{(#1)*10.5+0.10}}
+  \def\xcN#1{{((#1)+0.02)/0.13*10.5+0.06}}
+  \def\xcM#1{{((#1)+0.02)/0.13*10.5+0.35}}
+
+  % row dividers
+  \foreach \y in {-0.70,-2.76,-5.82}{
+    \draw[rulegrey!55, line width=0.3pt] (-4.45,\y) -- (11.20,\y);}
+
+  % ===== ROW A -- is it there? decode accuracy, 0 to 1 ====================
+  \draw[ink, line width=0.4pt] (0,0) -- (10.5,0);
+  \foreach \v in {0,0.25,0.5,0.75,1}{
+    \draw[rulegrey, line width=0.3pt] (\xa{\v},0) -- (\xa{\v},-0.10);
+    \node[anchor=north, font=\scriptsize, text=quietink] at (\xa{\v},-0.14) {\v};}
+  \draw[ink, line width=0.5pt, densely dotted] (\xa{0.083},-0.14) -- (\xa{0.083},0.52);
+  \node[anchor=south west, font=\scriptsize\itshape, text=ink]
+    at (\xa{0.083},0.52) {shuffled labels};
+  % 0.121 -- the constant post-ablation floor. Its label is pushed clear of the
+  % shuffled-label rule 0.40cm to its left and leadered back to the mark.
+  \fill[quietink] (\xa{0.121},0) circle (1.4pt);
+  \draw[quietink, line width=0.3pt] (\xaN{0.121},0.05) -- (1.57,0.20);
+  \node[anchor=west, font=\scriptsize, text=quietink]
+    at (1.62,0.22) {slab projected out};
+  \fill[quietink] (\xa{0.821},0) circle (1.4pt);
+  \node[anchor=south east, font=\scriptsize, text=quietink]
+    at (\xaL{0.821},0.08) {raw probe, peak};
+  \fill[accent] (\xa{0.883},0) circle (1.4pt);
+  \node[anchor=south west, font=\scriptsize, text=accent]
+    at (\xaP{0.883},0.08) {context removed};
+  \node[anchor=east, align=right, font=\scriptsize, text=ink] at (-0.35,0)
+    {\textbf{Is it there?}\\ \textcolor{quietink}{decode accuracy}};
+
+  % ===== ROW B -- is it used? ablation cost in multiples of the null =======
+  \draw[ink, line width=0.4pt] (0,-2.05) -- (10.5,-2.05);
+  \foreach \v in {0,5,10,15,20}{
+    \draw[rulegrey, line width=0.3pt] (\xb{\v},-2.05) -- (\xb{\v},-2.15);
+    \node[anchor=north, font=\scriptsize, text=quietink] at (\xb{\v},-2.19) {\v};}
+  \draw[ink, line width=0.5pt, densely dotted] (\xb{1},-2.19) -- (\xb{1},-1.35);
+  \node[anchor=south west, font=\scriptsize\itshape, text=ink]
+    at (\xb{1},-1.35) {matched-dimension random subspace};
+  % Seven marks, one per layer, and every mark is named. Four are named
+  % directly. The other three are layers 16, 12 and 9, reading 3.6, 3.8 and
+  % 4.2: 1.1mm and 2.2mm apart on this axis. Three separate leaders into that
+  % converge and stop being readable, and fanning them wide enough to separate
+  % would claim a resolution the marks do not have, so the cluster is braced
+  % and named as an ordered set instead. Reading order is the axis order.
+  \foreach \v in {3.6,3.8,4.2,5.7,12.7,14.1,18.6}{
+    \fill[accent] (\xb{\v},-2.05) circle (1.4pt);}
+  \draw[accent, line width=0.3pt, decorate,
+        decoration={brace, amplitude=2.5pt}] (\xb{3.6},-1.93) -- (\xb{4.2},-1.93);
+  \node[anchor=south, font=\scriptsize, text=accent, inner sep=1pt]
+    at (\xb{3.9},-1.83) {16, 12, 9};
+  \foreach \x/\lay in {5.7/6, 12.7/2, 14.1/8, 18.6/4}{
+    \node[anchor=south, font=\scriptsize, text=accent, inner sep=1pt]
+      at (\xb{\x},-1.83) {\lay};}
+  \node[anchor=east, align=right, font=\scriptsize, text=ink] at (-0.35,-2.05)
+    {\textbf{Is it used?}\\
+     \textcolor{quietink}{ablation cost, $\times$ the null,}\\
+     \textcolor{quietink}{marks named by layer}};
+
+  % ===== ROW C -- is it WHICH drug? fraction of the model's own gap ========
+  \draw[ink, line width=0.4pt] (0,-5.05) -- (10.5,-5.05);
+  % The label is carried separately from the coordinate so the negative tick
+  % sets a real minus and not the ASCII hyphen \foreach would print. Same idiom
+  % as gate.tex and power.tex; positives stay unmathed so their digits match
+  % rows A and B, which are set in text.
+  \foreach \v/\t in {-0.02/$-0.02$, 0/0, 0.02/0.02, 0.04/0.04, 0.06/0.06,
+                     0.08/0.08, 0.10/0.10}{
+    \draw[rulegrey, line width=0.3pt] (\xc{\v},-5.05) -- (\xc{\v},-5.15);
+    \node[anchor=north, font=\scriptsize, text=quietink] at (\xc{\v},-5.19) {\t};}
+  % The zero rule is drawn in two pieces. The single-cell median sits at
+  % -0.0012, one tenth of a centimetre from zero on this scale, so the rule is
+  % interrupted across the marker's height rather than run through it.
+  \draw[ink, line width=0.5pt, densely dotted] (\xc{0},-5.15) -- (\xc{0},-4.94);
+  \draw[ink, line width=0.5pt, densely dotted] (\xc{0},-4.66) -- (\xc{0},-3.34);
+  \draw[ink, line width=0.5pt, densely dotted] (\xc{0.10},-5.15) -- (\xc{0.10},-3.34);
+  \node[anchor=south east, font=\scriptsize\itshape, text=ink]
+    at (\xc{0.10},-3.34) {pre-registered margin};
+  \draw[accent, line width=1.0pt] (\xc{0.0063},-3.60) -- (\xc{0.0335},-3.60);
+  \fill[accent] (\xc{0.0197},-3.60) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=accent] at (\xcR{0.0335},-3.60)
+    {residual arm, anchor seed};
+  \draw[quietink, line width=1.0pt] (\xc{0.0060},-4.00) -- (\xc{0.0173},-4.00);
+  \fill[quietink] (\xc{0.0118},-4.00) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=quietink] at (\xcR{0.0173},-4.00)
+    {second seed};
+  \draw[quietink, line width=1.0pt] (\xc{0.0029},-4.40) -- (\xc{0.0143},-4.40);
+  \fill[quietink] (\xc{0.0085},-4.40) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=quietink] at (\xcR{0.0143},-4.40)
+    {third seed};
+  % Solid, like every other point mark; the absent bar is what says it carries
+  % no interval. Leader crosses the interruption in the zero rule.
+  \fill[quietink] (\xc{-0.0012},-4.80) circle (1.4pt);
+  \draw[quietink, line width=0.3pt] (\xcN{-0.0012},-4.80) -- (\xcR{-0.0012},-4.80);
+  \node[anchor=west, font=\scriptsize, text=quietink] at (\xcM{-0.0012},-4.80)
+    {single-cell arm, median over its depths};
+  \node[anchor=east, align=right, font=\scriptsize, text=ink] at (-0.35,-4.20)
+    {\textbf{Is it \emph{which} drug?}\\
+     \textcolor{quietink}{fraction of the model's}\\
+     \textcolor{quietink}{own preference gap}};
+
+  % ===== ROW D -- does a better target help? scramble gap in NIR ==========
+  \draw[ink, line width=0.4pt] (0,-7.40) -- (10.5,-7.40);
+  \foreach \v/\t in {-0.02/$-0.02$, 0/0, 0.02/0.02, 0.04/0.04}{
+    \draw[rulegrey, line width=0.3pt] (\xd{\v},-7.40) -- (\xd{\v},-7.50);
+    \node[anchor=north, font=\scriptsize, text=quietink] at (\xd{\v},-7.54) {\t};}
+  \draw[ink, line width=0.5pt, densely dotted] (\xd{0},-7.50) -- (\xd{0},-6.12);
+  \draw[accent, line width=1.0pt] (\xd{-0.016},-6.35) -- (\xd{0.042},-6.35);
+  \fill[accent] (\xd{0.014},-6.35) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=accent] at (\xdR{0.042},-6.35)
+    {single cell};
+  \draw[accent, line width=1.0pt] (\xd{-0.018},-6.75) -- (\xd{0.016},-6.75);
+  \fill[accent] (\xd{-0.001},-6.75) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=accent] at (\xdR{0.016},-6.75)
+    {optimal-transport barycentric};
+  \draw[quietink, line width=1.0pt] (\xd{-0.022},-7.15) -- (\xd{0.003},-7.15);
+  \fill[quietink] (\xd{-0.010},-7.15) circle (1.4pt);
+  \node[anchor=west, font=\scriptsize, text=quietink] at (\xdR{0.003},-7.15)
+    {consensus};
+  \node[anchor=east, align=right, font=\scriptsize, text=ink] at (-0.35,-6.75)
+    {\textbf{Does a better target help?}\\
+     \textcolor{quietink}{scramble gap, $\NIR$,}\\
+     \textcolor{quietink}{identifiable stratum}};
+
+\end{tikzpicture}

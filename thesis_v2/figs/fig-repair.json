@@ -1,0 +1,329 @@
+{
+  "figure": "fig-repair",
+  "quantity": "Delta_scr = NIR(model) - NIR(stratum-matched scramble), residual frame",
+  "x_variable": "1 - mean_cos, where mean_cos is the measured mean residual cosine between the real drug and the swapped-in drug within the cell line",
+  "strata": [
+    "near",
+    "orth",
+    "opposite"
+  ],
+  "x_positions_1_minus_cos": [
+    0.5937858680486678,
+    1.0016339004195116,
+    1.3285834646821022
+  ],
+  "x_positions_mean_cos": [
+    0.4062141319513321,
+    -0.0016339004195115195,
+    -0.3285834646821022
+  ],
+  "x_positions_identical_across_runs": true,
+  "x_nudge_per_series_for_legibility": {
+    "residual model, 1400 tokens": -0.024,
+    "residual model, 600 tokens": -0.008,
+    "optimal-transport control": 0.008,
+    "single-cell control": 0.024
+  },
+  "interval": "95% bootstrap, clustered over cell lines",
+  "primary_budget_tokens": 600,
+  "runs": {
+    "residual model, 1400 tokens": {
+      "file": "re_residual_maxtok.json",
+      "max_new_tokens": 1400,
+      "n_conditions_config": 250,
+      "mean_cos": [
+        0.4062141319513321,
+        -0.0016339004195115195,
+        -0.3285834646821022
+      ],
+      "dissimilarity_1_minus_cos": [
+        0.5937858680486678,
+        1.0016339004195116,
+        1.3285834646821022
+      ],
+      "gap": [
+        0.035109081572564815,
+        0.07161254245868016,
+        0.1428979605695472
+      ],
+      "ci_lo": [
+        0.006104803341390097,
+        0.037124825040648304,
+        0.1111889209946502
+      ],
+      "ci_hi": [
+        0.0656294532286624,
+        0.10591912470014322,
+        0.1786944477794756
+      ],
+      "n": [
+        250,
+        250,
+        250
+      ]
+    },
+    "residual model, 600 tokens": {
+      "file": "re_residual_model.json",
+      "max_new_tokens": 600,
+      "n_conditions_config": 250,
+      "mean_cos": [
+        0.4062141319513321,
+        -0.0016339004195115195,
+        -0.3285834646821022
+      ],
+      "dissimilarity_1_minus_cos": [
+        0.5937858680486678,
+        1.0016339004195116,
+        1.3285834646821022
+      ],
+      "gap": [
+        -0.00454121889066772,
+        0.034871604821510686,
+        0.07158400357992155
+      ],
+      "ci_lo": [
+        -0.03969249447527762,
+        -0.005025079089622594,
+        0.03164164393163462
+      ],
+      "ci_hi": [
+        0.028068078430415536,
+        0.07684694069167315,
+        0.10959011516294814
+      ],
+      "n": [
+        250,
+        250,
+        250
+      ]
+    },
+    "optimal-transport control": {
+      "file": "re_ot_model.json",
+      "max_new_tokens": 600,
+      "n_conditions_config": 250,
+      "mean_cos": [
+        0.4062141319513321,
+        -0.0016339004195115195,
+        -0.3285834646821022
+      ],
+      "dissimilarity_1_minus_cos": [
+        0.5937858680486678,
+        1.0016339004195116,
+        1.3285834646821022
+      ],
+      "gap": [
+        0.007318744160507875,
+        0.014386111055220273,
+        0.02631250394419282
+      ],
+      "ci_lo": [
+        -0.00818983470073157,
+        -0.0031812616582328826,
+        0.006886227059267433
+      ],
+      "ci_hi": [
+        0.022670213476756178,
+        0.03226402727722574,
+        0.047625260958573834
+      ],
+      "n": [
+        250,
+        250,
+        250
+      ]
+    },
+    "single-cell control": {
+      "file": "re_singlecell_model.json",
+      "max_new_tokens": 600,
+      "n_conditions_config": 250,
+      "mean_cos": [
+        0.4062141319513321,
+        -0.0016339004195115195,
+        -0.3285834646821022
+      ],
+      "dissimilarity_1_minus_cos": [
+        0.5937858680486678,
+        1.0016339004195116,
+        1.3285834646821022
+      ],
+      "gap": [
+        -0.014001284518373295,
+        -0.020648729596196246,
+        -0.020434320904954874
+      ],
+      "ci_lo": [
+        -0.04489542944680322,
+        -0.04987065797198463,
+        -0.05367485447165764
+      ],
+      "ci_hi": [
+        0.018349498373009178,
+        0.005919648215821607,
+        0.010366076524929543
+      ],
+      "n": [
+        250,
+        250,
+        250
+      ]
+    }
+  },
+  "points": [
+    {
+      "series": "residual model, 1400 tokens",
+      "stratum": "near",
+      "max_new_tokens": 1400,
+      "x_mean_cos": 0.4062141319513321,
+      "x_plotted_1_minus_cos": 0.5937858680486678,
+      "x_plotted_with_nudge": 0.5697858680486678,
+      "gap": 0.035109081572564815,
+      "ci_lo": 0.006104803341390097,
+      "ci_hi": 0.0656294532286624,
+      "n": 250,
+      "source": "re_residual_maxtok.json"
+    },
+    {
+      "series": "residual model, 1400 tokens",
+      "stratum": "orth",
+      "max_new_tokens": 1400,
+      "x_mean_cos": -0.0016339004195115195,
+      "x_plotted_1_minus_cos": 1.0016339004195116,
+      "x_plotted_with_nudge": 0.9776339004195116,
+      "gap": 0.07161254245868016,
+      "ci_lo": 0.037124825040648304,
+      "ci_hi": 0.10591912470014322,
+      "n": 250,
+      "source": "re_residual_maxtok.json"
+    },
+    {
+      "series": "residual model, 1400 tokens",
+      "stratum": "opposite",
+      "max_new_tokens": 1400,
+      "x_mean_cos": -0.3285834646821022,
+      "x_plotted_1_minus_cos": 1.3285834646821022,
+      "x_plotted_with_nudge": 1.3045834646821022,
+      "gap": 0.1428979605695472,
+      "ci_lo": 0.1111889209946502,
+      "ci_hi": 0.1786944477794756,
+      "n": 250,
+      "source": "re_residual_maxtok.json"
+    },
+    {
+      "series": "residual model, 600 tokens",
+      "stratum": "near",
+      "max_new_tokens": 600,
+      "x_mean_cos": 0.4062141319513321,
+      "x_plotted_1_minus_cos": 0.5937858680486678,
+      "x_plotted_with_nudge": 0.5857858680486678,
+      "gap": -0.00454121889066772,
+      "ci_lo": -0.03969249447527762,
+      "ci_hi": 0.028068078430415536,
+      "n": 250,
+      "source": "re_residual_model.json"
+    },
+    {
+      "series": "residual model, 600 tokens",
+      "stratum": "orth",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.0016339004195115195,
+      "x_plotted_1_minus_cos": 1.0016339004195116,
+      "x_plotted_with_nudge": 0.9936339004195116,
+      "gap": 0.034871604821510686,
+      "ci_lo": -0.005025079089622594,
+      "ci_hi": 0.07684694069167315,
+      "n": 250,
+      "source": "re_residual_model.json"
+    },
+    {
+      "series": "residual model, 600 tokens",
+      "stratum": "opposite",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.3285834646821022,
+      "x_plotted_1_minus_cos": 1.3285834646821022,
+      "x_plotted_with_nudge": 1.3205834646821022,
+      "gap": 0.07158400357992155,
+      "ci_lo": 0.03164164393163462,
+      "ci_hi": 0.10959011516294814,
+      "n": 250,
+      "source": "re_residual_model.json"
+    },
+    {
+      "series": "optimal-transport control",
+      "stratum": "near",
+      "max_new_tokens": 600,
+      "x_mean_cos": 0.4062141319513321,
+      "x_plotted_1_minus_cos": 0.5937858680486678,
+      "x_plotted_with_nudge": 0.6017858680486678,
+      "gap": 0.007318744160507875,
+      "ci_lo": -0.00818983470073157,
+      "ci_hi": 0.022670213476756178,
+      "n": 250,
+      "source": "re_ot_model.json"
+    },
+    {
+      "series": "optimal-transport control",
+      "stratum": "orth",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.0016339004195115195,
+      "x_plotted_1_minus_cos": 1.0016339004195116,
+      "x_plotted_with_nudge": 1.0096339004195116,
+      "gap": 0.014386111055220273,
+      "ci_lo": -0.0031812616582328826,
+      "ci_hi": 0.03226402727722574,
+      "n": 250,
+      "source": "re_ot_model.json"
+    },
+    {
+      "series": "optimal-transport control",
+      "stratum": "opposite",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.3285834646821022,
+      "x_plotted_1_minus_cos": 1.3285834646821022,
+      "x_plotted_with_nudge": 1.3365834646821022,
+      "gap": 0.02631250394419282,
+      "ci_lo": 0.006886227059267433,
+      "ci_hi": 0.047625260958573834,
+      "n": 250,
+      "source": "re_ot_model.json"
+    },
+    {
+      "series": "single-cell control",
+      "stratum": "near",
+      "max_new_tokens": 600,
+      "x_mean_cos": 0.4062141319513321,
+      "x_plotted_1_minus_cos": 0.5937858680486678,
+      "x_plotted_with_nudge": 0.6177858680486679,
+      "gap": -0.014001284518373295,
+      "ci_lo": -0.04489542944680322,
+      "ci_hi": 0.018349498373009178,
+      "n": 250,
+      "source": "re_singlecell_model.json"
+    },
+    {
+      "series": "single-cell control",
+      "stratum": "orth",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.0016339004195115195,
+      "x_plotted_1_minus_cos": 1.0016339004195116,
+      "x_plotted_with_nudge": 1.0256339004195116,
+      "gap": -0.020648729596196246,
+      "ci_lo": -0.04987065797198463,
+      "ci_hi": 0.005919648215821607,
+      "n": 250,
+      "source": "re_singlecell_model.json"
+    },
+    {
+      "series": "single-cell control",
+      "stratum": "opposite",
+      "max_new_tokens": 600,
+      "x_mean_cos": -0.3285834646821022,
+      "x_plotted_1_minus_cos": 1.3285834646821022,
+      "x_plotted_with_nudge": 1.3525834646821022,
+      "gap": -0.020434320904954874,
+      "ci_lo": -0.05367485447165764,
+      "ci_hi": 0.010366076524929543,
+      "n": 250,
+      "source": "re_singlecell_model.json"
+    }
+  ]
+}
