@@ -1,0 +1,1051 @@
+% ...........................................................................
+% 04c-reencoding.tex -- beats 5-6. The residual re-encoding.
+% Legacy anchors sec:methods-vardecomp and sec:methods-holdout are re-\label-ed
+% here so v1 cross-references resolve.
+% ...........................................................................
+
+\beatsection{R}{5}{The standard target hides the drug}{sec:methods-residual}
+
+\begin{question}[5]
+A sentence lists genes in order of expression, so two drugs on the same
+cells give almost the same target string and the loss can barely tell them apart.
+Can the target be rewritten so that its tokens \emph{are} the drug-specific part?
+The instrument counts how many top target positions carry a different gene for
+two drugs in one context. Almost none do before the rewrite; a clear majority do
+after, at an unchanged retrieval reference.
+\end{question}
+
+\noindent
+\emph{Encoding} here means how the target string is written, not what the model's
+internal states carry (\cref{sec:res-used}). The loss weights every position
+equally, so the measurement is a count over the $200$ target positions
+(\cref{tab:divergence}).
+
+% ...........................................................................
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption{\textbf{$83\%$ of the standard target's tokens are identical between
+any two drugs in the same context.} The residual row is quoted at cell-line
+scope; at plate scope it reads $120.3$ and $0.7467$. The middle column is where
+the three encodings differ, and it does not on its own identify tokenisation as
+the binding constraint.}
+\label{tab:divergence}
+\small
+\begin{tabularx}{\linewidth}{@{}%
+  >{\raggedright\arraybackslash}p{0.34\linewidth}
+  >{\raggedright\arraybackslash}p{0.28\linewidth}
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Representation} & \thead{Top-$200$ tokens differing between drugs}
+  & \thead{Within-well split-half retrieval reference} \\
+\midrule
+full profile (the standard target) & $34.6$ / $200$ \;($17\%$) & $0.742$ \\
+shift (treated $-$ control)        & $111.4$ \;($56\%$)        & $0.742$ \\
+\textbf{residual (drug-specific)}  & $118.2$ / $200$ \;($59\%$) & $0.7432$ \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The two columns hold different quantities, a count out of $200$ positions
+and a retrieval score, so rows compare within a column and never columns with
+each other. The third column pits disjoint cell subsets of one drug, in one cell
+line, on one plate, against each other. It is a precision reference, not a
+biological replicate ceiling, and it is near-constant across the three rows.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{The count stops short of the tokenisation claim} The natural
+inference, that only a small fraction of the gradient carries drug identity, is
+a hypothesis about the optimisation; what is measured is the overlap of target
+gene sets, not a token-level loss or a gradient attribution. Gene positions are
+not loss-token positions under byte-pair encoding, and the residual target below
+alters aggregation, control referencing, generic subtraction, sign coding and
+sequence length at once. Separating those five factors needs a matched-budget
+factorial this thesis does not run.
+
+\paragraph{The count is not inherited from residual similarity} A descriptive
+summary bins $212{,}528$ exhaustive within-group drug pairs on the cosine between
+the two residuals. Mean differing top-$200$ genes across the near,
+orthogonal and opposite strata run $32.5$, $34.6$ and $35.8$ for the full
+profile; $107.4$, $111.3$ and $114.4$ for the shift; $118.4$, $121.0$ and
+$118.7$ for the residual, with Spearman coefficients against residual cosine of
+$-0.149$, $-0.282$ and $+0.019$. The residual target stays high in every stratum
+and lacks the monotone gradient the other two carry, which weakens the reading
+that the later swap-distance pattern is inherited trivially from target
+divergence without being an independent test of it. The pairs reuse drugs and
+groups, so no pair-level inferential claim is made.
+
+% ...........................................................................
+\begin{defn}{The drug-specific residual}
+For each condition, a (drug, cell line, plate, dose) tuple with at least $40$
+treated and $20$ plate-matched control cells,
+\begin{equation}
+ \resid(d,c) \;=\; \underbrace{\big(\bar{y}_{\textrm{treated}} - \bar{y}_{\textrm{control}}\big)}_{\shift(d,c)}
+ \;-\; \underbrace{\frac{1}{|D_c \setminus \{d\}|}\sum_{d' \in D_c,\; d' \neq d} \shift(d',c)}_{\textrm{generic}(c)} .
+\end{equation}
+The control subtraction removes the cell's own state, leaving the \emph{shift};
+the mean over drugs removes the \emph{generic} drug programme every drug
+triggers. $D_c$ is the training drugs sharing $c$'s plate and cell line, each
+entering once whatever its doses, and the condition's own drug is excluded.
+What remains is not what makes this drug different from all drugs. It
+is what makes it different \emph{from the other training drugs that happen to
+share its plate and cell line}.
+\end{defn}
+
+\paragraph{The comparison set is fixed by the plating design} That last sentence
+is the price of estimating the generic locally, and mechanism is where it bites.
+\Cref{sec:res-scope} finds mechanism-related drugs co-plated $0.404$ of the time
+against $0.362$ for a random draw, so for a co-plated mechanism class part of the
+class's own shared programme sits inside the generic and is subtracted out of
+every member's residual by construction.
+
+That bias was tested. Same-mechanism plate-mates supply a mean $4.4\%$ of a
+condition's generic, present for $83\%$ of the $\num{917}$ labelled
+mechanism-arm conditions, from Tahoe's \texttt{moa-fine} labels joined to the
+plate rosters the channel gate scored. The $\num{155}$ conditions with \emph{no}
+same-mechanism plate-mate, whose residuals retain the mechanism programme, give a
+gap of \ci{+0.1145}{+0.0276}{+0.2014} against \ci{+0.0737}{+0.0150}{+0.1324} for
+the $\num{762}$ that have one, both against the same plate-matched null under the
+same two-way clustering. That is the direction the construction predicts, but not
+a corrected estimate. The intervals overlap across almost their whole range, the
+split is post hoc, and the cleaner stratum rests on $\num{43}$ wells. It supports
+a statement about sign, not size.
+
+\begin{scopelimit}[carried into \cref{sec:res-scope} and \cref{sec:limitations}]
+Two properties of this frame travel with every number measured in it. First, the
+generic is a plate-local mean, so where a mechanism class is co-plated the
+mechanism channel is later graded in a frame that has already removed some of
+what it is asked to find, which makes an inconclusive verdict on mechanism the
+conservative reading and not a generous one. Second, the plate-scoped generic
+removes plate structure from the truths and, in expectation, from the
+predictions, but that is an expectation and not an identity. An individual
+residual may retain some plate structure, and the size of what remains was never
+measured. The absolute $\NIR$ values of this frame are read within it and never
+set beside the within-plate tables elsewhere in the chapter.
+\end{scopelimit}
+
+\paragraph{Which subtraction does the work} Removing the control moves the
+between-drug token difference from $34.6$ to $111.4$; removing the generic adds a
+further $6.8$ at cell-line scope and $8.9$ at the plate scope this build uses. So
+the control subtraction alone buys $92\%$ of the recoverable difference, $90\%$
+plate-scoped. The measurement is an overlap of gene sets on one atlas at $K = 200$
+($\num{6602}$ conditions, \texttt{target\_divergence.json}), so no margin is
+claimed for other atlases or other $K$. It squares with \cref{sec:res-metrics},
+where what saturates $\DEdr$ is reversion toward a central point,
+\texttt{revert\_center} scoring $0.9999$ without fitting anything.
+
+The generic is not dispensable. It carries $39\%$ of the shift's energy
+(\cref{sec:res-transfer}), and subtracting it isolates the drug-specific
+remainder once the baseline is gone. The inclusion thresholds sit where the
+identifiability curve of \cref{sec:res-blind} flattens, the within-well
+split-half precision reference being $0.61$ at $10$ cells, $0.76$ at $40$ and
+$0.85$ at $120$.
+
+% ...........................................................................
+\paragraph{A definition that could have been circular, and what breaks it} Four
+properties of how the generic is estimated decide whether the remainder can be
+trusted. First, the shape of the problem. A condition enters training only if its
+residual reproduces across a half-split; a residual exists only once the generic
+has been subtracted; the generic is fitted on the training set; and the training
+set is what the reliability line selects. That is a loop
+(\cref{fig:circularity}, left), and an earlier build closed it, with generic and
+filter estimated over every condition and the holdout assigned afterwards, so
+each held-out target was defined partly by other held-out conditions.
+
+The loop is cut by ordering. Inventory and split read metadata only, before any
+pseudobulk exists; fit hands the generic the training keys explicitly; transform
+projects held-out conditions through the fitted generic, which they never enter
+(\cref{fig:circularity}, right). Because the split is made on metadata alone,
+nothing downstream of it can have defined it. A poison test makes the ordering
+checkable in both directions.\gloss{poison test}{Corrupt the held-out side; the
+training targets must not move. Corrupt a training condition; they must.} The
+other three properties fix choices the staging leaves open.
+
+\input{figs/circularity}
+
+\paragraph{Second, the scope is the plate} The original argument for cell-line
+scope was reproducibility. $61.7\%$ of conditions reproduce across a half-split
+at cell-line scope against $19.3\%$ at plate scope (cosine threshold $0.2$,
+$n = 6602$), on the reasoning that a plate holds too few drugs to estimate a
+mean.\corrmark{the retention argument for cell-line scope is
+retracted here; the scope decision now rests on the two diagnostics below} Both
+figures were computed with a shared control pseudobulk subtracted from both
+halves, which makes the halves correlate through their common control error, and
+the inflation favours cell-line scope precisely because the cell-line generic is
+itself less noisy. That alone retracts the retention argument. A disjoint-control
+recomputation exists but was never written to an artifact, and the two surviving
+records disagree on the plate figure, so no corrected percentages are quoted for
+this $n = 6602$ comparison. Both agree that plate scope retains at least as many
+conditions, so retention is no reason to prefer cell-line scope.
+
+Two diagnostics settle the scope in plate's favour, both reported in
+\cref{sec:res-transfer}. At cell-line scope the dose-transfer ordering inverts,
+and the shared-minus-split control bias reads $+0.242$ against $-0.000$ at plate
+scope. A plate group with fewer than three other training drugs yields no
+generic, and the condition is dropped and counted.
+
+\paragraph{Third, the mean is over drugs and leaves the condition's own drug out}
+Two things force that. A drug measured at five doses would otherwise carry five
+times the weight of a single-dose drug; and once the generic is train-only, a
+training condition's generic would contain its own drug while a held-out
+condition's would not, so the two splits would be scored against differently
+defined targets. The generic is therefore the mean over training drugs other
+than this one, within scope.
+
+\paragraph{Fourth, the reliability line is resolved from the data} The threshold
+was the largest single determinant of the training set, and it had been
+inherited. The inherited $0.2$ came from an era when reliability was measured
+with shared controls, a different quantity on a different scale, under which it
+retained the $61.7\%$ above against the $19.0\%$ ($\num{948}$ of the $\num{4999}$
+training candidates) it retains once each half is measured against its own
+control half. The two are not a matched pair, differing in population and scope
+as well as control handling, but between them a moderate bar had silently become
+a stringent one.
+
+\begin{defn}{The reliability line}
+A condition is kept for training only if its residual reproduces across a
+half-split, $\cos(\resid_A, \resid_B)$ above a threshold, with each half
+measured against its own control half so that the two share nothing. No new
+threshold is picked by hand. The builder reports the whole retention curve
+against a null that pairs half $A$ of one condition with half $B$ of a
+\emph{different} condition, same encoding, same dimensionality, same noise, no
+shared biology, and sets the line at that null's $95$th percentile. A condition
+is kept when its two halves agree more than two unrelated conditions' halves do.
+At the measured null ($95$th percentile $+0.109$, resolving to $+0.1086$) this
+retains $2{,}523$ of $\num{4999}$ training conditions ($50.5\%$).
+\end{defn}
+
+The inherited $0.2$ survives as an argparse default in three downstream configs,
+\texttt{truth\_repro\_thr} in \texttt{re\_v3.json} and \texttt{repro\_thr} in
+\texttt{vardecomp\_matched.json} and \texttt{channel\_gate\_v3.json}. It did not
+act as the training filter. Of the $\num{300}$ scored training conditions,
+$\num{181}$ sit below $0.2$, the minimum is $+0.109$, and none falls at or below
+the resolved $+0.1086$. The held-out sets are deliberately unfiltered, since
+dropping held-out conditions for failing their own reproducibility bar would
+select the evaluation set on its own outcome; noise in retained training
+conditions costs learning efficiency, not validity.
+
+The half-split agreement is a within-well sampling-precision criterion. It is not
+biological reproducibility, since $\num{286}$ of $\num{287}$ distinct (drug,
+dose) treatments in this cache occur in exactly one well. The retained fraction
+says how much drug-specific signal survives pseudobulk noise at this cell budget,
+not how much biology is real.
+
+\paragraph{How the residual becomes a string, and how it is scored}
+\Cref{fig:frame} draws the path, from the two subtractions to the vector that is
+scored. The target is \texttt{<up genes> \DOWN{} <down genes> \ENDCELL}, $100$
+genes per block, ordered by signed residual magnitude; sign is biology, so it
+gets a symbol.
+Predicted and true residuals are both mapped to a signed rank vector, top-$100$
+up positive, top-$100$ down negative, weight $1/\log_2(\textrm{rank}+1)$;
+similarity is cosine. A generation supplies its ranks by token order within each
+block, and a token outside the panel or already placed is skipped without
+consuming a rank, so a block fills to at most $100$ genes. The sampled
+generations of one condition are averaged as vectors and the mean is scored
+once, not scored one by one and averaged.
+The score is $\NIR$ over other drugs in the same cell line. That set
+spans plates, in apparent violation of the same-plate rule of
+\cref{sec:res-blind}, and stands only because the plate-scoped generic has
+already subtracted each plate's mean shift, in the expectation sense fenced
+off above.
+
+\input{figs/fig-frame}
+
+% PLACEMENT ONLY. claimbox is `breakable`, and it was breaking here: three lines
+% and the accent rule at the foot of one page, the remaining ten at the head of
+% the next, so the box read as two fragments and the verdict lost its frame.
+% \budgettick reserves 5\baselineskip, which is not enough for a claim this long;
+% 16 is the whole box (13 lines plus its padding and two rules).
+\needspace{16\baselineskip}%
+\begin{claim}
+Ranking the target by signed residual exposes $59\%$ of its top-$200$ gene
+positions to the drug at cell-line scope, and $60\%$ at the plate scope this
+build actually uses, against $17\%$ for the standard target
+(\cref{tab:divergence}), at an unchanged within-well split-half retrieval
+reference. And the residual is estimable without leaking the evaluation into the
+fit: split before fit, generic plate-scoped and drug-meaned, reliability resolved
+from the data at the matched null's $95$th percentile ($+0.109$). That is a
+statement about the fitting procedure and not about plate structure, which the
+scope limit above leaves measured only in expectation. What it establishes is
+that the standard target's tokens hide a difference the data contain, and that
+this is a fact about ranking genes on absolute expression and not about these
+drugs, since $92\%$ of the recoverable between-drug difference returns as soon as
+the cell's own control is subtracted. It does not establish that tokenisation is
+the binding constraint. The residual package changes five things at once.
+\end{claim}
+
+% ...........................................................................
+\beatsection{R}{5}{A per-drug constant does not exhaust the target}{sec:res-transfer}
+\label{sec:methods-vardecomp}
+
+\begin{question}[5]
+The residual says what the model should predict, not how much there is to
+predict, and the same training result reads differently against a large reachable
+signal and a small one. Two measurements settle the scale: what share of a
+perturbation response is drug-specific at all, and how much of that share a table
+of per-drug constants would already capture. The first has a clean answer. The
+second has an honest one.
+\end{question}
+
+\noindent
+The shift's energy decomposes exactly into residual $0.621$, generic $0.390$ and
+a cross term of $-0.011$, so $62.1\%$ of the shift's energy lies outside the
+generic programme and $39.0\%$ is the generic programme, the two essentially
+orthogonal (\texttt{vardecomp\_matched.json}). The part outside the generic is
+the majority of the shift, and the shift is not what a sentence ranks
+(\cref{fig:residual-energy}).
+
+\input{figs/04c-residual-energy}
+
+That share has not previously been computed for this task, and its frame is not
+the trained-on one. The stored generic averages over conditions and keeps the
+condition's own contribution, where the training frame averages over drugs and
+leaves the condition's own drug out. Self-inclusion scales a residual by
+$(m-1)/m$ in a plate group of $m$ conditions, so that frame difference depresses
+the share quoted here; it does not inflate it. The weighting difference has no
+established direction. A second bias runs the other way. A condition's pseudobulk
+sampling error enters its own shift whole and is averaged down in the group mean,
+so it lands in the residual term and inflates the estimated share at this cell
+budget (\cref{tab:scale}, and the reliability line above). The two oppose each
+other, the net is not established, and no noise-corrected share is estimated
+here.
+
+\paragraph{Two components ask for different work} Writing
+\begin{equation}
+ \resid(d,c) \;=\; \beta(d) \;+\; \kappa(d,c) \;+\; \epsilon,
+ \qquad
+ \Tcoef \;=\; \frac{\operatorname{var}\beta}{\operatorname{var}\beta + \operatorname{var}\kappa},
+\end{equation}
+the per-drug constant $\beta(d)$, the drug \emph{main effect}, is what a lookup
+table reproduces with no model at all.\seealso{\cref{sec:res-lookup} builds that
+lookup and scores it.} The remainder $\kappa(d,c)$ is the only component a
+conditional model could win on. This is DrEval's naive predictor~\cite{dreval} in
+transcriptomic space. Their \texttt{NaiveMeanEffectsPredictor} predicts
+$\hat{y}_{ij} = \mu^c_i + \mu^d_j - \mu$, cell-line and drug main effects with no
+interaction term, and $\textrm{generic}(c) + \beta(d)$ is that quantity lifted
+from a scalar potency to a $946$-dimensional profile.
+
+Two warnings attach before any number is quoted. $\kappa$ is written as a
+drug\,$\times$\,cell-line interaction because the decomposition assumes one, but
+the estimator used does not identify such a term, so $\kappa$ is called the
+\emph{context-specific remainder} and $\Tcoef$ a disattenuated cross-context
+residual-similarity coefficient, not a variance share. And $1 - \Tcoef$ does not
+measure the headroom above the additive baseline. The cross-line pairs entering
+it may also differ in dose and in treatment well, and each residual is taken
+against a generic its own drug helped define, so it bounds that headroom from
+above at best.
+
+% PLACEMENT: this box carries a display equation and cannot break usefully. At
+% the previous setting it opened at the foot of the page and tcolorbox broke it
+% immediately after the title bar, stranding "DEFINITION The transfer
+% coefficient" alone at the page bottom with every line of the body overleaf.
+% \budgettick's own \needspace{5\baselineskip} is not enough to catch that; the
+% box is ~13 lines tall, so ask for that and let it move whole.
+\needspace{12\baselineskip}
+\begin{defn}{The transfer coefficient}
+With $\num{286}$ of $\num{287}$ treatments in exactly one well there is
+no replicate from which to separate $\operatorname{var}\kappa$ from
+$\operatorname{var}\epsilon$, so the variance-components model is unidentified on
+its own. The cosine route buys identification through split-half reliability:
+\begin{equation}
+ \hat{\Tcoef} \;=\; \frac{\cos\!\big(\resid(d,c_1),\, \resid(d,c_2)\big)}
+ {\sqrt{\rho(d,c_1)\,\rho(d,c_2)}},
+ \qquad
+ \rho(d,c) \;=\; \frac{2\cos(\resid_A, \resid_B)}{1 + \cos(\resid_A, \resid_B)},
+\end{equation}
+where $\resid_A$ and $\resid_B$ are disjoint halves of condition $(d,c)$ and
+$\rho(d,c)$ is the Spearman--Brown reliability of that condition's residual at
+its full cell count.
+\end{defn}
+
+Dividing out the reliability is essential, since measurement noise alone
+depresses the raw cross-line cosine and would otherwise be read as interaction.
+Two cautions ride with it. Spearman--Brown is derived for correlations between
+parallel halves, and what licenses it on a cosine here is the planted-truth
+validation in \cref{sec:appendix}. And the reliability entering it is a
+within-well split-half precision, optimistic relative to true biological
+reproducibility. That optimism sits in the denominator, where an over-large
+$\rho$ makes $\hat{\Tcoef}$ too small, so $1 - \hat{\Tcoef}$ is, if anything,
+\emph{overstated}. An earlier draft had that direction the wrong way round.
+
+\paragraph{The control that had to be replaced} The first run compared $\Tcoef$
+against a negative control of different drugs on the same plate, which returned
+$+0.485$ against $\Tcoef = 0.511$, and was correctly declared
+void.\corrmark{the same-plate negative control is voided, not matched; the
+structure-matched control replaces it} That control differs from the estimand in
+two ways at once, different drug \emph{and} same cell line, and plate structure
+surviving a cell-line-scoped generic inflates same-plate comparisons while
+leaving cross-line comparisons untouched. The $+0.485$ is voided, not matched
+against the separate $-0.017$ plate-scoped diagnostic. Only a structure-matched
+control, breaking the drug match alone, bounds the estimand.
+
+% ...........................................................................
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption{\textbf{The five checks accompanying the transfer-coefficient
+estimate, and what each one bounds.} At $\kappa = 0$ the \emph{uncorrected}
+cross-line cosine is only $0.734$, which read naively reports $27\%$ interaction
+where the truth is zero, while the disattenuated estimator recovers the truth to
+within $0.001$. That recovery licenses the reference column of
+\cref{tab:transfer}.}
+\label{tab:tcontrols}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.34\linewidth}X@{}}
+\toprule
+\thead{Check} & \thead{What it bounds} \\
+\midrule
+disjoint control halves & shared-control inflation: $+0.242$ at cell-line scope,
+  $-0.000$ at plate \\
+structure-matched negative control & the estimand itself; returns $-0.008$ \\
+simulated $\kappa{=}0$ null & estimator bias: returns $1.001$ where the truth is
+  $1.000$ \\
+dose strata on molar doses & a reference scale: the same drug and line at
+  another dose \\
+leave-one-drug-out generic & train/held-out target asymmetry
+  (\cref{sec:methods-residual}) \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item An earlier cache carried the well identifier in the dose field, so what was
+labelled dose transfer compared physical wells, not concentrations.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+% ...........................................................................
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption{\textbf{The transfer coefficient, estimated on real molar doses with
+dyadic cluster-robust intervals.} The matched negative control sits on zero. The
+same-plate control that produced the earlier false alarm reads $+0.485$ under a
+cell-line-scoped generic. $\Tcoef$ is a cross-context similarity coefficient, not
+a variance share, and $1 - \Tcoef$ must not be read as a
+drug\,$\times$\,cell-line interaction share.}
+\label{tab:transfer}
+\small
+\begin{tabularx}{\linewidth}{@{}%
+  >{\raggedright\arraybackslash}p{0.28\linewidth}
+  >{\raggedright\arraybackslash}p{0.13\linewidth}
+  >{\raggedright\arraybackslash}p{0.20\linewidth}
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Quantity} & \thead{Estimate} & \thead{$95\%$ interval} & \thead{Reference} \\
+\midrule
+$\Tcoef$ (cross-context, plate-scoped generic) & $0.553$ & $[0.514, 0.593]$
+  & simulated $\kappa{=}0$ null $= 1.001$ \\
+similarity scale NOT shared across contexts, $1-\Tcoef$ & $44.7\%$
+  & $[40.7\%, 48.6\%]$ & mixes cell line, dose, well and estimator \\
+$\Tcoef$ across dose (same drug, same line) & $0.707$ & $[0.632, 0.782]$
+  & reference scale \\
+structure-matched negative control & $-0.008$ & spanning zero
+  & must be $\approx 0$ \\
+\bottomrule
+\end{tabularx}
+\end{threeparttable}
+\end{table}
+
+\paragraph{What the coefficient is, precisely} $\Tcoef$ is a descriptive
+sensitivity analysis and not a load-bearing estimate, and the reason sits in its
+configuration. The scoped calculation retains conditions at a reproducibility
+threshold of $0.2$, and it carries every caution above at once: a
+\emph{self-including} generic, pairs free to differ in \emph{dose} and in
+treatment well, and an optimistic reliability in the denominator. That last one
+pushes $\hat{\Tcoef}$ down, so $1 - \Tcoef$ errs high and bounds from above what
+a per-drug constant leaves on the table, without measuring it.
+
+\paragraph{Dose is the milder perturbation} Holding drug and cell line fixed and
+changing only the molar concentration, transfer is $0.707$ $[0.632, 0.782]$ on
+$\num{363}$ pairs against $0.553$ $[0.514, 0.593]$ pooled cross-context; the
+intervals do not overlap. That contrast is between one clean axis and a mixture,
+since the cross-context arm differs in well and dose as well as cell line, but it
+is the closest this section comes to a single-axis comparison.
+
+The same ordering served as the weaker of the two scope diagnostics. At cell-line
+scope it inverts. The dose arm falls to $0.4846$, a different quantity from the
+voided same-plate control, which coincidentally reads $0.4853$, while the
+cross-line coefficient holds at $0.511$. That is the wrong way round for dose
+against cell line, but the expectation is a prior, so it is used as a
+plausibility check. The second diagnostic needs no prior. At plate scope the
+shared-control and split-control builds of $\Tcoef$ agree to $-0.000$, while at
+cell-line scope they differ by $+0.242$, plate structure leaking through a
+cell-line-scoped generic. That is what the scope decision rests on, and it is why
+the cell-line-scoped build cannot corroborate when it returns a similar
+$\Tcoef = 0.511$; that build is the one declared void, its own same-plate
+negative control reading $+0.485$.
+
+\paragraph{Whether anything could learn the remainder} If a cell line modulated
+drug responses in a consistent direction, that direction would be estimable from
+the line's own cells. Writing $\kappa(d,c) = \resid(d,c) - \hat{\beta}(d)$, the
+test compares $\cos(\kappa(d,c), \kappa(d',c))$ for different drugs in the same
+cell line against the same quantity across different cell lines, with
+$\hat{\beta}$ estimated leave-one-cell-line-out; estimated over all lines it
+would contain $\resid(d,c)$ itself, and subtracting a mean containing its own
+term induces a $-1/(m-1)$ correlation that biases the signal arm downward by
+construction. Both arms are disattenuated by $\kappa$'s own split-half
+reliability.
+
+Averaged over lines, no consistent per-line direction shows up. Under the
+plate-scoped generic the same-cell-line arm reads \ci{-0.0149}{-0.0251}{-0.0050}
+and the different-cell-line arm \ci{+0.0003}{-0.0071}{+0.0081}, an excess within
+line of $-0.0153$ for which no interval was computed. The intervals come from a
+cell-line-clustered bootstrap over $\num{38}$ and $\num{42}$ clusters, on
+$\num{4000}$ same-line and $\num{3884}$ cross-line pairs over $\num{1282}$
+conditions. Neither arm shows the positive within-line excess a per-line
+direction would require, and the negative sign of the same-line arm is not read
+as evidence: same-line pairs that also share a plate share a generic, and that
+common subtraction pushes their cosines negative by construction, where
+cross-line pairs share no generic at all. It is the construction the
+different-drug same-plate diagnostic reads at $-0.017$ above. A
+cell-line-scoped counterpart was not computed in the canonical run, and the row
+an earlier draft carried for it is withdrawn.
+
+Two negative results do not add up to irreducibility: this one, and a direct
+test of whether mechanism-matched drugs deviate from their per-drug constants in
+the same way within a cell line, which returned nothing detectable. The second
+bounds its own power severely. $\kappa$'s split-half reliability in this atlas is
+$0.195$ at the $0.05$ reliability floor ($0.324$ at the stricter $0.20$ floor),
+and same-mechanism drugs are so heavily co-plated that only $3$--$7\%$ of
+matched pairs survive a different-plate requirement ($1\%$ at the stricter
+floor). Resolving $\kappa$'s structure would take more cells per condition or a
+plating design that crosses mechanism with plate.
+
+\begin{claim}
+There is a conditional target that a per-drug constant cannot express. Two tests
+looked for learnable structure in it and found none, and neither settles whether
+there is any. $\kappa$'s split-half reliability is $0.195$ at the floor the
+mechanism test runs at, and only $3$--$7\%$ of mechanism-matched pairs survive a
+different-plate requirement, so its structure is unresolved here rather than
+\shownzero. Its size is quoted as what it is: $\Tcoef = 0.553$
+\nolinebreak[3]$[0.514, 0.593]$ is a disattenuated cross-context similarity
+coefficient, so $44.7\%$ $[40.7\%, 48.6\%]$ of \emph{that similarity scale}
+remains unshared across the compared contexts. It is not a variance share and not
+a drug\,$\times$\,cell-line interaction, since the estimator pools pairs
+differing in cell line, dose, well and target estimator, so it bounds what a
+per-drug constant leaves on the table without establishing that a model could
+reach any of it.
+\end{claim}
+
+% ...........................................................................
+\beatsection{R}{5}{Re-encoding produces prompt sensitivity}{sec:res-encoding}
+
+\begin{question}[5]
+Every target change tried so far left the model indifferent to the drug named in
+its prompt. Does training on the residual change that? The instrument is the
+stratified scramble, the same prompt with another drug's name and mechanism
+substituted, read as a ladder of strata because the swapped-in drug is itself a
+drug the model knows and so is not a neutral comparison. The model moves. It is
+not the only target change that makes it move.
+\end{question}
+
+\noindent
+On the $\num{300}$ trained conditions of the residual-frame evaluation the model
+beats the geometry-defined \texttt{orth} scrambled partner by
+\ci{+0.0898}{+0.0291}{+0.1506}, clustered on the drug and the treatment well
+(\texttt{re\_v3.json}).\gloss{scramble}{The same prompt with the drug's name and
+mechanism replaced by another drug's, in three strata by residual similarity.}
+That is the first non-null drug effect in this project, first in the order the
+experiments were run, and not the only target construction that produces one.
+
+% ...........................................................................
+\paragraph{Why the comparison set is not exchangeable, and what follows} The
+comparator is not a null. Its own score is a monotone function of which drug it
+was handed, which makes it an active treatment; \cref{sec:res-generalisation}
+measures the size of that. Two consequences fix the reading protocol here. The
+series is quoted as a \emph{gradient}, since a metric artefact would not order
+itself by swap dissimilarity; and where a single magnitude is needed it is the
+\texttt{orth} one, the least contaminated comparison available and not an
+independently established null, that stratum having been defined using true
+residual geometry.
+
+\paragraph{Why the strata are cut by response geometry and not by mechanism} A
+scramble that swaps in a drug with a similar true response is a weak test, and
+the annotation that looks like it should prevent that does not. In the
+characterisation behind \cref{tab:scale}, two drugs sharing a \texttt{moa-fine}
+annotation sit a mean distance $2.322$ apart against $2.377$ for two drugs that
+do not, $\num{1244}$ same-mechanism against $\num{17563}$ different-mechanism
+pairs, a ratio of $0.977$. Same-mechanism drugs in Tahoe are just over two per
+cent closer to each other than arbitrary pairs are, so ``different mechanism''
+does not imply ``different response''. The strata are therefore cut by measured
+residual cosine within the cell line. (Mechanism does carry signal in the
+residual frame, \cref{sec:res-scope}, a different frame from the full profiles
+measured here.)
+
+\paragraph{The gradient, on the earlier target build} The stratified scramble of
+\cref{sec:methods-controls} gave a gap that grew with swap dissimilarity
+(\cref{fig:repair}), \ci{+0.0351}{+0.0061}{+0.0656},
+\ci{+0.0716}{+0.0371}{+0.1059} and \ci{+0.1429}{+0.1112}{+0.1787}
+across \texttt{near}, \texttt{orth} and
+\texttt{opposite}, each differenced against its own stratum-specific partner.
+These are the residual arm's $1400$-token run; the two control arms beside them
+were scored at the $600$-token cap of \cref{sec:methods-data}, where their
+stratum gaps run from $-0.021$ to $+0.026$ and were read at the time as flat and
+null. That reading holds for the single-cell arm at both budgets. It does not
+hold for the optimal-transport arm, whose $600$-token gaps are themselves
+monotone in swap dissimilarity.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{fig-repair}
+\caption[The gap grows with swap dissimilarity]{\textbf{On the earlier target
+build, the residual model's advantage over its own scramble grew with how
+dissimilar the swapped-in drug's residual was; the single-cell control scored
+through the identical pipeline stayed flat and null, while the optimal-transport
+control did not.} Residual frame throughout. The horizontal axis is measured
+swap dissimilarity, $1-\cos$ between the real and the swapped-in drug's residual,
+byte-identical across all four runs, so the three stratum positions are exact;
+the connecting lines are guides between three measured strata and not a sampled
+continuum, and the four series are nudged sideways so that their intervals do not
+overlap. The three solid series are at a matched $600$-token
+budget; the residual model's $1400$-token run is the dotted overlay, since the
+budget alone roughly doubles the gap on the two strata where it is positive at
+$600$ ($+0.0349 \rightarrow +0.0716$ on \texttt{orth},
+$+0.0716 \rightarrow +0.1429$ on \texttt{opposite}). Intervals are $95\%$
+bootstrap clustered over cell lines, $n = 250$ conditions per point. The
+\texttt{near} stratum is the weakest test by construction, since where the
+swapped-in drug's true residual is similar, an unchanged prediction is correct.}
+\label{fig:repair}
+\end{figure}
+
+\paragraph{Three diagnostics that need no scramble} All three agreed on that
+build, and the residual model led on all three. The correlation between a
+condition's reproducibility and model $\NIR$ was $+0.144$, the model doing better
+where the drug effect is real, against $-0.117$ and $-0.216$ for the controls.
+Prediction diversity was highest for the residual model. And
+$\cos(\textrm{prediction}, \textrm{own truth})$ exceeded
+$\cos(\textrm{prediction}, \textrm{other drugs})$ for all three arms, the
+residual model's margin, $+0.084$, being roughly twice the optimal-transport
+arm's $+0.049$ and three times the single-cell arm's $+0.026$.
+
+\paragraph{One measurement lesson before the withdrawal} The $600$-token cap
+roughly halved the effect at every stratum where it was positive there, so
+$+0.0716$ appears twice in this section, once as the $600$-token
+\texttt{opposite} gap and once as the $1400$-token \texttt{orth} gap, and the two
+are not the same quantity. Re-run at $1400$ tokens, the single-cell control stays
+flat, $-0.0128$ \nolinebreak[3]$[-0.0458, +0.0202]$ against its own
+\texttt{orth} partner. The optimal-transport control does not.
+
+% PLACEMENT ONLY. Worst case of the breakable box: nine lines of the retraction
+% at the foot of one page, then \cref{fig:repair} taking the whole top of the
+% next as a deferred float, then the remaining six lines under it -- the box read
+% as two boxes with a figure between them. 17 lines is the box entire, so it
+% either sets whole here or starts the next page whole, and the figure can no
+% longer land inside it.
+\needspace{17\baselineskip}%
+\begin{withdrawn}{``OT achieved nothing'', \cref{sec:res-epsilon}}
+At $600$ tokens the optimal-transport arm's \texttt{orth} gap was
+\ci{+0.0144}{-0.0051}{+0.0338} and spanned zero; at $1400$ it is
+\ci{+0.0292}{+0.0144}{+0.0441} and does not. The token budget was suppressing a
+real effect in that arm, the same lesson the residual arm taught, applied to a
+control previously read as inert. The $600$-token evidence pointed the same way
+and was read too cautiously; that arm's stratum gaps there were $+0.0073$,
+$+0.0144$ and $+0.0263$, monotone in swap dissimilarity like the residual arm's,
+with only \texttt{opposite} excluding zero. The consequence reaches backwards.
+The optimal-transport target is one point in the three-point comparison of
+\cref{sec:res-epsilon}, and that negative holds only at the budget and comparator
+it was measured with. At a matched budget and against the geometry-defined
+\texttt{orth} partner, whose true residual is on average orthogonal to the
+target's ($\cos = +0.035$), the optimal-transport point is not null. The
+single-cell point is the one whose interval still spans zero. The geometry-based
+selection does not independently establish a null in either case.
+\end{withdrawn}
+
+\paragraph{The comparison that costs this section its strongest phrasing} The two
+arms' pooled gaps against their own \texttt{orth} partners overlap almost
+entirely (\texttt{ctrl1400\_summary.json}), so re-encoding the target produces
+prompt sensitivity but is \emph{not} the only target change that does.
+
+Three limits stop that comparison being read as an ordering. The arms are scored
+in different frames, so only each arm's gap against its own comparator is
+comparable; they are separate evaluations over different condition sets, so this
+is an arm-level and not a paired comparison; and those sets differ in split
+composition by more than the arms differ from each other. The residual figure
+pools the three splits of \cref{tab:generalisation}, whose own gaps are
+$+0.0898$, $+0.0332$ and $-0.0315$, while the optimal-transport evaluation
+carries no split labels at all. A spread of that size across splits, against a
+$0.0069$ difference between the two pooled numbers, means the near-equality does
+not order the arms in either direction.
+
+\paragraph{The slope carries its own null} Regressing each prediction's $\NIR$
+on the cosine between the named drug's truth and the target's truth gives a
+slope whose null is zero for a model that ignores the drug it is told. Its
+points are the three scrambled partner prompts and nothing else, the target-drug
+prompt never among them, and \cref{sec:res-generalisation} fits it on all three
+splits. The fit is pooled least squares over every point in a split with a
+single intercept, three points per condition, no condition-level intercepts
+absorbed, so the zero null is exact within a condition while the pooled slope
+also carries a between-condition component. What it closes is the freedom to
+pick a comparator, since it spends all three strata rather than one.
+
+\begin{claim}
+Re-encoding the target produced the project's first non-null drug effect. On
+trained conditions the model beats the geometry-defined \texttt{orth} partner by
+\ci{+0.0898}{+0.0291}{+0.1506} and beats chance outright, with no comparator arm
+at all, by \ci{+0.0981}{+0.0407}{+0.1554}, both clustered on the drug and the
+treatment well, the drug being the axis the claim rides on
+(\cref{sec:res-generalisation}). The comparator-free slope of retrieval against
+the named drug's truth is \ci{+0.3728}{+0.2797}{+0.4660}, and zero is its null for a
+drug-blind model, so no choice of comparator manufactures it, though it is fitted over the
+scrambled partner prompts alone, with the target-drug prompt never a point on the
+line. It is first in sequence and not uniquely responsible: at a matched
+$1400$-token budget the optimal-transport target clears zero against its own
+\texttt{orth} partner too (\ci{+0.0292}{+0.0144}{+0.0441} over $\num{248}$
+conditions that carry no split labels, against the residual arm's
+\ci{+0.0361}{+0.0159}{+0.0564} pooled over $\num{1394}$ that mix trained and
+held-out splits), on a separate evaluation in a different frame, so the two are
+not ordered against each other. The model has been shown to respond to the drug;
+whether that response is any use is the next question.
+\end{claim}
+
+% ...........................................................................
+\beatsection{R}{6}{Responding to the drug is not predicting it}{sec:res-generalisation}
+\label{sec:methods-holdout}
+
+\begin{question}[6]
+A model that moves when the drug token moves has cleared a low bar, because
+reproducing a training average requires that much too. Everything scored so far
+came from conditions the model trained on, so what has been shown is that the
+token is consulted, not that anything transferable was learned. Separating the
+two needs a holdout, and the
+atlas's own randomisation decides which one means anything: whole treatment
+wells. Prompt sensitivity survives that test. Whether the residual itself
+transfers comes back unsettled.
+\end{question}
+
+\noindent
+The physical layout of \cref{sec:methods-data} forces the choice. A (drug, cell
+line) holdout, the field's standard Leave-Pairs-Out split and the one an earlier
+version of this work used, leaves the held-out condition's treated well sitting
+in the training set through its other $\approx 48$ cell lines. Measured against
+that holdout, $\num{124}$ of the $\num{255}$ treated wells for which split
+information exists placed a held-out condition and a training condition in the
+same well.\seealso{\cref{sec:res-lookup}: what a held-out gap has to
+beat.} That estimand measures within-atlas matrix completion, not independent
+generalisation, and no processing of the targets changes it.
+
+Holding out whole wells is the only assignment-respecting choice the design
+offers, and it answers a narrower question, generalisation to an unseen treatment
+well of a seen drug. Fixed-dose cross-context transfer, present in one line and
+absent in another, is structurally unidentifiable in this atlas.
+
+\paragraph{What each split holds} \texttt{train} takes every condition of the
+remaining wells, $\num{4999}$ before the reliability line and
+\needsaudit[tally against the gate's retained count]{2{,}523} after it.
+\texttt{unseen\_combo} holds $\num{36}$ treated wells out whole ($\num{904}$
+conditions, $\num{900}$ after inventory filters), and it never takes a drug's
+last training well; without that guard a two-well drug could silently become an
+unseen drug while sitting in the unseen-combination arm, and the two arms would
+measure the same thing. \texttt{unseen\_drug} holds every condition of
+$\num{10}$ held-out drugs ($\num{714}$ conditions, $\num{711}$ after inventory
+filters). Zero wells contribute conditions to both sides.
+
+\texttt{unseen\_drug} is a control and not a third result. Tahoe fine-tuning
+never sees the token, so a large effect there would indict the comparator, not
+report a biological finding. ``Unseen'' means held out from fine-tuning with
+mechanism supplied, not unknown to the pipeline; the Pythia-1b backbone was
+pretrained on natural language and the prompt still carries the
+\texttt{Mechanism:} field.
+
+Two warnings ride with the design. DrEval reports, citing~\cite{partin}, that
+apparently good performance on pair-holdout splits can be reached simply by
+predicting each drug's average response across the training cell lines, which is
+why the baseline ladder of \cref{sec:res-lookup} is not optional. And the
+evaluation draws under a per-split quota, because a uniform draw reproduces the
+pool's proportions and starves the split the experiment exists to test; in a
+first run,
+$\num{250}$ constructed held-out combinations yielded only $\num{33}$ scored
+conditions. Under the quota the evaluation scores $\num{1394}$ conditions in all,
+$\num{300}$ trained and $\num{199}$ unseen-drug, the rest unseen combinations,
+almost the whole pool of $\num{900}$ that arm affords, while
+\texttt{unseen\_drug} remains a quota of the $\num{711}$ available.
+
+% ...........................................................................
+\paragraph{The first result of this design is about the comparator} It is a
+finding and not an erratum, and it reframes every gap quoted so far. Across the
+three swap strata the scrambled model's $\NIR$ is $0.550$, $0.501$ and $0.423$ as
+the named partner's true residual moves from aligned ($\cos = +0.22$) through
+orthogonal ($0.00$) to anti-aligned ($-0.20$) with the target. The
+\texttt{near} and \texttt{opposite} scores differ from chance in opposite
+directions; the geometry-defined \texttt{orth} partner scores $0.501$ and is
+empirically near chance on these conditions. That makes \texttt{orth} the least
+contaminated available comparator, not an independently established null, since
+its stratum was defined using true residual geometry.
+
+The consequence is structural. A gap measured against such an arm decomposes as
+\begin{equation}
+ \gap \;=\; \underbrace{\big(\NIR_{\textrm{model}} - 0.5\big)}_{\textrm{how much naming the truth helps}}
+ \;+\; \underbrace{\big(0.5 - \NIR_{\textrm{scramble}}\big)}_{\textrm{how much naming the lie hurts}},
+\end{equation}
+and only the first term is wanted. The second is not a rounding error. Pooled
+over all $\num{1394}$ scored conditions the model's own advantage over chance is
+$+0.0367$ and the \texttt{opposite} comparator's deficit is $+0.0772$, so $68\%$
+of the $+0.1139$ gap that arm reports is the comparator failing and not the model
+knowing. Against \texttt{orth} the second term is approximately zero here, so
+every gap in \cref{tab:generalisation} is measured against that partner, its
+magnitude conditional on the observed near-chance score.
+
+The diagnostic is free and not specific to this experiment. Score the comparator
+arm against chance; if its score moves with which label it was handed, the gap it
+defines is not a measurement of the model. A swap drawn to be maximally
+dissimilar, the obvious way to build a strong negative control, is exactly the
+swap that maximises the second term.
+
+% ...........................................................................
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{Whole-well holdout on the corrected evaluation, with the truth
+verified against the build's own fit digest and the full held-out population
+scored.} The two right-hand columns carry the SAME point estimate and differ only
+in what they treat as the unit of generalisation. On \texttt{unseen\_combo} the
+gap excludes zero clustered on cell line and does not clustered on drug, which is
+why that row is reported as \notestablished. The \texttt{unseen\_drug} row
+corroborates but does not prove: its \texttt{orth}-partner gap is negative while
+its \texttt{opposite} gap is $+0.0379$.}
+\label{tab:generalisation}
+\small
+\begin{tabularx}{\linewidth}{@{}%
+  >{\raggedright\arraybackslash}p{0.16\linewidth}
+  >{\raggedright\arraybackslash}p{0.18\linewidth}
+  >{\raggedright\arraybackslash}p{0.16\linewidth}
+  >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Split} & \thead{$n$ (lines; drugs; wells)} & \thead{model $\NIR$}
+  & \thead{$\gap$, clustered on \emph{cell line}}
+  & \thead{the same, clustered on \emph{drug}} \\
+\midrule
+\texttt{train} & $300$ ($39$; $76$; $136$) & $0.598$ $[0.549, 0.647]$
+  & \ci{+0.0898}{+0.0382}{+0.1415} & \ci{+0.0898}{+0.0291}{+0.1506} \\
+\addlinespace
+\textbf{\texttt{unseen\_combo}} & \needsaudit{895} ($42$; $34$; $36$)
+  & $0.533$ $[0.492, 0.575]$
+  & \ci{+0.0332}{+0.0069}{+0.0594} & \ci{+0.0332}{-0.0031}{+0.0695} \\
+\addlinespace
+\texttt{unseen\_drug} & $199$ ($40$; $10$; $28$) & $0.459$ $[0.404, 0.514]$
+  & \ci{-0.0315}{-0.0836}{+0.0206} & \ci{-0.0315}{-0.1049}{+0.0419} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item Every gap printed here is measured against the geometry-defined
+\texttt{orth} partner, whose own score is empirically near chance on these
+conditions; \texttt{opposite} figures never appear as a column. Model $\NIR$
+intervals test against the chance value $0.5$ with no comparator. Intervals are
+two-way cluster-robust over cell lines and wells, with a Student $t$ reference
+on $\min(G_{\textrm{line}}, G_{\textrm{well}}) - 1$ degrees of freedom, which is
+why the well counts are printed. The \texttt{unseen\_drug} arm spans $28$
+wells, and $t_{27} = 2.05$ against $1.96$ widens its interval by five per cent
+(\cref{sec:methods-data}).
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+\paragraph{The control behaves as the diagnosis predicts} The unseen-drug gap
+against \texttt{opposite} is \ci{+0.0379}{-0.0083}{+0.0841}, positive where the
+\texttt{orth}-partner estimate on the same conditions and predictions,
+\ci{-0.0315}{-0.0836}{+0.0206}, is negative and covers zero as a control should.
+That point estimate is the \texttt{unseen\_combo} gap with the sign reversed, so
+the row is read as uninformative and not as a confirmed null. A cluster-robust
+variance is asymptotic in the number of clusters, not conditions, and this arm
+spans $40$ cell lines but only $28$ treatment wells, so its two-way variance is
+carried on $27$ degrees of freedom. A cell-line-only cluster bootstrap puts the
+\texttt{opposite} gap clear of zero at $[+0.0044, +0.0727]$; adding wells as the
+second clustering axis returns it to zero, at the normal quantile as well as at
+$t_{27} = 2.05$. What decides the row is the unit of clustering.
+
+\paragraph{The held-out row settles prompt sensitivity only} On
+\texttt{unseen\_combo} the gap clears zero clustered on cell line and well but
+not clustered on drug and
+well (\cref{fig:splits}a, right), so it survives only one of the two units the
+claim needs. Drug is the axis
+a claim about transferring a \emph{drug}-specific residual has to generalise
+across, so
+generalisation to an unseen treatment well of a seen drug is \notestablished.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{fig-splits}
+\caption[Chance-clearing on trained conditions only]{\textbf{The residual-frame
+model clears chance on trained conditions only; the held-out-combination gap
+excludes zero clustered on cell line but not clustered on drug, and the
+unseen-drug gap flips sign.} Residual frame throughout, and $\NIR$ ranks each
+prediction against the other drugs measured in the same cell line.
+\textbf{(a)}~Left, model $\NIR$ against the chance value $0.5$ (solid rule), with
+$95\%$ two-way cluster-robust intervals; $n = 300$, \needsaudit{895} and $199$ conditions on
+\texttt{train}, \texttt{unseen\_combo} and \texttt{unseen\_drug}. The grey
+dash on each row is that split's raw within-well split-half precision
+reference, a measurement-precision figure computed from two halves of the same
+well and not a replicate experiment; it carries no interval and is drawn as a
+bare marker, and only \texttt{train} is filtered at the reliability line. Right,
+on its own axis, the gap against the geometry-defined \texttt{orth} partner. Each
+row has one point estimate, drawn twice with two intervals because the verdict
+depends on which unit of generalisation is clustered: cell-line-clustered above,
+drug-clustered below, each labelled with the Student~$t$ degrees of freedom it is
+carried on. The grey band on the \texttt{unseen\_drug} row is that arm's
+$80\%$-power detection limit around chance, $\pm 0.079$, the smallest departure
+the arm could detect and not a confidence region. \textbf{(b)}~The per-condition
+$\NIR$ distributions behind those three means, as reflected-boundary kernel
+densities on a shared axis, each with its mean marked and the region at or below
+chance shaded. The pooled $0.537$ is a mean over nearly flat distributions rather
+than a location: even on \texttt{train}, $38.7\%$ of conditions sit at or below
+chance, against $44.6\%$ and $55.8\%$ on the two held-out splits.}
+\label{fig:splits}
+\end{figure}
+
+\begin{scopelimit}[carried into \cref{sec:res-lookup} and \cref{sec:limitations}]
+The precision matters: \notestablished is not the same as \shownzero. The
+drug-clustered interval reaches $+0.0695$, so an effect of up to roughly $+0.07$
+remains compatible with these data at the
+\needsaudit[arm size, two records disagree]{895} conditions this arm affords,
+spread over $34$ drugs, a limit of power at the size the holdout gives,
+reported as one. On \texttt{unseen\_drug}, $n = 199$ leaves a half-width of
+$0.055$ around the model's own $\NIR$ and an $80\%$-power detection limit of
+$0.079$ against chance, shaded on that row in \cref{fig:splits}a. Neither row
+licenses a statement that the effect is absent.
+\end{scopelimit}
+
+% FLAGGED, NOT FIXED -- the two panel-B numbers below (train $0.955$ and the
+% spread $0.006$) are inherited from a superseded reconstruction taken at a
+% +0.109 reliability line. This document defines the line at +0.1086: see :214
+% ("$+0.109$, resolving to $+0.1086$"), :222-223 ("none falls at or below the
+% resolved $+0.1086$") and :986 ("499 conditions sit below the $+0.1086$ line").
+% Recomputed from RESULTS_cluster/re_v3.json -> records[] at repro_cos > 0.1086:
+%   train         kept 300  0.9555006 -> 0.956   (:222-223 requires all 300)
+%   unseen_combo  kept 396  0.9605642 -> 0.961   (:986's 499-below requires 396)
+%   unseen_drug   kept 111  0.9597734 -> 0.960
+%   spread: raw 0.0050636 -> 0.005, and max(rounded) - min(rounded)
+%           = 0.961 - 0.956 = 0.005. BOTH conventions give 0.005 at the resolved
+%           line, so this is NOT the convention clash it was reported as. 0.006
+%           is just the old line's rounded-endpoint spread, 0.961 - 0.955. At
+%           0.109 the kept counts are 299 / 394 / 111, which contradict :222-223
+%           and :986 directly.
+% The $0.132$ in the same sentence is unaffected: panel A is read straight from
+% CANONICAL_NUMBERS.json -> ceilings{}, and raw (0.13178) and rounded-endpoint
+% (0.956 - 0.824) both give 0.132 there.
+% NOT CHANGED HERE because the correction is a six-site edit and four sites are
+% outside this file: 05-Limitations.tex:224 and :225, 03-Apparatus.tex:378, and
+% figs/splitref.tex's spread node (:219) and caption (:244). That figure already
+% DRAWS train as 0.956 at the resolved line while the prose here still prints
+% 0.955, so the disagreement is live. Changing this site alone would replace a
+% uniformly wrong number with an inconsistent document. Reported upward instead.
+The three splits are not scored on comparable populations either, and the
+difference is one of selection. Their raw within-well split-half precision
+references, the grey dashes of \cref{fig:splits}a, are $0.956$, $0.824$ and
+$0.836$, a spread of $0.132$; \texttt{train}
+is filtered at a reliability line the two held-out splits are not, and imposing
+that line on all three brings the references to $0.955$, $0.961$ and $0.960$, a
+spread of $0.006$. The held-out shortfall therefore cannot be softened by appeal
+to a lower noise floor.
+
+% PLACEMENT ONLY. The other retraction in this section is guarded at the
+% \needspace above; this one was not, and it broke 13 lines / 2 lines across the
+% page. The two lines that landed overleaf are the ones that perform the
+% withdrawal, and they arrived with no CORRECTION rule above them, so the reader
+% met the retraction as unlabelled prose. \budgettick reserves 5\baselineskip,
+% which is not enough: the box measures 247.1pt, 16.6 lines with its padding and
+% frame, so 17 is the box entire and it either sets whole here or starts the
+% next page whole.
+% MEASURED COST, build of 2026-08-12: the guard carries ~2.6 lines of the
+% chapter forward. That stops the closing claim of \cref{sec:res-lookup}
+% breaking, and starts the coverage definition and the seen-drug-transfer claim
+% breaking, all three in 04d-baselines.tex, each of which wants the same guard.
+\needspace{17\baselineskip}%
+\begin{withdrawn}{a training-exposure or memorisation advantage}
+The difference between the trained and held-out estimates is
+\ci{+0.0567}{-0.0014}{+0.1148} with cluster-robust $p = 0.0556$. An unclustered
+permutation returns $p = 0.0142$, quoted only for contrast, because ignoring the
+clustering this chapter mandates everywhere else flatters the result. It does
+not clear the conventional threshold, and the two arms differ in three ways at
+once in any case, in whether the condition was trained on, in which drugs they
+contain, and in how their scored populations were selected. Restricting the
+comparison to the $30$ drugs present in both arms reverses the sign, with the
+trained arm sitting \emph{behind} the held-out one,
+\ci{-0.0606}{-0.1506}{+0.0295}, $p = 0.1797$, on $79$ trained and $750$
+held-out conditions, and the pooled difference is a composition effect: $83.8\%$
+of held-out-combination conditions sit on those shared drugs against $26.3\%$
+of trained ones. The claim of a training-exposure or memorisation advantage is
+therefore withdrawn. None is established, the drug-matched estimate points the
+other way, and the two arms are scored on populations selected by different
+rules.
+\end{withdrawn}
+
+\paragraph{Two instruments no comparator defect can touch} First, the slope test.
+Regressing each prediction's $\NIR$ on the cosine between the named drug's truth
+and the target's truth gives \ci{+0.373}{+0.280}{+0.466} on \texttt{train},
+\ci{+0.336}{+0.223}{+0.450} on \texttt{unseen\_combo} and
+\ci{+0.342}{+0.215}{+0.469} on \texttt{unseen\_drug}, clustered on the drug. All
+three exclude zero, and all three still exclude it clustered on the cell line
+($[+0.272, +0.474]$, $[+0.241, +0.432]$ and $[+0.284, +0.400]$). Its points are
+the three \emph{scrambled} partner prompts and nothing else, exactly three per
+condition, so $900$, $\num{2685}$ and $597$ points on the three splits. On
+\texttt{unseen\_drug} those partners are overwhelmingly drugs the model
+\emph{was} trained on, so the slope shows that the model responds to a named
+trained drug in a scoring context whose own drug was held out, and not that it
+knows the held-out drug.
+
+Second, the model's own score against chance, with no comparator at all. It
+clears $0.5$ on \texttt{train}, by $+0.0981$
+\nolinebreak[3]$[+0.0407, +0.1554]$ clustered on drug and well, and is not
+distinguishable from chance on either held-out split
+(\cref{tab:generalisation}).
+
+\paragraph{A positive slope beside a chance-level score is not a contradiction}
+The model has a coarse sense of what a named trained drug does, and not of what
+it does in this well, and $\NIR$ asks the second question, ranking against the
+$\approx 40$ other drugs in the same cell line. That is the drug main effect
+without the part of the residual that is not shared across contexts, which
+\cref{sec:res-transfer} measures at $44.7\%$ ($1 - \Tcoef$, with
+$\Tcoef = 0.553$ \nolinebreak[3]$[0.514, 0.593]$), a figure that mixes cell line,
+dose, well and estimator. It is also why the lookup wins in the next section:
+\texttt{drug\_lookup} is that main effect, estimated straight from data far more
+precisely than the model learned it. The condition-level picture agrees. The
+cosine between prediction and own truth on trained conditions averages $+0.0389$
+(sd $0.1119$, median $+0.0220$), spanning $[-0.3046, +0.3976]$ with $33.7\%$
+clearing $|0.1|$.
+
+\paragraph{One asymmetry attaches to every held-out number in this chapter} The
+evaluation's truths are not refitted. The generic is reconstructed from the
+build's own fit inventory and verified against the build's \texttt{fit\_digest},
+and a mismatch aborts the run. The reliability line selects the \emph{training}
+split, so \texttt{train} is by construction the reliability-surviving population,
+and the two held-out splits are not filtered at all. In the unseen-combination
+arm $\num{499}$ conditions sit below the $+0.1086$ line and $\num{74}$ have a
+negative split-half cosine; in the unseen-drug arm, of $\num{199}$ conditions,
+$\num{88}$ sit below the line and $\num{18}$ are negative. This is deliberate,
+since filtering the evaluation set on its own outcome is the selection this
+chapter removed, but it leaves the comparison conservative in the direction that
+matters. The held-out arms are scored on their full, noisier populations while
+the trained arm is not.
+
+% PLACEMENT ONLY. This box is 23 lines and it was breaking after two of them,
+% which is the one split `breakable' is not for: the accent rule, the words "The
+% claim." and two lines at the foot of the page, and the whole verdict overleaf.
+% It fits on one page with room to spare, so the reservation is the whole box.
+\needspace{24\baselineskip}%
+\begin{claim}
+Re-encoding the target made the model respond to the combined drug-and-mechanism
+prompt. That much is established and survives every stress: on trained
+conditions it holds clustered on the cell line and on the drug, it holds against
+chance with no comparator at all, and the comparator-free slope excludes zero on
+all three splits under both clusterings (\ci{+0.373}{+0.280}{+0.466},
+\ci{+0.336}{+0.223}{+0.450}, \ci{+0.342}{+0.215}{+0.469}).
+
+Transfer to held-out combinations is \notestablished. The gap there is
+$+0.0332$. Clustered on cell line and well it excludes zero,
+\ci{+0.0332}{+0.0069}{+0.0594}; clustered on drug and well it does not,
+\ci{+0.0332}{-0.0031}{+0.0695}. It is the drug axis that the claim has to
+survive. The split is also weaker than its name: $30$ of its $34$ drugs and
+$39$ of its $42$ cell lines appear in training, and $82\%$ of its conditions
+recombine a seen drug with a seen cell line. The effect is a majority tilt
+rather than a uniform one, positive for $20$ of $34$ drugs (sign test
+$p = 0.39$).
+
+What the slope on the \emph{unseen-drug} split does and does not add has to be
+stated exactly. At \ci{+0.342}{+0.215}{+0.469} it shows that the prediction
+still tracks the drug \emph{named in the prompt} when the condition's own drug was
+held out. But the drugs named in that regression are the three scrambled
+partners, which on this split are overwhelmingly training drugs, and the real
+target-drug prompt contributes no point to it. The slope is evidence that the
+model responds to named trained drugs in an unseen-drug scoring context, and not
+evidence that it knows the held-out drugs.
+\end{claim}

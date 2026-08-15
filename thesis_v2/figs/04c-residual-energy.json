@@ -1,0 +1,121 @@
+{
+  "figure": "fig:residual-energy",
+  "file": "thesis_v2/figs/04c-residual-energy.tex",
+  "kind": "tikz",
+  "width_mm": 141.91,
+  "width_pt": 403.77531,
+  "textwidth_pt": 404.02913,
+  "fill_fraction": 0.99937,
+  "note": "Two sub-blocks of DIFFERENT quantities. Block 1 is a share of the perturbation shift's energy (dimensionless, sums to 1.000 including a negative cross term). Block 2 is a count of top-200 target token positions that differ between two drugs in one context. No difference across the divider is a number.",
+  "block_1_energy": {
+    "source_file": "RESULTS_cluster/vardecomp_matched.json",
+    "source_scope": "main.scope",
+    "drawn": [
+      {
+        "label": "62.1% drug-specific",
+        "key_path": "main.scope.residual_energy_share",
+        "value": 0.6211205563374411,
+        "drawn_as": 0.621,
+        "printed_as": "62.1%",
+        "bar": "accent segment, 0 to 0.621"
+      },
+      {
+        "label": "generic 39.0%",
+        "key_path": "main.scope.generic_energy_share",
+        "value": 0.38993489697995193,
+        "drawn_as": 0.39,
+        "printed_as": "39.0%",
+        "bar": "grey segment, 0.621 to 1.011"
+      },
+      {
+        "label": "cross term -0.011",
+        "key_path": "main.scope.cross_energy_share",
+        "value": -0.011055451267510967,
+        "drawn_as": -0.011,
+        "printed_as": "-0.011",
+        "bar": "the overhang of the grey segment past the upright rule at 1.000; NOT renormalised away"
+      },
+      {
+        "label": "upright ink rule (the shift's own energy)",
+        "key_path": "main.scope.energy_shares_sum",
+        "value": 1.000000002049882,
+        "drawn_as": 1.0,
+        "printed_as": "1.000",
+        "bar": "vertical ink rule at x = 1.000"
+      }
+    ],
+    "arithmetic_check": "0.6211205563374411 + 0.38993489697995193 - 0.011055451267510967 = 1.000000002049882 (matches main.scope.energy_shares_sum)"
+  },
+  "block_2_tokens": {
+    "source_file": "RESULTS_cluster/target_divergence.json",
+    "source_scope": "scopes.cellline",
+    "K": 200,
+    "K_key_path": "K",
+    "n_conditions": 6602,
+    "n_pairs": 212528,
+    "drawn": [
+      {
+        "row": "full profile --- the standard target",
+        "key_path": "scopes.cellline.full.divergence_mean",
+        "value": 34.594876910336524,
+        "printed_as": "34.6",
+        "fraction_of_200": 0.17297438455168263,
+        "printed_fraction": "17%",
+        "bar_drawn_at": 0.17
+      },
+      {
+        "row": "shift (treated - control)",
+        "key_path": "scopes.cellline.shift.divergence_mean",
+        "value": 111.4231960024091,
+        "printed_as": "111.4",
+        "fraction_of_200": 0.5571159800120455,
+        "printed_fraction": "56%",
+        "bar_drawn_at": 0.56
+      },
+      {
+        "row": "residual --- the drug-specific target",
+        "key_path": "scopes.cellline.residual.divergence_mean",
+        "value": 118.24622167432057,
+        "printed_as": "118.2",
+        "fraction_of_200": 0.5912311083716029,
+        "printed_fraction": "59%",
+        "bar_drawn_at": 0.59
+      }
+    ],
+    "quoted_in_caption_but_not_drawn": [
+      {
+        "row": "residual at plate scope",
+        "key_path": "scopes.plate.residual.divergence_mean",
+        "value": 120.29533990815328,
+        "printed_as": "120.3",
+        "fraction_of_200": 0.6014766995407664,
+        "printed_fraction": "60%",
+        "why_not_drawn": "different scope from the three drawn rows; a fourth bar would invite exactly the cross-scope comparison the caption forbids"
+      }
+    ],
+    "derived_in_caption": {
+      "label": "the other 83% are the same string",
+      "value": 0.8270256154483174,
+      "derivation": "1 - 34.594876910336524 / 200",
+      "printed_as": "83%"
+    }
+  },
+  "half_way_rule": {
+    "drawn_at_share": 0.5,
+    "drawn_at_cm": 9.495,
+    "spans": "the two bar bands only (y 3.32-4.08 and y 0.18-1.90); it crosses no prose",
+    "label": "half, placed beneath the token block"
+  },
+  "thesis_text_agreement": {
+    "checked": true,
+    "checks": [
+      "thesis_v2/Sections/04c-reencoding.tex:281-284 -- residual 0.621, generic 0.390, cross -0.011, 62.1%, 39.0% -- AGREES",
+      "thesis_v2/Sections/01-Introduction.tex:288-290 -- 62.1% residual, 39.0% generic, cross term -- AGREES",
+      "thesis_v2/Sections/05-Limitations.tex:172-174 -- cross -0.011, sum 1.000, 62.1%, 39.0% -- AGREES",
+      "thesis_v2/Sections/04c-reencoding.tex:42-44 (tab:divergence) -- 34.6/200 (17%), 111.4 (56%), 118.2/200 (59%) -- AGREES",
+      "thesis_v2/Sections/04c-reencoding.tex:29 and 05-Limitations.tex:430-431 -- plate scope 120.3 -- AGREES",
+      "no disagreement found"
+    ]
+  },
+  "height_pt": 124.33833
+}

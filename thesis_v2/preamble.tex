@@ -1,0 +1,1070 @@
+% ===========================================================================
+% preamble.tex -- thesis_v2, the didactic edition
+%
+% Driver:  \documentclass[12pt,a4paper,oneside]{report}
+%          \input{preamble}
+%
+% ONE IDEA -------------------------------------------------------------------
+% Nothing makes the reader hold two things at once.
+%   BODY   asserts and hedges. Every number the document CLAIMS lives here,
+%          with its interval, its comparison set and its reference beside it.
+%   MARGIN remembers. Definitions, landmark constants established elsewhere,
+%          which measurement frame is in force, where to look next.
+%   BOX    declares. Five boxed shapes plus one unboxed lede, told apart by
+%          GEOMETRY before colour, so the system survives a monochrome laser
+%          printer. The opener is deliberately the one that is NOT a box: it
+%          fires 34 times, and a frame that frequent stops marking anything.
+% Acceptance test for the margin: delete every margin note in the document and
+% the body must still be complete and still correctly qualified.
+%
+% ENVIRONMENT ----------------------------------------------------------------
+% Verified present on this machine by kpsewhich: tgpagella, tgheros, mathpazo,
+% inconsolata, tcolorbox, needspace, changepage, titlesec, titletoc, pifont,
+% threeparttable, siunitx, microtype, cleveref, biblatex, enumitem, ragged2e.
+% Verified ABSENT, and therefore never referenced below: listingsutf8 (which is
+% why tcolorbox is loaded WITHOUT [most]), marginfix, glossaries, nomencl, acro,
+% tocloft, pgfplots, emptypage, libertinus, snotez.
+% Engine: pdflatex via latexmk -pdf -interaction=nonstopmode; biber.
+%
+% NOTHING IN ../thesis/ IS WRITTEN BY THIS DOCUMENT. main.tex reads four PDFs
+% and three TikZ sources out of ../thesis/figs/ and nothing else.
+% ===========================================================================
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{etoolbox}
+
+% ---------------------------------------------------------------------------
+% 1. FACES
+% Load order matters: tgpagella must win \rmdefault over mathpazo's URW
+% Palladio, while mathpazo supplies Palatino-derived math italic and AMS
+% symbols. Palatino text over Computer Modern math is the classic tell of an
+% unconsidered preamble.
+% [sc], NOT [osf]: lining figures, so a numeral in a sentence is glyph-identical
+% to the same numeral in a table row. This document constantly asks the reader
+% to carry a value from prose into a table and back.
+% ---------------------------------------------------------------------------
+\usepackage[sc]{mathpazo}
+\usepackage{tgpagella}
+\usepackage[scale=0.90]{tgheros}      % APPARATUS ONLY: heads, labels, captions
+\usepackage[scaled=0.86]{inconsolata} % [END_CELL], gene symbols, code tokens
+
+% ---------------------------------------------------------------------------
+% 2. PAGE
+% MEASURED on this machine: Pagella 12pt sets 66.0 characters per line at
+% textwidth=125mm and 73.9 cpl at 140mm, i.e. 0.528 cpl per mm. The v1 page set
+% 87.3 cpl on a 160mm block, about 32% past the upper bound; that measure, not
+% the font, is why v1 "is hard to parse".
+%
+% REVISED from 132mm (69.7 cpl) to 142mm. At 0.528 cpl/mm that is 75.0 cpl --
+% exactly Bringhurst's upper bound, and the widest this block can go without
+% leaving the band. The reason is page count: the first full draft ran 174pp,
+% and the margin column was carrying 74 notes across those 174 pages, i.e. 0.43
+% per page, so a 39mm strip was idle on most of them. Ten of those millimetres
+% went to the text block and six to the outer margin. This buys width AND
+% pages, and it costs the only thing the band had left, which was headroom.
+% DO NOT widen further. Past 142mm the setting is no longer defensible on the
+% measure argument this design is built on, and the remaining page reduction
+% has to come out of the word count, which is where it belongs.
+%
+% WHY NOT 125mm. 125mm is the typographic optimum and it costs pages: the
+% reflow ratio against v1 is 1.43 at 125mm and 1.29 at 132mm. On a 103-page
+% source that is the difference between roughly +33 and roughly +23 pages of
+% pure reflow before a single new figure is added. 132mm buys most of the
+% readability for two thirds of the length.
+%
+% WHY oneside. Three reasons, all checked: (a) the margin column stays on the
+% right on every page instead of alternating, which is what a thesis read as a
+% PDF on a laptop wants; (b) openright twoside spends ~4 pages on blank versos
+% and needs a hand patch of \cleardoublepage because emptypage is not installed;
+% (c) \begin{fullwidth} can use plain \adjustwidth instead of \adjustwidth* plus
+% \strictpagecheck, which is a real float-placement fragility removed.
+%
+% marginparpush is a LaTeX length, NOT a geometry key. Passing it inside the
+% geometry option list aborts the build:
+%   Package xkeyval Error: marginparpush undefined in families Gm
+% ---------------------------------------------------------------------------
+\usepackage[a4paper,
+            left=20mm, textwidth=142mm,
+            marginparsep=4mm, marginparwidth=28mm,
+            top=22mm, bottom=25mm, headsep=7mm, footskip=13mm]{geometry}
+\setlength{\marginparpush}{8pt}
+
+\usepackage{setspace}
+\linespread{1.03}          % baselineskip 14.94pt at 12pt: a 1.245 ratio.
+                           % Was 1.06. Pulled in with the widening above: a
+                           % wider measure wants a little more leading, not
+                           % less, so this is a deliberate trade of a small
+                           % amount of comfort for pages. 1.245 is still above
+                           % the 1.2 default and well clear of set-solid.
+                           % Pagella's x-height is 0.484 of nominal size (Latin
+                           % Modern's is 0.431), so it needs more leading than
+                           % the v1 page did. Do NOT carry v1's \setstretch{1.05}
+                           % over: that value was compensating for a 160mm
+                           % measure and its job no longer exists.
+\setlength{\parindent}{1.4em}
+\setlength{\parskip}{0pt}
+\clubpenalty=10000 \widowpenalty=10000 \displaywidowpenalty=10000
+\raggedbottom
+
+% MEASURED on this document's own prose, sum of TeX badness over 16 lines:
+%   no microtype 689 (2 underfull) | protrusion only 620 (2 underfull) |
+%   DEFAULTS 74 (0 underfull) | +spacing=true 95 | factor=1100 76 |
+%   the popular "tuned" incantation, all options together, 219.
+% Font expansion does all of the work. Do NOT add factor=, spacing=, stretch=
+% or shrink=: measured, they range from neutral to three times worse.
+\usepackage{microtype}
+\usepackage{ragged2e}
+
+% LAST-RESORT LINE BREAKING. This document's prose is unusually hostile to the
+% line breaker: it sets inline math ($O(n^3 \log n)$, $\Gamma = \exp(-C/\eps)$)
+% and long \texttt tokens (\texttt{unseen\_combo}) inside justified paragraphs,
+% and TeX can hyphenate neither. After the 132->142mm widening and the cutting
+% pass reflowed every paragraph, 10 boxes overfilled by 5.0 to 19.0pt.
+% \emergencystretch buys one extra line-breaking pass with additional stretch
+% before TeX gives up and lets a line run into the margin. main.tex already
+% proved the technique on the bibliography, where 1em cleared a 54.8pt overflow.
+% MEASURED on this document, four full builds, page count 127 in all four:
+%   0em -> 10 overfull >5pt, worst 18.97pt,  0 underfull
+%   1em ->  1 overfull >5pt, worst 10.90pt,  3 underfull
+%   2em ->  0 overfull,                      4 underfull
+%   3em ->  0 overfull,                      5 underfull
+% 2em is the knee. 3em clears nothing further and costs another loose line.
+% The trade is deliberate and it is not symmetric: an overfull box puts ink
+% outside the type area where a reader sees it immediately, while an underfull
+% line is slightly loose word spacing inside an otherwise correct margin. Four
+% of the second is worth ten of the first. MEASURE AGAIN AFTER CHANGING THIS.
+\emergencystretch=2em
+
+% ---------------------------------------------------------------------------
+% 3. COLOUR -- one accent, four greys, nothing else.
+% Greyscale check: 13 / 32 / 42 / 60 / 95 percent ink, mutually distinguishable
+% in monochrome. accent is 7.84:1 on white, WCAG AAA.
+% accent marks STRUCTURE ONLY: heading numbers, caption labels, list markers,
+% margin tags, box tags. Never body text. Never emphasis -- emphasis is italic.
+% ---------------------------------------------------------------------------
+\usepackage{xcolor}
+\definecolor{ink}{HTML}{1A1A1A}
+\definecolor{accent}{HTML}{0B5394}
+\definecolor{quietink}{HTML}{6B6B6B}
+\definecolor{rulegrey}{HTML}{9A9A9A}
+% Pending-audit flag: a warm tint that is obviously not part of the finished
+% palette, so no draft can be mistaken for submission-ready while any remain.
+\definecolor{auditflag}{HTML}{FFE9A8}
+\definecolor{auditink}{HTML}{8A6A00}
+\definecolor{panelbg}{HTML}{F4F2ED}
+\color{ink}
+
+% ---------------------------------------------------------------------------
+% 4. HEADINGS -- four levels, every one in the serif.
+% There is no designed sans companion for Palatino in this installation
+% (biolinum is Libertine's), so sans headings would be an undesigned pairing.
+% Levels are told apart by size, weight, small caps and a hanging accent number.
+% ---------------------------------------------------------------------------
+\usepackage{titlesec}
+\usepackage{titletoc}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{ink}}
+  {\sffamily\normalsize\bfseries\color{accent}%
+   \MakeUppercase{\chaptertitlename}\ \thechapter}
+  {2ex}{\titlerule[0.9pt]\vspace{1.6ex}\raggedright}
+  [\vspace{0.6ex}{\color{rulegrey}\titlerule[0.4pt]}]
+\titlespacing*{\chapter}{0pt}{0pt}{4.5ex}
+
+% \llap on the number: every heading's first LETTER aligns with the body text,
+% and the numbers form a quiet column of their own in the left margin.
+\titleformat{\section}[hang]{\normalfont\Large\bfseries\color{ink}}
+  {\llap{\color{accent}\thesection\hspace{0.6em}}}{0pt}{}
+\titlespacing*{\section}{0pt}{3.2ex plus 1ex minus .3ex}{1.1ex}
+
+\titleformat{\subsection}[hang]{\normalfont\large\bfseries\color{ink}}
+  {\llap{\color{accent}\thesubsection\hspace{0.6em}}}{0pt}{}
+\titlespacing*{\subsection}{0pt}{2.6ex plus .8ex minus .2ex}{0.7ex}
+
+% CRITICAL: a run-in heading takes its trailing separation from the THIRD
+% argument of \titlespacing. An \hspace in the \titleformat after-code silently
+% collapses and yields "Why the coincidence matters.Both use...". \paragraph is
+% used 26 times in v1, 17 of them in the Limitations chapter, so this would have
+% been visible on nearly every page of that chapter.
+\titleformat{\paragraph}[runin]
+  {\normalfont\normalsize\bfseries\scshape\color{ink}}{}{0pt}{}[.]
+\titlespacing*{\paragraph}{0pt}{1.9ex plus .5ex minus .2ex}{0.8em}
+
+% ---------------------------------------------------------------------------
+% ORPHANED HEADINGS. A heading is a promise that something follows it; when it
+% is the last thing on a page the promise is broken by a page turn.
+% \clubpenalty above stops a widowed FIRST LINE but does nothing for a heading,
+% because titlesec's before-space is glue and TeX will happily break after it.
+%
+% MEASURED. \section and \paragraph were instrumented to record
+% \pagegoal-\pagetotal at the moment each heading is issued -- the same
+% quantity \needspace itself tests -- and the headings landing on a live page
+% with less than 3\baselineskip (44.80pt at this setting) below them counted.
+% The probe sits BETWEEN the reservation and the heading, so it reports where
+% the heading ends up, not where it would have gone. 252 headings, 59 sections
+% and 193 paragraphs, in both builds:
+%
+%                         BEFORE                    AFTER
+%   \section        5 of 59, worst  19.33pt    0 of 59
+%   \paragraph     15 of 193, worst  0.43pt    3 of 193, worst 35.73pt
+%   TOTAL          20                          3
+%
+% 0.43pt is a \paragraph head with 0.03 of a line under it -- the head, then
+% the page turn. That is the reported symptom, and it is gone. The 3 survivors
+% all sit at 2.39-2.99 lines, i.e. a run-in head plus two full lines of its own
+% paragraph, which is not an orphan; \needspace's break is a penalty of -100
+% and the page builder is entitled to decline it when the alternative is worse.
+% 29 headings (14 sections, 15 paragraphs) now open a fresh page instead. That
+% is the cost, and it is what bought the numbers above.
+%
+% \subsection is patched too and is CURRENTLY INERT: grep finds 53 section-level
+% opens in Sections/ and zero \subsection, so the level is defined (secnumdepth
+% is 2 and titlesec formats it) but never used. The patch is here so the level
+% does not silently acquire the defect the day someone uses it.
+%
+% WHY \section NEEDS THE MOST. Every Investigation section opens with a
+% mandatory \begin{question} lede, and the lede reserves space of its own. If
+% \section does not reserve first, the sequence is: heading is set at the foot
+% of the page, THEN the lede's \needspace fires and breaks -- which does not
+% rescue the heading, it strands it. The reservation has to happen before the
+% heading, not after it. 7\baselineskip = 104.5pt covers the heading's own
+% 3.2ex+\Large line+1.1ex (~47pt, ~3.2 lines) plus the lede's 3-line minimum.
+% \paragraph is run-in, so its head shares a line with the text it introduces
+% and 3 lines is already head + 2 lines of body.
+%
+% \needspace, not \Needspace: \raggedbottom is in force, so there is no bottom
+% to keep flush and the starred forms would only add vertical glue.
+% Patched at \AtBeginDocument so the patch lands on the final \section, after
+% titlesec and hyperref have both had it. A silent failure here would be
+% invisible in the output, so both branches report.
+% \makeatletter is NOT optional around this: \tv@needpatch has an @ in its
+% name, and without it TeX reads the definition as \tv followed by the letters
+% "@needpatch", which detonates in six different ways before the preamble ends
+% (verified: 123 errors, the first being "Missing \begin{document}").
+\makeatletter
+\newcommand{\tv@needpatch}[2]{%
+  \pretocmd{#1}{\needspace{#2\baselineskip}}{}{%
+    \PackageWarning{thesisv2}{Could not patch \string#1 for heading headroom}}}
+\AtBeginDocument{%
+  \tv@needpatch{\section}{7}%
+  \tv@needpatch{\subsection}{5}%
+  \tv@needpatch{\paragraph}{3}}
+\makeatother
+
+\setcounter{secnumdepth}{2}   % chapter, section, subsection numbered
+\setcounter{tocdepth}{1}      % ToC shows chapters and the beats, nothing more
+
+\dottedcontents{section}[3.2em]{}{2.6em}{0.8pc}
+\titlecontents{chapter}[0em]
+  {\addvspace{1.4ex}\bfseries}
+  {\color{accent}\thecontentslabel\enspace}{}
+  {\hfill\contentspage}[\addvspace{0.4ex}]
+
+% --- LIST OF FIGURES -------------------------------------------------------
+% 19 figures (15 float environments in Sections/, plus four in the TikZ sources
+% \input by path out of ../thesis/figs/). The class default was
+% \@dottedtocline{1}{1.5em}{2.3em} and it fails here on three counts, all
+% MEASURED with \settowidth in the document's own fonts:
+%
+%  (a) LABEL COLUMN TOO WIDE. The widest label in the document is "4.12", which
+%      sets 19.18pt in the caption face (\sffamily\small\bfseries). The class
+%      reserves 2.3em = 27.60pt for it -- 8.42pt of dead air on every row, and
+%      more on the 3-character labels ("2.1" and friends) which is most of them.
+%      Set to 25pt: the widest label plus a 5.82pt gutter, which is 0.53em at
+%      this size and reads as a deliberate space rather than a gap.
+%  (b) ARBITRARY 1.5em INDENT. \@dottedtocline pushes the number 1.5em off the
+%      margin to express a hierarchy level. The LoF is FLAT -- there is no
+%      parent entry for a figure to sit under -- so the indent expresses
+%      nothing. The numbers now start at the margin and form a column, which is
+%      the same move \llap already makes on the section headings.
+%  (c) WRONG FACE. The entries inherited the body serif at \normalsize while the
+%      caption label they point at is \sffamily\bfseries\color{accent}. The
+%      number here is now set in exactly the caption label's face, so the thing
+%      the reader scans for in the list is glyph-identical to the thing they
+%      then look for on the page. Entry text and folio follow it into the
+%      apparatus sans at \small, consistent with the running heads and the
+%      margin column, which are the document's other two lookup surfaces.
+%
+% HANGING INDENT: the [25pt] first argument is the left margin of the WHOLE
+% entry and \contentslabel hangs the number back out of it, so a caption that
+% wraps starts its second line at 25pt -- aligned with the first line's text and
+% clear of the number, instead of running back underneath it.
+% MEASURED, AND IT DOES NOT CURRENTLY FIRE: no entry in this build wraps. The
+% longest short caption is 4.7, which sets 355.20pt in this face against the
+% 379.03pt (\textwidth 404.03 - 25pt label column) available to the entry, and
+% it takes its leader and folio on the same line with about 24pt to spare. The
+% hanging indent is therefore insurance, not a fix -- but 24pt of slack on the
+% longest entry is one edit away from being none, and the failure it prevents
+% is silent.
+%
+% SHORT CAPTIONS, CHECKED, since the LoF shows \caption[...] and not the full
+% caption. 17 of the 19 are 21-47 characters and genuinely short. Two are not,
+% and both are in Sections/ files this layer must not edit:
+%   4.7  86 chars  "Drug identity is increasingly decodable while its slab
+%                   carries little functional weight"   (04b-representation)
+%   4.9  68 chars  "The response is mostly the drug; the standard target's
+%                   tokens are not"                      (../thesis/figs/fig-frame)
+% Both are findings written as sentences -- they are doing the caption's job,
+% not the index entry's. They fit on one line here only because the face is
+% \small. Worth shortening to a noun phrase at the source; not a design fix.
+\titlecontents{figure}[25pt]
+  {\sffamily\small}
+  {\contentslabel[\bfseries\color{accent}\thecontentslabel]{25pt}}
+  {}
+  {\titlerule*[0.8pc]{.}\contentspage}
+
+% ---------------------------------------------------------------------------
+% 5. RUNNING HEADS
+% Left names the chapter. Right names the section AND the measurement frame in
+% force. The expression and residual frames both put chance at 0.50, and
+% conflating them is this document's most common misread; the head turns
+% orientation into a glance instead of a backward search.
+%
+% THE BUG THIS AVOIDS, which was observed in a build and is subtle. LaTeX sets
+% \rightmark from \firstmark, and on the page where a section starts, the first
+% mark is the one \sectionmark emitted at the heading. If the frame is declared
+% AFTER \section, that mark carries the PREVIOUS section's frame, and the head
+% on a section's own opening page asserts the wrong frame -- with institutional
+% authority, on the page a reader lands on when they jump to a section. Issuing
+% a second \markright afterwards does not repair it: the second mark becomes
+% \botmark and only takes effect on the NEXT page.
+% The fix is structural, not clever: \beatsection declares the frame BEFORE the
+% heading fires, and there is no second mark anywhere. Every Investigation
+% section MUST be opened with \beatsection and never with a bare \section.
+% ---------------------------------------------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{\sffamily\scriptsize\color{quietink}\nouppercase{\leftmark}}
+\fancyhead[R]{\sffamily\scriptsize\color{quietink}\nouppercase{\rightmark}}
+\fancyfoot[R]{\sffamily\scriptsize\color{quietink}\thepage}
+\renewcommand{\chaptermark}[1]{\markboth{\MakeUppercase{#1}}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\quad #1\framehead}}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[R]{\sffamily\scriptsize\color{quietink}\thepage}}
+
+% ---------------------------------------------------------------------------
+% 6. MARGIN COLUMN -- built on \marginpar, NEVER on \marginnote.
+%
+% VERIFIED DEFECT: \marginnote performs zero collision avoidance and overprints
+% silently. Two adjacent calls placed their content at byte-identical vertical
+% positions (y = 105.1 and y = 105.1 in the output PDF); four adjacent notes in
+% a twoside report produced no visible output at all. marginfix, the standard
+% remedy, is NOT installed here, and the sidenotes package \RequirePackage's
+% marginnote and so inherits the defect. \marginpar respects \marginparpush,
+% relocates rather than overprints, and says so in the log
+% ("Marginpar on page N moved"), which is a signal, not noise.
+%
+% THE ASSERTION / RECALL RULE, which is the line that makes a margin safe:
+%   a number this sentence ASSERTS -> body, always, with its interval;
+%   a number this sentence RECALLS -> margin, bare, with a \cref to where it
+%                                     was established.
+% "Recall" covers apparatus constants only: chance = 0.50, the within-well
+% split-half precision references, population sizes, the atlas layout. Never a
+% result. Never an interval. Never a hedge.
+%
+% WHAT THE ENFORCEMENT BELOW DOES AND DOES NOT CATCH -- read this before
+% trusting it. It stops \ci, the four triggered box environments, and the two
+% fixed hedge formulas from being used inside a margin note. It CANNOT catch a
+% hedge written out in ordinary words ("which is not the same as zero"), and it
+% could not catch v1's hand-rolled interval form either -- which is why
+% tools/audit.py converts all 49 of those to \ci before drafting starts, and
+% why the margin rule is ALSO checked by grep in tools/audit.py. An overstated
+% guard is worse than no guard, because writers stop watching.
+%
+% Closed vocabulary: FIVE wrappers. A sixth is a design change, not a writing
+% decision.
+% ---------------------------------------------------------------------------
+\usepackage{needspace}
+\usepackage{changepage}
+\usepackage{pifont}
+\usepackage{xspace}
+
+\newcommand{\marginbarred}[1]{%
+  \PackageError{thesisv2}{Not permitted inside a margin note}{%
+    The margin carries definitions, landmark constants, frame cues and
+    pointers. Any interval, any hedge, and any number this sentence is
+    ASSERTING stays in the body. Move it back into the sentence.}}
+
+% The tag is a run-in lead, not its own line: the notes are 6-25 words and a
+% full line of tag doubled the height of every one of them.
+\newcommand{\marginlabel}[1]{%
+  {\sffamily\scriptsize\bfseries\color{accent}\MakeUppercase{#1}}\hspace{0.6em}}
+\newcommand{\mnotebody}[2]{%
+  \marginpar{\begingroup
+    \let\ci\marginbarred
+    \let\defn\marginbarred      \let\scopelimit\marginbarred
+    \let\withdrawn\marginbarred \let\worked\marginbarred
+    \let\notestablished\marginbarred \let\shownzero\marginbarred
+    \footnotesize\sffamily\color{quietink}\setstretch{1.0}\RaggedRight
+    \marginlabel{#1}#2\par
+    \endgroup}}
+
+% 1. DEFINITION, at first use in each chapter. 25 words at the outside.
+%    A definition, never a caveat: a caveat is a \scopelimit.
+\newcommand{\gloss}[2]{\mnotebody{#1}{#2}}
+% 2. LANDMARK RECALL. #1 the constant, #2 where it was established.
+\newcommand{\bench}[2]{\mnotebody{recall}{#1\ {\scriptsize #2}}}
+% 3. FRAME CUE, at the point the frame changes or is first used in a section.
+\newcommand{\framecue}[2]{\mnotebody{frame}{#1\ {\scriptsize #2}}}
+% 4. NAVIGATION. A \cref plus at most eight words saying what is there.
+\newcommand{\seealso}[1]{\mnotebody{see}{#1}}
+% 5. CORRECTION POINTER. The withdrawal itself stays in the body, in full.
+\newcommand{\corrmark}[1]{\mnotebody{correction}{#1}}
+
+% ---------------------------------------------------------------------------
+% 7. NOTATION -- transcribed from thesis/utilities.tex so that every section
+% file copied from v1 compiles unchanged. Do not redefine these in a section.
+% ---------------------------------------------------------------------------
+\usepackage{amsmath,amsthm,mathtools,bm}
+\usepackage{csquotes}
+\usepackage{pdflscape}
+
+\newcommand{\NIR}{\textrm{NIR}}            % normalised inverse rank
+\newcommand{\DRF}{\textrm{DRF}}            % dynamic range fraction
+\newcommand{\DEdr}{\textrm{DE-}\Delta r}   % the field's standard DE metric
+\newcommand{\paneltau}{\textrm{panel-}\tau}
+\newcommand{\ENDCELL}{\texttt{[END\_CELL]}}
+\newcommand{\DOWN}{\texttt{[DOWN]}}
+\newcommand{\gap}{\Delta_{\textrm{scr}}}   % model - scramble
+\newcommand{\Tcoef}{\mathcal{T}}           % transfer coefficient
+\newcommand{\resid}{r}                     % drug-specific residual
+\newcommand{\shift}{s}                     % treated - control shift
+
+% The two measurement frames, on THREE redundant channels: shape, word, colour.
+% Both frames put chance at 0.50, so a hue-only cue would vanish in greyscale
+% at exactly the point where the misreading is most costly.
+\newcommand{\Eframe}{\mbox{\textcolor{accent}{\ding{110}}\,\textsc{expr}}\xspace}
+\newcommand{\Rframe}{\mbox{\textcolor{accent}{\ding{115}}\,\textsc{resid}}\xspace}
+
+% Fixed verbal formulas. Zero visual effect. Their only jobs are to make seven
+% writers spell the distinction identically and to make it greppable by the
+% audit. "not established" and "shown to be zero" are DIFFERENT STATEMENTS and
+% the difference is load-bearing in ten places in v1.
+% Write \notestablished bare, never \notestablished{}: the empty group eats
+% xspace's following space and yields "not established(section 3.4)".
+\newcommand{\notestablished}{not established\xspace}
+\newcommand{\shownzero}{shown to be zero\xspace}
+
+% PENDING-AUDIT FLAG. Marks a quantity that the rewrite must NOT invent and that
+% a rerun on the cluster will settle. Three such quantities are known as of this
+% draft: the unseen_combo common support (v1 quotes n=893 in one place and n=895
+% in another), the three-condition gap between the gate's 4,131 retained
+% conditions and the 2,523+900+711 split tally, and whether tab:plateleak's
+% "mean baseline" is the same construction as the DRF negative control.
+% USE: \needsaudit{895} for a value in doubt, \needsaudit[the scope]{} for a
+% statement in doubt. The prose around it MUST read correctly and make its
+% argument whether or not the flagged value changes -- that is the whole point.
+% Set \auditflagsfalse before submission to render the values plainly.
+\newif\ifauditflags \auditflagstrue
+\newcommand{\needsaudit}[2][]{%
+  \ifauditflags
+    \colorbox{auditflag}{\kern-0.15em #2\kern-0.15em}%
+    \raisebox{0.6ex}{\tiny\textsf{\textcolor{auditink}{?}}}%
+    % NB \marginlabel uppercases its argument, so no colour command may appear
+    % inside it -- \textcolor{auditink} became \textcolor{AUDITINK} and failed.
+    \ifx\relax#1\relax\else\marginlabel{audit: #1}\fi
+  \else #2\fi}
+
+% CONFIDENCE INTERVAL IN PROSE.
+% Line breaking, MEASURED: a fully \mbox-ed atomic \ci overflowed a real
+% three-interval sentence by 35.65pt at this measure; the graded penalties below
+% cut the same sentence to 2.38pt and set it in four evenly coloured lines.
+% Free break before the bracket; reluctant break (penalty 700) after the comma;
+% never inside a number.
+% COLOUR: every digit and every sign is in ink, at body weight. Only the
+% brackets and the comma recede. An earlier version set the whole interval in
+% quietink and that inverts the document's own hierarchy -- this chapter's
+% stated convention is that every number comes with its interval, and the
+% interval is where the hedge physically lives. Greying it across ~98 uses is a
+% page-level de-emphasis of exactly the qualification the thesis defends.
+\newcommand{\cileft}{\textcolor{quietink}{[}}
+\newcommand{\ciright}{\textcolor{quietink}{]}}
+\newcommand{\ci}[3]{$#1$\,\allowbreak
+  \mbox{\cileft$#2$\textcolor{quietink}{,}}\penalty700
+  \hspace{0.25em plus 0.08em minus 0.04em}%
+  \mbox{$#3$\ciright}}
+
+% ---------------------------------------------------------------------------
+% 8. NUMBERS AND TABLES
+% ---------------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{multirow}
+\usepackage{siunitx}
+
+% round-mode=none is siunitx's own default. It is written out anyway, as an
+% executable assertion that this document does not round.
+% VERIFIED HAZARD: round-mode=places silently rewrote 0.854->0.85, 0.913->0.91,
+% 0.537->0.54, 0.1002->0.10, 0.0661->0.07 (the leading significant figure
+% changed) and gave the integer 1394 false precision as 1394.00. Nothing warns
+% you; the table just looks tidy. Under a "not one digit moves" constraint this
+% is the single most dangerous line that could enter a preamble.
+\sisetup{detect-all, round-mode=none,
+         group-separator={,}, group-minimum-digits=4,
+         table-align-text-before=false, table-align-text-after=false}
+
+% booktabs ships too light for 12pt Palatino, whose stems are fairly heavy.
+\setlength{\heavyrulewidth}{0.9pt}
+\setlength{\lightrulewidth}{0.45pt}
+\setlength{\cmidrulewidth}{0.35pt}
+\setlength{\aboverulesep}{0.5ex}
+\setlength{\belowrulesep}{0.8ex}
+\newcommand{\thead}[1]{{\sffamily\small\bfseries #1}}
+
+% A float may spill into the reclaimed margin column: 171mm instead of 132mm.
+% oneside makes this the plain unstarred form -- the margin is always on the
+% right, so no page-parity test and no \strictpagecheck are needed.
+% RULE, not enforceable in TeX: a page carrying a \begin{fullwidth} float
+% carries NO margin note. \marginpar and a 171mm float occupy the same strip.
+\newenvironment{fullwidth}
+  {\begin{adjustwidth}{0pt}{-\dimexpr\marginparwidth+\marginparsep\relax}}
+  {\end{adjustwidth}}
+
+% ---------------------------------------------------------------------------
+% 9. FLOATS AND CAPTIONS
+% ---------------------------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,
+                decorations.pathreplacing,shapes.geometric}
+% FLOAT PLACEMENT. COUNTED: 39 float environments -- 15 figures and 21 tables
+% in Sections/, plus 3 figure floats in the TikZ sources \input by path from
+% ../thesis/figs/ (fig-frame carries two numbered captions inside its one
+% float, which is why the LoF lists 19 figures and not 18). 38 of the 39 ask
+% for [htbp] and one table asks for [!ht]. Not one of them pins a position, so
+% placement is entirely in the hands of the four fractions below -- and the
+% report class ships them tuned for a book with far fewer floats than this:
+%
+%   parameter          class   here   what it controls
+%   \topfraction        0.70   0.88   most of a page that may be top floats
+%   \bottomfraction     0.30   0.55   most of a page that may be bottom floats
+%   \textfraction       0.20   0.08   LEAST of a page that must be text
+%   \floatpagefraction  0.50   0.85   least of a FLOAT PAGE that must be float
+%
+% \textfraction is the one that actually causes the reported symptom. At 0.20 a
+% float taller than 0.80\textheight can never share a page with any text, so it
+% is deferred to a float page; and at \floatpagefraction 0.50 a float page is
+% accepted as soon as it is half full, so the deferred float lands alone on a
+% page with half of it blank. Lowering \textfraction lets tall floats sit with
+% a few lines of text; raising \floatpagefraction refuses the sparse float page
+% and makes TeX keep looking for a companion.
+% CONSTRAINT, and it is a real one: \floatpagefraction must stay below
+% \topfraction or a float that qualifies for a float page can fail to qualify
+% for the top of a text page and oscillate. 0.80 < 0.88 holds.
+% The counters matter as much as the fractions -- \totalnumber 3 was capping
+% pages at three floats regardless of how well they fitted.
+%
+% \floatpagefraction RAISED 0.80 -> 0.85, and MEASURED, not guessed. One float
+% in the document sits in the sliver the old value opened: \cref{tab:allarms},
+% the fullwidth ledger closing chapter 4, measures 585pt of the 712pt column,
+% i.e. 0.82. That is above 0.80, so it qualified for a float page and took one,
+% alone, and the three lines of prose that close the chapter were left on a page
+% of their own after it -- a float page and a near-blank page for one table.
+% 0.82 is also below \topfraction 0.88, so the same float is a legal TOP float
+% on a text page, which is where it goes once a float page is refused: the
+% ledger heads the page and the closing paragraph sets under it.
+% The only other float page in the document, the appendix pair
+% \cref{tab:sweep} + \cref{fig:app-sweep-bins}, measures 0.94 together and is
+% unaffected -- it is a float page under either value, and correctly so.
+% The constraint above still holds with room: 0.85 < 0.88.
+\renewcommand{\topfraction}{0.88}
+\renewcommand{\bottomfraction}{0.55}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.85}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{font=small,labelfont={sf,bf,color=accent},textfont={color=ink},
+  labelsep=period,justification=raggedright,singlelinecheck=false,skip=6pt}
+
+\usepackage{enumitem}
+\setlist{noitemsep,topsep=0.5ex,partopsep=0pt,parsep=0.3ex,leftmargin=1.4em}
+\setlist[itemize,1]{label=\textcolor{accent}{\textbullet}}
+\setlist[enumerate,1]{label=\textcolor{accent}{\bfseries\arabic*.}}
+
+% ---------------------------------------------------------------------------
+% 10. NAVIGATION FURNITURE
+% ---------------------------------------------------------------------------
+
+% THE BEAT STRIP. Nine cells, the current one filled. NO LABEL: the section
+% heading sits directly above it and in four of the nine cases the label WAS
+% the heading, word for word ("the model is drug-blind" under "The model is
+% drug-blind"). Tufte's data-ink warning is strictest on small multiples,
+% because every unnecessary element repeats fourteen times. Position is the
+% whole payload; the prose is already there.
+% Argument 0 (or omitted) = not a beat, and prints the strip with nothing filled.
+\newcommand{\beatstrip}[1]{%
+  \begingroup
+  \begin{tikzpicture}[baseline=-0.55ex,x=3.4mm,y=3.4mm]
+    \foreach \i in {1,...,9}{%
+      \ifnum\i=#1\relax
+        \fill[accent] (\i,0) rectangle ++(2.2mm,2.2mm);
+      \else
+        \fill[rulegrey!45] (\i,0.55mm) rectangle ++(2.2mm,1.1mm);
+      \fi}
+  \end{tikzpicture}%
+  \endgroup}
+
+% WHICH MEASUREMENT FRAME IS IN FORCE.
+% \framedecl{E} expression, {R} residual, {ER} both, {-} none.
+% Feeds the section opener box and the running head. Never called directly in a
+% section file -- \beatsection calls it in the one order that is correct.
+\makeatletter
+\newcommand{\framehead}{}
+\newcommand{\framechip}{}
+\newcommand{\framedecl}[1]{%
+  \def\tv@fr{#1}\def\tv@E{E}\def\tv@R{R}\def\tv@B{ER}%
+  \ifx\tv@fr\tv@E
+    \renewcommand{\framechip}{\Eframe}%
+    \renewcommand{\framehead}{\space\textperiodcentered\space expr}%
+  \else\ifx\tv@fr\tv@R
+    \renewcommand{\framechip}{\Rframe}%
+    \renewcommand{\framehead}{\space\textperiodcentered\space resid}%
+  \else\ifx\tv@fr\tv@B
+    \renewcommand{\framechip}{\Eframe\,/\,\Rframe}%
+    \renewcommand{\framehead}{\space\textperiodcentered\space expr\,/\,resid}%
+  \else
+    \renewcommand{\framechip}{}\renewcommand{\framehead}{}%
+  \fi\fi\fi}
+\framedecl{-}
+
+% THE ONE-CLAUSE VERDICT, SINGLE-SOURCED.
+% \claimlede{...} stores the section's verdict, in words, with every scope
+% qualifier that v1's claim block attaches to it ("in the expression frame",
+% "on the identifiable stratum"). It is then printed TWICE from the same token
+% list: at the foot of the opener box and as the first sentence of the claim
+% block. Divergence between the two is therefore impossible by construction,
+% which is the point -- an opener that paraphrases a hedged verdict is the
+% mechanism by which a thesis quietly gets more confident.
+% \ci is barred inside the opener, so the lede cannot carry a number either.
+% Optional: a section with no verdict simply never calls it.
+\newcommand{\tv@lede}{}
+\newcommand{\claimlede}[1]{\gdef\tv@lede{#1}}
+
+% THE ONLY WAY TO OPEN AN INVESTIGATION SECTION.
+%   \beatsection{<E|R|ER|->}{<beat 1-9, or 0>}{<title>}{<label>}
+% Order is load-bearing: frame first, then the heading, so \sectionmark writes
+% the correct frame into the mark that becomes \firstmark on this section's own
+% first page. See the note in section 5 above.
+\newcommand{\beatsection}[4]{%
+  \gdef\tv@lede{}%
+  \gdef\tv@beat{#2}%
+  \framedecl{#1}%
+  \section{#3}\label{#4}}
+\newcommand{\tv@beat}{0}
+\makeatother
+
+% A forward reference is a promissory note, not an oversight. The chapter has
+% two that are load-bearing -- a later, better-powered measurement bounds an
+% earlier null -- and marking them makes them visible AS debts.
+\newcommand{\forward}[1]{%
+  \textcolor{quietink}{\ding{228}}\,\emph{settled in} \cref{#1}}
+
+% blank-page helper, transcribed from thesis/utilities.tex. Bocconi supplies
+% the official title, abstract and acknowledgements pages at submission.
+\newcommand\myemptypage{%
+  \begingroup
+  \hypersetup{pageanchor=false}%
+  \null
+  \thispagestyle{empty}%
+  \addtocounter{page}{-1}%
+  \newpage
+  \hypersetup{pageanchor=true}%
+  \endgroup}
+
+% ---------------------------------------------------------------------------
+% 11. THE SIX ENVIRONMENTS -- FIVE OF WHICH ARE BOXES.
+%
+% Told apart by GEOMETRY, so colour is redundant information:
+%   question    NOT A BOX: short measure, italic, hairline   structural, opener
+%   claim       hairlines TOP and BOTTOM only            structural, closer
+%   defn        faint tinted panel, no rules             triggered
+%   scopelimit  thin grey frame, all four sides          triggered
+%   withdrawn   tinted panel + thin frame + sigil        triggered
+%   worked      DASHED frame (reads as detachable)       triggered
+%
+% BUDGET, ENFORCED AT BUILD TIME: the four triggered boxes share a counter that
+% resets at every \section and every \chapter. More than three in a section
+% warns. Two triggered boxes with no prose between them warns. Seven writers
+% work in parallel; the budget is the only thing stopping the union of their
+% good intentions from becoming a textbook for undergraduates.
+% Both warnings are turned into build FAILURES by tools/build.sh, which greps
+% the log. A \PackageWarning nobody reads is not enforcement.
+% ---------------------------------------------------------------------------
+% NOT \usepackage[most]{tcolorbox}: [most] loads the listings library, which
+% \RequirePackage{listingsutf8}, and listingsutf8 is NOT installed here --
+% verified, it aborts the build with a fatal "file not found". skins supplies
+% enhanced/borderline; breakable lets a genuinely long box split across a page.
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+\newcounter{boxbudget}[section]
+\newcounter{openercount}[section]
+% Both counters are slaved to [section], but a \chapter must clear them too --
+% and \pretocmd catches the starred form as well, since \chapter tests for the
+% star itself. Without the openercount reset, 00-HowToRead.tex (a \chapter*
+% whose first opener precedes any \section) inherits the count left behind by
+% Appendix A.6 and fires a spurious TWO OPENERS warning naming A.6, which
+% tools/build.sh gates at zero.
+\pretocmd{\chapter}{\setcounter{boxbudget}{0}\setcounter{openercount}{0}}{}{%
+  \PackageWarning{thesisv2}{Could not reset box budget at chapter}}
+\newcounter{workedex}         % document-wide: there are exactly four
+\newcounter{correction}       % document-wide: the retraction ledger
+
+% Adjacency detection. LaTeX's para/begin hook fires when body prose starts a
+% paragraph, which clears the flag a closing box sets. If the hook is not
+% available the guard degrades silently to the count-only budget.
+\makeatletter
+\newif\iftv@adjacent
+\@ifundefined{AddToHook}{}{\AddToHook{para/begin}{\global\tv@adjacentfalse}}
+\newcommand{\budgettick}{%
+  \par\needspace{5\baselineskip}%
+  \iftv@adjacent
+    \PackageWarning{thesisv2}{ADJACENT BOXES in section \thesection:
+      two triggered boxes with no prose between them. Put a paragraph between
+      them or demote one}%
+  \fi
+  \stepcounter{boxbudget}%
+  \ifnum\value{boxbudget}>3\relax
+    \PackageWarning{thesisv2}{BOX BUDGET EXCEEDED: \theboxbudget\space triggered
+      boxes in section \thesection. Cap is 3. Demote one to prose}%
+  \fi}
+\newcommand{\budgetclose}{\global\tv@adjacenttrue}
+\makeatother
+
+\tcbset{thesisbase/.style={
+  enhanced, breakable, sharp corners, boxrule=0pt, arc=0pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  before skip=2.0ex plus 0.5ex, after skip=2.0ex plus 0.5ex,
+  colback=white, colframe=white,
+  % colupper=ink is NOT cosmetic. tcolorbox defaults its body text to pure
+  % black and so overrides the document-level \color{ink}; without this line a
+  % number inside a claim block prints #000000 while the identical number in
+  % the paragraph above prints #1A1A1A. Verified in a build.
+  colupper=ink,
+  % tcolorbox has no "parindent" key -- it is a LaTeX length, and passing it as
+  % a key is a pgfkeys error. It is set in the font hook instead.
+  fontupper=\normalsize\setlength{\parindent}{0pt}, parbox=false}}
+
+% Five of the six boxes re-specify fontupper (\small, \itshape) and so drop the
+% \parindent setting again. Environment hooks survive any fontupper override.
+% Deferred to \AtBeginDocument because \AtBeginEnvironment patches the
+% environment's begin macro and therefore needs it to exist already.
+% questionbox is gone -- \begin{question} is no longer a tcolorbox and sets its
+% own \parindent directly. Five environments remain in this hook, not six.
+\AtBeginDocument{%
+  \AtBeginEnvironment{claimbox}{\setlength{\parindent}{0pt}}%
+  \AtBeginEnvironment{defn}{\setlength{\parindent}{0pt}}%
+  \AtBeginEnvironment{scopelimit}{\setlength{\parindent}{0pt}}%
+  \AtBeginEnvironment{withdrawn}{\setlength{\parindent}{0pt}}%
+  \AtBeginEnvironment{worked}{\setlength{\parindent}{0pt}}}
+
+% --- QUESTION: the section opener. MANDATORY, exactly once, immediately after
+% \beatsection. It carries TWO things: the question this section exists to
+% answer, and the instrument built to answer it. Two sentences, ~45 words.
+% If the section reaches a verdict and the writer wants it up front, the ONLY
+% way to put it here is \claimlede, which prints the identical token list in the
+% claim block at the close.
+% NO digits, NO intervals, NO cross-references, NO citations. \ci, \cref, \ref
+% and \cite all raise a BUILD ERROR inside it -- not a warning.
+% WHY the ban is this hard: v1's chapter organiser (Investigation-v4.tex 51-84)
+% is a ~1,100-word block that tried to be both a map and a complete record and
+% became neither. An organiser as hard as the material it organises does no
+% organising. The opener is a map. Nothing else.
+% UNBOXED, as of this revision. It was a framed tcolorbox with a 2.2pt accent
+% rule down its left edge, and it opened all 34 investigation sections. That is
+% the single biggest reason the document read as a textbook rather than a
+% thesis: a framed panel at the top of every section is the shape of a
+% "Learning Objectives" box, and the reader met it 34 times before meeting any
+% argument. The frame was also doing no work the content was not already doing.
+%
+% WHAT REPLACES THE FRAME, on four channels, none of them colour-dependent:
+%   1. MEASURE. The lede sets on 350.03pt against the body's 404.03pt, i.e.
+%      86.6% of the measure, ragged on the right. DERIVED from the cpl figure
+%      section 2 already measured on this machine, 0.528 characters per mm in
+%      Pagella 12pt: 404.03pt is 142.0mm and 75.0 cpl, 350.03pt is 123.0mm and
+%      65.0 cpl. (Derived, not separately measured -- if section 2's 0.528 is
+%      ever remeasured, this number moves with it.) Not an arbitrary inset --
+%      65 cpl is inside Bringhurst's band, so the lede is a legitimate measure
+%      in its own right and reads as a deliberate short column, not as a body
+%      paragraph that failed to reach the margin.
+%   2. ITALIC at full body size. Distinct at a glance, and unlike a tint or a
+%      rule it survives being photocopied.
+%   3. A SHORT HAIRLINE above -- 5em, 0.5pt, rulegrey. Deliberately NOT the
+%      full measure: a full-width rule under a section heading reads as part of
+%      the heading (the chapter format already owns that shape via \titlerule),
+%      and 34 full-width rules would simply be the box's top edge kept on.
+%   4. The beat strip and frame chip, which were always here and are themselves
+%      an ornament; they now sit under the hairline instead of inside a frame.
+% Monochrome check: 86.6% measure, italic, a 40%-ink hairline and a 9-cell
+% position graphic. Every one of the four survives a greyscale laser.
+%
+% The environment NAME, its optional beat argument, the \claimlede verdict
+% foot, and all six content bans are unchanged, so no section file changes.
+% \tv@ledeindent is the amount taken off the RIGHT only: the left edge stays on
+% the body's spine so the section heading, the hairline, the lede and the body
+% text below it all start on one vertical line.
+\makeatletter
+\newlength{\tv@ledeindent}
+\setlength{\tv@ledeindent}{54pt}   % 404.03 - 54 = 350.03pt = 65.0 cpl
+
+\newcommand{\tv@openerbar}[1]{%
+  \PackageError{thesisv2}{Not permitted in a section opener}{%
+    Openers carry the question and the instrument, in words. Numbers live in
+    the body beside their comparison set and their reference; a verdict goes
+    through \string\claimlede\space so that the opener's words and the claim
+    block's words are the same token list.}}
+% \needspace here is now 3\baselineskip, not 7. The heading itself reserves
+% 7\baselineskip BEFORE it is set (see the orphan patch in section 4), which is
+% the only place the reservation does any good; asking for 7 again here, after
+% the heading is already committed to the page, was what stranded the heading
+% at the foot of the page in the first place. 3 lines is the lede's own
+% minimum: hairline, strip row, and two lines of italic.
+\newenvironment{question}[1][0]
+  {\par\needspace{3\baselineskip}%
+   \stepcounter{openercount}%
+   \ifnum\value{openercount}>1\relax
+     \PackageWarning{thesisv2}{TWO OPENERS in section \thesection}\fi
+   \let\ci\tv@openerbar \let\cref\tv@openerbar \let\Cref\tv@openerbar
+   \let\ref\tv@openerbar \let\cite\tv@openerbar \let\citep\tv@openerbar
+   \begin{adjustwidth}{0pt}{\tv@ledeindent}%
+   \setlength{\parindent}{0pt}%
+   \vspace{0.2ex}%
+   \noindent{\color{rulegrey}\rule{5em}{0.5pt}}\par
+   \vspace{0.75ex}%
+   \noindent\beatstrip{#1}\hfill\framechip\par
+   \vspace{0.55ex}%
+   \normalsize\itshape\color{ink}\ignorespaces}
+  {\par
+   \ifdefempty{\tv@lede}{}{%
+     \vspace{0.8ex}%
+     {\upshape\normalfont
+      {\sffamily\scriptsize\bfseries\color{accent}\MakeUppercase{verdict}}%
+      \hspace{0.6em}\tv@lede\par}}%
+   \end{adjustwidth}%
+   % Body prose resumes flush left. \@afterindentfalse\@afterheading is the
+   % same pair \@startsection uses to un-indent the paragraph after a heading;
+   % it also sets \@nobreaktrue, which keeps the lede and the first paragraph of
+   % the section on one page -- exactly the join that must not break.
+   \@afterindentfalse\@afterheading}
+\makeatother
+
+% --- CLAIM: the section closer, inherited from v1 unchanged in function.
+% Hairlines top and bottom read as a statement of record.
+% MANDATORY wherever a section reaches a verdict. DELIBERATELY ABSENT where
+% none does. The absence is the signal: an unresolved measurement must not
+% receive the typography of a finding. THE HOLE IN THE TEMPLATE IS PART OF THE
+% TEMPLATE, and it is the single thing protecting the template from being
+% filled mechanically -- a writer has to decide, every time, whether a verdict
+% exists. Do not complete the pattern at sec:res-field.
+\newtcolorbox{claimbox}{%
+  thesisbase,
+  left=6pt, right=6pt, top=7pt, bottom=7pt,
+  borderline north={0.9pt}{0pt}{ink},
+  borderline south={0.45pt}{0pt}{ink},
+  before skip=2.6ex plus 0.6ex, after skip=2.6ex plus 0.6ex}
+
+\makeatletter
+\newenvironment{claim}
+  {\begin{claimbox}\noindent{\scshape\color{accent}The claim.}\enspace
+   \ifdefempty{\tv@lede}{}{\tv@lede\ }\ignorespaces}
+  {\end{claimbox}}
+\makeatother
+
+% HEADROOM. claim is the ONE triggered box that does not carry \budgettick --
+% deliberately, because it is the section closer and must not be counted against
+% the three-box budget or trip the adjacency warning. But \budgettick is also
+% where every other box gets its \needspace{5\baselineskip}, so claim was the
+% only box in the document with no headroom guard at all, and it split.
+% MEASURED, in the build that found this: the claim closing sec:res-slab opened
+% with 3.36 lines left on p46, so two lines of the verdict set at the foot of
+% that page, fig:mechanism took the whole top of p47, and the remaining seven
+% lines and the closing hairline resumed underneath it. A verdict panel cut in
+% half by a float is the one break these hairlines exist to prevent.
+% 5\baselineskip, the same figure \budgettick uses, and not more: the other
+% twelve claims open with 6.96 lines or more (p68 is the tightest), so at this
+% setting exactly one box moves and the other twelve are untouched.
+% \par first, as in \budgettick: \needspace measures \pagegoal-\pagetotal, which
+% is only meaningful once the preceding paragraph has been contributed.
+\BeforeBeginEnvironment{claim}{\par\needspace{5\baselineskip}}
+
+% --- DEFN: a bespoke quantity, defined once, where the reader first needs it.
+% Soft tinted panel, no rules: it is reference, not argument.
+% Whole-document budget about eight: NIR, DRF, DE-delta-r, panel-tau, the
+% generic, the residual target, the transfer coefficient, the within-well
+% split-half precision reference. NOT for anything a Bocconi examiner already
+% knows -- bootstrap, BH correction, cosine similarity, Spearman-Brown, t.
+% LIGHTENED. There are 16 of these and as a filled panel at full measure with
+% an accent tag they were the second heaviest thing on the page after the old
+% question frame. It stays a box -- it is reference matter and the reader has
+% to be able to find it again by shape -- but on three counts less of one:
+%
+%  (a) TINT. COMPUTED from the hex, per channel against white:
+%      panelbg  #F4F2ED -> 4.31 / 5.10 / 7.06 % ink, mean 5.49%
+%      !70!white #F7F6F2 -> 3.14 / 3.53 / 5.10 % ink, mean 3.92%
+%      a 29% reduction in the panel's ink, and it is as far as this can go:
+%      below about 3% a tint stops reproducing reliably on a laser printer, and
+%      a definition panel that vanishes in monochrome fails the same greyscale
+%      test the box shapes were designed around. NOT lighter than this.
+%  (b) PADDING. 8/8/6/6pt -> 6/6/4/4pt. Note what this does and does not do:
+%      the panel's WIDTH is unchanged, because a tcolorbox spans \linewidth
+%      whatever its padding. What changes is 4pt off the height of every box,
+%      plus 4pt more text width, which can pull a wrapped line back and take
+%      off another whole line. Verified in the build: 16 boxes, and the body is
+%      still 117 pages, so this was free.
+%  (c) TAG COLOUR. accent -> quietink. The colour rule in section 3 reserves
+%      accent for structure, and 16 accent tags in a chapter is a lot of
+%      structure spent on lookup material. scopelimit already tags in quietink,
+%      so this moves defn into the register it belongs to -- reference, not
+%      argument -- and the bold term beside it still carries the identification.
+%      The accent that mattered here was never the word DEFINITION; it was the
+%      term, and the term is bold ink.
+\newtcolorbox{defn}[1]{%
+  thesisbase, colback=panelbg!70!white, colframe=panelbg!70!white,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  before upper={{\sffamily\scriptsize\bfseries\color{quietink}%
+    \MakeUppercase{definition}}\hspace{0.7em}{\bfseries #1}\par\vspace{0.4ex}},
+  fontupper=\small}
+\BeforeBeginEnvironment{defn}{\budgettick}
+\AfterEndEnvironment{defn}{\budgetclose}
+
+% --- SCOPELIMIT: hedge register (i). A limit on what a number LICENSES that
+% the reader must carry FORWARD. Thin frame on all four sides: it fences
+% something in. Use the optional argument to name where it carries to.
+% THE TEST, applied literally: would a later section be entitled to say
+% something different if this sentence did not exist? Yes -> scope limit.
+% No -> routine qualification, which stays inline, unmarked, in the body.
+%
+% NAME COLLISION, FOUND BY BUILDING: this must NOT be called "scope". TikZ owns
+% \begin{scope}, and tcolorbox and tikz both use it internally.
+% \newtcolorbox{scope} overwrites it WITHOUT an error -- the build still
+% succeeds, but every internal \begin{scope} in every figure then fires the
+% budget hook, and the counter read 7-8 in a section containing 2. Silent, and
+% it would have made the budget meaningless.
+\newtcolorbox{scopelimit}[1][]{%
+  thesisbase, boxrule=0.4pt, colframe=rulegrey, colback=white,
+  left=8pt, right=8pt, top=5pt, bottom=5pt,
+  before upper={{\sffamily\scriptsize\bfseries\color{quietink}%
+    \MakeUppercase{scope limit}}%
+    \ifstrempty{#1}{}{{\sffamily\scriptsize\color{quietink}\ \textbar\ #1}}%
+    \par\vspace{0.5ex}},
+  fontupper=\small}
+\BeforeBeginEnvironment{scopelimit}{\budgettick}
+\AfterEndEnvironment{scopelimit}{\budgetclose}
+
+% --- WITHDRAWN: hedge register (ii). One of the corrections this thesis
+% records against itself. Auto-numbered, so the set is bounded and countable,
+% and every one is \cref-linked from the ledger. Five scattered admissions read
+% as unreliability; five itemised, self-caught, cross-referenced ones read as
+% rigour. Every retraction v1 records stays recorded, in v1's own words.
+\newtcolorbox{withdrawn}[1]{%
+  thesisbase, boxrule=0.4pt, colframe=rulegrey, colback=panelbg,
+  left=8pt, right=8pt, top=5pt, bottom=5pt,
+  before upper={\refstepcounter{correction}%
+    {\sffamily\scriptsize\bfseries\color{ink}\ding{53}\ %
+     \MakeUppercase{correction \thecorrection}}%
+    {\sffamily\scriptsize\color{quietink}\ \textbar\ #1}\par\vspace{0.5ex}},
+  fontupper=\small}
+\BeforeBeginEnvironment{withdrawn}{\budgettick}
+\AfterEndEnvironment{withdrawn}{\budgetclose}
+
+% --- WORKED: a walkthrough of ONE bespoke instrument on ONE real case.
+% The dashed frame and the "safe to skip" tag are load-bearing, not decoration:
+% the reader is an expert in statistics and a novice only in this apparatus,
+% and the expertise-reversal effect says a worked example of something they
+% already know reads as padding. Exactly FOUR in the document.
+\newtcolorbox{worked}[1]{%
+  thesisbase, boxrule=0pt, colback=white,
+  borderline={0.4pt}{0pt}{quietink,dashed},
+  left=8pt, right=8pt, top=5pt, bottom=5pt,
+  before upper={\refstepcounter{workedex}%
+    {\sffamily\scriptsize\bfseries\color{accent}%
+     \MakeUppercase{worked example \theworkedex}}%
+    {\sffamily\scriptsize\color{quietink}\ \textbar\ #1\ \textbar\ safe to skip}%
+    \par\vspace{0.5ex}},
+  fontupper=\small}
+\BeforeBeginEnvironment{worked}{\budgettick}
+\AfterEndEnvironment{worked}{\budgetclose}
+
+% ---------------------------------------------------------------------------
+% 12. THE INTERVAL STRIP -- a position channel for tables of many intervals.
+% It adds no number and changes no claim. It turns "which intervals cross
+% chance" into a one-glance question instead of an arithmetic one, which is
+% precisely the distinction this document keeps having to restate in prose.
+%
+% DOMAIN [0.40, 0.75] AT 56mm, FIXED DOCUMENT-WIDE so strips in different
+% tables stay comparable. An earlier version used [0.35, 0.95] over 34mm and
+% failed at the one discrimination it exists for: the model row's interval
+% [0.510, 0.564] rendered as a 2.4mm stub 8.5mm from the chance rule, so the
+% reader could not see whether it crossed. At the setting below the same
+% interval is 8.6mm long and the answer is unambiguous.
+% Values above the domain -- the lookup arms and the precision references, whose
+% message is "far above", not "how far" -- are clipped and drawn with an
+% arrowhead at the right edge. A table using clipped rows MUST say so in its
+% table note. \cistripclip is the clipped form and must be used deliberately.
+% ---------------------------------------------------------------------------
+\makeatletter
+\def\tv@slo{0.40}\def\tv@shi{0.75}
+\newcommand{\tv@sx}[1]{{(#1-\tv@slo)/(\tv@shi-\tv@slo)}}
+\newcommand{\cistrip}[3]{%
+  \begin{tikzpicture}[baseline=-0.6ex,x=56mm,y=1mm]
+    \draw[rulegrey,line width=0.3pt] (0,0) -- (1,0);
+    \draw[ink,line width=0.4pt,densely dotted]
+      (\tv@sx{0.50},-2.4) -- (\tv@sx{0.50},2.4);
+    \draw[accent,line width=1.2pt] (\tv@sx{#1},0) -- (\tv@sx{#3},0);
+    \fill[accent] (\tv@sx{#2},0) circle (0.9pt);
+  \end{tikzpicture}}
+% clipped: interval runs off the right of the domain. #1 = lower bound only.
+\newcommand{\cistripclip}[1]{%
+  \begin{tikzpicture}[baseline=-0.6ex,x=56mm,y=1mm]
+    \draw[rulegrey,line width=0.3pt] (0,0) -- (1,0);
+    \draw[ink,line width=0.4pt,densely dotted]
+      (\tv@sx{0.50},-2.4) -- (\tv@sx{0.50},2.4);
+    \draw[accent,line width=1.2pt,-{Latex[length=1.6mm]}]
+      (\tv@sx{#1},0) -- (1.02,0);
+  \end{tikzpicture}}
+\makeatother
+
+% ---------------------------------------------------------------------------
+% 13. BIBLIOGRAPHY, LINKS, CROSS-REFERENCES
+% thesis_v2/ref.bib is a byte-identical COPY of thesis/ref.bib (md5 checked).
+% It is never pointed back at ../thesis/: a shared path invites an accidental
+% in-place edit and defeats the guarantee that thesis/ is untouched.
+% ---------------------------------------------------------------------------
+\usepackage[backend=biber,style=numeric,natbib=true,sorting=none]{biblatex}
+\addbibresource{ref.bib}
+
+% Internal links in ink: live on screen, invisible on paper. A document with
+% several hundred cross-references cannot afford to colour them.
+\usepackage[colorlinks=true,linkcolor=ink,citecolor=accent,urlcolor=accent,
+            breaklinks=true]{hyperref}
+\hypersetup{
+  pdftitle={Do Cell-Sentence Language Models Learn Drug-Specific Perturbation Responses?},
+  pdfauthor={Florian Daefler},
+  pdfsubject={An audited evaluation of cell-sentence perturbation prediction on Tahoe-100M},
+  pdfkeywords={single-cell transcriptomics, perturbation prediction, Cell2Sentence,
+               Tahoe-100M, evaluation}}
+
+\usepackage{cleveref}
+\crefname{section}{\S}{\S\S}
+\Crefname{section}{\S}{\S\S}
+\crefname{chapter}{chapter}{chapters}
+\Crefname{chapter}{Chapter}{Chapters}
+\crefname{table}{Table}{Tables}
+\Crefname{table}{Table}{Tables}
+\crefname{figure}{Figure}{Figures}
+\Crefname{figure}{Figure}{Figures}
+
+% Glossary back-links, hand-built: glossaries, nomencl and acro are all ABSENT
+% on this machine. The term list and the symbol table are enumitem description
+% lists plus \phantomsection / \label / \hyperref.
+\newcommand{\glentry}[2]{\item[#1]\phantomsection\label{gl:#2}}
+\newcommand{\gref}[2]{\hyperref[gl:#2]{#1}}
