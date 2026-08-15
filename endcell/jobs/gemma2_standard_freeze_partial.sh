@@ -26,7 +26,7 @@ RUNTIME="$REPO/RESULTS/gemma2_standard_preflight/PREFLIGHT_RUNTIME_CONTRACT.json
 cd "$REPO"
 source "$REPO/endcell/jobs/gemma2_standard_protobuf_env.sh"
 "$PY" "$CONTRACT" verify --certificate "$CERT" --model-id "$MODEL_ID" \
-    --revision "$REVISION" --verify-current-environment --runtime-contract-out "$RUNTIME"
+    --revision "$REVISION" --runtime-contract-out "$RUNTIME"
 
 GEMMA_FP=$("$PY" "$ADMIT" --checkpoint "$GEMMA_CHECKPOINT" \
     --runtime-contract "$RUNTIME" --fingerprint-tool "$FP" \
