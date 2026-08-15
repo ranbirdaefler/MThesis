@@ -30,10 +30,6 @@ CONTRACT="$REPO/endcell/jobs/gemma2_standard_preflight_contract.py"
 CERT="$REPO/RESULTS/gemma2_standard_preflight/PREFLIGHT_PASSED.json"
 CHECKPOINT_ROLE="${CHECKPOINT_ROLE:-gemma_sft}"
 MODEL="${MODEL_PATH:-/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/final}"
-PARTIAL_GLOBAL_STEP="${PARTIAL_GLOBAL_STEP:-41301}"
-PARTIAL_EPOCH="${PARTIAL_EPOCH:-0}"
-PARTIAL_MICROBATCH_POSITION="${PARTIAL_MICROBATCH_POSITION:-660816}"
-PLANNED_GLOBAL_STEPS="${PLANNED_GLOBAL_STEPS:-42198}"
 VALIDITY="$REPO/endcell/eval/evaluate_endcell.py"
 NIR="$REPO/endcell/analysis/nir_benchmark.py"
 FINGERPRINT_TOOL="$REPO/endcell/jobs/gemma2_standard_checkpoint_fingerprint.py"
@@ -42,7 +38,6 @@ MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1800}"
 GEN_BATCH_SIZE="${GEN_BATCH_SIZE:-8}"
 case "$CHECKPOINT_ROLE" in
     gemma_sft) EXPECTED_MODEL_LABEL=gemma; EXPECTED_MODEL_TYPE=gemma2 ;;
-    gemma_sft_partial) EXPECTED_MODEL_LABEL=gemma; EXPECTED_MODEL_TYPE=gemma2 ;;
     gemma_parent) EXPECTED_MODEL_LABEL=gemma_parent; EXPECTED_MODEL_TYPE=gemma2 ;;
     pythia_sft_legacy) EXPECTED_MODEL_LABEL=pythia; EXPECTED_MODEL_TYPE=gpt_neox ;;
     pythia_parent) EXPECTED_MODEL_LABEL=pythia_parent; EXPECTED_MODEL_TYPE=gpt_neox ;;
@@ -144,23 +139,6 @@ if [[ "$CHECKPOINT_ROLE" == gemma_sft ]]; then
         --expected_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
         --expected_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
     )
-elif [[ "$CHECKPOINT_ROLE" == gemma_sft_partial ]]; then
-    [[ "$MODEL" == */checkpoint-${PARTIAL_GLOBAL_STEP}-mb${PARTIAL_MICROBATCH_POSITION} ]] || {
-        echo "[FATAL] partial SFT path does not match its declared optimizer boundary: $MODEL" >&2
-        exit 20
-    }
-    FINGERPRINT_ARGS=(
-        --require_partial_sft --expected_global_step "$PARTIAL_GLOBAL_STEP"
-        --expected_epoch "$PARTIAL_EPOCH"
-        --expected_microbatch_position "$PARTIAL_MICROBATCH_POSITION"
-        --expected_accumulation_position 0 --planned_global_steps "$PLANNED_GLOBAL_STEPS"
-        --require_gemma_ancestry
-        --expected_model_id "$MODEL_ID" --expected_revision "$REVISION"
-        --expected_parent_snapshot "$SNAPSHOT_PATH"
-        --expected_preflight_certificate_sha256 "$PREFLIGHT_SHA256"
-        --expected_snapshot_inventory_sha256 "$SNAPSHOT_INVENTORY_SHA256"
-        --expected_authoritative_files_sha256 "$AUTHORITATIVE_FILES_SHA256"
-    )
 elif [[ "$CHECKPOINT_ROLE" == gemma_parent ]]; then
     FINGERPRINT_ARGS=(
         --require_gemma_parent
@@ -203,8 +181,6 @@ MODEL_FINGERPRINT="$($PY "$FINGERPRINT_TOOL" --checkpoint "$MODEL" \
 }
 if [[ "$CHECKPOINT_ROLE" == gemma_sft ]]; then
     echo "[PASS] Gemma manifest/content, terminal state, and certified ancestry validated"
-elif [[ "$CHECKPOINT_ROLE" == gemma_sft_partial ]]; then
-    echo "[PASS] Gemma manifest/content, exact partial optimizer-boundary state, and certified ancestry validated"
 elif [[ "$CHECKPOINT_ROLE" == gemma_parent ]]; then
     echo "[PASS] Gemma frozen-parent path and snapshot inventory validated"
 fi

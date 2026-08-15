@@ -343,10 +343,7 @@ revision-manifest digest.
 
 ## 5. Freeze Tier-2 support and all four checkpoint declarations
 
-Do this only after selecting the Gemma SFT checkpoint and before any Tier-2 generation. The canonical
-partial arm uses the immutable optimizer-boundary checkpoint at step 41,301 of 42,198 (97.9% of the
-planned epoch), after the cosine schedule had effectively reached zero. It is reported as partial rather
-than terminal throughout. This step proves
+Do this only after the Gemma SFT final checkpoint exists and before any Tier-2 generation. It proves
 Tier-2 drug disjointness against `train.jsonl`, requires the exact canonical support, and publishes a
 hash-named manifest that cannot overwrite an earlier one.
 
@@ -387,12 +384,10 @@ print(snapshot_download("vandijklab/C2S-Scale-Pythia-1b-pt",
     cache_dir=os.environ["HF_HUB_CACHE"], local_files_only=True))
 PY
 )
-GEMMA_CHECKPOINT=/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/checkpoint-41301-mb660816
 GEMMA_FP=$($PY $FP \
-  --checkpoint "$GEMMA_CHECKPOINT" \
-  --require_partial_sft --expected_global_step 41301 --expected_epoch 0 \
-  --expected_microbatch_position 660816 --expected_accumulation_position 0 \
-  --planned_global_steps 42198 \
+  --checkpoint /data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/final \
+  --require_complete_sft --expected_global_step 42198 --expected_epoch 1 \
+  --expected_microbatch_position 0 --expected_accumulation_position 0 \
   --require_gemma_ancestry --expected_model_id vandijklab/C2S-Scale-Gemma-2-2B \
   --expected_revision 5ddf28b8f1c81b7ab7a9be192924da82b6c5d512 \
   --expected_parent_snapshot "$GEMMA_PARENT" \
@@ -441,7 +436,7 @@ Fine-tuned Gemma:
 
 ```bash
 sbatch --partition=gpuh200 \
-  --export=ALL,CHECKPOINT_ROLE=gemma_sft_partial,MODEL_PATH=/data/BuffaF-Projetcs/florian_c2s/checkpoints/gemma2b_sft_endcell/checkpoint-41301-mb660816,PARTIAL_GLOBAL_STEP=41301,PARTIAL_EPOCH=0,PARTIAL_MICROBATCH_POSITION=660816,PLANNED_GLOBAL_STEPS=42198,TIER2_MANIFEST="$MANIFEST" \
+  --export=ALL,CHECKPOINT_ROLE=gemma_sft,TIER2_MANIFEST="$MANIFEST" \
   endcell/jobs/gemma2_standard_eval.sbatch
 ```
 

@@ -72,7 +72,6 @@ PARSER_REQUIREMENTS = {
         "endcell/jobs/gemma2_standard_checkpoint_fingerprint.py",
         {
             "--checkpoint", "--out", "--digest_only", "--require_complete_sft",
-            "--require_partial_sft", "--planned_global_steps",
             "--require_gemma_ancestry", "--require_gemma_parent",
             "--expected_model_id", "--expected_revision", "--expected_parent_snapshot",
             "--expected_preflight_certificate_sha256",
@@ -148,7 +147,7 @@ CONSUMER_REQUIREMENTS = {
         "--min_recognized_genes", "--out", "--profiles",
         "--certificate", "--model-id", "--revision", "--require-generation-cap",
         "--verify-current-environment", "--runtime-contract-out",
-        "--require_complete_sft", "--require_partial_sft", "--require_gemma_ancestry", "--require_gemma_parent",
+        "--require_complete_sft", "--require_gemma_ancestry", "--require_gemma_parent",
         "--expected_model_id", "--expected_revision", "--expected_parent_snapshot",
         "--expected_preflight_certificate_sha256", "--expected_snapshot_inventory_sha256",
         "--expected_authoritative_files_sha256",
