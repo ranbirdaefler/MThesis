@@ -1463,6 +1463,7 @@ def test_eval_role_fixes_label_and_model_family_without_losing_pythia_comparator
         encoding="utf-8").read()
     expected = {
         "gemma_sft": ("gemma", "gemma2"),
+        "gemma_sft_partial": ("gemma", "gemma2"),
         "gemma_parent": ("gemma_parent", "gemma2"),
         "pythia_sft_legacy": ("pythia", "gpt_neox"),
         "pythia_parent": ("pythia_parent", "gpt_neox"),
@@ -1478,3 +1479,30 @@ def test_eval_role_fixes_label_and_model_family_without_losing_pythia_comparator
     assert "VALIDITY_ENTRYPOINT" not in source
     assert "NIR_ENTRYPOINT" not in source
     assert "fixed production evaluator entrypoints match preflight path and SHA-256" in source
+    assert "--require_partial_sft" in source
+    assert '*/checkpoint-${PARTIAL_GLOBAL_STEP}-mb${PARTIAL_MICROBATCH_POSITION}' in source
+
+
+def test_partial_sft_state_requires_exact_clean_optimizer_boundary():
+    args = SimpleNamespace(
+        expected_global_step=41301,
+        expected_epoch=0,
+        expected_microbatch_position=660816,
+        expected_accumulation_position=0,
+        planned_global_steps=42198,
+    )
+    state = {
+        "completed": False,
+        "global_step": 41301,
+        "epoch": 0,
+        "microbatch_position": 660816,
+        "accumulation_position": 0,
+    }
+    checkpoint_fingerprint.validate_partial_state(state, args)
+    for key, bad in (("completed", True), ("global_step", 41300),
+                     ("microbatch_position", 660815), ("accumulation_position", 1)):
+        changed = dict(state)
+        changed[key] = bad
+        with pytest.raises(checkpoint_fingerprint.CheckpointValidationError,
+                           match="partial training state mismatch"):
+            checkpoint_fingerprint.validate_partial_state(changed, args)

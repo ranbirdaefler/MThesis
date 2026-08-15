@@ -328,6 +328,34 @@ def validate_terminal_state(state: dict, args: argparse.Namespace) -> None:
             f"terminal training state mismatch: observed={observed}, expected={expected}")
 
 
+def validate_partial_state(state: dict, args: argparse.Namespace) -> None:
+    """Validate one explicitly selected, optimizer-boundary partial SFT checkpoint."""
+    expected = {
+        "completed": False,
+        "global_step": args.expected_global_step,
+        "epoch": args.expected_epoch,
+        "microbatch_position": args.expected_microbatch_position,
+        "accumulation_position": args.expected_accumulation_position,
+    }
+    observed = {
+        "completed": state.get("completed"),
+        "global_step": state.get("global_step"),
+        "epoch": state.get("epoch"),
+        "microbatch_position": state.get("microbatch_position"),
+        "accumulation_position": state.get("accumulation_position"),
+    }
+    if observed != expected:
+        raise CheckpointValidationError(
+            f"partial training state mismatch: observed={observed}, expected={expected}")
+    if args.expected_accumulation_position != 0:
+        raise CheckpointValidationError(
+            "partial SFT evaluation is allowed only at an optimizer boundary")
+    if not 0 < args.expected_global_step < args.planned_global_steps:
+        raise CheckpointValidationError(
+            "partial SFT step must lie strictly between zero and the planned total: "
+            f"{args.expected_global_step} not in (0, {args.planned_global_steps})")
+
+
 def _write_json_atomic(path: Path, document: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
@@ -416,6 +444,7 @@ def main() -> None:
     parser.add_argument("--out")
     parser.add_argument("--digest_only", action="store_true")
     parser.add_argument("--require_complete_sft", action="store_true")
+    parser.add_argument("--require_partial_sft", action="store_true")
     parser.add_argument("--require_gemma_ancestry", action="store_true")
     parser.add_argument("--require_gemma_parent", action="store_true")
     parser.add_argument("--expected_model_id")
@@ -428,6 +457,7 @@ def main() -> None:
     parser.add_argument("--expected_epoch", type=int, default=1)
     parser.add_argument("--expected_microbatch_position", type=int, default=0)
     parser.add_argument("--expected_accumulation_position", type=int, default=0)
+    parser.add_argument("--planned_global_steps", type=int, default=42198)
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
@@ -440,10 +470,15 @@ def main() -> None:
     if not checkpoint.is_dir():
         raise SystemExit(f"checkpoint directory does not exist: {checkpoint}")
 
+    if args.require_complete_sft and args.require_partial_sft:
+        parser.error("--require_complete_sft and --require_partial_sft are mutually exclusive")
+    requires_sft_state = args.require_complete_sft or args.require_partial_sft
     validation = validate_checkpoint_manifest(
-        checkpoint, required=args.require_complete_sft, verify_state_identity=True)
+        checkpoint, required=requires_sft_state, verify_state_identity=True)
     if args.require_complete_sft:
         validate_terminal_state(validation["state"], args)
+    if args.require_partial_sft:
+        validate_partial_state(validation["state"], args)
     if args.require_gemma_ancestry and args.require_gemma_parent:
         parser.error("--require_gemma_ancestry and --require_gemma_parent are mutually exclusive")
     ancestry_args = {
@@ -485,6 +520,13 @@ def main() -> None:
         "trainer_manifest_validated": validation is not None,
         "trainer_manifest_sha256": None if validation is None else validation["manifest_sha256"],
         "terminal_training_state_validated": bool(args.require_complete_sft),
+        "partial_training_state_validated": bool(args.require_partial_sft),
+        "validated_training_state": None if not requires_sft_state else {
+            key: validation["state"].get(key) for key in (
+                "completed", "global_step", "epoch", "microbatch_position",
+                "accumulation_position")
+        },
+        "planned_global_steps": args.planned_global_steps if requires_sft_state else None,
         "gemma_checkpoint_ancestry_validated": ancestry_validated,
         "gemma_parent_snapshot_validated": parent_snapshot_validated,
     }
