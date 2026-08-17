@@ -241,6 +241,3 @@ sentence (a short budget silently truncates and halves the measured effect).
   held-out condition can influence the quantity it is later scored against.
 
 ---
-
-*Active research code. `FINDINGS.md` holds the current results and marks what is still pending;
-treat the code as the source of truth for exact behavior.*
