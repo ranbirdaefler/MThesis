@@ -1,0 +1,325 @@
+{
+  "pre_registration": {
+    "question": "Does the metric structure of the model's internal representation of drugs match the metric structure of real drug effects, beyond what the prompt string hands it for free?",
+    "headline_cell": {
+      "arm": "blind (Mechanism: unclear for every drug)",
+      "model": "the first entry of --model_names (the fine-tuned checkpoint)",
+      "layer": 12,
+      "position": "last (the ':' of 'Response cell:', where the readout reads)",
+      "metric": "centered cosine",
+      "statistic": "partial Spearman of offdiag(A) on offdiag(B) given the controls, via MRM",
+      "null": "Freedman-Lane, permuting DRUG LABELS, --n_perm draws (4000 in the pre-registered configuration; the realised count is in each cell's n_perm and the p floor is 1/(n_perm+1))"
+    },
+    "co_primary": [
+      "layer 16 (readout boundary; block output, pre-final-LayerNorm -- one LN plus unembed from logits, reported as its own labelled cell, not folded into 'internal')",
+      "position 'instr' (end of the instruction), free from the same forward pass; the instr-minus-last gap is a named secondary result, reported in `position_contrast` with a PAIRED permutation p (one drug relabeling applied to both positions inside each draw) and computed on the DISATTENUATED scale whenever both rel_A values are available, because 'instr' carries rel_A = 1 by causal construction while 'last' does not, and an attenuated comparison is biased toward 'instr' for purely measurement reasons",
+      "matched-triplet retrieval, whose null is exactly 0.50 and which holds the confounds constant by matching rather than by adjustment"
+    ],
+    "matched_triplet_tolerance": {
+      "rule": "the x1 and x1p matching tolerances are tol_frac * std(offdiag(control)) computed on THIS run's roster, with tol_frac = 0.10, not fixed constants. The realised tolerances and the sds are recorded per cell in triplet.matching.",
+      "why": "the shipped constant 0.05 was 0.43-0.59 SD of the confound on realistic rosters, and because a triple is admitted only when B separates near from far, a wide tolerance composes with the admission rule to HARVEST confound-driven triples. Measured under a zero-pharmacology confounded null: accuracy 0.6297 with triplet_p <= 0.05 in 40/40 replicates at the constant, versus 0.5058 and 0/40 at 0.10 sd. On a clean positive the same tightening cost nothing (0.5953 -> 0.5948, power 1.000 unchanged).",
+      "yield_rule": "if the tightened tolerance leaves fewer than 200 admitted triples, the cell reports insufficient_matched_triples. tol_frac is NEVER loosened to recover yield: it is a matching standard, not a dial.",
+      "keys_actually_binding": "the number of the seven matching keys with nonzero off-diagonal variance is reported per cell as triplet.matching.n_matching_keys_with_variance, because on a blind roster x5a and x8 are commonly identically zero and x5b is collinear with x5a."
+    },
+    "controls_partialled": {
+      "blind": [
+        "x1 name-token Jaccard",
+        "x1p name char-3gram Jaccard",
+        "x5a name length difference",
+        "x5b prompt length difference",
+        "x8 near-duplicate base name"
+      ],
+      "annotated": [
+        "x1 name-token Jaccard",
+        "x1p name char-3gram Jaccard",
+        "x5a name length difference",
+        "x5b prompt length difference",
+        "x8 near-duplicate base name",
+        "x2 mechanism-token Jaccard",
+        "x3 shared known mechanism",
+        "x4 shared 'unclear' mechanism"
+      ],
+      "x6 dose": "added to BOTH arms when >= 90% of drugs' dose strings parse to a numeric micromolar value; see dose_frame",
+      "x9 same-plate": "added to BOTH arms only when the roster spans more than one plate, i.e. under cell_line scope; dropped as zero-variance under cell_line_plate scope, where plate is eliminated by stratification instead",
+      "note_how_many_actually_apply": "the DECLARED set is not the APPLIED set and the two must never be conflated. On a balanced blind roster x5b is EXACTLY x5a (the prompt varies only through the drug name, so the design is rank deficient by construction and one column is absorbed), x8 is identically zero on any roster without salt/hydrate variants, and x1 is typically inert because few pairs of distinct compounds share a BPE token. The number of controls ACTUALLY applied is reported per cell in controls_in_design, controls_dropped_zero_variance, design_rank / design_rank_deficient and name_control_inert. This result may NOT be quoted as 'adjusted for eight controls'; quote the per-cell controls_in_design instead."
+    },
+    "licences": {
+      "licensed": "a positive r_partial (or matched-triplet accuracy above its null) licenses the claim that the representation is biologically ordered beyond what the prompt string supplies, in this stratum, at this layer and read position.",
+      "not_licensed": "it does NOT license the claim that a better decoding head on this representation would recover drug effects. A partial Spearman of pairwise distances, and a matched-triplet ordering accuracy, are statements about RANK ORDER; neither establishes that the biological profile is decodable to useful precision. A representation with r_partial = +0.25 against a target of reliability 0.3 can be genuinely ordered and still carry nothing a head could turn into a competitive prediction. That claim is licensed, if at all, only by the direct decodability arm (direct_arm) scored against the ledger baselines.",
+      "and_the_converse": "a NULL r_partial does not license 'not organised' either, on its own: RSA is a variance-weighted second-order instrument, so structure living in a low-variance subspace can be invisible to it while a linear head reads it perfectly. See spectrum_reading_rule, positive_control and direct_arm for the conditions under which a null becomes attributable."
+    },
+    "never_collapse_x3_x4": "about half the drugs carry moa == 'unclear'; a single 'shared mechanism' indicator would code ~40% of dyads as mechanistically matched on shared IGNORANCE",
+    "multi_stratum_rule": {
+      "primary_named_before_the_run": "the PRIMARY stratum is named in the sbatch via --primary_stratum and stamped into every output JSON as provenance.stratum_label / provenance.primary_stratum / provenance.is_primary_stratum BEFORE any number exists. Default G1.",
+      "replication_not_a_second_chance": "G2 and G3 are REPLICATION. They are never a second chance at a headline: a positive in G2 or G3 while the primary is null is reported as a non-replicating primary null, not as a finding.",
+      "claim_condition": "the organised-representation claim is written only if the PRIMARY clears BOTH the n >= 40 threshold and the rel_B gate, AND every stratum that clears its own gate agrees in sign with it.",
+      "disagreement": "any sign disagreement among gate-clearing strata is reported as HETEROGENEITY and the claim is downgraded to \\notestablished. It is not resolved by picking the significant stratum, by pooling, or by declaring the disagreeing stratum an outlier.",
+      "agreement_is_not_a_coefficient": "cross-stratum agreement is a robustness statement, NOT a combined coefficient, and it carries this caveat: a treated well spans many cell lines, so replication across strata reproduces well-level technical artefact in B as well as biology. Agreement is therefore weaker evidence than it looks."
+    },
+    "refusal_rule": {
+      "n_drugs < 25": "statistic not computed, status = untestable_n",
+      "25 <= n_drugs < 40": "computed but tagged exploratory",
+      "headline requires": "n_drugs >= 40"
+    },
+    "reliability_gate_on_rel_B": {
+      "quantity_read": "the BOOTSTRAP CI LOWER BOUND of rel_B at BOTH thresholds. Previously the 0.20 threshold read the lower bound while the 0.40 threshold read the point estimate; conservatism is now consistent in both directions.",
+      "lower_bound <= 0.20": "no_measurable_biological_geometry; nothing licensed in either direction",
+      "0.20 < lower_bound < 0.40": "attenuation_limited; quote only the disattenuated value, with the ceiling beside it",
+      "lower_bound >= 0.40": "headline permitted",
+      "behaviour_on_failure": "the run RETURNS at the gate, writing the JSON with status = the gate status, BEFORE any checkpoint is loaded. It does not warn and continue into the model sweep. --force_through_gate overrides this for diagnostics only; it is recorded in provenance and every cell it produces is stamped produced_under_forced_gate = true, and such cells are not interpretable in either direction."
+    },
+    "configuration_selection": {
+      "search_space": "--min_cells_per_drug in {10, 25, 50, 100} x --scope in {cell_line_plate, cell_line}, read from --precheck --precheck_sweep on CPU before any GPU job is submitted",
+      "rule": "take the configuration MAXIMISING rel_B subject to n_drugs >= 40. If no configuration reaches n_drugs >= 40, take the one maximising rel_B subject to n_drugs >= 25 and mark the run EXPLORATORY. If no configuration gives a rel_B bootstrap lower bound above 0.20, DO NOT SUBMIT the GPU job: the target carries no reliable off-diagonal structure at any available cell budget, which is itself the result.",
+      "why_it_cannot_bias": "selection is a function of B and the roster only. No activation, no checkpoint and no forward pass enters the precheck, so the configuration is fixed before the quantity of interest exists.",
+      "what_it_does_not_license": "choosing the configuration with the best rel_B is NOT choosing the configuration with the best r_partial, and the sweep table is published in the JSON so the choice is auditable."
+    },
+    "activity_magnitude": {
+      "reported_always": "biology.activity_magnitude carries the R^2 of B's dyad ranks on the activity covariates {x7 = |rank a(d) - rank a(e)|, x7b = min(rank a(d), rank a(e))} ALONE, B's leading-eigenvalue share, and the a(d) distribution of the selected roster against the full eligible pool -- so the top-n-by-cell-count truncation is visible rather than assumed away. a(d) = ||res(d)||_2, taken BEFORE the signed-rank encoding.",
+      "secondary_arm": "r_partial_activity_adjusted, at headline cells only, is the identical partial with {x7, x7b} appended to the control design. It is a LABELLED SECONDARY and never the headline.",
+      "why_it_over_adjusts": "activity class is genuinely correlated with mechanism, so this arm removes real pharmacology along with the artefact and reads LOW BY CONSTRUCTION. Its use is asymmetric: a headline that SURVIVES it excludes the activity reading; a headline that collapses under it is not thereby shown to be artefact, only shown to be unseparated by this design.",
+      "why_it_is_needed": "res = pb - roster mean, so every weak drug converges on -(mean drug programme) and all inert drugs collapse onto one another in B. In a planted world where drugs differ ONLY in effect magnitude, with iid drug-specific directions and no pharmacology anywhere, activity covariates explain ~0.85 of B's dyad-rank variance (0.000 at equal amplitudes). With the atlas reporting median SNR 0.75 and 27% of conditions not significantly active, the real B carries this axis heavily, and 'the model knows which compounds do something' is one scalar that licenses no readout-rescue claim."
+    },
+    "plate_scope": {
+      "cell_line_plate": "plate batch is ELIMINATED by stratification; x9 is constant across the roster and is dropped as zero-variance by the design machinery, which is recorded per cell in controls_dropped_zero_variance.",
+      "cell_line": "the roster spans plates, so plate batch enters B through the pseudobulk itself and is ADJUSTED dyadically via x9, the same-plate indicator on each drug's modal plate.",
+      "not_interchangeable": "the two scopes are different readings and are never pooled or swapped after the fact. Which one runs is fixed by the CPU precheck under configuration_selection, before any activation exists.",
+      "why_x9_exists": "the design's stated justification for pinning the plate -- 'the residual is defined against that plate's DMSO pool' -- is FALSE: the DMSO term cancels identically (see biology.frame). What survives is batch structure in the pseudobulk, which is what x9 addresses. So if the precheck shows the pinned per-plate strata are untestable, cell_line scope is the only way the question gets asked at all, and it must arrive with plate adjusted rather than ignored."
+    },
+    "positive_control": {
+      "what_it_is": "cell-line geometry on the IDENTICAL code path: drug and dose held fixed at the roster's modal compound, the CELL LINE NAME varying in the same prompt slot, the same K balanced control sentences, the same hooks, the same centering, the same estimator, and B built from each line's own control-cell pseudobulk in the same residual signed-rank cosine frame.",
+      "why_cell_line": "the model provably encodes it -- the thesis measures a cell-line subspace fraction of ~0.6 against ~0.03 for the purified drug slab -- and it is a MATCHED anchor: it enters through 1-3 tokens in the same prompt slot against the same ~400-token context, so it exercises the identical variance-domination risk.",
+      "the_rule": "IF THE CELL-LINE ARM IS ALSO NULL, THE DRUG-SIDE NULL IS VOID and must be reported as an INSTRUMENT FAILURE, not as a finding about drugs. A null bounded by MDE80 alone says 'we saw no correlation'; only a null beside a demonstrated positive on the same code path says 'the correlation is not there'.",
+      "n_rule": "the n < 25 refusal is NOT applied to this arm and the waiver is stamped in the output. The refusal is a rule about claims; this arm makes no claim about cell-line geometry, it measures whether the instrument can see anything at all. Its rel_B and gate are computed and REPORTED, never applied.",
+      "never": "this block is a control. It is never a headline and never enters the RSA families."
+    },
+    "direct_arm": {
+      "what_it_is": "leave-one-drug-out ridge, in the DUAL form, from X = the K-averaged, across-drug-centered activations to Y = the drug's residual profile, at the headline cells only. alpha is chosen by an inner LOO on each training fold over a fixed grid, never fixed: a fixed alpha shrinks low-variance directions and reimports the exact pathology this arm exists to detect.",
+      "scores": "(i) held-out RETRIEVAL -- encode the predicted residual with signed_rank_from_vector and ask whether its nearest true encoding is the held-out drug's; null exactly 1/n_drugs with no distributional assumption. (ii) held-out mean correlation between predicted and true residual.",
+      "confound_control": "BY INCREMENT, not by partialling: the identical LOO ridge is fit from NAME features alone (character-3grams plus this model's own BPE token indicators) and the activations-over-names increment is reported.",
+      "increment_licensing": "the licensing field is increment_licensed = (increment > 0 AND p_increment <= 0.05), and p_increment must NEVER be read alone. The increment's permutation null is not centred at zero: relabeling Y destroys both relationships at once and the two kernels do not collapse to the same floor, so a name kernel that interpolates its training drugs scores far worse under a relabeling than a smoother activation kernel does. Measured in a planted world where the names are a SUPERSET of what the activations carry: observed increment -0.41 against a null q95 of -0.93, giving p = 0.01 for a representation that adds nothing whatever.",
+      "null": "the first --n_perm_direct draws of the SHARED permutation sequence, permuting the drug labels of Y. The arm carries its OWN max-statistic family and its OWN paired base-checkpoint contrast; it is never folded into the RSA's family, because a max taken across two different statistics is neither.",
+      "why_it_is_needed": "RSA is a one-sided instrument. A positive licenses 'organised'; a null licenses NOTHING about organisation, because RSA on centered cosine is variance-weighted and structure in a low-variance subspace is invisible to it. Verified: with drug-varying nuisance at participation ratio 2.93, RSA r_partial falls to +0.038 while LOO ridge from the same activations to the same target holds at r = +0.992. The branch this thesis needs is the null branch.",
+      "why_it_does_not_replace_the_RSA": "the RSA fits nothing, so it cannot overfit; its Freedman-Lane null is exact at n = 60; and it is invariant to how a head is parameterised. A positive RSA is the stronger and more general claim. The ridge has a real regularisation choice and a real overfitting surface at n = 60. They ACCOMPANY each other.",
+      "joint_reading_rule": {
+        "RSA+ / direct+": "organised, and organised in the variance-dominant geometry. The strongest form of the readout-problem claim.",
+        "RSA0 / direct+": "organised in a subspace the cosine geometry does not weight. STILL a readout problem, and a concrete next experiment. Read the spectrum: a low participation ratio is the expected signature.",
+        "RSA+ / direct0": "suspect the direct arm's regularisation and claim NOTHING from the direct arm; the RSA positive stands on its own terms.",
+        "RSA0 / direct0": "licenses 'represented only ever meant labelled' ONLY when the cell-line positive control is POSITIVE on the identical code path AND rel_B >= 0.40. Without both, a double null is an instrument report, not a finding about drugs."
+      },
+      "what_a_positive_direct_arm_still_does_not_license": "a held-out correlation is not a competitive prediction. Compare it to the ledger baselines before writing anything about rescuing the readout."
+    },
+    "dose_frame": {
+      "the_mismatch": "A is DOSE-FIXED: run() puts ONE modal dose string in every prompt. B is a DOSE MIXTURE: build_biology pools every cell of a drug in the stratum regardless of dose. The sbatch's claim that dose is 'held CONSTANT by construction' is true of the prompt and FALSE of B.",
+      "resolution": "option (b), ADJUST rather than filter. Each drug's median log10 dose enters the control design as x6 = |median log10 dose(d) - median log10 dose(e)| in both arms. x6 was already implemented and was never passed; it is now.",
+      "why_not_filter": "option (a) -- filtering each drug's cells to its modal dose -- is cleaner in principle and costs cells per drug, and n and rel_B are the binding constraints this whole build order exists to protect. Option (b) is free.",
+      "refusal": "if fewer than 90% of drugs yield a parseable dose, x6 is NOT built at all and dose_parse_failed is written with the parse rate. A partially parsed covariate is worse than none.",
+      "partial_parse": "at or above 0.90 but below 1.00, x6 is built and the unparsed drugs are IMPUTED at the modal dose string the prompt itself fixes (or, if that string does not parse either, at the roster median of the parsed per-drug medians). The count, the drug names and the source are written to biology.dose_frame as n_drugs_dose_imputed / drugs_dose_imputed / dose_imputation_source. This is declared as NOT conservative: an imputed drug's x6 entries understate its dose distance, so dose is UNDER-adjusted for those pairs. A dyadic design has no missing-value semantics, so the covariate is total over the roster or absent -- there is no third option, and leaving a None in the vector was a crash, not a policy.",
+      "what_remains": "the mismatch is adjusted, NOT eliminated, and it is not eliminable without filtering cells. biology.dose_frame.per_drug reports each drug's number of distinct dose strings and the fraction of its cells at the roster's modal dose string, so the residual mismatch is visible per drug rather than asserted away. Note that dose composition and activity magnitude are the same axis viewed twice; see activity_magnitude."
+    },
+    "spectrum_reading_rule": "every analysed cell reports activation_diag.spectrum: the top-10 singular values of Hbar, top_eig_share = s1^2 / sum(s^2), and participation_ratio = (sum s^2)^2 / sum(s^4). A NULL r_partial accompanied by a participation ratio below 5 or a top-eigenvalue share above 0.35 may NOT be reported as absence of organisation, only as ABSENCE OF ORGANISATION IN THE VARIANCE-DOMINANT SUBSPACE. Reproduced independently: holding the biology perfectly decodable, RSA r_partial falls +0.946 -> +0.038 as the participation ratio falls 9.41 -> 2.93, while leave-one-out ridge from the same activations holds at r = +0.992. At the 'last' position the drug enters through 1-4 name tokens out of ~400, so the dominant drug-varying directions are very likely lexical rather than pharmacological, and the design must be able to SAY whether that happened rather than assume it did not.",
+    "degeneracy_rule": "(layer 0, last position) is degenerate by construction -- the last token is ':' for every prompt -- and must be recorded as 'degenerate', never returned as 0.0 or NaN into an aggregate",
+    "p_floor": "p = (1 + #{|perm| >= |obs|}) / (n_perm + 1); flagged p_at_floor when it sits there",
+    "confound_residue_floor": {
+      "value": "MEASURED PER RUN AND PER ARM; the realised numbers are in biology.null_confound_residue_real_roster and are copied into each cell as confound_residue_floor",
+      "provenance": "the 95th percentile of |r_partial| under a zero-pharmacology confounded null generated from THIS run's own control matrices -- built from the actual drug names and the model's own tokenizer -- at this n and this control set, over --n_residue_rep replicates.",
+      "recipe_annotated": "0.55*x1 + 0.30*x1p + 0.15*(1 - x3), the selftest's world (b3)",
+      "recipe_blind": "0.65*x1 + 0.35*x1p; the mechanism term cannot exist in the blind arm, but the blind arm has its own lexical residue, which is why the floor is per-arm rather than annotated-only",
+      "control": "a noise_only recipe is calibrated alongside and must return the chance envelope; it is what separates 'a real confound residue' from 'sampling'",
+      "enforcement": "any cell whose |r_partial| falls below its arm's floor is tagged within_confound_residue_envelope = true and headline_permitted_for_this_cell = false, whatever its p or p_fwer_max.",
+      "why_p_is_not_enough": "Freedman-Lane is a correct test of 'A-residual independent of B-residual after linear-in-ranks adjustment', which is not the scientific null. Measured type-I under a zero-pharmacology confounded null: 0.163 with a rank-linear confound, 0.707 with a dominant exp-link one. Expanding the control basis does not repair it (0.707 -> 0.607 with quantile bins), so this is an identification failure, not an inference failure, and magnitude against a measured envelope is the only licensing statistic left.",
+      "not_a_weakening": "this rule only ever REFUSES a headline; it can never permit one that the n rule or the rel_B gate has refused."
+    },
+    "equivalence_margin": {
+      "margin": 0.3,
+      "licensing_statistic": "tost_margin_0.30_disattenuated, computed in analyse_cell by testing the RAW interval against margin_eff = 0.30 * sqrt(rel_A * rel_B). That is algebraically identical to dividing the interval by sqrt(rel_A * rel_B) and testing 0.30, but it never divides by a near-zero reliability. Statuses: equivalent (interval entirely inside the effective margin), not_equivalent (interval entirely outside it), underpowered_for_equivalence (interval straddles it, or a reliability is unavailable).",
+      "also_reported_not_licensing": "tost_margin_0.30_attenuated, the old attenuated-scale boolean, kept beside it and explicitly labelled NOT the licensing statistic. At a dyadic half-width of ~0.045 it fires for any |r_partial| < 0.255 and is close to unfalsifiable.",
+      "direction_of_the_change": "equivalence becomes HARDER to earn, and at a low rel_B it will usually return underpowered_for_equivalence rather than a verdict. That is the correct behaviour: the null branch is then reported as underpowered, not as a result."
+    },
+    "disattenuation": {
+      "point": "two-sided, r / sqrt(rel_A * rel_B); rel_A is measurable because the K control draws give the activation matrix within-drug variance",
+      "interval": "ci_disattenuated widens the raw interval over rel_B's own bootstrap endpoints, because the multiplier is not a constant: at rel_A 0.90 and rel_B 0.30 CI [0.22, 0.40] it alone spans 1.67x to 2.25x. It is CONDITIONAL on rel_A, which carries no interval by its own declaration.",
+      "status": "r_disattenuated_status distinguishes 'ok', 'inputs_unavailable' and 'correction_exceeded_unity'. A blown-up correction is a loud signal that the reliabilities cannot support the adjustment; it must not read as missing data."
+    },
+    "clustering": "dyadic cluster-robust on the drug pair, from the OLS influence function; df = n_drugs - 1. Cell-line clustering is UNAVAILABLE BY CONSTRUCTION, not 'unavailable at this n' and not 'fewer than 5 usable clusters': this script analyses ONE stratum per invocation, so a run contains exactly ONE cell line and a cluster-robust variance with G = 1 is undefined rather than imprecise. The true count is written to cellline_cluster_ci.n_cell_line_clusters. Cross-cell-line variation is addressed only by running separate strata and reading them under multi_stratum_rule.",
+    "forbidden": [
+      "reusing mechanistic_drug_probe.build_fixed_prompts (it never applies its own template, so each drug gets its own control cell and the geometry becomes a geometry of control cells)",
+      "reading out.hidden_states[L] (final_layer_norm frame mismatch at the last layer)",
+      "permuting distance-matrix entries elementwise",
+      "comparing this number to RESULTS_cluster/stratify_geometry.json test3, which is a different roster, grouping, frame and metric, with no p and no interval"
+    ]
+  },
+  "provenance": {
+    "script": "drug_geometry_rsa.py",
+    "argv": [
+      "drug_geometry_rsa.py",
+      "--eval_dir",
+      "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+      "--panel_file",
+      "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json",
+      "--tier",
+      "tier2_unseen_drugs",
+      "--scope",
+      "cell_line_plate",
+      "--n_drugs",
+      "60",
+      "--min_cells_per_drug",
+      "10",
+      "--n_rel_splits",
+      "25",
+      "--n_boot",
+      "4000",
+      "--seed",
+      "42",
+      "--stratum_label",
+      "AUTO",
+      "--primary_stratum",
+      "AUTO",
+      "--precheck",
+      "--precheck_sweep",
+      "--out",
+      "RESULTS/precheck_scan_AUTO.json"
+    ],
+    "args": {
+      "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+      "model_paths": null,
+      "model_names": null,
+      "tier": "tier2_unseen_drugs",
+      "layers": "all",
+      "positions": "name,instr,last",
+      "arms": "blind",
+      "n_drugs": 60,
+      "n_controls": 16,
+      "min_cells_per_drug": 10,
+      "cell_line": null,
+      "plate": null,
+      "dose_str": null,
+      "headline_layers": "12,16",
+      "stratum_label": "AUTO",
+      "primary_stratum": "AUTO",
+      "n_perm": 4000,
+      "n_perm_triplet": 1000,
+      "n_perm_direct": 1000,
+      "n_rel_splits": 25,
+      "n_boot": 4000,
+      "rel_companions": true,
+      "n_residue_rep": 200,
+      "panel_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json",
+      "scope": "cell_line_plate",
+      "precheck": true,
+      "precheck_sweep": "10,25,50,100",
+      "positive_control": false,
+      "force_through_gate": false,
+      "out": "RESULTS/precheck_scan_AUTO.json",
+      "bf16": false,
+      "seed": 42,
+      "selftest": false
+    },
+    "sources": {
+      "inference": "shared/inference.py",
+      "signed_rank_from_vector": "residual_eval.signed_rank_from_vector"
+    },
+    "panel_file": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json",
+    "panel_P": 946,
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "tier": "tier2_unseen_drugs",
+    "eval_dir": "/data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big",
+    "group": {
+      "cell_line_id": "CVCL_0546",
+      "plate": "plate7"
+    },
+    "group_selection": {
+      "considered": 385,
+      "ranking": [
+        {
+          "group": [
+            "CVCL_0546",
+            "plate7"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0546",
+            "plate10"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0480",
+            "plate7"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0480",
+            "plate10"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0459",
+            "plate7"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0459",
+            "plate10"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0428",
+            "plate7"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        },
+        {
+          "group": [
+            "CVCL_0428",
+            "plate10"
+          ],
+          "n_drugs_over_floor": 12,
+          "n_drugs_total": 12
+        }
+      ],
+      "n_drugs_over_floor": 12
+    },
+    "stratum_label": "AUTO",
+    "primary_stratum": "AUTO",
+    "is_primary_stratum": true
+  },
+  "n_drugs": 12,
+  "drugs": [
+    "Berbamine (dihydrochloride)",
+    "Canagliflozin",
+    "Dapagliflozin ((2S)-1,2-propanediol, hydrate)",
+    "Dexmedetomidine",
+    "Docetaxel (Trihydrate)",
+    "Eplerenone",
+    "Fenofibrate",
+    "Mozavaptan",
+    "Naproxen",
+    "Sivelestat (sodium tetrahydrate)",
+    "Tetracycline (hydrochloride)",
+    "Verteporfin"
+  ],
+  "status": "untestable_n",
+  "note": "only 12 drugs clear the gate in the chosen group; the pre-registered refusal rule forbids computing the coefficient below 25",
+  "mode": "precheck",
+  "precheck_verdict": "REFUSE: untestable_n"
+}

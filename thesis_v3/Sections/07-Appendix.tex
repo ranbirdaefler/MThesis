@@ -1,0 +1,605 @@
+% ===========================================================================
+% 07-Appendix.tex -- the apparatus chapter.
+%
+% main.tex issues \appendix before \include-ing this file, so the \chapter
+% below numbers as A and its sections as A.1 ... A.6. Every \label here is
+% referenced from the body; none may be renamed.
+%
+% \framedecl PRECEDES each \section deliberately, exactly as \beatsection
+% orders them. Declared after the heading it would write the PREVIOUS
+% section's frame into the mark that becomes \firstmark on this section's own
+% opening page -- the bug documented in preamble.tex section 5.
+%
+% NO claim environment in this file, deliberately. Every claim block in the
+% thesis sits in the Investigation chapter. An appendix records apparatus; it
+% reaches no verdict the body has not.
+% ===========================================================================
+
+\chapter{Appendix}
+\label{sec:appendix}
+
+\noindent
+This appendix holds the apparatus the body leans on but does not stop to
+justify. Each section states its verdict in its heading. None is a new result;
+several are defects that changed one.
+
+% ===========================================================================
+\framedecl{R}
+\section{The bespoke estimators recover a planted answer, in both directions}
+\label{sec:app-planted}
+
+\begin{question}
+Three measurements rest on estimators built for the purpose, and a reader has no
+prior reason to trust them. The instrument is a world with a known answer
+planted in it, run twice, with the effect and without. All three recover what
+was planted, and nothing when nothing was.
+\end{question}
+
+\noindent
+The weight falls on the null direction.\gloss{planted world}{A synthetic run
+with the answer built in, no data, no network, one fixed seed.}
+
+% ===========================================================================
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption[Planted-truth recovery]{\textbf{All three estimators recover planted
+answers in both directions.} Every row is a synthetic planted-world check, and
+none of these numbers comes from the evaluation run or is stored in a result
+artifact. The $\Tcoef$ and
+$\kappa$-structure rows reproduce from
+\texttt{variance\_decomposition.py -{}-selftest}, the channel-gate rows from
+\texttt{channel\_gate.py -{}-selftest}. The $\kappa$-structure check must
+separate two worlds, within-line consistency exceeding across-line where every
+cell line bends what it is given ($+1.17$), the excess vanishing where $\kappa$
+is specific to each drug-and-line pairing with no line-level direction
+($-0.00$). The lower row of each pair is the null world, the one that rules out
+an instrument reporting structure wherever it looks.}
+\label{tab:planted}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X r@{}}
+\toprule
+\thead{Planted truth} & \thead{Recovered} \\
+\midrule
+\multicolumn{2}{@{}l}{\itshape transfer coefficient $\Tcoef$} \\
+\quad $\Tcoef = 1.00$ (fully shared) & $0.999$ \\
+\quad $\Tcoef = 0.70$ & $0.703$ \\
+\quad $\Tcoef = 0.40$ & $0.404$ \\
+\addlinespace
+\multicolumn{2}{@{}l}{\itshape channel gate, over 24 worlds} \\
+\quad a channel that genuinely predicts & $+0.397$ (sd $0.029$) \\
+\quad a channel carrying nothing & $-0.016$ (sd $0.091$) \\
+\addlinespace
+\multicolumn{2}{@{}l}{\itshape $\kappa$-structure} \\
+\quad a consistent per-line modulation & $+1.173$ \\
+\quad an idiosyncratic interaction & $-0.002$ \\
+\bottomrule
+\end{tabularx}
+\end{threeparttable}
+\end{table}
+
+\paragraph{What the transfer-coefficient rows do not show} They are a data-free
+unit test whose planted world has cell line as its only unshared axis, so
+recovery shows the estimator inverting its own generative model and no more. The
+canonical run, computed with \texttt{same\_dose\_only=false},
+\texttt{loo\_generic=false} and \texttt{repro\_thr=0.2}, lets cell line, dose,
+well and estimator noise all enter one number. On synthetic data calibrated to
+its gene dimension, cell counts and empirical noise, the estimator returns
+$1.001$, $0.747$ and $0.494$ for planted $\Tcoef$ of $1.00$, $0.75$ and $0.50$.
+
+\begin{scopelimit}[carried into \cref{sec:res-transfer}]
+Neither the planted rows nor the calibrated repeat licenses reading
+$1 - \Tcoef$ as a drug $\times$ cell-line interaction share. The quantity
+measures the fraction not shared across the compared contexts, and in the
+canonical run those contexts differ in more than cell line.
+\end{scopelimit}
+
+\paragraph{Two of these checks changed the instrument} The count-matched null
+originally drew random partners from a pool \emph{excluding} the channel's own
+selections, which depletes the null of the partners the channel chose and
+anti-correlates the two arms. And the useless-channel gap has a standard
+deviation of roughly $0.09$ on one small world, so the original validation,
+asserting that a single draw fell within $0.10$, tested luck; it now averages 24
+worlds. That same variance is why the channel results are gated on a clustered
+interval and not on a point estimate.
+
+\paragraph{A third defect was found after the canonical run} The \emph{retrieval}
+pool, whose partners' mean residual forms the prediction, was every retained
+condition in the cell line except the target's own drug, so a condition held out
+of training could enter the prediction for a held-out drug. That is not what
+\cref{sec:res-scope} says the gate was intended to do. The code now restricts
+the pool to the split's training conditions, logs its size, and never falls back
+silently.
+
+The training subset is
+\needsaudit{2{,}523} of a retained total logged as
+\needsaudit[the split tally sums differently]{4{,}131} conditions, so the old
+pool was around $64\%$ larger than it was entitled to be. What makes it a defect
+is that a held-out condition could enter at all, which holds at any tally. Every
+channel-gate figure in the main text is from the corrected
+re-run\corrmark{The channel gate's retrieval pool, repaired and re-run after the
+canonical run. \cref{sec:res-scope}}; the planted worlds are unaffected. The
+repair moved the channels in no common direction. Target fell, mechanism rose,
+chemistry roughly halved, so the pre-fix figures are not quoted alongside them.
+
+% ===========================================================================
+% PLACEMENT ONLY. The global \section reservation is 7\baselineskip, sized in
+% preamble.tex section 4 for a ONE-LINE heading plus the opener's three-line
+% minimum. This title sets on two lines, so 7 lines cleared the test and then
+% left the heading, the beat strip and exactly two lines of the lede at the foot
+% of the page, with the rest of the lede and the whole VERDICT banner overleaf.
+% 15 lines is the two-line heading plus the entire opener, which is how every
+% other section in this appendix sets.
+\needspace{15\baselineskip}%
+\framedecl{E}
+\section{The absent-gene convention does not change the answer}
+\label{sec:app-convention}
+
+\begin{question}
+A predicted cell sentence lists only the genes it expresses, so some panel genes
+reach the scorer with no rank and the scorer invents one. Does the invented rank
+decide the result? Two conventions were carried side by side. The choice does
+not matter, and it never reaches the metric the canonical results rest on.
+\end{question}
+
+\noindent
+\texttt{worst} assigns absent genes the last rank $G$; \texttt{francesca}
+assigns them a fixed middle rank $G/2$. These are the extremes of the plausible
+range, so a convention that mattered anywhere would show up between them.
+
+It does not. Spike-in $\DEdr$ reads $0.952$ under the first and $0.954$ under
+the second, and no baseline or positive control scored under both moves by more
+than $0.01$. That comparison was a one-off diagnostic, never written to an
+artifact, so it is a check that was run and not a reproducible result.
+
+\paragraph{How far the convention reaches} It is an input to the rank-based
+scores $\DEdr$, $\paneltau$ and \texttt{nir\_rank}, which fills absent genes at
+the last rank like the rest.\seealso{\cref{sec:methods-metrics} for why
+\texttt{nir\_rank} never entered the graded family} It does not reach the $\NIR$
+figures the canonical results rest on, scored by instruments that never receive
+the fill. All body figures use \texttt{worst}.
+
+% ===========================================================================
+\framedecl{E}
+\section{The swap-distance sweep bounds a large effect, and only in one column}
+\label{sec:app-sweep}
+
+\begin{question}
+If the scramble control swaps in a drug that behaves like the real one, the null
+it produces says nothing. The instrument is an earlier, continuous version of
+that control, measuring the scramble gap against swap distance. It bounds a
+large effect; it does not establish a null, and only one of its two columns
+carries that bound.
+\end{question}
+
+\noindent
+None of these numbers is canonical.\gloss{swap distance}{How far the swapped-in
+drug's response lies from that of the drug it replaced.} This is a
+separate, earlier run. Its columns are the single-cell and
+optimal-transport checkpoints, not the residual arm; it was scored on the
+unseen-drug tier of a different evaluation set; and its swap partners were not
+restricted to plate, whereas the canonical run draws within plate. Both
+artifacts, \texttt{scramble\_sweep\_single.json} and
+\texttt{scramble\_sweep\_T2.json}, record \texttt{max\_new\_tokens=1200},
+against the $1400$-token budget of the later optimal-transport result.
+
+% ===========================================================================
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption[Swap-distance sweep]{\textbf{No bin in either model has an interval
+excluding zero in this historical $1200$-token run, and the trend correlations
+are $\approx 0$.} 200 (drug, swap) pairs over 20 cell lines, $n=40$ per bin. The
+single-cell column bounds a large distance effect here. The optimal-transport
+column does not carry into the canonical result, where the same checkpoint
+clears zero at $1400$ tokens under the within-plate stratified test
+(\cref{sec:res-encoding}).}
+\label{tab:sweep}
+\small
+\begin{tabularx}{\linewidth}{@{}%
+  >{\raggedright\arraybackslash}X r r@{}}
+\toprule
+\thead{Bin (swap distance)} & {\thead{single-cell model}} &
+  {\thead{optimal-transport model}} \\
+\midrule
+0, nearest (2.75--4.03) & $-0.046$ & $-0.001$ \\
+1 (4.03--4.60) & $+0.060$ & $+0.031$ \\
+2 (4.60--4.93) & $-0.006$ & $+0.017$ \\
+3 (4.93--5.32) & $-0.004$ & $+0.043$ \\
+4, farthest (5.32--6.25) & $-0.019$ & $-0.005$ \\
+\addlinespace
+trend, corr(distance, $\gap$) & $+0.051$ & $+0.012$ \\
+\bottomrule
+\end{tabularx}
+\end{threeparttable}
+\end{table}
+
+% ===========================================================================
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=21mm, y=1mm, font=\small]
+  % The DOT carries the value, always. Four of the five gaps sit within a few
+  % thousandths of zero, so their labels are lifted to one clear row and tied
+  % back with a leader. Nothing is repositioned that could be misread as a
+  % different number. There are no numeric axis ticks; each strip carries the
+  % one reference line its own quantity has, zero for the gap above and chance
+  % for the $\NIR$ below, and the lower strip is a DIFFERENT QUANTITY, which is
+  % what the divider between the two strips is there to say.
+  \def\ur{180}                     % upper strip, mm per unit of the gap
+  \def\lz{-52}\def\ls{63}          % lower strip, origin and mm per unit
+  \def\lchance{\lz+(0.5-0.326)*\ls}% -41.04mm: $\NIR = 0.50$ on the lower strip
+  \newcommand{\liftedgap}[2]{%
+    \fill[ink] (#1,{#2*\ur}) circle (1.5pt);
+    \draw[rulegrey, line width=0.3pt] (#1,{#2*\ur}) -- (#1+0.08,-14);
+    \node[anchor=west, font=\scriptsize, text=ink] at (#1+0.10,-14) {$#2$};}
+  % The value label carries a white backdrop because the chance rule runs
+  % under this strip: the nearest value, 0.497, sits ON that rule, and a dotted
+  % line through its digits is the one way this label could be misread.
+  \newcommand{\nirdot}[2]{%
+    \fill[quietink] (#1,{\lz+(#2-0.326)*\ls}) circle (1.3pt);
+    \node[anchor=west, font=\scriptsize, text=quietink, fill=white, inner sep=1pt]
+      at (#1+0.06,{\lz+(#2-0.326)*\ls}) {$#2$};}
+
+  % === upper strip, the scramble gap in the single-cell column ==============
+  \node[anchor=west, font=\scriptsize\bfseries, text=accent]
+    at (-0.42,29) {$\gap$, single-cell column};
+  \draw[ink, line width=0.5pt, densely dotted] (-0.42,0) -- (4.40,0);
+  \node[anchor=west, font=\scriptsize\itshape, text=ink] at (4.42,0) {zero};
+
+  % the one bin for which an interval is quoted, drawn as an interval
+  \draw[accent!55, line width=1.6pt] (1,{-0.002*\ur}) -- (1,{0.124*\ur});
+  \fill[accent] (1,{0.060*\ur}) circle (1.6pt);
+  \node[anchor=west, font=\scriptsize, text=accent]
+    at (1.08,{0.060*\ur}) {$+0.060$};
+
+  \liftedgap{0}{-0.046}
+  \liftedgap{2}{-0.006}
+  \liftedgap{3}{-0.004}
+  \liftedgap{4}{-0.019}
+
+  % === the divider IS the argument, two quantities, two scales, one x =======
+  \draw[rulegrey, line width=0.4pt] (-0.42,-20) -- (4.40,-20);
+
+  % === lower strip, the model's own score, which drifts =====================
+  \node[anchor=north west, font=\scriptsize\bfseries, text=quietink]
+    at (-0.42,-23) {the model's own $\NIR$ (expression frame) in the same bins,
+      on its own scale};
+  % The chance line at 0.50 is drawn on EVERY $\NIR$ axis, always
+  % (figs/style_v2.py): omitting it, or implying it through the extent of the
+  % marks, lets a reader infer a scale that does not exist. Three of these five
+  % values sit below it and two above, and nothing else in the drawing says so.
+  % Same dotted ink as the zero rule above, because the two are the same kind of
+  % thing -- each strip's own single reference -- and drawn BEFORE the marks so
+  % the data reads on top of it.
+  \draw[ink, line width=0.5pt, densely dotted]
+    (-0.42,{\lchance}) -- (4.40,{\lchance});
+  \node[anchor=west, font=\scriptsize\itshape, text=ink]
+    at (4.42,{\lchance}) {chance};
+  \nirdot{0}{0.497}
+  \nirdot{1}{0.612}
+  \nirdot{2}{0.523}
+  \nirdot{3}{0.401}
+  \nirdot{4}{0.326}
+
+  % === the one axis the two strips share ====================================
+  \foreach \i/\lab in {0/nearest, 1/{}, 2/{}, 3/{}, 4/farthest}{
+    \node[anchor=north, font=\scriptsize, text=quietink, align=center]
+      at (\i,-58) {\i\\\lab};}
+\end{tikzpicture}
+\caption[Swap distance and the scramble gap]{\textbf{The one borderline value
+sits in an inner bin, and the drift that could have faked a trend is in a
+quantity the gap cancels.} Upper strip, the scramble gap in the single-cell
+column across the five swap-distance bins of \cref{tab:sweep}; the bar marks the
+only bin for which an interval is quoted, \ci{+0.060}{-0.002}{+0.124}. A genuine
+dissimilarity effect would be monotone and peak at the right-hand edge, and the
+one value approaching zero from above is the second bin of five. Lower strip,
+the model's own $\NIR$ in those bins ($0.497$, $0.612$, $0.523$, $0.401$,
+$0.326$), falling overall but not monotonically, because drugs far from
+everything populate the far bins. The strips are different quantities on
+different scales; $\gap$ uses the same drug on both arms, so that drift cancels.
+Neither strip is canonical (\texttt{max\_new\_tokens=1200}, $n=40$ per bin).}
+\label{fig:app-sweep-bins}
+\end{figure}
+
+\paragraph{What the sweep can and cannot support} $n=40$
+per bin gives half-widths of $0.06$--$0.10$ in the single-cell column and
+$0.03$--$0.06$ in the optimal-transport column, so the sweep excludes a large
+effect without establishing a
+null.\seealso{\cref{sec:methods-controls} for the stratified scramble
+that replaced this design} The later budget-matched result withdraws the
+optimal-transport column as evidence of a null, that verdict being
+generation-budget dependent and non-null at $1400$ tokens
+(\cref{sec:res-encoding}).\corrmark{The optimal-transport column of this sweep,
+withdrawn as evidence of a null. \cref{sec:res-encoding}}
+
+\begin{scopelimit}[carried into \cref{sec:res-blind}]
+Only the single-cell column remains a bound from this earlier design, and it is
+a bound and not a null. At this sample size it excludes a large dissimilarity
+effect and leaves a small one open. The optimal-transport column has been
+withdrawn as evidence of a null, so nothing in this section rests on it.
+\end{scopelimit}
+
+% ===========================================================================
+\framedecl{-}
+\section{Undertraining is excluded as a trivial explanation, not as a general one}
+\label{sec:app-training}
+
+\begin{question}
+A negative result invites the objection that the model was simply not trained
+enough, and that objection deserves an answer from the logs. Two instruments
+give one, what the loss was doing while the learning rate was still large, and
+what a much longer schedule does to held-out cross-entropy. Under this schedule,
+longer optimisation does not rescue it.
+\end{question}
+
+% ===========================================================================
+% MOVED HERE from the end of A.4 -- PLACEMENT ONLY. Not one character of the
+% figure, its caption or its numbers was changed; only the point of declaration.
+%
+% It is declared AHEAD of tab:trainconfig deliberately. Both are section-opening
+% material, but the figure has a \cref in this section and the table does not:
+% tab:trainconfig is a lookup cited only from chapters 4 and 5, so it is free to
+% take the later float slot while the figure takes the one nearer its reference.
+%
+% MEASURED, in this order:
+%   declared at the end of A.4 (as it was): float lands p.118, two pages past
+%     its \cref on p.116, and the room it leaves under itself on p.118 fits the
+%     two \Large lines of the A.5 heading and nothing else -- the heading is
+%     stranded at the foot of the page with zero lines below it.
+%   declared next to its \cref but still after the table: float still lands
+%     p.118. The table, declared earlier, holds the only top slot on p.117.
+%   \needspace{10\baselineskip} on the A.5 heading: BYTE-IDENTICAL PDF. It
+%     cannot work from the heading's side -- \needspace tests
+%     \pagegoal-\pagetotal in the main vertical list, before the deferred float
+%     has been contributed to the page, so it reads a full page of room and
+%     passes. The float is the cause, so the float is what moves.
+%   declared here: float lands p.117, one page from its \cref, and the A.5
+%     heading is no longer orphaned. Cost: one page, and p.117 sets the figure
+%     with two lines of text under it.
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+% drawn at 174mm by thesis_v2/figs/training.py; no width= key, so it is placed
+% at scale 1.0 and its type prints at the point sizes it was set in.
+\includegraphics{fig-training}
+\caption[The short-run arms flatten; a longer schedule
+overfits]{\textbf{The canonical short-run arms flatten, while a
+separate longer residual schedule overfits on held-out cross-entropy.}
+(a) De-averaged training loss against fraction of the nominal one-epoch horizon,
+three target constructions, each on \emph{its own} $y$-axis: absolute losses are
+not comparable between arms because their target strings differ, so no shared
+scale is offered. The residual and optimal-transport arms complete their epoch;
+consensus was scheduled for one but terminated by the wall-clock at $61.5\%$,
+where its line stops. Three superseded residual builds are omitted, as is the
+single-cell arm, whose training log was not retained. Every arm runs a cosine
+schedule annealing to $\approx 0$; the shaded band marks $50$--$70\%$ of the
+horizon, where the residual arm's learning rate is still $22$--$52\%$ of its
+post-warmup peak of $10^{-5}$ and its de-averaged loss travels only from $1.859$
+to $1.854$. (b) Epoch-mean losses for the ten-epoch residual schedule (nominal
+horizon $92{,}318$; $92{,}310$ optimizer updates). The ringed point is that
+run's best validation loss, at epoch 1. The dashed line is the canonical
+one-epoch run's validation loss on the same $3{,}600$-example file, $1.8986$,
+which the ten-epoch run does not reach at any epoch. Training loss is above
+validation at epoch 1 and below it at epoch 2, so the crossing falls inside the
+shaded epoch; where inside it is not logged, and no point is drawn for it. Two
+things this figure does not establish: that all possible learning-rate schedules
+are ruled out, and that $\NIR$ worsens with additional epochs --- no long-run
+checkpoint was scored with $\NIR$.}
+\label{fig:training}
+\end{fullwidth}
+\end{figure}
+
+% ===========================================================================
+\begin{table}[htbp]
+\begin{threeparttable}
+\caption[Training configuration]{\textbf{One base checkpoint, one
+hyperparameter set, five arms differing only in target.} Learning rate
+$10^{-5}$, batch size 1, gradient accumulation 16, maximum length 8192, bf16,
+weight decay 0.01, warmup ratio 0.03 throughout. The consensus arm stopped early
+on a flat loss, so it is the $\varepsilon$-ladder's weakest-evidenced endpoint,
+and at the residual arm's generation budget against a neutral partner the
+optimal-transport endpoint is not null either (\cref{sec:res-encoding}); outside
+\cref{tab:epsilon} the ladder's negative rests on the single-cell endpoint
+alone. These five arms (\texttt{single\_cell}, \texttt{consensus},
+\texttt{ot\_T2}, \texttt{residual}, \texttt{residual\_holdout}) are also the
+complete family over which the identity test of \cref{sec:res-mechanism} takes
+its multiplicity correction, five arms by up to seven depths and $26$ measured
+tests, the family behind the $q$-values quoted there. One qualification attaches
+to the residual row. Its step count is the rebuilt target build's, on which the
+canonical behavioural results are scored, while the identity test of that arm
+ran on the earlier target build.}
+\label{tab:trainconfig}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}%
+  >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}X
+  l
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Arm} & \thead{Target} & \thead{Training} & \thead{Note} \\
+\midrule
+single cell & the observed treated cell & 1 epoch & \\
+consensus & group pseudobulk & \textbf{$\approx 60\%$ of an epoch}
+  & tier-1 $\NIR$ unscoreable \\
+optimal transport (T2) & barycentric, $\varepsilon{=}0.5$
+  & 1 epoch, 23{,}842 steps & \\
+residual & signed residual & 1 epoch, 9{,}231 steps
+  & rebuilt build's step count \\
+residual (holdout) & as above, 738 withheld & 1 epoch & \\
+\bottomrule
+\end{tabularx}
+\end{threeparttable}
+\end{table}
+
+\begin{scopelimit}[carried into \cref{sec:res-mechanism}]
+The residual arm's two measurements are not on the same weights. The step count
+recorded above is the rebuilt target build's, which is the build the canonical
+behavioural results are scored on, whereas the identity test of that arm ran on
+the earlier target build. A behavioural result for that arm and an activation
+probe of it therefore come from two different builds, and this qualification
+travels with any statement that pairs them.
+\end{scopelimit}
+
+\paragraph{How panel (a) must be read} Two properties of the one-epoch logs behind
+\cref{fig:training} decide it. The trainer records a
+\emph{cumulative} epoch mean, not an instantaneous loss, and that flattens by
+arithmetic whatever the model is doing, so every series is de-averaged to its
+per-window value before plotting. And the cosine schedule anneals the learning
+rate to $\approx 0$ by the end of the epoch, $2.96 \times 10^{-10}$ at the last
+logged step against a post-warmup peak of $10^{-5}$, so the final third of each
+curve is flat partly because the step size has gone to zero, and is not
+independent evidence of anything.
+
+What is load-bearing is the band between $50\%$ and $70\%$ of the epoch, where
+the learning rate is still $22$--$52\%$ of peak, enough to move the weights, and
+the residual arm's loss has already flattened, travelling only from $1.859$ to
+$1.854$. Its final held-out loss, on a matched validation file of $3{,}600$
+examples, is $1.8986$ against a training loss of $1.8854$.
+
+\paragraph{Panel (b) tests ordinary longer optimisation directly} Both residual
+logs agree on base model and tokenizer,
+training and validation files and counts, seed, effective batch, and peak logged
+learning rate; weight decay and AdamW betas are not logged and are not claimed
+as verified matches (\texttt{training\_adequacy\_}\allowbreak\texttt{long.json}). The ten-epoch run
+has a nominal horizon of $92{,}318$ but executes $92{,}310$ optimizer updates,
+accumulation resetting at every epoch boundary so that each epoch contributes
+$\lfloor147{,}710/16\rfloor=9{,}231$. It is a separate longer schedule, not a
+continuation; changing \texttt{num\_epochs} stretches the cosine schedule across
+all ten epochs.
+
+The result runs the wrong way for the objection. Validation loss is best at
+epoch 1 ($1.9199$), worsens to $2.0559$ and $2.1708$ at epochs 2 and 3, and ends
+at $2.2568$, while training loss falls from $1.9456$ to $1.4485$. The canonical
+one-epoch run remains better on the same validation file ($1.8986$).
+
+\begin{scopelimit}[carried into \cref{sec:limitations}]
+That result does not show that every possible schedule would fail, and no
+long-run checkpoint was scored with $\NIR$, so it says nothing about whether
+$\NIR$ itself worsens with additional epochs. Together with the one-epoch
+traces, it excludes undertraining as a \emph{trivial} explanation, not as a
+general one.
+\end{scopelimit}
+
+% ===========================================================================
+% PLACEMENT ONLY -- MOVED, not edited. This float used to be declared here, at
+% the very end of A.4, some 40 lines after the \cref that introduces it. Two
+% measured consequences, both gone now that it is declared next to its first
+% reference (see the block above \paragraph{Panel (b)}):
+%   1. It could not be placed until the builder was already on p.118, two pages
+%      past the \cref on p.116.
+%   2. Placed at the top of p.118 it left just enough room under itself for the
+%      two \Large lines of the A.5 heading and nothing else, stranding that
+%      heading at the foot of the page. \needspace cannot repair this from the
+%      heading's side: it tests \pagegoal-\pagetotal in the main vertical list,
+%      before the deferred float has been contributed to the page, so it reads a
+%      full page of room and passes. VERIFIED: \needspace{10\baselineskip} on
+%      the A.5 heading produced a byte-identical PDF. The float is the cause and
+%      the float is what has to move.
+% Neither the figure, its caption, nor one number in either was touched.
+
+% ===========================================================================
+\framedecl{-}
+\section{Three identity-test designs failed, and each failure is a constraint on the fourth}
+\label{sec:app-identity}
+
+\begin{question}
+The substitution test the body reports is the fourth design, and the three
+before it each produced a result this thesis once quoted as a finding. The
+instrument here is the algebra of each failure, what the control arm was
+actually doing.
+\end{question}
+
+\noindent
+All three failures below are failures of the control arm, not of the readout.
+\Cref{fig:slab} draws the geometry each of them misses, and its three insets are
+the three designs in the order they are argued here.
+
+\input{figs/slab}
+
+\paragraph{Failed design one, mismatched geometry} The first test overwrote drug
+A's code with drug B's inside a $\leq 10$-dimensional purified subspace, and
+compared the resulting KL against a random vector of identical norm drawn in the
+\emph{full} $2048$-dimensional stream. Roughly $99.5\%$ of the control's
+squared norm then lay where the intervention never reached, including the
+cell-line directions at $\approx 0.6$ variance share. ``The swap moves the
+prediction less than noise'' is what that geometry predicts, whatever the
+readout does.
+
+\paragraph{Failed design two, ablate-then-add} The second drew the control
+inside the subspace, which looked like a repair. The hook ablates
+before adding, so what is delivered is (added $-$ removed), and an uncentred
+class mean shares its global-mean component with the thing removed. The
+substitution arm was then close to a restoration, the control arm a real
+displacement. Simulated with no model present, the control delivers $5.3\times$
+the perturbation in $100\%$ of draws, predicted gap
+$2\langle \mu_B, u\rangle = 9.179$ against an observed $9.162$, with $\mu_B$ the
+injected class mean and $u$ the cell's component in the slab. The retracted
+result was geometry, not biology.\corrmark{The ablate-then-add identity result,
+retracted as an artefact of the hook's own algebra.}
+
+\paragraph{Failed design three, the normaliser} The third injected the
+displacement and scored $\Delta \log P(g_B)$ against a norm-matched random
+direction, and was confounded the opposite way. A random direction inside the
+slab inflates the logsumexp normaliser (measured $+2.75$ nats) where the
+observed class-mean displacement does not, so every target is depressed under
+the control arm whether or not it carries identity. With the scored target
+stripped of all identity information, $36\%$ of the effect still stood.
+Norm-matched is not disruption-matched.
+
+That argument also retires the simplest \emph{injection} test, ``how far did the
+prediction move''. Distance moved is what norm-matching equalises, so the test
+has no power in precisely the world where the readout does read the drug. It
+does not reach the behavioural output-invariance instrument of
+\cref{sec:methods-controls}, which perturbs the prompt and matches no norms;
+that instrument's own limitation, registering whether the generated text moves
+and not whether it moves correctly, is stated where it is used.
+
+\paragraph{Three further guards are engineering, not inference} A
+\emph{drug-proxy screen} refuses any context label that is a near-bijection with
+drug; it caught \texttt{dose\_float} holding a sample identifier in the residual
+builders, a label that would have deleted the drug axis had the builders
+orthogonalised against it. An \emph{injected-norm diagnostic} reports the
+displacement against the cell's centred slab component ($0.69$--$1.40$), so the
+injection is the size of the thing it displaces and a null cannot be blamed on a
+whisper. A \emph{selftest with teeth} runs three planted worlds
+(drug inert, drug read, and drug inert behind a readout sensitive to magnitude
+and not direction) through the headline code path, separates them ($-0.042$,
+$+1.520$, $-0.010$), and failed four times in development, each failure a real
+defect the guard list now covers.
+
+\begin{scopelimit}[carried into \cref{sec:res-mechanism}]
+The third planted world is not a normaliser control. Each planted response is a
+single token, so nothing diverges, and the state-dependent part of the
+normaliser is precisely what the selftest cannot exercise. What separating the
+three worlds licenses is the code path the selftest runs them through.
+\end{scopelimit}
+
+% ===========================================================================
+\framedecl{ER}
+\section{The metric exploit is a property of the metric, not of one baseline}
+\label{sec:app-selftest}
+
+\begin{question}
+A metric audit whose own instrument is untested proves nothing, and the exploit
+it turns on was demonstrated with a single construction. The instrument here is
+a second, independent zero-information baseline put through the same framework.
+It saturates the standard metric too.
+\end{question}
+
+\noindent
+The self-test does the deterministic things first (a perfect prediction reaches
+the metric's maximum, a zero shift and a flat truth return no score), then the
+thing that matters. It asserts the exploit under a \emph{second, independent}
+zero-information baseline, where a leave-one-out mean scores $\DEdr = 1.000$
+while $\NIR$ refuses to place it above chance. The coded assertion is
+$\NIR \leq 0.6$; the recorded value is $0.000$.
+
+\paragraph{What that $0.000$ is not} It is not the metric's chance value,
+$0.500$ (\cref{sec:methods-metrics}), which is what the generic arm scores in
+\cref{tab:lookup} and \cref{tab:allarms}. Nor is it the untied degeneracy that
+section describes, since the self-test uses the same half-tie convention as
+everything else. It is a property of this construction. The mean of the five
+other drugs resembles those five more closely than the held-out one, so it loses
+every comparison.
+
+Two unrelated constructions saturate the standard metric, and the discrimination
+metric places neither above chance. One would leave the standard metric merely
+unlucky; two make the exploit a property of the metric.
