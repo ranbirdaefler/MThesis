@@ -1,0 +1,73 @@
+{
+  "_source": "RESULTS_cluster/re_v3.json",
+  "_frame": "residual-frame NIR; comparison set is other drugs in the same cell line",
+  "n_common_support": 1192,
+  "splits_on_support": {
+    "train": 299,
+    "unseen_combo": 893,
+    "unseen_drug": 0
+  },
+  "unseen_drug_note": "no training lookup exists for a held-out drug, so this split contributes no points",
+  "n_cell_lines": 42,
+  "pooled_on_support": {
+    "model": 0.5494189992201444,
+    "within_well_split_half_reference": 0.8567055782757029,
+    "drug_lookup": 0.9125309094775091,
+    "drug_lookup_1": 0.8217278530807268
+  },
+  "panels": {
+    "drug_lookup": {
+      "paired_mean": -0.36311191025736456,
+      "ci_two_way_clustered_cellline_well": [
+        -0.39822124909816464,
+        -0.32800257141656447
+      ],
+      "ci_one_way_not_drawn": [
+        -0.37727017114169875,
+        -0.3488971697328248
+      ],
+      "n": 1192,
+      "n_cell_lines": 42,
+      "two_way_note": "42L/171W:two_way:t41",
+      "model_wins": 85,
+      "model_wins_fraction": 0.07130872483221476,
+      "ties_counted_as_not_a_win": 23,
+      "wins_by_split": {
+        "train": 2,
+        "unseen_combo": 83
+      },
+      "baseline_mean_on_support": 0.9125309094775091,
+      "histogram_bin_width": 0.05,
+      "histogram_tallest_bin_count": 100
+    },
+    "drug_lookup_1": {
+      "paired_mean": -0.2723088538605824,
+      "ci_two_way_clustered_cellline_well": [
+        -0.30737129046764955,
+        -0.23724641725351525
+      ],
+      "ci_one_way_not_drawn": [
+        -0.28624630799585477,
+        -0.25734609998901997
+      ],
+      "n": 1192,
+      "n_cell_lines": 42,
+      "two_way_note": "42L/171W:two_way:t41",
+      "model_wins": 214,
+      "model_wins_fraction": 0.17953020134228187,
+      "ties_counted_as_not_a_win": 28,
+      "wins_by_split": {
+        "train": 35,
+        "unseen_combo": 179
+      },
+      "baseline_mean_on_support": 0.8217278530807268,
+      "histogram_bin_width": 0.05,
+      "histogram_tallest_bin_count": 106
+    }
+  },
+  "_not_drawn": {
+    "drug_lookup_oracle": "excluded: an oracle, not a claim the thesis makes",
+    "one_way_intervals": "stored above as ci_one_way_not_drawn; the thesis quotes the two-way clustered interval and only that is drawn",
+    "expression_frame": "no expression-frame quantity appears in this figure"
+  }
+}

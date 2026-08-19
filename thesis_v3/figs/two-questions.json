@@ -1,0 +1,97 @@
+{
+  "figure_id": "two-questions",
+  "label": "fig:two-questions",
+  "source": "thesis_v2/figs/two-questions.tex",
+  "kind": "tikz",
+  "data_source": "none -- schematic. No plotted value comes from data; no axis carries a value. Nothing here is checkable against RESULTS_cluster because nothing here is a measurement.",
+  "action": "rework of the inline tikzpicture previously at thesis_v2/Sections/02-Background.tex:148-205",
+
+  "drawn_geometry_cm": {
+    "comment": "TikZ user units, x=1cm y=1cm. Identical to the v1 figure -- nothing in this block changed.",
+    "points": {
+      "Ta": [2.93, 3.13],
+      "Tb": [3.90, 2.31],
+      "Tc": [2.04, 2.08],
+      "Td": [3.26, 3.74],
+      "P":  [3.03, 2.69]
+    },
+    "points_note": "Defined once in \\cloudpts and instantiated in both scopes. This is what makes the caption's claim 'Point positions are identical in both panels' structurally true rather than merely checked.",
+    "panel_ellipse": {"center": [3.0, 2.75], "rx": 1.42, "ry": 1.20},
+    "panel_divider_rule": {"x": 6.20, "y0": 0.82, "y1": 5.20, "width_pt": 0.4},
+    "right_panel_xshift_cm": 6.4,
+    "marker_radii_pt": {"truth_and_rivals": 2.0, "prediction_P": 2.2},
+    "rule_widths_pt": {"accent_P_to_Ta": 0.9, "dashed_P_to_rival": 0.45, "hollow_rival_circle": 0.6, "divider": 0.4}
+  },
+
+  "the_one_change": {
+    "what": "Right panel only: the $T$ node label displaced 2pt perpendicular to the P--Ta segment, away from it.",
+    "segment": {"from_P": [3.03, 2.69], "to_Ta": [2.93, 3.13]},
+    "segment_delta": [-0.10, 0.44],
+    "segment_length_cm": 0.4512205,
+    "unit_along_P_to_Ta": [-0.2216233, 0.9751425],
+    "unit_normal_used": [0.9751425, 0.2216233],
+    "normal_sign_justification": "The old offset (0.10,0.03) has normal component +0.10416 cm, so the label already sat on the +n side; +n is therefore 'away from the segment'.",
+    "displacement_pt_TeX": 2.0,
+    "displacement_cm": [0.06854456, 0.01557828],
+    "label_offset_from_Ta_cm": {
+      "left_panel_unchanged": [0.10, 0.03],
+      "right_panel_old": [0.10, 0.03],
+      "right_panel_new": [0.16854, 0.04558]
+    },
+    "P_label_offset_from_P_cm_both_panels_unchanged": [-0.06, -0.04]
+  },
+
+  "verified_in_built_pdf": {
+    "pdf": "thesis_v2/main.pdf",
+    "figure_number": "2.1",
+    "page_index_0based": 14,
+    "units": "PostScript pt (72/in), as stored in the PDF",
+    "label_origins": {
+      "left_T":  [170.99, 481.67],
+      "left_P":  [155.75, 510.05],
+      "right_T": [354.35, 481.23],
+      "right_P": [337.16, 510.05]
+    },
+    "T_minus_P_left":  [15.24, -28.38],
+    "T_minus_P_right": [17.19, -28.82],
+    "measured_displacement_right_vs_left": [1.95, 0.44],
+    "measured_displacement_magnitude_pspt": 1.999,
+    "measured_displacement_magnitude_TeXpt": 2.007,
+    "intended_TeXpt": 2.0,
+    "point_cloud_correspondence": {
+      "method": "centres of the five filled/hollow markers in each panel, read from the PDF drawing operators, paired by y",
+      "dx_pt_each_pair": [181.420, 181.419, 181.419, 181.420, 181.420],
+      "dy_pt_each_pair": [0.0, 0.0, 0.0, 0.0, 0.0],
+      "expected_dx_pt": 181.417,
+      "conclusion": "All five points correspond exactly under the 6.4cm panel shift. The caption's 'Point positions are identical in both panels' holds in the rendered PDF."
+    }
+  },
+
+  "collision_measurement": {
+    "purpose": "Show that the change does what it was asked to do.",
+    "method": "Two renders at 1600 dpi of the same clip, one with the right-panel $T$ node and one with it suppressed, registered on the $P$ label. Glyph ink = pixels darkened only by the glyph; other ink = pixels already inked without it. Minimum pixel distance between the two masks.",
+    "colliding_mark": "the quietink densely-dashed P--Td rival segment (line width 0.45pt), NOT the accent P--Ta segment",
+    "min_separation_pspt": {
+      "at_50pct_ink_coverage": {"before": 0.000, "after": 1.591},
+      "at_solid_core":         {"before": 0.045, "after": 1.636},
+      "at_any_ink_incl_antialias": {"before": 0.000, "after": 0.000, "note": "This threshold counts single-bit antialiasing fringe and is too permissive to mean anything at 1600 dpi; recorded only so the sweep is complete."}
+    },
+    "conclusion": "Before, the dashed rule overlapped the glyph outright. After, roughly 1.6pt of clear white separates them."
+  },
+
+  "size": {
+    "drawn_width_TeXpt": 346.74129,
+    "drawn_width_mm": 121.87,
+    "drawn_height_TeXpt": 149.17392,
+    "drawn_depth_TeXpt": 0.0,
+    "measure_textwidth_TeXpt": 404.02913,
+    "measure_textwidth_mm": 142.0,
+    "measured_by": "\\sbox{\\twoqbox}{\\input{figs/two-questions.tex}} then \\the\\wd\\twoqbox",
+    "rescaled": false,
+    "note": "The brief stated 'Drawn width is 402.9pt against a 404.0pt measure'. The measure is right (404.02913pt = 142.0mm) but the drawn width is 346.74pt = 121.9mm, not 402.9pt: the figure under-fills the block by about 20mm. Nothing was rescaled -- the brief also said not to -- and this is reported, not acted on."
+  },
+
+  "banned_term_check": {"noise ceiling": "absent from figure, labels and caption"},
+  "caption": "unchanged",
+  "claims_hedges_conclusions": "unchanged"
+}

@@ -1,0 +1,778 @@
+{
+  "figure": "comparators",
+  "label": "fig:comparators",
+  "file": "thesis_v2/figs/comparators.tex",
+  "kind": "tikz",
+  "version": "v5, 2026-08-19",
+  "action": "rework of the inline tikzpicture at thesis_v2/Sections/04b-representation.tex:80-184 (v1 -> v2), then the v3 rebuild, then the v4 repair pass, then the v5 verification pass, all recorded below",
+  "width_measured": {
+    "v5": {
+      "measured_on": "figs/_pv/_pv_comparators.pdf, page 1, re-rendered 2026-08-19. Text spans, stroke widths, dash arrays and mark radii read out of the PDF's own path and text lists; the content bounding box rasterised at 200 dpi as pixels darker than 230 grey.",
+      "content_bbox_pt": 489.63,
+      "content_bbox_mm": 172.72,
+      "height_pt": 333.35,
+      "height_mm": 117.6,
+      "height_cap_mm": 118.0,
+      "fullwidth_available_mm": 174.0,
+      "ink_pct_at_200dpi": 5.84,
+      "ink_ceiling_pct": 6.0,
+      "chars_total": 1000,
+      "chars_per_100mm2": 4.92,
+      "chars_ceiling_per_100mm2": 5.0,
+      "axis_rule_span_pt": "198.87 to 541.86, identical for all four rows to 0.00pt; the first and last DRAWN tick of every row sits on those two endpoints",
+      "type_sizes_above_7pt": "TWO. 9.96pt (300 chars) and 7.97pt (697); the 7.57pt run of 3 chars is the subscript of $\\gap$ and is exempt. Unchanged from v4.",
+      "faces": "TeXGyrePagella-Regular 975, URWPalladioL-Roma 13, TeXGyrePagella-Italic 6, PazoMath-Italic 2, PazoMath 2, URWPalladioL-Ital 2, total 1000. Unchanged from v4.",
+      "italic_share_pct": 1.0,
+      "italic_share_note": "10 characters of 1000 are set in an italic-named face. Five are the emphasised word 'which' in panel head (c); the other five are the math variables $\\alpha$ (row c scope) and $n$ (row d scope), which are italic by mathematical convention and not by voice. The v4 block's 0.80 counted TeXGyrePagella-Italic and PazoMath-Italic and omitted URWPalladioL-Ital; it is corrected here rather than in place. Either figure is far inside the 5% ceiling and no italic sentence exists on the drawing.",
+      "stroke_weights": "0.30pt x 26 paths, 0.40pt x 4, 0.50pt x 4, 0.80pt x 1, 0.90pt x 2, 1.00pt x 6. The 26 at 0.30pt are 24 rulegrey tick marks (5 + 5 + 8 + 6) and TWO accent mark-leader paths in row A, one of which is the elbow drawn as two segments in a single path. See design_values_held.stroke_weights_v5_remeasured; the v4 wording implied 28.",
+      "row_rhythm_measured": "ANCHOR pitch, which is what the coordinates set: 0.95 / 0.95 / 1.03cm. INK gap, lowest text box of one row to highest of the next, measured on this render: 11.43 / 11.43 / 12.39pt = 0.40 / 0.40 / 0.44cm; the third reads 13.70pt / 0.48cm if row C's outlying PazoMath alpha box, which hangs 1.31pt below the rest of that line, is excluded. The v4 block's 0.44 / 0.44 / 0.52 were computed from the anchors, not measured, and are superseded here rather than in place. The substance is unchanged: two equal gaps and a wider one, the widest band falling between rows C and D.",
+      "labelled_rule_geometry_v5": "All five labelled rules now top out 0.04cm below their own label's baseline: chance (axis to axis+0.28, label axis+0.32), row B's 1x rule (-2.14 to -1.86, label -1.82), row C's zero (-5.27 to -4.00, label -3.96), row C's margin (-5.66 to -4.00, label -3.96), row D's zero (-8.90 to -7.60, label -7.56). In v4 row C's zero stopped at -4.16, a 0.20cm gap, so on the v4 render its top sat at y = 196.53pt while the margin rule on the SAME label baseline topped at 191.99pt. Repaired in v5; see rows[2].comparators zero entry.",
+      "scaled": false,
+      "note": "1cm of tikz coordinate = 1cm on the page. Nothing is resized. Width, height, ink, character count, type sizes, faces, mark radii and every stroke count are unchanged from v4: the only v5 change is one rule endpoint, and the rule's row was already taller than the rule."
+    },
+    "v4": {
+      "measured_on": "figs/_pv/_pv_comparators.pdf, page 1, rasterised at 200 dpi, content bounding box = pixels darker than 230 grey",
+      "content_bbox_pt": 489.6,
+      "content_bbox_mm": 172.72,
+      "height_pt": 333.36,
+      "height_mm": 117.6,
+      "height_cap_mm": 118.0,
+      "fullwidth_available_mm": 174.0,
+      "fullwidth_available_pt": 493.23,
+      "axis_rule_span_pt": "198.87 to 541.86, identical for all four rows to 0.00pt; the first and last DRAWN tick of every row sits on those two endpoints",
+      "axis_rule_length_cm": 12.1,
+      "ink_pct_at_200dpi": 5.85,
+      "ink_ceiling_pct": 6.0,
+      "chars_per_100mm2": 4.92,
+      "chars_ceiling_per_100mm2": 5.0,
+      "chars_total": 1000,
+      "type_sizes_above_7pt": "TWO, and no third. 9.96pt (300 chars: the four axis-label line-ones and the four panel heads) and 7.97pt (697: every tick numeral, direct label, rule label, scope line and the foot block). The 7.57pt run of 3 chars is the subscript of $\\gap$ and is exempt. v3's four CMSY10 glyphs at 8.30pt are gone: the multiplication sign is now \\texttimes and the three negative-tick minus signs are \\textminus, both of which set in the text font at the surrounding size.",
+      "faces": "TeXGyrePagella-Regular 975, URWPalladioL-Roma 13 (mathpazo's roman, the digits inside $1/12$, $\\alpha$ = 0.5, $n$ = 204 and $95\\%$), TeXGyrePagella-Italic 6 and PazoMath-Italic 2 (the word 'which' in head (c), and $\\alpha$), PazoMath 2, URWPalladioL-Ital 2. No sans, no CMSY, no typewriter.",
+      "italic_share_pct": 0.8,
+      "row_rhythm_cm": "gaps between one row's last ink and the next row's first: 0.44 (a to b), 0.44 (b to c), 0.52 (c to d). v3 measured 0.42 / 0.54 / 0.50. The widest band is now between the two rows a reader must not read across.",
+      "scaled": false,
+      "note": "1cm of tikz coordinate = 1cm on the page. Nothing is resized. Height is unchanged from v3 to the hundredth of a millimetre: rows B and C moved by +0.04 and -0.04cm and row D and the foot did not move at all."
+    },
+    "v3": {
+      "measured_on": "figs/_pv/_pv_comparators.pdf, page 1, rasterised at 200 dpi, content bounding box = pixels darker than 230 grey",
+      "content_bbox_pt": 489.6,
+      "content_bbox_mm": 172.72,
+      "height_pt": 333.36,
+      "height_mm": 117.6,
+      "height_cap_mm": 118.0,
+      "fullwidth_available_mm": 174.0,
+      "fullwidth_available_pt": 493.23,
+      "axis_rule_span_pt": "198.87 to 541.86, identical for all four rows to 0.00pt",
+      "axis_rule_length_cm": 12.1,
+      "ink_pct_at_200dpi": 5.79,
+      "ink_ceiling_pct": 6.0,
+      "chars_per_100mm2": 4.79,
+      "chars_ceiling_per_100mm2": 5.0,
+      "SUPERSEDED_BY_V4": "Re-measured on the v3 render before the v4 pass began: ink 5.78%, 978 chars, 4.81 per 100mm^2, width 172.72mm, height 117.60mm. The 4.79 recorded here was a hundredth low. Type: 9.96pt (300), 7.97pt (671), plus four CMSY10 glyphs at 8.30pt and a 7.57pt subscript -- i.e. THREE sizes above 7pt, not two, which the note below wrongly discounted as 'not a third type size'. v4 removes them.",
+      "type_sizes_above_7pt": "9.96pt (299 chars: four axis-label line-ones and four panel heads) and 7.97pt (666 chars: every tick numeral, direct label, scope line and the foot). The only other glyphs above 7pt are four CMSY10 minus signs reported at 8.30pt, which are the math signs of the negative tick labels in rows C and D, not a third type size; the 7.57pt run of 3 chars is the subscript of $\\gap$.",
+      "italic_share_pct": 1.03,
+      "scaled": false,
+      "note": "1cm of tikz coordinate = 1cm on the page. Nothing is resized."
+    },
+    "v2_superseded": {
+      "graphics_bbox_pt": 443.63,
+      "graphics_bbox_mm": 156.5,
+      "height_pt": 227.34,
+      "height_mm": 80.2,
+      "note": "STALE AND SUPERSEDED. The v2 height recorded here (227.34pt / 80.2mm) never matched the v2 render, which measured 252.50pt / 88.5mm; the v2 content width measured 160.3mm, not the 156.5mm recorded. Both are left in place because the v1->v2 audit trail refers to them, and both are corrected by the v3 block above."
+    }
+  },
+  "what_changed": {
+    "v2_claim_now_false": "v2's ledger closed with 'No mark moved, no scale changed, no value changed, caption unchanged.' That was true of v2 and is FALSE of v3, and is superseded here rather than deleted. In v3 rows C and D are re-domained, so every mark in those two rows MOVES ON THE PAGE, and the rule length changes for all four rows. NO VALUE CHANGES: every mark still sits where its own row's map puts the value stored in its source JSON, both the old and the new maps are recorded below, and the caption is replaced (the proposed replacement is in figs/_PENDING_CAPTIONS.tex, keyed by \\label).",
+    "v1_to_v2": [
+      "Row B: seven marks, one labelled; v2 named every mark by its layer. The three at 3.6/3.8/4.2 (layers 16, 12, 9) are 1.1mm and 2.2mm apart and were braced and named as an ordered set rather than given three converging leaders.",
+      "Row A: 'slab projected out' was given a leader back to its 0.121 mark, which it previously stood 0.4cm to the right of, nearer the shuffled-label rule than its own point.",
+      "Row C: 'single-cell arm' marker changed from a hollow ring to a solid fill; the dotted zero rule interrupted across the marker's height; label started 0.30cm clear of the marker edge with a leader through the interruption.",
+      "Rows C and D: label gap after an interval bar raised from 0.13cm to 0.30cm.",
+      "Row spacing opened to pay for the added labels."
+    ],
+    "v2_to_v3": [
+      "DELETED from the drawing: the 0.121 'slab projected out' mark, its leader and its label (row A). See removed_from_drawing below. It was the only mark on the figure with no role in its own row: it is the constant output of section 4.4's removal gate, byte-identical at all seven layers, drawn 4.0mm from row A's own comparator and carrying the only leader on the figure. It is NOT replaced.",
+      "DELETED from the drawing: the seven accent layer numerals of row B and the brace over 3.6/3.8/4.2, with the stub sub-line 'marks named by layer' that existed only to disambiguate them. Numerals set above a value axis in the same size and glyph class as the tick numerals below it are read as values. The layer-to-ratio map is drawn against a true numeric layer axis in fig:mechanism panel (b) and printed in tab:workspace; it is re-homed in the caption.",
+      "DELETED from the drawing: the three row dividers (rulegrey!55, 0.30pt, spanning 100% of the drawn width). With the axis-label blocks added, each divider's nearest neighbour above became a line of definitional prose rather than a panel. Rows are now separated by whitespace, as fig:mechanism separates its panels.",
+      "DELETED from the drawing: the seven quietink sub-lines of the left stub. Their content is now in the axis-label blocks, in axis-label position.",
+      "ADDED: an axis-label block under every one of the four rules, left-aligned to the rule's left end, directly under the tick numerals. Line one is \\footnotesize roman ink and names the measured quantity and its unit; line two is \\scriptsize quietink and gives scope only. This is the direct answer to the supervisor's first complaint.",
+      "ADDED: the row letters (a)-(d) on the panel heads, so the caption can address a row.",
+      "ADDED: one interval declaration at the foot, naming the bootstrap construction of rows C and D separately and stating that rows A and B return none.",
+      "ADDED: the layer on both surviving row-A marks ('raw probe, layer 9', 'context removed, layer 16'), and a glyph difference between them (open disc / filled disc, which is fig:mechanism (a)'s own encoding of these two series).",
+      "ADDED: the discount on row D's consensus arm ('consensus, stopped mid-epoch'), and a name for row D's comparator ('zero: no scramble gap').",
+      "RESTYLED: row A's chance rule and row C's pre-registered margin from ink 0.50pt densely dotted to BLACK SOLID 0.90pt with \\scriptsize roman black labels, which is the stroke fig:mechanism gives chance and fig:family gives this same 10% margin. Nothing else on the figure is black solid 0.90pt.",
+      "RESTYLED: the dotted register is now quietink 0.50pt and carries only coordinates that decide nothing -- row B's 1x rule, row C's two-piece zero rule, row D's zero rule. All four, and both thresholds, now start at the tick depth (-0.10) instead of running down into the numeral lane.",
+      "RENAMED: 'shuffled labels' -> 'chance, $1/12$'; 'raw probe, peak' -> 'raw probe, layer 9'; 'context removed' -> 'context removed, layer 16'; 'residual arm, anchor seed' / 'second seed' / 'third seed' -> tab:identity's own 'residual, seed 42 / 43 / 45'; 'single-cell arm, median over its depths' -> 'single-cell arm'; 'optimal-transport barycentric' -> tab:epsilon's 'OT barycentric'; 'matched-dimension random subspace' -> see departure_recorded below.",
+      "RE-DOMAINED: rows C and D, so the first and last drawn tick of every row sits exactly on the rule's endpoints.",
+      "WIDENED: rule length 10.5cm -> 12.10cm, drawn width 160.3mm -> 172.72mm, declared once as \\RL so the four rules cannot drift apart.",
+      "MOVED: the panel head from the middle of the row to the top text line of the row, so reading order is head, marks, rule, numerals, quantity, scope in all four rows.",
+      "REPAIRED IN THIS LEDGER, no change to the drawing: row B's machine-precision KL values and row A's 0.883 source value. See ledger_repairs below."
+    ],
+    "v3_to_v4": [
+      "REPAIRED, and this one is a correctness defect: THE FOOT BLOCK'S CLAIM ABOUT ROW B WAS FALSE. v3 read 'Intervals: (a) and (b) return none.' Row B's instrument does return a dispersion -- workspace_probe.json stores every KL term as [mean, se, n], e.g. layers.9.kl.pure_drug = [0.41758305778106053, 0.005008675034860955, 60] -- a normal-approximation standard error, which this document declines to draw because it is not its interval convention (95% bootstrap clustered over cell lines). That is the sentence hook.json, purify.json and fig-mechanism.json all use, and rows[1].interval_convention in THIS ledger already had it right; only the drawing was wrong. Row A does store a bare float (layers.<L>.drug_decode, no dispersion of any kind), so the two rows were lumped under a claim true of only one. The block now states them separately.",
+      "REPAIRED: THE FOOT BLOCK PRINTED ONE PAIR-CLUSTER COUNT FOR THREE BARS AND IT WAS WRONG FOR TWO OF THEM. '58 ordered pair clusters' is the anchor seed's count. Re-read 2026-08-18: probe_arm_residual.json :: layers.12.swap.n_pair_clusters = 58 with n = 60; probe_rep_residual_s43.json :: 193 with n = 240; probe_rep_residual_s45.json :: 199 with n = 240. All three carry n_drug_clusters = 24. The block now names the CONSTRUCTION -- 'two-sided over ordered pair clusters' -- which is what the interval rule asks of it; the three counts are in rows[2].interval_convention and in the proposed caption.",
+      "REPAIRED: THE FOOT BLOCK DID NOT COVER ROW C'S FOURTH MARK. Row C has four marks, three with bars and one without, and the declaration named a single construction for the row. It now ends '...; the median none.'",
+      "REPAIRED: ROW C'S SCOPE LINE WAS FALSE OF ONE OF THE FOUR MARKS IT SAT UNDER. 'residual arm, layer 12, alpha = 0.5; one mark per seed' is true of three marks and false of the fourth: the single-cell mark is a different arm, has no layer-12 value at all, and is a median over the six depths that were measured. It now reads 'residual seeds at layer 12, $\\alpha$ = 0.5; single-cell median, six depths', which covers all four and matches tab:identity's own row name, 'single-cell arm, six depths'.",
+      "DELETED from the drawing: row C's single-cell LEADER. It was quietink, 0.30pt, horizontal, at the mark's own y and in the mark's own colour, 0.24cm long, sitting 0.40cm below three 1.00pt interval bars of identical geometry and colour, and it crossed the zero rule -- so it read as a one-sided interval that no source stores. See removed_from_drawing. The label instead moves from 0.35cm to 0.22cm from the mark's centre, i.e. from 0.30cm to 0.17cm (4.8pt) from its edge, inside the 3mm threshold at which a label needs a leader at all. The zero rule's interruption across the marker's height, which v2 introduced and v3 kept, now also holds the label's gap, so nothing lies between mark and label.",
+      "REPAIRED: FIVE VERTICAL RULES RAN DOWN INTO THE TICK LANE. Every tick is 0.30pt rulegrey from the axis rule to axis-0.10. In v3 the chance rule, row B's 1x rule, row C's zero and margin rules and row D's zero rule all began at -0.10 too, so the margin rule printed BLACK at 0.90pt over the 0.10 tick of a seven-tick grey ladder, both zero rules printed their '0' tick DOTTED while every other tick in the same ladder printed solid, and chance and the 1x rule each added an unnumbered sixth downstroke to a five-tick ladder. All five now stop at the axis rule. Verified on the render: the only strokes below any axis rule are the 0.30pt rulegrey ticks.",
+      "REPAIRED: ROW A'S TWO LABELS COULD NOT BE RESOLVED TO THEIR MARKS. On the v3 render the open disc sat at x = 480.5pt, inside the 451.9-541.7pt span of the label naming the OTHER mark; 'raw probe, layer 9' sat 15mm left of its own mark and reached it by a 5-degree diagonal that ran beneath the first 27pt of that other label; and both leaders stopped 1.15pt short of the discs. Two labels 63pt and 90pt wide cannot both sit beside marks 21.3pt apart on the one baseline the label rule requires. So the LAYER MOVES OFF THE MARK LABEL AND INTO THE AXIS BLOCK, which is where fig:hook and fig:materiality already disclose theirs. See marks[*].label_v3_superseded in rows[0].",
+      "REPAIRED: ROW B'S SEVEN MARKS WERE PLOTTED AT THEIR ONE-DECIMAL ROUNDINGS. With the layer numerals deleted in v3, position became the only carrier of these seven numbers. The marks now sit at the source ratios; see rows[1].marks[*].drawn_at_cm and drawn_at_cm_v3_superseded.",
+      "ADDED: 'seven layers' to row B's scope line, so a reader who sees the two leftmost marks nearly touch can still recover the count the row claims.",
+      "ADDED: a label on row C's zero rule, 'zero: no identity effect'. Row D's graphically identical zero rule was labelled and this one was not, and zero does more work in C: it is the null the three interval bars are read against. See rows[2].comparators[0].",
+      "SHORTENED: row C's three seed labels from 'residual, seed 42 / 43 / 45' to 'seed 42 / 43 / 45'. The arm is named once, in axis-label position, by the scope line that now opens 'residual seeds at layer 12' -- the same rule under which row B's 1x rule carries its coordinate and not its name. It also widens the visible difference between the three seed marks and the fourth, which is a different arm. tab:identity's full strings are here and in the caption.",
+      "SHORTENED: row D's scope line, which stopped repeating the '40 cell lines' the foot block prints; and row A's, whose 'last prompt position' is caption material.",
+      "RESTYLED: $1\\times$ -> 1\\texttimes{} and the three negative tick labels $-0.02$ / $-0.04$ -> \\textminus0.02 / \\textminus0.04. These four glyphs were the figure's only CMSY10 and printed at a third type size, 8.30pt, inside the tick lane. \\textminus is the text font's own TS1 minus, so the negative-tick idiom is kept verbatim in substance -- a real minus, not the ASCII hyphen \\foreach would print -- while the foreign face goes.",
+      "MOVED: row B's rule from y = -2.14 (was -2.10) and row C's from -5.66 (was -5.70), which evens the three inter-row gaps to 0.44 / 0.44 / 0.52cm and gives the widest band to the C/D pair, the two rows that share a mark vocabulary, a tick step and five of six tick numerals and must not be read across. Every mark, tick, rule and label in rows B and C moves with its own axis rule; NO VALUE MOVES RELATIVE TO ITS OWN AXIS. Row D and the foot block do not move and the drawn height is unchanged.",
+      "LOWERCASED: the four axis-label line-ones, 'Probe accuracy' -> 'probe accuracy' and the other three likewise. See case_note_superseded."
+    ],
+    "v4_to_v5": [
+      "A VERIFICATION PASS. All twenty-one confirmed defects put to the v4 pass were re-checked ON THE v5 RENDER rather than on the source, and all twenty-one hold repaired; the seven overrules were re-argued and all seven stand. NO VALUE CHANGED, NO MARK MOVED.",
+      "REPAIRED, and no refuter raised it: ROW C'S ZERO RULE WAS THE ONLY LABELLED RULE ON THE FIGURE THAT DID NOT REACH ITS OWN LABEL. Chance, row B's 1x rule, row C's pre-registered margin and row D's zero all top out 0.04cm below their label's baseline; row C's zero stopped 0.20cm below, five times every other, and it does so on the one rule that three interval bars are read against. Measured on the v4 render: margin top y = 191.99pt touching a label box bottom at 192.45, against zero top y = 196.53pt under a label on the SAME baseline. The endpoint moves from -4.16 to -4.00cm and both rules now top at 191.99pt. It crosses nothing -- the nearest mark, seed 42's bar, begins at +0.0063, 15.4pt to the right of zero on this row's map -- and the row's topmost ink is its label, not its rule, so the drawn height is unchanged at 117.60mm.",
+      "SUPERSEDED, NOT REWRITTEN: the v4 stroke count. 'v4 measures 26 ticks and two mark leaders' reads as 28 objects; it is 24 ticks and two leader paths, 26 in all. See design_values_held.stroke_weights_v5_remeasured.",
+      "SUPERSEDED, NOT REWRITTEN: the v4 row rhythm '0.44 / 0.44 / 0.52cm'. Those are computed from the row anchors. The anchor pitch is 0.95 / 0.95 / 1.03cm; the measured ink gap is 0.40 / 0.40 / 0.44cm. The substance -- two equal gaps and a wider one, the widest between rows C and D -- is unaffected. See width_measured.v5.row_rhythm_measured.",
+      "SUPERSEDED, NOT REWRITTEN: width_measured.v4.italic_share_pct = 0.80, which omitted URWPalladioL-Ital from the count. It is 1.0%: ten characters of a thousand, five of them the emphasised word 'which' and five the math variables alpha and n. See width_measured.v5.",
+      "SUPERSEDED, NOT REWRITTEN: verification.banned_term_check, which still echoed v3's '$1\\times$, by construction' and still called row C's zero unlabelled. Both were changed in v4. See verification.banned_term_check_v5_corrected.",
+      "RECORDED FOR THE FIRST TIME IN THE .tex HEADER: the v4 lowercasing of the four axis-label line-ones, which this ledger had recorded per row and the header had not, and which falsifies the v3 header's quotation of 'Ablation cost, in multiples of the matched-dimension random slab'. No string on the drawing changes in v5; the header now says what v4 did."
+    ],
+    "v5_overruled": {
+      "why_recorded": "Two suggestions were refused inside the v4 pass without being written down anywhere. They are recorded here so they do not come back.",
+      "raise_row_b_s_1x_rule_so_it_reads_as_a_rule": "REFUSED. It is the faintest object on the figure and that is correct: it is a definitional coordinate, the unit of its own axis by construction, and the dotted register exists for a coordinate that decides nothing. The reason is not height but consistency: v4 gave it exactly row A's chance geometry, and the v5 repair has just brought the fifth rule into the same 0.04cm offset, so lengthening one of the five to make it louder would break what was just fixed. At 0.50pt densely dotted over 7.94pt it prints about five dots on a 1.494pt period; checked at 200dpi and at print size.",
+      "restore_single_cell_arm_six_depths_as_the_mark_label": "REFUSED, and the defect it names is repaired the other way round. 'six depths' is in axis-label position, on line two of row C's own axis block, which is where this figure puts every scope fact: row A's two layers, row B's layer count, row C's rung, row D's stratum. The mark keeps the object's name and the axis block carries the statistic -- the same division of labour that lets the three seed marks read 'seed 42/43/45' instead of repeating 'residual' three times. Restoring the full string would set the widest label in the row for a fact stated 0.5cm below it."
+    },
+    "v4_overruled": {
+      "why_recorded": "Six of the findings put to this pass were refused. An overruled finding that is not written down comes back.",
+      "delete_0.883_from_row_a": "REFUSED. The cross-figure ownership rule assigns 0.8208333333333334 and 0.8833333333333332 to fig:mechanism (a), which draws them as series against a layer axis, AND to this row as its headline 'with both layers named'. A row that answers 'is it there?' with one accuracy loses the fact that the section's headline is a PAIR. The before/after hazard the finding names is real and is met three other ways: the two series carry different glyphs (fig:mechanism (a)'s own open/filled encoding), their two depths are named on the drawing in axis-label position, and the caption states that the series cross between layers 9 and 12.",
+      "two_baselines_in_row_a": "REFUSED. The label rule is that within a row all direct labels share one baseline, and a second baseline costs 0.36cm in a figure with 0.4mm of headroom under its 118mm cap. The same defect is repaired without a second line; see v3_to_v4.",
+      "heads_on_their_own_lines_at_x_0": "REFUSED on height. It is the better composition and it is what fig:mechanism does, but four extra head lines cost about 1.4cm. The rebuild brief specifies a right-aligned stub at one x for this figure, and the four question strings the brief fixes are what set the column at 4.97cm rather than the 3.4cm the brief estimated.",
+      "left_align_the_four_heads": "REFUSED. It would put the row letters (a)-(d) at one x, which is real, but it would leave a ragged right edge with a 0-to-24mm gap between each head and the rule it heads, so a side head would float away from its own row. All four heads end at x = 187.33pt, spread 0.00pt.",
+      "rename_row_d_single_cell_to_single_cell_target": "REFUSED, and the finding has it backwards. Row C's 'single-cell arm' and row D's 'single cell' are the SAME object: Sections/04b-representation.tex:939 writes 'the single-cell arm's scramble gap is +0.014', which is row D's own value. One object may not carry two names. Row D keeps tab:epsilon's wording and the caption states in words that the same arm appears in both rows as two different quantities on two different rules.",
+      "name_the_training_arm_on_rows_a_and_b": "REFUSED ON THE DRAWING, ACCEPTED IN THE CAPTION. The fact is right: workspace_probe.json :: config.model_path ends pythia_sft_endcell/final for rows A and B, probe_arm_residual.json ends pythia_sft_residual/final for row C's three seeds. But probe_arm_single_cell.json -- row C's own fourth mark -- is back on pythia_sft_endcell/final, so 'the arm' is not a property of a row and a one-word cue on an axis would mislead.",
+      "disclose_row_a_s_favourable_layers_on_the_drawing": "REFUSED ON THE DRAWING, ACCEPTED IN THE CAPTION. Both row-A marks are the maximum of their own seven-layer series (raw: 0.4083, 0.5854, 0.6917, 0.7792, 0.8208, 0.7542, 0.7583; context-removed: 0.3542, 0.4292, 0.5292, 0.56875, 0.6021, 0.8729, 0.8833). The document's convention for a favourable-layer choice is the caption, which is where fig:hook discloses layer 4 and fig:materiality discloses layer 12."
+    },
+    "departure_recorded_2": "Row D's zero-rule label is set quietink, not ink; see rows[3].comparator.colour.",
+    "departure_recorded": "The rebuild brief asked for row B's 1x rule to be relabelled 'matched-dimension random slab' in roman. It is labelled '$1\\times$, by construction' instead. Reason: the axis-label line 3.5cm below it now reads 'Ablation cost, in multiples of the matched-dimension random slab', so the object is named once, in axis-label position, which is where the unit is required to be named. Setting the same four-word string twice inside one row is the kind of duplication this pass exists to remove. fig:mechanism (b)'s name for the object is the one used, and it is used once.",
+    "case_note_superseded": "v3 set the four axis-label line-ones with a line-initial capital ('Probe accuracy', 'Ablation cost, ...', 'Identity effect, ...', 'Scramble gap ...'), which is the rebuild brief's own string, on the argument that the registry NAME stayed lowercase and only the line's first letter was capitalised. SUPERSEDED in v4. fig:mechanism sets the same class of string -- including the same quantity -- in lower case, at 10.0pt in axis-label position: 'probe accuracy', 'descriptive subspace fraction', 'KL from the clean forward pass', 'layer'. Six printed pages apart the same quantity was therefore appearing as 'probe accuracy' and 'Probe accuracy'. The naming registry is explicit that the name is fig:mechanism's, and it lists 'probe accuracy' and 'scramble gap $\\gap$' in lower case. All four line-ones are now lowercase. The four panel heads keep their capitals: they are interrogative sentences the brief fixes verbatim, and a lowercased question would read as a fragment."
+  },
+  "ledger_repairs": {
+    "row_B_kl_values": "REPAIRED. The v2 ledger recorded machine-precision KL values for row B that are NOT in RESULTS_cluster/workspace_probe.json at six of the seven layers, and cited key paths for numbers that file does not contain. Superseded values, for the audit trail: L16 0.015104130066269466 / 0.004215709141184521 (ratio 3.583); L12 0.13309352414374343 / 0.03482442172428613 (3.822); L9 0.41756509529374266 / 0.10037096018224545 (4.160); L6 1.4348760298960015 / 0.25051546056382686 (5.728); L8 0.5960704311728478 / 0.04218148594713092 (14.131); L4 1.5630274420322638 / 0.08388874216653897 (18.632). Only L2 agreed. The DRAWN one-decimal marks are unaffected: both sets round to the same seven values, 3.6 / 3.8 / 4.2 / 5.7 / 12.7 / 14.1 / 18.6, and to tab:workspace's Ratio column. The rows.B.marks block below now carries the values the source file actually holds, re-read on 2026-08-18. figs/fig-mechanism.json already held the correct values.",
+    "row_A_context_removed": "REPAIRED. v2 recorded source_value 0.8833333333333333 for the context-removed mark. The stored float is 0.8833333333333332. Drawn value 0.883 is unaffected.",
+    "width_measured": "REPAIRED. v2's width_measured.height_pt (227.34 / 80.2mm) was stale against the v2 render's measured 252.50pt / 88.5mm. The v2 block is retained and flagged; the v3 block carries measurements taken from the v3 render.",
+    "row_C_pair_cluster_counts_v4": "REPAIRED IN v4. rows[2].interval_convention recorded '58 pair clusters at this layer' and the drawing printed the same single number under three bars. 58 is the ANCHOR SEED's count. Re-read from source on 2026-08-18: probe_arm_residual.json :: layers.12.swap.n_pair_clusters = 58, .n = 60, .n_drug_clusters = 24; probe_rep_residual_s43.json :: n_pair_clusters = 193, .n = 240, .n_drug_clusters = 24; probe_rep_residual_s45.json :: n_pair_clusters = 199, .n = 240, .n_drug_clusters = 24. The seed-43 and seed-45 runs are four times the size of the anchor. tab:family's caption already scopes 58 correctly ('which at this layer is 60 rows in 58 pair clusters over 24 anchor drugs'); this ledger and this drawing did not.",
+    "row_B_dispersion_v4": "REPAIRED IN THE DRAWING, not here: rows[1].interval_convention was already correct ('the stored dispersions are normal-approximation standard errors over the 60 KL prompts, not this document's convention'), but the foot block printed 'return none'. Verified again on 2026-08-18: workspace_probe.json stores every KL term as a three-element [mean, se, n] list at all seven layers. By contrast layers.<L>.drug_decode is a bare float, so row A really does store nothing.",
+    "interval_declaration_scope_claim_v4": "REPAIRED. interval_declaration_on_the_figure.why claimed the block 'names every one of the four rows'. The requirement is every MARK, not every row: row C's four marks are three with bars and one without, and the block did not say so. Superseded below."
+  },
+  "removed_from_drawing": [
+    {
+      "was": "row A mark and label, 'slab projected out'",
+      "drawn_in_v2": 0.121,
+      "source_value": 0.12083333333333332,
+      "source": "RESULTS_cluster/workspace_probe.json :: layers.<L>.drug_decode_ablated",
+      "provenance_note": "BYTE-IDENTICAL at all seven layers 2, 4, 6, 8, 9, 12, 16. It is not a reading at a depth; it is the single constant output of section 4.4's removal gate.",
+      "thesis": "\"Accuracy falls from $0.41$--$0.82$ to a constant $0.121$ floor\"",
+      "why_removed": "It is an instrument from a different section answering a different question, sitting inside a section-4.3 row whose declared comparator is the chance floor and whose headline is the two probe accuracies. It was neither, it carried no stated role, it sat 4.0mm from row A's own comparator, and it carried the only leader on the figure. Restyling it as a floor fails, because a floor is only a floor against a before/after pair and row A draws no 'before'. Moving it to row B is arithmetically impossible: row B's axis is a dimensionless ratio to a matched null and no position on it means a twelve-class accuracy of 0.121.",
+      "still_drawn_in": [
+        "fig:purify (figs/purify.tex, figs/purify.json) -- as the numerator of the removal gate, the only place its role is stated",
+        "fig:mechanism (figs/mechanism.py, figs/fig-mechanism.json) -- panel (a), plotted against depth as a rule annotated 'ablating the slab, 0.121 at every layer'",
+        "fig:licensing (figs/licensing.tex) -- printed as text"
+      ],
+      "not_replaced": "Row A draws exactly two marks. The obvious replacement, 0.758 = layers.16.drug_decode, would put two series at two depths on one rule and rebuild the before/after misreading that only fig:mechanism (a), with a true layer axis, can tell honestly."
+    },
+    {
+      "was": "row B, seven accent layer numerals (16, 12, 9 under a 2.5pt brace, then 6, 2, 8, 4) and the brace",
+      "drawn_in_v2": "layer identifiers set 5.2pt above the rule, at value positions",
+      "source": "RESULTS_cluster/workspace_probe.json :: config.layers = \"2,4,6,8,9,12,16\"",
+      "why_removed": "Identifiers printed in the same size and glyph class as the tick numerals 7.8pt below the rule are read as a second set of values; the mark lettered '4' sat 19pt from the tick reading '20'. Left to right they read 16, 12, 9, 6, 2, 8, 4, which is neither depth order nor value order.",
+      "still_drawn_in": [
+        "fig:mechanism panel (b) -- both KL values plotted against a TRUE numeric layer axis, with the ratio annotated at every pair",
+        "tab:workspace -- the Ratio column, all seven rows"
+      ]
+    },
+    {
+      "was": "three row dividers",
+      "drawn_in_v2": "rulegrey!55, 0.30pt, at y = -0.70 / -2.76 / -5.82, spanning the full drawn width",
+      "why_removed": "With the axis-label blocks added, the nearest neighbour above each divider became a line of definitional prose rather than a panel, and a full-width rule may not sit in that position. They also cost roughly a twentieth of the ink budget. Rows are now separated by 14-15pt of whitespace, as fig:mechanism separates its panels."
+    },
+    {
+      "was": "row C, the single-cell mark's label leader",
+      "drawn_in_v3": "quietink, 0.30pt, horizontal, from x = 246.62 to 253.42pt at y = 233.10pt, i.e. at the mark's own y and in the mark's own colour, 0.24cm long, crossing the zero rule at x = 247.88",
+      "why_removed": "It read as a one-sided 95% interval that the source does not store, in the one row whose entire encoding is 'bar through the mark = interval, bare mark = none'. Directly above it sat three 1.00pt bars in the same two colours with the same geometry, 0.40cm apart; the shortest of them was only about four times the leader's length. The leader existed only because the label sat 0.30cm from the marker's edge, over the 3mm threshold at which a label takes a leader. v4 closes the gap to 0.17cm (4.8pt) instead, so no leader is needed. The zero rule's interruption across the marker's height means nothing lies between the mark and its label.",
+      "no_value_involved": "This was furniture, not a datum. The mark itself (-0.0011539133368647946, drawn -0.0012) is unchanged and unmoved."
+    },
+    {
+      "was": "row A, the layer named on each mark's own label",
+      "drawn_in_v3": "'raw probe, layer 9' (63.0pt wide) and 'context removed, layer 16' (89.7pt)",
+      "now": "'raw probe' (35.9pt) and 'context removed' (58.7pt); the depths move into the axis block, line two, as 'raw at layer 9, context removed at layer 16', which ties each series to its own depth",
+      "why_moved": "At those widths the two labels cannot both sit beside marks 21.3pt apart on the one baseline the label rule requires. In v3 the open disc (x = 480.5pt) fell inside the 451.9-541.7pt span of the label naming the OTHER mark, and the raw label reached its mark by a 5-degree diagonal that ran beneath 27pt of that other label. Measured after the move: 'raw probe' spans 432.47-468.36, 'context removed' spans 482.98-541.66, the two are 14.6pt apart, the open disc at 480.47 lies between them, and each mark carries an identical 0.30pt accent leader that ends ON the edge of its own disc (leaders measured 480.47 and 501.73, both running to y = 77.19 against a disc top edge of 77.21).",
+      "cross_figure_rule_still_met": "The rule is that where one layer is drawn the layer is named ON THE DRAWING; it accepts the axis block as the place, which is where fig:hook names layer 4 and fig:materiality names layer 12. Both depths are still on the drawing, in axis-label position."
+    },
+    {
+      "was": "row C, the arm name repeated on each of the three seed labels",
+      "drawn_in_v3": "'residual, seed 42', 'residual, seed 43', 'residual, seed 45'",
+      "now": "'seed 42', 'seed 43', 'seed 45', with the arm named once in axis-label position by the scope line 'residual seeds at layer 12, $\\alpha$ = 0.5; single-cell median, six depths'",
+      "why_moved": "Setting one four-letter arm name three times inside a row whose axis block opens with it is the duplication this pass exists to remove -- the same rule under which row B's 1x rule carries its coordinate and not its name. It also widens the visible difference between the three seed marks and the fourth, which is a different arm. tab:identity's full strings ('residual, seed 42' and 'single-cell arm, six depths') are recorded in rows[2].marks and repeated in the proposed caption.",
+      "no_value_involved": true
+    },
+    {
+      "was": "the pair-cluster count '58' and the cell-line count '40' as printed text",
+      "drawn_in_v3": "foot block, '(c): $95\\%$ bootstrap over $58$ ordered pair clusters' and '(d): ... over $40$ cell lines'; row D's scope line also printed '40 cell lines'",
+      "why_removed": "58 is the anchor seed's count and was printed under three bars whose counts are 58, 193 and 199. The block now names the construction and the three counts go to the caption and to rows[2].interval_convention. 40 was printed twice on one figure, in row D's scope line and in the foot block, so the foot keeps the clustering UNIT ('over cell lines') and the count goes to the caption with tab:epsilon's own note.",
+      "still_recorded_in": [
+        "rows[2].interval_convention",
+        "rows[3].interval_convention",
+        "the proposed caption"
+      ]
+    },
+    {
+      "was": "seven quietink sub-lines of the left stub",
+      "drawn_in_v2": "'decode accuracy'; 'ablation cost, $\\times$ the null,' / 'marks named by layer'; 'fraction of the model's' / 'own preference gap'; 'scramble gap, $\\NIR$,' / 'identifiable stratum'",
+      "why_removed": "They were the only place the four quantities were named, and they sat 14.1pt to the LEFT of the rule, inside the question label, styled as a subtitle to it. A reader looking at a scale had nothing. Their content is now in the axis-label blocks, expanded to name the unit as well as the quantity."
+    }
+  ],
+  "rows": [
+    {
+      "row": "a",
+      "head": "(a) Is it there?",
+      "quantity": "twelve-way drug decode accuracy from the residual stream",
+      "axis_label_line_1": "probe accuracy",
+      "axis_label_line_1_v3_superseded": "Probe accuracy",
+      "axis_label_line_2": "twelve-way drug decode; raw at layer 9, context removed at layer 16",
+      "axis_label_line_2_v3_superseded": "twelve-way drug decode from the residual stream, last prompt position",
+      "axis_label_line_2_why_changed": "The two depths move here from the mark labels (see removed_from_drawing), which is what lets row A's two labels sit on one baseline without one spanning the other's mark. 'last prompt position' and 'from the residual stream' are caption material; the residual stream is drawn as an object in fig:licensing and plotted against depth in fig:mechanism.",
+      "map_v3": "value * 12.10 cm, domain 0 to 1",
+      "map_v2_superseded": "value * 10.5 cm, domain 0 to 1",
+      "ticks": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1
+      ],
+      "tick_span_check": "first tick 0 at the rule's left end, last tick 1 at the rule's right end",
+      "interval_convention": "none. This instrument returns no interval; stated on the figure in the foot block.",
+      "comparator": {
+        "kind": "threshold rule, black solid 0.90pt, from the AXIS RULE upward (v4; v3 started it at the tick depth, where it printed an unnumbered sixth downstroke inside a five-tick lane)",
+        "label": "chance, $1/12$",
+        "label_v2_superseded": "shuffled labels",
+        "drawn": 0.083,
+        "drawn_at_cm": 1.0043,
+        "source_value": 0.08333333333333333,
+        "source": "RESULTS_cluster/workspace_probe.json :: chance (identical at layers.<L>.chance, all seven)",
+        "exactness": "equals 1/12 exactly in IEEE double; verified d['chance'] == 1/12 is True",
+        "why_relabelled": "workspace_probe.json contains no permutation, shuffle or null key of any kind; grep for 'shuffl' and 'perm' over the file returns nothing. Drawn as a RULE and labelled 'shuffled labels', it asserted a measured comparator the run never stored. The inherited wording survives in the prose at 04b-representation.tex:152 and in the caption, which is where an inherited phrase belongs.",
+        "thesis": "04b-representation.tex: \"$1/12 \\approx 8\\%$\"; tab:workspace caption \"chance is $0.083$\""
+      },
+      "marks": [
+        {
+          "label": "raw probe",
+          "label_v3_superseded": "raw probe, layer 9",
+          "glyph": "open disc, radius 1.4pt, white fill, 0.8pt accent edge -- fig:mechanism (a)'s own encoding of this series",
+          "drawn": 0.821,
+          "drawn_at_cm": 9.9341,
+          "source_value": 0.8208333333333334,
+          "source": "RESULTS_cluster/workspace_probe.json :: layers.9.drug_decode",
+          "thesis": "tab:workspace layer 9 raw = 0.821; prose \"reads $82\\%$ at layer 9\"",
+          "layer_now_named": "yes, in axis-label position: line two of row A's axis block reads 'raw at layer 9'. In v3 it was on this label and the label was then too wide to sit beside its own mark; see removed_from_drawing.",
+          "label_placement_v4": "set back 0.42cm from its own mark, base east, and leadered by an ELBOW: a 0.30pt accent horizontal at y = 0.18cm from x = mark-0.38 to the mark's x, then a vertical drop onto the disc's top edge. Right-aligned exactly ON the mark, the two row-A labels closed to 6.4pt and printed as one run, 'raw probe context removed'; the set-back opens 14.6pt. The whole elbow lies LEFT of the other label, so no leader passes under any text -- which was v3's defect.",
+          "favourable_layer_not_disclosed_on_the_drawing": "0.8208333333333334 at layer 9 is the MAXIMUM of this series over its seven depths (0.4083, 0.5854, 0.6917, 0.7792, 0.8208, 0.7542, 0.7583). Disclosed in the proposed caption, as fig:hook discloses layer 4 and fig:materiality layer 12."
+        },
+        {
+          "label": "context removed",
+          "label_v3_superseded": "context removed, layer 16",
+          "glyph": "filled accent disc, radius 1.4pt",
+          "drawn": 0.883,
+          "drawn_at_cm": 10.6843,
+          "favourable_layer_not_disclosed_on_the_drawing": "0.8833333333333332 at layer 16 is the MAXIMUM of this series over its seven depths (0.3542, 0.4292, 0.5292, 0.56875, 0.6021, 0.8729, 0.8833). Disclosed in the proposed caption.",
+          "source_value": 0.8833333333333332,
+          "source_value_v2_superseded": 0.8833333333333333,
+          "source": "RESULTS_cluster/workspace_probe.json :: layers.16.drug_decode_context_removed",
+          "thesis": "tab:workspace layer 16 context-removed = 0.883; prose \"to $0.883$ ($88\\%$) at the deepest layer\"",
+          "layer_now_named": "yes, in axis-label position: line two reads 'context removed at layer 16'.",
+          "why_it_matters": "0.821 is layer 9 and 0.883 is layer 16 -- two series at two depths. Undated and separated only by colour on a 1.4pt disc they read as a paired before/after at one depth. They are not: at layer 9 the context-removed value is 0.602 and at layer 16 the raw value is 0.758, and the two series CROSS between layers 9 and 12, so context removal RAISES accuracy at 12 and 16. figs/licensing.json flags the same hazard for its own text block.",
+          "label_placement": "right-aligned to the rule's right end, on the same baseline as the other two row-A labels, with a 0.30pt accent leader down to its mark, so no text crosses the drawn measure. In v2 this label ran 11.02pt past the end of the row dividers and set the figure's right edge.",
+          "label_placement_v4": "At 58.7pt it now spans 482.98-541.66pt and therefore stands over ITS OWN mark (501.73) and over no other; in v3 at 89.7pt it spanned 451.93-541.66 and covered the open disc as well. Its leader is a plain 0.30pt accent vertical from y = 71.52 to 77.19pt, ending on the disc's top edge at 77.21; in v3 it stopped 1.15pt short and connected nothing to nothing."
+        }
+      ]
+    },
+    {
+      "row": "b",
+      "head": "(b) Is it used?",
+      "quantity": "mean KL cost of ablating the purified drug slab, divided by the matched-dimension random null at the same layer",
+      "axis_label_line_1": "ablation cost, in multiples of the matched-dimension random slab",
+      "axis_label_line_1_v3_superseded": "Ablation cost, in multiples of the matched-dimension random slab",
+      "axis_label_line_2": "KL from the clean forward pass; seven layers, one mark each",
+      "axis_label_line_2_v3_superseded": "KL from the clean forward pass; one mark per layer",
+      "axis_label_line_2_why_changed": "v3 said one mark per layer and never said how many layers, so a reader who saw the two leftmost marks touch could not recover the count the row claims. The count is now stated.",
+      "map_v3": "value / 20 * 12.10 cm, domain 0 to 20",
+      "map_v2_superseded": "value / 20 * 10.5 cm, domain 0 to 20",
+      "ticks": [
+        0,
+        5,
+        10,
+        15,
+        20
+      ],
+      "tick_span_check": "first tick 0 at the rule's left end, last tick 20 at the rule's right end",
+      "interval_convention": "none. The stored dispersions are normal-approximation standard errors over the 60 KL prompts, not this document's convention (95% bootstrap clustered over cell lines), so no bar is drawn; stated on the figure in the foot block.",
+      "comparator": {
+        "kind": "dotted rule, quietink 0.50pt densely dotted, from the AXIS RULE up to axis+0.28cm with its label at axis+0.32cm -- v4, and it is the same geometry row A's chance rule uses, so a rule's own label sits at one offset everywhere on the figure. v3 started it at the tick depth, where it printed an unnumbered sixth downstroke inside a five-tick lane, and topped out level with its own label's baseline.",
+        "label": "1\\texttimes{}, by construction",
+        "label_v3_superseded": "$1\\times$, by construction -- same words, but the math \\times set in CMSY10 at 8.30pt and was one of only four glyphs on the figure outside the text font and outside its two type sizes",
+        "label_v2_superseded": "matched-dimension random subspace",
+        "drawn": 1,
+        "drawn_at_cm": 0.605,
+        "note": "the null is the unit of this axis by construction, so this rule is a definitional coordinate and not a threshold; it therefore keeps the dotted register and is NOT black solid 0.90pt. The object itself is named once, in axis-label position, by line one.",
+        "caveat_not_drawn": "tab:workspace's caption qualifies these ratios: the null matches the slab's RANK, not the variance it removes -- the slab's subspace fraction is roughly six times the null's -- so the ratio mixes drug content with that difference. Recomputed from workspace_probe.json :: layers.<L>.variance_share, drug_pure / random is 6.11, 5.60, 7.03, 4.90, 5.95, 6.38, 6.95 at layers 2/4/6/8/9/12/16. The caveat is caption material and is in the proposed caption."
+      },
+      "marks": [
+        {
+          "layer": 2,
+          "drawn": 12.683429,
+          "drawn_at_cm": 7.67347,
+          "drawn_v3_superseded": 12.7,
+          "drawn_at_cm_v3_superseded": 7.6835,
+          "kl_pure_drug": 0.15465423787633578,
+          "kl_random_matched": 0.012193409151708086,
+          "ratio": 12.683428887865327
+        },
+        {
+          "layer": 4,
+          "drawn": 18.634044,
+          "drawn_at_cm": 11.2736,
+          "drawn_v3_superseded": 18.6,
+          "drawn_at_cm_v3_superseded": 11.253,
+          "kl_pure_drug": 1.5631485521793365,
+          "kl_random_matched": 0.08388670384883881,
+          "ratio": 18.634044258027835
+        },
+        {
+          "layer": 6,
+          "drawn": 5.725077,
+          "drawn_at_cm": 3.46367,
+          "drawn_v3_superseded": 5.7,
+          "drawn_at_cm_v3_superseded": 3.4485,
+          "kl_pure_drug": 1.4346346219380697,
+          "kl_random_matched": 0.25058780958255134,
+          "ratio": 5.725077466170424
+        },
+        {
+          "layer": 8,
+          "drawn": 14.134973,
+          "drawn_at_cm": 8.55166,
+          "drawn_v3_superseded": 14.1,
+          "drawn_at_cm_v3_superseded": 8.5305,
+          "kl_pure_drug": 0.5960616156458854,
+          "kl_random_matched": 0.04216927991559108,
+          "ratio": 14.134972587604134
+        },
+        {
+          "layer": 9,
+          "drawn": 4.157847,
+          "drawn_at_cm": 2.5155,
+          "drawn_v3_superseded": 4.2,
+          "drawn_at_cm_v3_superseded": 2.541,
+          "kl_pure_drug": 0.41758305778106053,
+          "kl_random_matched": 0.10043252594769,
+          "ratio": 4.157846811485728
+        },
+        {
+          "layer": 12,
+          "drawn": 3.819122,
+          "drawn_at_cm": 2.31057,
+          "drawn_v3_superseded": 3.8,
+          "drawn_at_cm_v3_superseded": 2.299,
+          "kl_pure_drug": 0.1325269447018703,
+          "kl_random_matched": 0.03470089016482234,
+          "ratio": 3.819122335836159
+        },
+        {
+          "layer": 16,
+          "drawn": 3.577965,
+          "drawn_at_cm": 2.16467,
+          "drawn_v3_superseded": 3.6,
+          "drawn_at_cm_v3_superseded": 2.178,
+          "kl_pure_drug": 0.014718825820212562,
+          "kl_random_matched": 0.004113742829455684,
+          "ratio": 3.577964503473861
+        }
+      ],
+      "marks_source": "RESULTS_cluster/workspace_probe.json :: layers.<L>.kl.pure_drug[0] / layers.<L>.kl.random_matched[0], re-read 2026-08-18",
+      "marks_position_v4": "NO VALUE CHANGED; SEVEN MARKS MOVED, BY AT MOST 0.72pt, ONTO THEIR OWN SOURCE VALUES. v1-v3 plotted this row from the one-decimal roundings {3.6, 3.8, 4.2, 5.7, 12.7, 14.1, 18.6}. That was harmless while every mark carried its layer numeral; once v3 deleted the numerals, POSITION became the only carrier of these seven numbers, and the rounding distorted the one property the row still exists to show. The L16-to-L12 gap is 0.2412 in the data and was drawn 0.200 (-17%); the L12-to-L9 gap is 0.3387 and was drawn 0.400 (+18%); and the two leftmost discs were left 0.63pt (0.22mm) of white between their edges, which fuses at print size. v4 plots the source ratios, written to six decimals because pgfmath is fixed-point -- its resolution on this map is about 6e-7 cm, four orders below the imagesetter. Measured after: the two leftmost discs are 4.14pt apart centre to centre against a 2.79pt diameter, i.e. 1.34pt (0.47mm) of white. No numeral is printed on this row, so nothing on the page contradicts either set.",
+      "thesis": "tab:workspace Ratio column, all seven rows, identical to one decimal; prose \"costs $3.6$--$18.6\\times$ the matched-dimension random null\"",
+      "layer_identity_note": "the seven marks are drawn in VALUE order and are no longer lettered. Which mark is which layer is not recoverable from this figure by design; it is recoverable from fig:mechanism panel (b), which plots both KL values against a true numeric layer axis, and from tab:workspace. The caption says so."
+    },
+    {
+      "row": "c",
+      "head": "(c) Is it \\emph{which} drug?",
+      "quantity": "swap-minus-permuted effect as a fraction of that model's own clean preference gap, alpha = 0.5 rung, layer 12",
+      "axis_label_line_1": "identity effect, as a fraction of the model's own clean preference gap",
+      "axis_label_line_1_v3_superseded": "Identity effect, as a fraction of the model's own clean preference gap",
+      "axis_label_line_2": "residual seeds at layer 12, $\\alpha$ = 0.5; single-cell median, six depths",
+      "axis_label_line_2_v3_superseded": "residual arm, layer 12, $\\alpha$ = 0.5; one mark per seed",
+      "axis_label_line_2_why_changed": "The v3 line was FALSE of one of the four marks it sat under. The single-cell mark is a different arm, has no layer-12 value at all (probe_arm_single_cell.json carries swap blocks only at layers 2, 4, 6, 8, 9 and 16; layers.12.headroom = 3.8803978061910347 against config.headroom = 5.0, and swap_skipped_reasons records '12: instrument saturated'), and is a median over the six depths that were measured. 'one mark per seed' also read the fourth mark into the seed family. The new line covers all four marks and carries tab:identity's own description of its last row, 'single-cell arm, six depths'. It also lets the three seed labels drop the arm name they were repeating.",
+      "map_v3": "(value + 0.02) / 0.14 * 12.10 cm, domain -0.02 to 0.12",
+      "map_v2_superseded": "(value + 0.02) / 0.13 * 10.5 cm, domain -0.02 to 0.11",
+      "ticks": [
+        -0.02,
+        0,
+        0.02,
+        0.04,
+        0.06,
+        0.08,
+        0.1,
+        0.12
+      ],
+      "ticks_v2_superseded": [
+        -0.02,
+        0,
+        0.02,
+        0.04,
+        0.06,
+        0.08,
+        0.1
+      ],
+      "why_re_domained": "v2's last numeral (0.10) stopped 22.87pt short of the rule's right end. The new right end at +0.12 puts the last numeral on the rule end AND keeps the 0.10 margin inboard, so the margin reads as a comparator and not as the axis terminus.",
+      "interval_convention": "two-sided cluster bootstrap over ordered (A,B) PAIR clusters, 4000 resamples. THE COUNT IS PER SEED AND v3 PRINTED ONLY THE ANCHOR'S: probe_arm_residual.json :: layers.12.swap.n_pair_clusters = 58, .n = 60; probe_rep_residual_s43.json :: 193, .n = 240; probe_rep_residual_s45.json :: 199, .n = 240. All three carry n_drug_clusters = 24. The seed-43 and seed-45 runs are four times the size of the anchor. The foot block now names the construction and not a count; the three counts are in the proposed caption. The fourth mark in this row returns NO interval and the foot block now says so.",
+      "interval_convention_v3_superseded": "'...4000 resamples, 58 pair clusters at this layer' -- true of the anchor seed alone, and the drawing printed the same single number under three bars.",
+      "comparators": [
+        {
+          "kind": "dotted rule, quietink 0.50pt densely dotted, drawn in two pieces, from the AXIS RULE upward (v4; v3's lower piece ran to the tick depth and printed the '0' tick DOTTED inside an eight-tick ladder whose other seven ticks are solid)",
+          "label": "zero: no identity effect",
+          "label_v3_superseded": "none; the '0' tick numeral sits directly beneath it",
+          "geometry_v5": "The upper piece's top moves from -4.16 to -4.00cm, so this rule now tops out 0.04cm below its own label's baseline like the other four labelled rules on the figure. In v4 it stopped 0.20cm below and was the only labelled rule that did not reach its name -- on the v4 render its top sat at y = 196.53pt while the pre-registered margin, sharing this label's baseline, topped at 191.99pt. Both now top at 191.99pt. It crosses nothing: seed 42's bar, the nearest mark, begins at +0.0063, which is 15.4pt to the right of zero on this row's map. The rule's VALUE is its x position, zero, unchanged at x = 247.88pt.",
+          "why_labelled_in_v4": "The stated reason for leaving it anonymous is falsified by row D, whose zero rule also has a '0' tick numeral directly beneath it and was labelled anyway. Zero does more work here than there: it is the null the three interval bars are read against, and this row's other rule -- the black pre-registered margin -- stands 45pt from the nearest mark, so a reader asked what row C is read against would answer 'the margin' and never find the null. Quietink, like the rule, on the row's own top text baseline: exactly row D's treatment.",
+          "drawn": 0.0,
+          "drawn_at_cm": 1.72857,
+          "interruption": "the rule is cut across the single-cell marker's height (0.11cm to 0.39cm above the axis rule) because that mark sits at -0.0012, 0.104cm from zero on this scale. In v2-v3 the interruption existed so the mark's label leader could cross it; in v4 the leader is deleted and the interruption instead holds the clear gap between the mark and its label, so nothing lies between them."
+        },
+        {
+          "kind": "threshold rule, black solid 0.90pt, from the AXIS RULE upward (v4; v3 started it at the tick depth, where it overprinted the 0.10 tick in black at three times the tick's weight)",
+          "label": "pre-registered margin",
+          "drawn": 0.1,
+          "drawn_at_cm": 10.37143,
+          "source_value": 0.1,
+          "source": "RESULTS_cluster/probe_arm_residual.json :: config.equiv_frac = 0.1; equivalently layers.12.swap.equiv_margin / layers.12.swap.clean_ab_gap = 0.006420005919957502 / 0.06420005919957501 = 0.1 exactly",
+          "restyled": "v2 drew it ink 0.50pt densely dotted, typographically identical to the zero rule beside it. It is the same pre-registered margin that fig:family's lower strip draws black solid 0.90pt and that fig:materiality draws; one threshold, one stroke.",
+          "thesis": "\"a $10\\%$ margin pre-registered for calling an effect material\"; the margin is stored per arm in absolute nats (seed 43: 0.007536, seed 45: 0.008158) and is 10% of that arm's clean gap by construction"
+        }
+      ],
+      "marks": [
+        {
+          "label": "seed 42",
+          "label_v3_superseded": "residual, seed 42",
+          "label_v2_superseded": "residual arm, anchor seed",
+          "label_in_tab_identity": "residual, seed 42 -- the arm is now named once, in axis-label position, by line two of this row's axis block",
+          "colour": "accent -- the arm under test",
+          "point_drawn": 0.0197,
+          "lo_drawn": 0.0063,
+          "hi_drawn": 0.0335,
+          "point_at_cm": 3.43122,
+          "lo_at_cm": 2.27307,
+          "hi_at_cm": 4.62393,
+          "source_point": 0.019654724813287512,
+          "source_ci": [
+            0.0062694480403512436,
+            0.03350395145788292
+          ],
+          "clean_ab_gap": 0.06420005919957501,
+          "p_perm": 0.001,
+          "source": "RESULTS_cluster/probe_arm_residual.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 1 and \\ci{+0.0197}{+0.0063}{+0.0335} in the prose",
+          "cross_figure": "this is the NORMALISED quantity. fig:materiality draws the same estimate in RAW NATS with the top-level ci_perm, and fig:family's lower strip draws it with the alpha = 0.5 rung's own ci_perm. Different units here, so no collision."
+        },
+        {
+          "label": "seed 43",
+          "label_v3_superseded": "residual, seed 43",
+          "label_v2_superseded": "second seed",
+          "colour": "quietink -- a replication",
+          "point_drawn": 0.0118,
+          "lo_drawn": 0.006,
+          "hi_drawn": 0.0173,
+          "point_at_cm": 2.74843,
+          "lo_at_cm": 2.24714,
+          "hi_at_cm": 3.22379,
+          "source_point": 0.011794081797672475,
+          "source_ci": [
+            0.006030017752976919,
+            0.017346647256371323
+          ],
+          "source": "RESULTS_cluster/probe_rep_residual_s43.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 2, residual seed 43"
+        },
+        {
+          "label": "seed 45",
+          "label_v3_superseded": "residual, seed 45",
+          "label_v2_superseded": "third seed",
+          "colour": "quietink -- a replication",
+          "point_drawn": 0.0085,
+          "lo_drawn": 0.0029,
+          "hi_drawn": 0.0143,
+          "point_at_cm": 2.46321,
+          "lo_at_cm": 1.97921,
+          "hi_at_cm": 2.9645,
+          "source_point": 0.0085397751740983,
+          "source_ci": [
+            0.002890078535903236,
+            0.014279706889538484
+          ],
+          "source": "RESULTS_cluster/probe_rep_residual_s45.json :: layers.12.swap.diff_perm_norm, .ci_perm_norm",
+          "thesis": "tab:identity row 3, residual seed 45"
+        },
+        {
+          "label": "single-cell arm",
+          "label_v2_superseded": "single-cell arm, median over its depths",
+          "colour": "quietink -- a different arm, discounted by the text",
+          "point_drawn": -0.0012,
+          "point_at_cm": 1.62486,
+          "source_point": -0.0011539133368647946,
+          "per_depth_full_precision": {
+            "2": -0.0033601878795191356,
+            "4": -0.0001576591799128364,
+            "6": 0.002963693188756642,
+            "8": -0.0003560827614993155,
+            "9": -0.0019517439122302737,
+            "16": -0.005624761553828247
+          },
+          "source": "RESULTS_cluster/probe_arm_single_cell.json :: median over layers.{2,4,6,8,9,16}.swap.diff_perm_norm, six depths; recomputed 2026-08-18 and equal to tab:identity's -0.0012",
+          "why_six_depths": "layer 12 carries no swap: probe_arm_single_cell.json :: layers.12.headroom = 3.8803978061910347 is below config.headroom = 5.0, and swap_skipped_reasons records '12: instrument saturated'. So this mark is a median over six depths while the three above it are single-layer estimates at layer 12. That is caption material and is in the proposed caption.",
+          "thesis": "tab:identity last row \"nothing detectable at any depth (median $-0.0012$)\"; tab:identity's row NAME is \"single-cell arm, six depths\", and 'six depths' now sits in this row's axis block",
+          "no_interval_by_design": "drawn as a bare marker; the per-depth median is not an estimator the pipeline returns an interval for.",
+          "no_interval_declared_in_v4": "SUPERSEDES the v3 claim that 'the foot block now states the encoding instead of leaving it to be inferred'. It did not: v3's foot named a single bootstrap construction for row C and never said that one of its four marks has none. The block now ends '...; the median none.'",
+          "label_placement_v4": "0.22cm right of the mark's centre (0.17cm, 4.8pt, from its edge), no leader. v3 set it at 0.35cm from the centre, i.e. 0.30cm from the edge, which is over the 3mm threshold at which a label takes a leader -- and that leader, drawn quietink 0.30pt horizontally at the mark's own y, read as a one-sided interval bar. See removed_from_drawing."
+        }
+      ],
+      "favourable_layer_disclosure": "Layer 12 is the anchor seed's MAXIMUM over its seven-layer sweep and the only depth whose interval excludes zero. probe_arm_residual.json :: layers.<L>.swap.diff_perm_norm with p_perm: +0.0022 (L2, p 0.583), -0.0050 (L4, p 0.139), -0.0025 (L6, p 0.4495), +0.0041 (L8, p 0.3955), -0.0019 (L9, p 0.635), +0.0197 (L12, p 0.001), +0.0059 (L16, p 0.4885). Not drawn; disclosed in the proposed caption, as fig:mechanism and fig:materiality disclose their own layer choices.",
+      "fourth_replicate_not_drawn": "probe_rep_residual_s44.json exists and has NO layer-12 swap at all (only layers 2 and 4 carry swap blocks). tab:identity discloses it. The figure labels three seeds, which could imply three were run; the proposed caption names the fourth."
+    },
+    {
+      "row": "d",
+      "head": "(d) Does a better target help?",
+      "quantity": "model NIR minus its random-partner scramble's NIR, EXPRESSION frame, identifiable stratum, n = 204 conditions, clustered over 40 cell lines",
+      "axis_label_line_1": "scramble gap $\\gap$: the model's $\\NIR$ minus its scramble's, expression frame",
+      "axis_label_line_1_v3_superseded": "Scramble gap $\\gap$: ... -- lowercased in v4 so the line matches the naming registry, which lists this quantity as 'scramble gap $\\gap$'",
+      "axis_label_line_2": "identifiable stratum, $n$ = 204 conditions",
+      "axis_label_line_2_v3_superseded": "identifiable stratum, $n$ = 204 conditions, 40 cell lines",
+      "axis_label_line_2_why_changed": "'40 cell lines' was printed twice on one figure, here and in the foot block. The foot keeps the clustering UNIT, which is the substantive difference from row C's pair clusters; the count goes to the caption with tab:epsilon's own note.",
+      "frame_resolution": "EXPRESSION, resolved and not guessed. RESULTS_cluster/stratify_sameplate_final.json :: test2.all.model = 0.4977117949890227 is the 0.498 that figs/style_v2.py's module docstring names as the expression-frame reading against the residual frame's 0.537; and Sections/04b-representation.tex declares itself the expression-frame file at line 2 and departs once, with a single \\framecue{\\Rframe} at line 452, for the section-4.5 residual arm -- which is row (c), not row (d). Expression-frame and residual-frame NIR are not comparable and may not be subtracted, so a bare 'NIR' on this axis was a defect and not a shorthand.",
+      "map_v3": "(value + 0.04) / 0.10 * 12.10 cm, domain -0.04 to 0.06",
+      "map_v2_superseded": "(value + 0.03) / 0.08 * 10.5 cm, domain -0.03 to 0.05",
+      "ticks": [
+        -0.04,
+        -0.02,
+        0,
+        0.02,
+        0.04,
+        0.06
+      ],
+      "ticks_v2_superseded": [
+        -0.02,
+        0,
+        0.02,
+        0.04
+      ],
+      "why_re_domained": "v2's numerals were inset 37.20pt at BOTH ends. The new domain puts the first and last numeral on the rule's endpoints. It must run to +0.06 and not stop at +0.04 because the single-cell interval's upper limit is +0.042 and an interval may never be clipped by its own axis.",
+      "interval_convention": "ONE-WAY percentile cluster bootstrap over the 40 cell lines, not the two-way default. tab:epsilon's own note: 'All three intervals are one-way percentile cluster bootstraps over the 40 cell lines, not the two-way default.' This is a DIFFERENT construction from row C's and the foot block now says so; v2 drew both with the identical 1.0pt bar and identical dot in adjacent rows.",
+      "comparator": {
+        "kind": "dotted rule, quietink 0.50pt densely dotted",
+        "label": "zero: no scramble gap",
+        "label_v2_superseded": "none -- this was the only one of the four comparators left anonymous",
+        "drawn": 0.0,
+        "drawn_at_cm": 4.84,
+        "note": "zero, not chance: the null of a difference",
+        "colour": "quietink, and its label is quietink. DEPARTURE, RECORDED: the rebuild brief asked for this label in roman INK. On this figure a rule's own label takes the rule's own colour, so a black label always names a black threshold (rows a and c) and a quietink label always names a quietink dotted coordinate (rows b and d). Zero is the null of a difference, which is a comparator and not a threshold; setting its label black would have been the only place on the figure where the two registers crossed."
+      },
+      "marks": [
+        {
+          "label": "single cell",
+          "colour": "accent -- an arm the text relies on",
+          "point_drawn": 0.014,
+          "lo_drawn": -0.016,
+          "hi_drawn": 0.042,
+          "point_at_cm": 6.534,
+          "lo_at_cm": 2.904,
+          "hi_at_cm": 9.922,
+          "source_point": 0.013529022720199194,
+          "source_ci": [
+            -0.016375577271889354,
+            0.041935753108340475
+          ],
+          "source": "RESULTS_cluster/stratify_sameplate_final.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered (n = 204, n_celllines = 40)",
+          "thesis": "tab:epsilon row 1, \\ci{+0.014}{-0.016}{+0.042}"
+        },
+        {
+          "label": "OT barycentric",
+          "label_v2_superseded": "optimal-transport barycentric",
+          "colour": "accent -- an arm the text relies on",
+          "point_drawn": -0.001,
+          "lo_drawn": -0.018,
+          "hi_drawn": 0.016,
+          "point_at_cm": 4.719,
+          "lo_at_cm": 2.662,
+          "hi_at_cm": 6.776,
+          "source_point": -0.0014203661262484797,
+          "source_ci": [
+            -0.017795956326540144,
+            0.015714227646347452
+          ],
+          "source": "RESULTS_cluster/stratify_ot_T2.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered",
+          "thesis": "tab:epsilon row 2, \\ci{-0.001}{-0.018}{+0.016}",
+          "why_renamed": "tab:epsilon's own wording, and 'optimal-transport barycentric' was 103.7pt wide -- the label the v2 header had to widen the bar gap for"
+        },
+        {
+          "label": "consensus, stopped mid-epoch",
+          "label_v2_superseded": "consensus",
+          "colour": "quietink -- a discounted arm, and the label now names the discount",
+          "point_drawn": -0.01,
+          "lo_drawn": -0.022,
+          "hi_drawn": 0.003,
+          "point_at_cm": 3.63,
+          "lo_at_cm": 2.178,
+          "hi_at_cm": 5.203,
+          "source_point": -0.010111443567325918,
+          "source_ci": [
+            -0.022181169294411666,
+            0.0028747377612014288
+          ],
+          "source": "RESULTS_cluster/stratify_consensus.json :: test2.scramble_arm.model_minus_scramble, .ci_clustered",
+          "thesis": "tab:epsilon row 3, \\ci{-0.010}{-0.022}{+0.003}",
+          "why_the_discount_is_named": "v2 drew this arm quietink and the other two accent with no reason given anywhere on the page or in the caption; the reason is at Sections/04b-representation.tex:972 ('the consensus arm was stopped mid-epoch, so the comparison rests on the single-cell and optimal-transport points') and in tab:epsilon's note. An arm drawn in the comparator colour must name its discount."
+        }
+      ]
+    }
+  ],
+  "interval_declaration_on_the_figure": {
+    "line_1": "Intervals: (a) none stored. (b) normal-approximation standard errors only, not drawn.",
+    "line_2": "(c) $95\\%$ two-sided over ordered pair clusters; the median none. (d) $95\\%$ one-way over cell lines.",
+    "line_1_v3_superseded": "Intervals: (a) and (b) return none. (c): $95\\%$ bootstrap over $58$ ordered pair clusters.",
+    "line_2_v3_superseded": "(d): $95\\%$ one-way percentile bootstrap over $40$ cell lines.",
+    "why": "Rows C and D carry the same 1.0pt bar and the same 1.4pt dot over two different bootstrap designs, and rows A and B carried no statement at all, so a reader inferred their instruments do return intervals. The block is \\scriptsize quietink, two lines, left-aligned to the figure's x origin at x = 199.07pt, and it names every MARK.",
+    "why_v3_superseded": "v3's 'names every one of the four rows' was both the wrong test and, on two counts, untrue. The requirement is every MARK, not every row. And the v3 wording was false of row B, whose instrument returns a normal-approximation standard error at every layer (workspace_probe.json stores each KL term as [mean, se, n]), and silent about row C's fourth mark, which returns nothing.",
+    "three_repairs": [
+      "(a) and (b) are separated, because row A stores no dispersion at all (layers.<L>.drug_decode is a bare float) while row B stores an SE this document declines to draw. Refusing to draw a stored SE and having none to draw are different facts, and hook.json, purify.json and fig-mechanism.json all state the first one correctly.",
+      "row C's bare mark is declared: the line now ends '...; the median none.'",
+      "the pair-cluster count is dropped in favour of the construction, because 58 is the anchor seed's alone (58 / 193 / 199 by seed) and one printed numeral was describing three bars."
+    ],
+    "measured": "line 1 spans x = 199.07 to 503.25pt, line 2 199.07 to 536.27pt, against a rule end at 541.86: neither crosses the drawn measure, and the block is still two lines."
+  },
+  "design_values_held": {
+    "one_threshold_one_stroke": "chance and the pre-registered margin are the only black solid 0.90pt rules on the figure, and nothing that is not a threshold is black solid 0.90pt",
+    "dotted_means_a_coordinate": "quietink 0.50pt densely dotted is used four times: row B's 1x rule (the unit of its own axis), row C's two-piece zero rule, row D's zero rule",
+    "no_legend": "every mark and every rule is labelled at itself",
+    "no_bars_on_a_log_axis": "no axis on this figure is logarithmic",
+    "intervals_only_where_the_instrument_returns_one": "six 1.0pt bars, exactly the six marks in rows C and D whose source files store a clustered bootstrap; rows A and B carry bare marks and the foot block says why",
+    "stroke_weights": "v4, measured on the render: 0.30 furniture (26 tick marks plus row A's two mark leaders, one of which is an elbow drawn as two segments), 0.40 axis rule (4), 0.50 dotted coordinate (4), 0.90 threshold (2), 1.00 interval bar (6); plus 0.80 used exactly once as the mark-edge weight of the single open disc, which is the mark vocabulary's own value for a comparator-encoded point mark. v3's count of three 0.30pt leaders drops to two: row C's single-cell leader is deleted.",
+    "stroke_weights_v5_remeasured": "SUPERSEDES the arithmetic of the line above, not its substance. '26 tick marks plus row A's two mark leaders' reads as 28 objects; the figure draws 24 rulegrey ticks (row a 5, row b 5, row c 8, row d 6) and two accent mark-leader paths, which is 26 paths at 0.30pt in total. Read out of the v5 PDF's own path list: 0.30pt x 26, 0.40pt x 4, 0.50pt x 4, 0.80pt x 1, 0.90pt x 2, 1.00pt x 6. Every other figure in the v4 line holds, including the justification of the single 0.80pt as the open disc's mark-edge weight rather than a rule weight.",
+    "labelled_rules_reach_their_labels_v5": "All five labelled rules top out 0.04cm below their own label's baseline. In v4 row C's zero rule alone stopped 0.20cm below, five times every other, which put the one rule that three interval bars are read against at 196.53pt on the render while the pre-registered margin, sharing its label baseline, topped at 191.99pt. Both now top at 191.99pt. The change moved a rule endpoint from -4.16 to -4.00 and crossed nothing: the nearest mark, seed 42's interval bar, begins at +0.0063, 15.4pt to the right of zero on row C's map.",
+    "tick_lane_v4": "Every stroke below an axis rule is a 0.30pt rulegrey tick and nothing else. In v3 five coordinate and threshold rules ran down into the lane: the black 0.90pt margin rule overprinted row C's 0.10 tick, both dotted zero rules overprinted their own '0' tick, and chance and the 1x rule each added an unnumbered sixth downstroke to a five-tick ladder.",
+    "type_sizes_v4": "Two above 7pt and no third: 9.96pt for the four axis-label line-ones and the four panel heads, 7.97pt for everything else, plus a 7.57pt three-character subscript in $\\gap$. The largest type on the figure belongs to an axis label or a panel head, never to a direct label or a note.",
+    "mark_vocabulary": "filled disc r=1.4pt for a point estimate, open disc r=1.4pt with white fill and a 0.8pt edge for the raw/before series, 1.0pt bar for an interval; no other radius appears",
+    "colour_code": "accent = the object under test (row a's two marks, row b's seven, row c's seed 42, row d's single-cell and OT arms); quietink = comparator, replication, or a discounted arm whose label names the discount; ink/black = thresholds, axis rules, axis labels, panel heads; rulegrey = tick marks only",
+    "negative_tick_idiom": "kept verbatim from v2: the tick label is carried separately from the coordinate in the \\foreach, so a negative tick sets a real minus and not the ASCII hyphen \\foreach would print. Same idiom as gate.tex and power.tex."
+  },
+  "verification": {
+    "result": "no disagreement. Every value drawn was re-read from RESULTS_cluster on 2026-08-18 and matches the thesis text at the precision the thesis prints. No value changed between v2 and v3, and none between v3 and v4.",
+    "v4_why_only_row_B_is_replotted_at_machine_precision": "Rows A, C and D keep the three- and four-decimal positions they have had since v1, and that is a decision and not an oversight. Their marks are plotted at the values the thesis PRINTS -- 0.821 and 0.883 in tab:workspace, +0.0197 / +0.0118 / +0.0085 / -0.0012 in tab:identity, +0.014 / -0.001 / -0.010 in tab:epsilon -- and every one of those marks carries a name a reader can look up in the table that prints it, so drawn position and printed value agree by construction. Row B's marks carry no name and no numeral, so position is the only carrier they have. The two cases also differ by an order of magnitude: row B's rounding displaced a mark by up to 0.72pt and halved the figure's only marginal gap, while rows A, C and D's displace one by at most 0.11pt, below what an imagesetter resolves. VERIFIED ON THE v4 RENDER by inverting each row's own map from the rule endpoints (x = 198.87 to 541.86pt): row A recovers 0.82101 and 0.88301; row B 3.5778 / 3.8189 / 4.1577 / 5.7248 / 12.6835 / 14.135 / 18.6343 against source ratios 3.577964503473861 / 3.819122335836159 / 4.157846811485728 / 5.725077466170424 / 12.683428887865327 / 14.134972587604134 / 18.634044258027835, i.e. agreement to 3e-4 units, which is pgfmath's fixed-point residue and 0.005pt on the page; row C 0.019702 / 0.011797 / 0.008501 / -0.001204 with bars [0.006305, 0.033496], [0.006000, 0.017307], [0.002902, 0.014301]; row D 0.014001 / -0.001014 / -0.010001 with bars [-0.016013, 0.042002], [-0.018012, 0.016000], [-0.022010, 0.002999]. The four rules recover chance at 0.082987, row B's null at 0.999641, row C's zero at 0.000003 and margin at 0.100011, row D's zero at -0.000007.",
+    "v4_no_value_changed": "Seven marks in row B and every mark in rows B and C moved ON THE PAGE, and no value moved. The row-B marks moved because they now sit at their own source ratio instead of its one-decimal rounding (see rows[1].marks_position_v4); every mark in rows B and C also moved bodily with its own axis rule, which shifted by +0.04cm and -0.04cm to even the inter-row rhythm. Each mark still sits exactly where its row's own map puts the value stored in its source JSON, and both the old and the new positions are recorded per mark.",
+    "numerals_on_the_figure": "v4. 0, 0.25, 0.5, 0.75, 1 (row a ticks); 1/12 (row a comparator); 9 and 16 (row a axis-label line two); 0, 5, 10, 15, 20 (row b ticks); 1 (row b comparator, as 1\\texttimes); -0.02 to 0.12 by 0.02 (row c ticks); 42, 43, 45 (row c mark labels, seed identifiers); 12 and 0.5 (row c scope line); -0.04 to 0.06 by 0.02 (row d ticks); 204 (row d scope line); 95 twice (foot block). GONE since v3: 58 and 40 in the foot, 40 in row d's scope line. No point estimate is printed as a numeral anywhere on this figure -- every estimate is a position on a rule, which is the whole premise.",
+    "numerals_on_the_figure_v3_superseded": "0, 0.25, 0.5, 0.75, 1; 1/12; 9 and 16 (on the row a mark labels); 0, 5, 10, 15, 20; 1; -0.02 to 0.12; 12 and 0.5; -0.04 to 0.06; 204 and 40; 95, 58, 40.",
+    "provenance_note_not_a_disagreement": "Row D's single-cell row comes from stratify_sameplate_final.json (model 0.7677, control-copy 0.7655, stratum reference 0.9382 -- the 0.768 / 0.766 / 0.938 the section quotes). A second single-cell run exists, stratify_singlecell_t1t2.json, whose scramble gap is +0.0114 [-0.0182, +0.0408] and whose model NIR is 0.7707. The thesis consistently uses the first in v1, v2 and v3, so the figure does too; the second is a different run, not a competing value for the same row. Note also that the rebuild brief's data list named probe_arm_ot_T2.json and probe_arm_consensus.json for this row; both exist, but it is the stratify_* set that reproduces tab:epsilon, and it is the stratify_* set the figure draws.",
+    "banned_term_check": "the string 'noise ceiling' does not appear in the figure. The four comparators are named 'chance, $1/12$', '$1\\times$, by construction', 'pre-registered margin' with an unlabelled zero, and 'zero: no scramble gap'; the stratum reference is not drawn.",
+    "banned_term_check_v5_corrected": "SUPERSEDES the two stale strings in the line above. The row-B comparator's label is set '1\\texttimes{}, by construction', not '$1\\times$, by construction' -- the math sign was v3's only CMSY10 glyph and printed at a third type size; see rows[1].comparator. And row C's zero is no longer unlabelled: since v4 it reads 'zero: no identity effect'. The five rule labels on the v5 render are, in reading order, 'chance, $1/12$', '1x, by construction', 'zero: no identity effect', 'pre-registered margin' and 'zero: no scramble gap'. 'noise ceiling' still does not appear, and neither does 'shuffled labels', 'matched-dimension random subspace' or any cross-reference.",
+    "v5_re_verified_on_the_render": "Every number was re-read from RESULTS_cluster on 2026-08-19 and every mark position re-derived from the v5 PDF. Row B's seven ledger pairs are byte-exact against workspace_probe.json :: layers.<L>.kl.pure_drug[0] and .random_matched[0] at all seven layers and their quotients equal the recorded ratios to the last bit, so the CF13(i) ledger repair holds. Row A's two source_values are byte-exact against layers.9.drug_decode and layers.16.drug_decode_context_removed, and chance == 1/12 is True, so the CF13(ii) repair holds. Recovered mark centres on the v5 render, in points: row a 480.47 and 501.73; row b 260.23 / 264.36 / 270.17 / 297.05 / 416.39 / 441.28 / 518.44; row c 296.14 / 276.77 / 268.70 / 244.92; row d 384.09 / 332.59 / 301.76. Sixteen marks, all at radius 1.39pt, one of them the open disc with a white fill and a 0.797pt accent edge. Rules: two black solid 0.90pt (chance at 227.33, margin at 492.89) and nothing else black solid 0.90pt; four quietink 0.50pt densely dotted; four ink 0.40pt axis rules; six 1.00pt interval bars, exactly the six marks whose sources store a clustered bootstrap. No arrowhead, no rectangle, no full-width rule that is not an axis, no legend, no cross-reference, no run of two or more uppercase words. Compiles ok, one page, zero Overfull and zero Underfull boxes.",
+    "v5_no_value_changed": "NO VALUE CHANGED and NO MARK MOVED. The v5 pass moved one rule endpoint, row C's zero rule top, from -4.16 to -4.00cm. That endpoint carries no value: the rule's VALUE is its x position, which is zero on row C's map and is unchanged at x = 247.88pt on the render."
+  },
+  "integration": {
+    "how": "in thesis_v2/Sections/04b-representation.tex the float already reads \\input{figs/comparators}; the surrounding figure/fullwidth float and \\label stay as they are. The CAPTION MUST BE REPLACED, and this is now the only outstanding item on the figure. The live caption at 04b-representation.tex:93-102 names 'a shuffled-label floor' and 'a matched-dimension random subspace', neither of which is a string on the drawing; it says 'the ablation rule carries none' of intervals without saying that row (a) carries none either, and its account of row (b) is now contradicted by the drawing's own foot block; it never uses the row letters (a)-(d) the drawing carries; and its clause 'a fraction of the model's own clean preference gap' is the string row (c)'s axis label now owns, so the replacement must not repeat it. The proposed replacement WAS NOT ON DISK when the v4 pass began, though this ledger and the .tex header both asserted it was; it is now written to thesis_v2/figs/_PENDING_CAPTIONS.tex, keyed by \\label{fig:comparators}, for a human to integrate. That file is shared with the other chapter-4 figure rebuilds, so the fig:comparators material is APPENDED as its own \\label block and nothing another builder has written there is disturbed. No builder edits Sections/.",
+    "tested_by": "python figs/_preview.py comparators, run from thesis_v2/. v3 result: ok, pages=1, boxes=0. v4 result: ok, pages=1, boxes=0, content 172.72 x 117.60mm, ink 5.85%, 1000 characters at 4.92 per 100mm^2, two type sizes above 7pt, italic 0.80%. The harness wraps the body in the real document class, the real preamble and the real \\fullwidth measure."
+  },
+  "whole_slate_pass_2026_08_19": {
+    "date": "2026-08-19",
+    "what_this_pass_owned": "only the differences BETWEEN fig:comparators, fig:licensing, fig:purify, fig:hook and fig:materiality, and between those five and fig:mechanism, which is the reference standard and was not rebuilt. No numeric value changed in any of the five.",
+    "slate_rules_now_binding_on_all_five": {
+      "R1_tick_numerals": "quietink, \\scriptsize, inner sep 0pt, anchor=north on the tick, baseline block set 0.16cm below the axis rule, over a rulegrey 0.30pt tick 0.10cm long. BEFORE: comparators/licensing/purify quietink, hook and materiality ink; tick lengths 0.10 (comparators, hook, materiality) / 0.12 (licensing, purify-y) / 0.14 (purify-x).",
+      "R2_threshold_label_colour": "black, matching the black solid 0.90pt rule it names (S6). BEFORE: comparators black; purify 'gate, 0.8' ink; materiality both '10% materiality margin' labels ink.",
+      "R3_one_name_per_object": "the pre-registered 10% rule is '10% materiality margin' in fig:comparators row (c), fig:materiality (a) and (b) and figs/family.py, which is where the name is defined; comparators' 'pre-registered margin' is superseded. Zero, where it is the null a bar is read against, is 'zero: no identity effect' in both comparators row (c) and materiality (b). V_pure is spelt $V_{\\textrm{pure}}$ everywhere, as slab.tex spells it; hook's $V_{\\mathrm{pure}}$ is superseded.",
+      "R4_colour_key": "accent = the drug-side object under test. quietink = every comparator, null, control, replication or discounted arm, and its label, and its leader. ink/black = thresholds, axis rules, axis labels, panel heads, definitional prose. rulegrey = furniture. Inside quietink the glyph separates two kinds: OPEN disc = a construction built to carry no signal (null, control, raw/before series); FILLED disc = a real measurement that is not the headline. BEFORE: hook (d) drew its matched-dimension random null and its cell-line positive control in ink.",
+      "R5_projection_register": "quietink 0.50pt densely dotted, for a zero rule, a magnification leader or a projection line (S7). BEFORE: hook's two panel-(c) projection lines were rulegrey 0.30pt densely dashed.",
+      "R6_prose_rank": "definitional prose is \\footnotesize ink and outranks every label (S4), at most one block per figure, left edge on the panel's own x origin. BEFORE: hook's one prose line was \\scriptsize; purify's panel-(b) block carried an argument clause its own caption already carries.",
+      "R7_interval_declaration": "one \\scriptsize quietink block at the foot on the figure's x origin, opening with the word 'Intervals:' and naming EVERY panel, including panels with no measured mark (S17). fig:comparators already did this and is the model.",
+      "R8_prompt_strip": "one object, two figures, now congruent: cell boundaries 0 / 1.12 / 1.90 / 2.64 / 4.23 / 6.90 cm, cell height 0.42cm, labels centred in their cells, drug cell accent-bordered 0.40pt on accent!12 with a NON-bold label, in both fig:licensing (a) and fig:hook (a) and (b). BEFORE: licensing 6.90cm wide with 0.62cm cells and a bold drug label; hook 7.44cm wide with 0.42cm cells and a plain one.",
+      "R9_measure_and_ink": "fullwidth 172.0-174.0mm, textwidth 140.3mm; ink at 200dpi inside the content bbox, counted as greyscale luminance below 230, now 5.63-5.99% on all five."
+    },
+    "deliberately_not_unified": {
+      "panel_head_case": "fig:comparators sets '(a) Is it there?' with a capital; the other four set '(a) where the drug name enters' lowercase, as fig:mechanism does. comparators' heads are interrogative SENTENCES and sentence case is correct for a sentence. Left deliberately; one capital letter, four times.",
+      "panel_head_position": "fig:comparators puts its heads in a right-aligned left stub, the other four above the panel at its x origin. Moving them above the rules costs about 20mm of height against a 118mm cap the figure already meets at 117.60mm.",
+      "two_column_gutter": "purify and hook split at x = 8.40cm, licensing at 7.75cm. licensing cannot move right: '(d) what a negative would buy' is 4.85cm wide at origin 12.40 of a 17.30cm measure, with 1.5pt of slack."
+    },
+    "changed_in_this_figure": [
+      "row (c) margin label 'pre-registered margin' -> '10% materiality margin' (R3).",
+      "the first and last tick numeral of every row are anchored north west / north east ON the rule's endpoints instead of centred on them; the six interior numerals are untouched.",
+      "\\RL, the single rule length shared by all four rows, 12.10cm -> 12.35cm."
+    ],
+    "value_to_position_maps_superseded_and_new": {
+      "note": "no value moved; the four maps were rescaled together by 12.35/12.10 = 1.0206611570247933 so the drawn measure returns to the slate's 172-174mm band. Every mark still sits at its own source coordinate under the new map.",
+      "row_a_probe_accuracy": {
+        "v5": "x = (v) * 12.10",
+        "v6": "x = (v) * 12.35",
+        "domain": [
+          0.0,
+          1.0
+        ]
+      },
+      "row_b_ablation_cost": {
+        "v5": "x = (v)/20 * 12.10",
+        "v6": "x = (v)/20 * 12.35",
+        "domain": [
+          0.0,
+          20.0
+        ]
+      },
+      "row_c_identity_effect": {
+        "v5": "x = ((v)+0.02)/0.14 * 12.10",
+        "v6": "x = ((v)+0.02)/0.14 * 12.35",
+        "domain": [
+          -0.02,
+          0.12
+        ]
+      },
+      "row_d_scramble_gap": {
+        "v5": "x = ((v)+0.04)/0.10 * 12.10",
+        "v6": "x = ((v)+0.04)/0.10 * 12.35",
+        "domain": [
+          -0.04,
+          0.06
+        ]
+      },
+      "label_shims_not_rescaled": [
+        "+0.30 (\\xcR, \\xdR)",
+        "+0.22 (\\xcM)",
+        "+0.10 (\\xaL, \\xbL, \\xcW, \\xdL)",
+        "-0.42 (\\xaB)",
+        "-0.38 (\\xaC)",
+        "-0.08 (\\xcL)"
+      ],
+      "reason_shims_are_absolute": "they are print-unit gaps between a mark and its own label, not data."
+    },
+    "superseded_claims": {
+      "what_changed_v1_v2": "the top-level what_changed, 'No mark moved, no scale changed, no value changed, caption unchanged', is false from v2 onward and is false again here: the SCALE changed (\\RL 12.10 -> 12.35) and every mark's POSITION moved by 2.07%. No mark's VALUE has ever moved. Read that field as applying to v1 -> v2 only.",
+      "tex_header_line_8": "comparators.tex:8 'What changed is labelling only; no mark moved, no number changed' is superseded on the same terms, in the .tex header, in place."
+    },
+    "cross_figure_repair_owed_and_now_paid": "figs/licensing.json asked that this ledger record that layers.<L>.drug_decode_context_removed EXCEEDS layers.<L>.drug_decode at layers 12 and 16 (0.8729166666666668 > 0.7541666666666667 and 0.8833333333333332 > 0.7583333333333334), so row (a)'s two marks are NOT a before/after pair at one depth: the open mark is layer 9 raw (0.8208333333333334) and the filled one is layer 16 context-removed (0.8833333333333332). Row (a)'s axis scope line names both depths on the drawing, and the proposed caption says it in words; the crossing itself is visible only in fig:mechanism (a), which has a layer axis.",
+    "remeasured_on_the_slate_pass_render": {
+      "width_mm": 172.97,
+      "height_mm": 117.6,
+      "ink_pct": 5.822,
+      "chars": 983,
+      "chars_per_100mm2": 4.83,
+      "type_sizes_pt": [
+        9.96,
+        7.97
+      ],
+      "subscript_sizes_pt": [
+        7.57
+      ]
+    },
+    "remeasurement_method": "figs/_preview.py <name> (--width text for materiality), then PyMuPDF get_pixmap(dpi=200, colorspace=GRAY); content bbox = the extent of pixels below 230; ink = that count over the bbox area; characters counted from the PDF text spans.",
+    "harness": "ok, pages=1, zero Overfull, zero Underfull."
+  }
+}

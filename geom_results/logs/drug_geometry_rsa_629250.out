@@ -1,0 +1,1047 @@
+[PASS] isolated protobuf 5.29.5 tree baba8b8aa1f863be3bbaef47154ec43a94375932ff4ccab0d4f4fa4c248a757d
+### selftest gate ###
+2026-08-17 15:58:47,826 [INFO] ============================================================================================
+2026-08-17 15:58:47,826 [INFO] drug_geometry_rsa SELFTEST — planted worlds where the answer is known
+2026-08-17 15:58:47,826 [INFO] ============================================================================================
+2026-08-17 15:58:47,826 [INFO] 
+2026-08-17 15:58:47,826 [INFO] (a) POSITIVE world — activations = linear(biology) + noise, names/moa random
+2026-08-17 15:58:48,615 [INFO]   [PASS] POSITIVE recovers a strong positive partial: r_raw=+0.888  r_partial=+0.888 (threshold >= +0.350)  p=0.00067 (threshold <= 0.00067)  sd_null=0.029  rel_A=1.000
+2026-08-17 15:58:48,795 [INFO]   [PASS] POSITIVE co-primary triplet accuracy above 0.50: acc=0.9467099532821285 over 12629 matched triples (threshold > 0.550)
+2026-08-17 15:58:48,795 [INFO] 
+2026-08-17 15:58:48,795 [INFO] (a2) MIXED world — real biology PLUS a name confound that is CORRELATED with it; the partial must keep the biology and shed the inflation
+2026-08-17 15:58:48,859 [INFO]   [PASS] MIXED: biology survives the controls, the inflation does not: r_raw=+0.596  r_partial=+0.536  raw-partial gap=+0.0596 (thresholds: partial > +0.300, p < 0.010, gap > 0.005)  p=0.0007
+2026-08-17 15:58:48,859 [INFO]       This is the pair the chapter reports: (r_raw, r_partial) together, because their GAP is exactly how much of the internal geometry is the prompt string.
+2026-08-17 15:58:48,859 [INFO] 
+2026-08-17 15:58:48,859 [INFO] (b) NEGATIVE/CONFOUND world — activations AND biology driven only by name tokens
+2026-08-17 15:58:48,917 [INFO]   [PASS] NEGATIVE: raw positive, partial annihilated: r_raw=+0.420 (threshold > +0.300)  r_partial=+0.006 (threshold |r| < 0.080)  ratio=0.015 (threshold < 0.250)  p=0.823 (threshold > 0.010)
+2026-08-17 15:58:48,917 [INFO] 
+2026-08-17 15:58:48,917 [INFO] (b3) MULTI-CONFOUND world — name tokens AND char n-grams AND shared mechanism
+2026-08-17 15:58:48,975 [INFO]   [PASS] MULTI-CONFOUND: controls remove the great majority of the raw association: r_raw=+0.610 (threshold > +0.450)  r_partial=+0.099  ratio=0.163 (threshold < 0.250)
+2026-08-17 15:58:48,975 [INFO]       NOTE, and it matters for reading the real run: the design partials out the RANKS of each control, while a several-component confound enters A through a monotone-but-not-rank-linear composition. Annihilation is therefore not exact here -- across generating seeds this world leaves a residue of up to |r| ~ 0.12. A small positive r_partial in the real run is NOT by itself evidence of pharmacological organisation.
+2026-08-17 15:58:48,975 [INFO] 
+2026-08-17 15:58:48,975 [INFO] (b2) NAME-DRIVEN ACTIVATIONS — the same confound routed through the vector path
+2026-08-17 15:58:49,040 [INFO]   [PASS] NAME-DRIVEN: controls remove most of the raw association: r_raw=+0.421  r_partial=+0.021  (threshold |r_partial| < 0.55*|r_raw| = 0.232)
+2026-08-17 15:58:49,040 [INFO] 
+2026-08-17 15:58:49,040 [INFO] (c) MECHANISM-BLOCK world — both matrices are shared-mechanism block structure
+2026-08-17 15:58:49,098 [INFO]   [PASS] MECHANISM-BLOCK: raw positive, partial annihilated: r_raw=+0.399 (threshold > +0.300)  r_partial=+0.028 (threshold |r| < 0.080)
+2026-08-17 15:58:49,098 [INFO] 
+2026-08-17 15:58:49,098 [INFO] (d) DEGENERATE-MECHANISM world — 70% 'unclear'; x3/x4 split vs collapsed coding
+2026-08-17 15:58:49,202 [INFO]   [PASS] x3/x4 SPLIT annihilates where the collapsed indicator does not: split r_partial=+0.001 (threshold |r| < 0.060)  vs  collapsed r_partial=-0.174 (threshold |r| > 0.090, and note its sign)
+2026-08-17 15:58:49,202 [INFO] 
+2026-08-17 15:58:49,202 [INFO] (e) DEGENERACY GUARD — identical activations must be recorded, not scored 0.0
+2026-08-17 15:58:49,203 [INFO]   [PASS] DEGENERACY recorded, no coefficient emitted: activation status=degenerate_by_construction  cell status=degenerate_by_construction
+2026-08-17 15:58:49,203 [INFO] 
+2026-08-17 15:58:49,203 [INFO] (f) DYADIC DEPENDENCE — cluster-robust interval vs iid on the same influence values
+2026-08-17 15:58:49,215 [INFO]   [PASS] dyadic interval materially wider than iid: dyadic half-width=0.5783  iid half-width=0.0841  ratio=6.88 (threshold >= 4.00; analytic truth for this planted world is ~7.5)
+2026-08-17 15:58:49,215 [INFO] 
+2026-08-17 15:58:49,215 [INFO] (g) NULL CALIBRATION — independent A and B over 120 replicates
+2026-08-17 15:58:50,407 [INFO]   [PASS] permutation p calibrated under the null: mean r_partial=+0.0088 (|.| < 0.060)  mean p=0.522 (in [0.30, 0.70])  frac(p<=0.05)=0.042 (<= 0.140)
+2026-08-17 15:58:50,407 [INFO] 
+2026-08-17 15:58:50,407 [INFO] (h) DISATTENUATION — recover a planted true correlation from known reliabilities
+2026-08-17 15:58:50,407 [INFO]   [PASS] two-sided disattenuation recovers the planted value: observed=0.2800 -> recovered=0.5000 vs planted 0.50 (tolerance 0.050)
+2026-08-17 15:58:50,407 [INFO] 
+2026-08-17 15:58:50,407 [INFO] (i) rel_B GATE — an unreliable biology matrix must refuse rather than null out
+2026-08-17 15:58:50,407 [INFO]   [PASS] gate thresholds fire in the right order, on the lower bound in BOTH directions: {0.10, lo 0.02} -> no_measurable_biological_geometry  |  {0.30, lo 0.24} -> attenuation_limited  |  {0.55, lo 0.46} -> ok  |  NEW {0.45, lo 0.35} -> attenuation_limited (was 'ok' when the 0.40 threshold read the point estimate)
+2026-08-17 15:58:50,407 [INFO] 
+2026-08-17 15:58:50,407 [INFO] (j) rel_B PIPELINE — reliable world vs all-noise world
+2026-08-17 15:58:50,733 [INFO]   [PASS] rel_B separates a reliable target from an unreliable one: reliable rel_B=0.997 -> ok (threshold > 0.400, headline permitted)  |  noise rel_B=0.000 -> no_measurable_biological_geometry (headline refused)
+2026-08-17 15:58:50,733 [INFO] 
+2026-08-17 15:58:50,733 [INFO] (k) COLLINEAR CONTROLS — a rank-deficient design must be reported, not absorbed
+2026-08-17 15:58:50,835 [INFO]   [PASS] rank-deficient design reported; signal kept, confound still annihilated: rank 4/5 (deficient=True)  POSITIVE r_partial=+0.888 (threshold >= +0.350)  NEGATIVE r_partial=+0.006 (threshold |r| < 0.080)
+2026-08-17 15:58:50,835 [INFO] 
+2026-08-17 15:58:50,835 [INFO] (l) INPUT GUARDS — asymmetry and NaN refused, empty encodings counted
+2026-08-17 15:58:50,835 [WARNING] biology_matrix: 5 drug(s) encode to an ALL-ZERO signed-rank profile; each is assigned distance exactly 1.0 to every other drug, which is a fabricated row, not a measurement
+2026-08-17 15:58:50,837 [INFO]   [PASS] degenerate inputs refused or counted, never silently scored: asymmetric A refused=ok  NaN in B refused=ok  NaN residuals refused=ok  empty encodings counted=ok  dose units parsed=ok  partial dose parse imputed, not crashed=ok
+2026-08-17 15:58:50,837 [INFO] 
+2026-08-17 15:58:50,837 [INFO] (m) TRIPLET TOLERANCE — matched triples under the (b3) zero-pharmacology confound
+2026-08-17 15:58:56,121 [INFO]   [PASS] tol_frac=0.10 returns the 0.50 null under a pure confound; the POSITIVE world is undamaged: confounded acc(tol_frac=0.10)=0.4978 over 16 worlds (threshold |acc - 0.500| <= 0.020)  vs wide tol_frac=0.60 acc=0.5307 (must exceed it)  |  POSITIVE acc=0.9467 (threshold > 0.550) over 12629 triples  min confounded triples=2701 (threshold > 200)  |  realised tolerances tol_x1=0.0087 (sd 0.0872), tol_x1p=0.0111 (sd 0.1106), keys with variance=4/7
+2026-08-17 15:58:56,121 [INFO] 
+2026-08-17 15:58:56,121 [INFO] (n) NAME-CONTROL GUARD — must fire on a roster where ~1 of 1770 pairs shares a token
+2026-08-17 15:58:56,189 [INFO]   [PASS] name_control_inert fires on the sparse roster and not on the stem roster: sparse: frac_sharing=0.00056 frac_nonzero=1.0000 var=6.274e-05 n_unique=2 -> inert=True (must be True; the OLD trigger frac_nonzero < 0.02 could not fire here)  |  stem roster: frac_sharing=0.1825 -> inert=False (must be False)
+2026-08-17 15:58:56,189 [INFO] 
+2026-08-17 15:58:56,189 [INFO] (o) DISATTENUATED EQUIVALENCE — a true r of 0.50 must not be declared equivalent to 0
+2026-08-17 15:58:56,189 [INFO]   [PASS] equivalence is judged on the disattenuated scale, and refuses when underpowered: planted true r=0.50 (rel_A=0.7, rel_B=0.35) -> attenuated r=0.2475, ci=[0.2025, 0.2925]  |  ATTENUATED test: equivalent=True (this is the defect: it declares a true 0.50 equivalent to zero)  |  DISATTENUATED test: status=not_equivalent against margin_eff=0.1485 (required not_equivalent)  |  wide-interval case: underpowered_for_equivalence (required underpowered_for_equivalence)
+2026-08-17 15:58:56,189 [INFO] 
+2026-08-17 15:58:56,189 [INFO] (p) rel_A BY CONSTRUCTION — draw-invariant activations must give 1.0, not None
+2026-08-17 15:58:56,216 [INFO]   [PASS] draw invariance is detected and priced at 1.0, varying draws still estimated: OLD path on invariant H: half_split=1.0000000000000000 -> spearman_brown=None (this is the defect)  |  NEW path: spearman_brown=1.0 source=control_draw_invariant_by_causal_structure max_rel_dev=3.38e-16  |  varying H: spearman_brown=0.9985 source=half_split_over_control_draws
+2026-08-17 15:58:56,216 [INFO] 
+2026-08-17 15:58:56,217 [INFO] (q) SPECTRUM — participation ratio and top-eigenvalue share against analytic truth
+2026-08-17 15:58:56,219 [INFO]   [PASS] eigenspectrum recovers the analytic participation ratio within 5%: PR true=1.0812 got=1.0812; top share true=0.9615 got=0.9615  |  PR true=8.0000 got=8.0000; top share true=0.1250 got=0.1250
+2026-08-17 15:58:56,219 [INFO] 
+2026-08-17 15:58:56,219 [INFO] (r) CONFOUND-RESIDUE CALIBRATOR — a real residue vs the chance envelope
+2026-08-17 15:58:59,902 [INFO]   [PASS] the calibrator separates a real confound residue from the chance envelope: annotated p95=0.1204 (threshold > 0.050; mean=0.0769, max=0.1418, frac(p<=.05)=0.750)  |  blind p95=0.0868 (must exceed the chance control, which is why the floor is per-arm)  |  noise_only p95=0.0556 (threshold <= 0.075 and < 0.75x the annotated; loose analytic chance envelope 0.0561), frac(p<=.05)=0.067 (threshold <= 0.140)
+2026-08-17 15:58:59,903 [INFO] 
+2026-08-17 15:58:59,903 [INFO] (s) ACTIVITY-MAGNITUDE world — magnitude only, no pharmacology anywhere
+2026-08-17 15:59:00,657 [INFO]   [PASS] a magnitude-only world reads positive on the headline and collapses when activity is adjusted: R2(B ranks | activity only)=0.714 (threshold > 0.600) vs 0.0023 at EQUAL amplitudes (threshold < 0.050)  |  leading eig share of B=0.194  |  IDENTIFIED: headline r_partial=+0.377 (threshold > +0.200) -> activity-adjusted |r|=0.0432 (threshold < 0.060)  |  MONOTONE (the (b3) analogue): headline +0.359 -> adjusted |r|=0.0655 (thresholds < 0.5x the headline AND <= 0.120, the measured confound-residue envelope; annihilation is NOT exact when the confound enters through different monotone transforms on the two sides)  |  means over 8 replicate worlds
+2026-08-17 15:59:00,657 [INFO] 
+2026-08-17 15:59:00,657 [INFO] (t) DIRECT ARM — positive world, name-only world, and variance domination
+2026-08-17 15:59:02,295 [INFO]   [PASS] the direct arm sees what the RSA cannot: (t1) POSITIVE: retrieval=1.000 (null 0.020, threshold > 0.200) mean_r=+0.992 (threshold > +0.800) p_retrieval=0.009900990099009901 increment_licensed=True (must be True)  |  (t2) NAME-ONLY: activations mean_r=+0.568 vs names-only +0.999, increment=-0.4302 (threshold <= +0.050), p_increment=0.0099 but increment_licensed=False (must be False -- the increment's null is not centred at zero, so p alone would have licensed a representation that adds nothing)  |  (t3) VARIANCE DOMINATION: participation_ratio=3.06 (threshold < 5.00), top_eig_share=0.440 -> RSA r_partial=+0.006 (threshold |r| < 0.150, i.e. a NULL) WHILE the direct arm holds mean_r=+0.991 (threshold > +0.800) and retrieval=1.000
+2026-08-17 15:59:02,295 [INFO] 
+2026-08-17 15:59:02,295 [INFO] (u) CELL-LINE CONTROL B PATH — a planted per-line geometry must be recovered
+2026-08-17 15:59:02,476 [INFO]   [PASS] the cell-line B path recovers a planted geometry: 20 lines recovered (planted 20)  Spearman(recovered B, planted B)=0.905 (threshold > 0.700)  rel_B=0.996 (threshold > 0.400) -> ok
+2026-08-17 15:59:02,476 [INFO] 
+2026-08-17 15:59:02,476 [INFO] (v) x9 SAME-PLATE — plate-driven geometry must die when the roster spans plates
+2026-08-17 15:59:02,616 [INFO]   [PASS] x9 annihilates a plate-driven geometry, and is dropped on a single plate: WITHOUT x9: r_partial=+0.759 (threshold > +0.300)  ->  WITH x9: r_partial=+0.034 (threshold |r| < 0.080)  |  single-plate roster: x9 dropped as zero-variance = True (must be True, which is why cell_line_plate scope is unaffected)
+2026-08-17 15:59:02,617 [INFO] 
+2026-08-17 15:59:02,617 [INFO] ============================================================================================
+2026-08-17 15:59:02,617 [INFO] HEADLINE SELFTEST LINES
+2026-08-17 15:59:02,617 [INFO]   (a) POSITIVE : r_raw=+0.888  r_partial=+0.888  p=0.00067   -> the estimator recovers planted structure
+2026-08-17 15:59:02,617 [INFO]   (b) NEGATIVE : r_raw=+0.420  r_partial=+0.006  p=0.823   -> the confound controls annihilate prompt-string geometry
+2026-08-17 15:59:02,617 [INFO] SELFTEST PASSED
+2026-08-17 15:59:02,617 [INFO] ============================================================================================
+### G1 PRIMARY : CVCL_0546 ###
+2026-08-17 15:59:52,470 [INFO] panel 946 from /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json
+2026-08-17 15:59:52,663 [INFO] loaded 19998 examples from tier tier2_unseen_drugs
+2026-08-17 15:59:52,696 [INFO] group = (cell_line CVCL_0546, plate ALL_PLATES) at scope cell_line; 50 drugs over the 10-cell floor
+2026-08-17 15:59:52,697 [INFO] 50 drugs after the cell floor and the --n_drugs cap
+2026-08-17 15:59:52,697 [INFO] building the biological matrix (residual signed-rank frame)
+2026-08-17 16:01:20,935 [INFO]   rel_B companions (REPORT ONLY): full-panel=0.3940489375766848, well-split=None over 1 drugs
+2026-08-17 16:01:21,000 [INFO]   rel_B = {'rel_B': 0.3853905002176017, 'half_split_spearman': 0.23868960282318474, 'n_splits': 25, 'n_boot_ok': 4000, 'floored_at_zero': False, 'clustered_on': 'drug', 'unit': 'cluster bootstrap over drugs, 95%', 'lo': 0.24437040028099175, 'hi': 0.519528297700144, 'boot_sd': 0.07044316287020853}
+2026-08-17 16:01:21,000 [INFO]   activity: R2(B ranks | activity only) = 0.0007062967585578228, leading eig share of B = 0.173431667062363
+2026-08-17 16:01:21,000 [INFO]   GATE  : attenuation_limited (headline permitted: True)
+2026-08-17 16:06:25,419 [INFO]   dose frame: parse rate 1.000, x6 built = True, median frac of cells at the modal dose string = 1.0
+2026-08-17 16:06:25,421 [INFO]   cell line name 'SW480', fixed dose '0.05 uM', K=16 shared control sentences (plate_matched_exact_K)
+2026-08-17 16:07:30,180 [INFO]   positive control: 48 cell lines, rel_B = 0.972477570432469, gate = ok (REPORTED, never applied -- this is a control, not a claim)
+2026-08-17 16:07:30,439 [INFO] device = cuda
+2026-08-17 16:07:30,439 [INFO] === finetuned (/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final) ===
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s]Loading weights:  26%|██▌       | 51/196 [00:00<00:00, 497.55it/s]Loading weights: 100%|██████████| 196/196 [00:00<00:00, 1543.39it/s]
+2026-08-17 16:07:50,248 [INFO]   16 layers, hidden 2048; reading layers [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] at positions ['name', 'instr', 'last']
+2026-08-17 16:07:50,271 [INFO]   arm=blind: 800 prompts, 19178 matched triples
+2026-08-17 16:07:50,271 [INFO]   calibrating the confound-residue envelope for arm=blind on this roster's own controls (200 replicates, CPU)
+2026-08-17 16:07:59,030 [INFO]     floor(|r_partial|, p95) = 0.06463115528791333 (chance-only control: 0.05450957450113737)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer GPTNeoXTokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+2026-08-17 16:08:09,652 [INFO]     prompts 205-488 tokens
+2026-08-17 16:08:10,027 [INFO]     L 0 name  centered r_raw=+0.037 r_part=+0.030 p=0.2744 MDE80=0.079
+2026-08-17 16:08:10,388 [INFO]     L 0 name  zscored  r_raw=+0.037 r_part=+0.027 p=0.3262 MDE80=0.078
+2026-08-17 16:08:10,768 [INFO]     L 1 name  centered r_raw=+0.054 r_part=+0.049 p=0.0897 MDE80=0.080
+2026-08-17 16:08:11,126 [INFO]     L 1 name  zscored  r_raw=+0.044 r_part=+0.039 p=0.1600 MDE80=0.079
+2026-08-17 16:08:11,483 [INFO]     L 1 instr centered r_raw=+0.022 r_part=+0.047 p=0.0942 MDE80=0.077
+2026-08-17 16:08:11,841 [INFO]     L 1 instr zscored  r_raw=+0.022 r_part=+0.042 p=0.1280 MDE80=0.077
+2026-08-17 16:08:12,369 [INFO]     L 1 last  centered r_raw=+0.004 r_part=+0.011 p=0.7041 MDE80=0.080
+2026-08-17 16:08:12,901 [INFO]     L 1 last  zscored  r_raw=+0.031 r_part=+0.044 p=0.1202 MDE80=0.081
+2026-08-17 16:08:13,262 [INFO]     L 2 name  centered r_raw=+0.029 r_part=+0.022 p=0.4116 MDE80=0.079
+2026-08-17 16:08:13,622 [INFO]     L 2 name  zscored  r_raw=+0.026 r_part=+0.020 p=0.4749 MDE80=0.078
+2026-08-17 16:08:13,985 [INFO]     L 2 instr centered r_raw=+0.026 r_part=+0.050 p=0.0752 MDE80=0.078
+2026-08-17 16:08:14,346 [INFO]     L 2 instr zscored  r_raw=+0.021 r_part=+0.035 p=0.1982 MDE80=0.079
+2026-08-17 16:08:14,873 [INFO]     L 2 last  centered r_raw=+0.073 r_part=+0.088 p=0.0080 MDE80=0.082
+2026-08-17 16:08:15,405 [INFO]     L 2 last  zscored  r_raw=+0.065 r_part=+0.085 p=0.0085 MDE80=0.081
+2026-08-17 16:08:15,763 [INFO]     L 3 name  centered r_raw=+0.023 r_part=+0.017 p=0.5301 MDE80=0.078
+2026-08-17 16:08:16,122 [INFO]     L 3 name  zscored  r_raw=+0.028 r_part=+0.024 p=0.3787 MDE80=0.078
+2026-08-17 16:08:16,482 [INFO]     L 3 instr centered r_raw=+0.007 r_part=+0.013 p=0.6493 MDE80=0.079
+2026-08-17 16:08:16,844 [INFO]     L 3 instr zscored  r_raw=+0.015 r_part=+0.020 p=0.4796 MDE80=0.078
+2026-08-17 16:08:17,375 [INFO]     L 3 last  centered r_raw=+0.036 r_part=+0.044 p=0.1207 MDE80=0.080
+2026-08-17 16:08:17,914 [INFO]     L 3 last  zscored  r_raw=+0.042 r_part=+0.049 p=0.0890 MDE80=0.080
+2026-08-17 16:08:18,274 [INFO]     L 4 name  centered r_raw=+0.028 r_part=+0.026 p=0.3577 MDE80=0.079
+2026-08-17 16:08:18,634 [INFO]     L 4 name  zscored  r_raw=+0.025 r_part=+0.018 p=0.5189 MDE80=0.079
+2026-08-17 16:08:19,001 [INFO]     L 4 instr centered r_raw=+0.013 r_part=+0.018 p=0.5139 MDE80=0.078
+2026-08-17 16:08:19,369 [INFO]     L 4 instr zscored  r_raw=+0.014 r_part=+0.015 p=0.5911 MDE80=0.079
+2026-08-17 16:08:19,896 [INFO]     L 4 last  centered r_raw=+0.032 r_part=+0.042 p=0.1352 MDE80=0.079
+2026-08-17 16:08:20,428 [INFO]     L 4 last  zscored  r_raw=+0.034 r_part=+0.044 p=0.1222 MDE80=0.079
+2026-08-17 16:08:20,788 [INFO]     L 5 name  centered r_raw=+0.036 r_part=+0.041 p=0.1390 MDE80=0.078
+2026-08-17 16:08:21,147 [INFO]     L 5 name  zscored  r_raw=+0.029 r_part=+0.026 p=0.3382 MDE80=0.078
+2026-08-17 16:08:21,505 [INFO]     L 5 instr centered r_raw=+0.018 r_part=+0.023 p=0.4031 MDE80=0.079
+2026-08-17 16:08:21,864 [INFO]     L 5 instr zscored  r_raw=+0.019 r_part=+0.021 p=0.4444 MDE80=0.079
+2026-08-17 16:08:22,390 [INFO]     L 5 last  centered r_raw=+0.031 r_part=+0.039 p=0.1590 MDE80=0.079
+2026-08-17 16:08:22,928 [INFO]     L 5 last  zscored  r_raw=+0.039 r_part=+0.048 p=0.0877 MDE80=0.080
+2026-08-17 16:08:23,287 [INFO]     L 6 name  centered r_raw=+0.033 r_part=+0.029 p=0.3022 MDE80=0.079
+2026-08-17 16:08:23,648 [INFO]     L 6 name  zscored  r_raw=+0.021 r_part=+0.013 p=0.6376 MDE80=0.079
+2026-08-17 16:08:24,008 [INFO]     L 6 instr centered r_raw=+0.016 r_part=+0.020 p=0.4591 MDE80=0.079
+2026-08-17 16:08:24,368 [INFO]     L 6 instr zscored  r_raw=+0.019 r_part=+0.020 p=0.4614 MDE80=0.080
+2026-08-17 16:08:24,897 [INFO]     L 6 last  centered r_raw=+0.034 r_part=+0.040 p=0.1525 MDE80=0.078
+2026-08-17 16:08:25,443 [INFO]     L 6 last  zscored  r_raw=+0.043 r_part=+0.051 p=0.0640 MDE80=0.078
+2026-08-17 16:08:25,803 [INFO]     L 7 name  centered r_raw=+0.033 r_part=+0.030 p=0.2742 MDE80=0.078
+2026-08-17 16:08:26,163 [INFO]     L 7 name  zscored  r_raw=+0.022 r_part=+0.016 p=0.5591 MDE80=0.078
+2026-08-17 16:08:26,524 [INFO]     L 7 instr centered r_raw=+0.014 r_part=+0.019 p=0.4851 MDE80=0.079
+2026-08-17 16:08:26,888 [INFO]     L 7 instr zscored  r_raw=+0.016 r_part=+0.018 p=0.5161 MDE80=0.080
+2026-08-17 16:08:27,418 [INFO]     L 7 last  centered r_raw=+0.041 r_part=+0.042 p=0.1277 MDE80=0.079
+2026-08-17 16:08:27,956 [INFO]     L 7 last  zscored  r_raw=+0.051 r_part=+0.050 p=0.0720 MDE80=0.079
+2026-08-17 16:08:28,315 [INFO]     L 8 name  centered r_raw=+0.024 r_part=+0.023 p=0.4174 MDE80=0.078
+2026-08-17 16:08:28,676 [INFO]     L 8 name  zscored  r_raw=+0.017 r_part=+0.013 p=0.6411 MDE80=0.078
+2026-08-17 16:08:29,035 [INFO]     L 8 instr centered r_raw=+0.015 r_part=+0.024 p=0.3804 MDE80=0.078
+2026-08-17 16:08:29,396 [INFO]     L 8 instr zscored  r_raw=+0.020 r_part=+0.029 p=0.2884 MDE80=0.079
+2026-08-17 16:08:29,924 [INFO]     L 8 last  centered r_raw=+0.048 r_part=+0.031 p=0.2647 MDE80=0.080
+2026-08-17 16:08:30,457 [INFO]     L 8 last  zscored  r_raw=+0.049 r_part=+0.031 p=0.2664 MDE80=0.080
+2026-08-17 16:08:30,815 [INFO]     L 9 name  centered r_raw=+0.031 r_part=+0.034 p=0.2212 MDE80=0.078
+2026-08-17 16:08:31,180 [INFO]     L 9 name  zscored  r_raw=+0.025 r_part=+0.025 p=0.3737 MDE80=0.078
+2026-08-17 16:08:31,540 [INFO]     L 9 instr centered r_raw=+0.013 r_part=+0.023 p=0.3974 MDE80=0.078
+2026-08-17 16:08:31,899 [INFO]     L 9 instr zscored  r_raw=+0.019 r_part=+0.029 p=0.2889 MDE80=0.079
+2026-08-17 16:08:32,426 [INFO]     L 9 last  centered r_raw=+0.040 r_part=+0.023 p=0.4101 MDE80=0.080
+2026-08-17 16:08:32,965 [INFO]     L 9 last  zscored  r_raw=+0.035 r_part=+0.016 p=0.5539 MDE80=0.080
+2026-08-17 16:08:33,326 [INFO]     L10 name  centered r_raw=+0.024 r_part=+0.025 p=0.3627 MDE80=0.078
+2026-08-17 16:08:33,686 [INFO]     L10 name  zscored  r_raw=+0.024 r_part=+0.023 p=0.4094 MDE80=0.078
+2026-08-17 16:08:34,044 [INFO]     L10 instr centered r_raw=+0.016 r_part=+0.025 p=0.3582 MDE80=0.078
+2026-08-17 16:08:34,403 [INFO]     L10 instr zscored  r_raw=+0.020 r_part=+0.028 p=0.3034 MDE80=0.079
+2026-08-17 16:08:34,932 [INFO]     L10 last  centered r_raw=+0.012 r_part=+0.001 p=0.9723 MDE80=0.079
+2026-08-17 16:08:35,465 [INFO]     L10 last  zscored  r_raw=+0.010 r_part=-0.006 p=0.8335 MDE80=0.080
+2026-08-17 16:08:35,825 [INFO]     L11 name  centered r_raw=+0.027 r_part=+0.026 p=0.3474 MDE80=0.078
+2026-08-17 16:08:36,189 [INFO]     L11 name  zscored  r_raw=+0.029 r_part=+0.024 p=0.3917 MDE80=0.078
+2026-08-17 16:08:36,551 [INFO]     L11 instr centered r_raw=+0.046 r_part=+0.062 p=0.0282 MDE80=0.078
+2026-08-17 16:08:36,913 [INFO]     L11 instr zscored  r_raw=+0.049 r_part=+0.066 p=0.0195 MDE80=0.078
+2026-08-17 16:08:37,443 [INFO]     L11 last  centered r_raw=+0.016 r_part=+0.007 p=0.7873 MDE80=0.080
+2026-08-17 16:08:37,980 [INFO]     L11 last  zscored  r_raw=+0.015 r_part=+0.006 p=0.8233 MDE80=0.081
+2026-08-17 16:08:42,622 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6173826173826173) mean_r=+0.946 names_only=+0.977 increment=-0.031 (p=0.36563436563436563)
+2026-08-17 16:08:42,622 [INFO]     L12 name  centered r_raw=+0.014 r_part=+0.007 p=0.7798 MDE80=0.078
+2026-08-17 16:08:42,989 [INFO]     L12 name  zscored  r_raw=+0.008 r_part=+0.000 p=0.9923 MDE80=0.078
+2026-08-17 16:08:47,641 [INFO]       DIRECT L12 instr centered: retrieval=0.980 (null 0.020, p=1.0) mean_r=+0.974 names_only=+0.977 increment=-0.002 (p=0.4515484515484515)
+2026-08-17 16:08:47,641 [INFO]     L12 instr centered r_raw=+0.031 r_part=+0.045 p=0.1100 MDE80=0.079
+2026-08-17 16:08:48,013 [INFO]     L12 instr zscored  r_raw=+0.034 r_part=+0.044 p=0.1105 MDE80=0.079
+2026-08-17 16:08:53,068 [INFO]       DIRECT L12 last centered: retrieval=0.920 (null 0.020, p=0.4785214785214785) mean_r=+0.932 names_only=+0.977 increment=-0.044 (p=0.028971028971028972)
+2026-08-17 16:08:53,068 [INFO]     L12 last  centered r_raw=+0.005 r_part=-0.005 p=0.8598 MDE80=0.081
+2026-08-17 16:08:53,613 [INFO]     L12 last  zscored  r_raw=+0.005 r_part=-0.006 p=0.8180 MDE80=0.081
+2026-08-17 16:08:53,973 [INFO]     L13 name  centered r_raw=+0.029 r_part=+0.014 p=0.5849 MDE80=0.078
+2026-08-17 16:08:54,333 [INFO]     L13 name  zscored  r_raw=+0.019 r_part=+0.011 p=0.6756 MDE80=0.077
+2026-08-17 16:08:54,693 [INFO]     L13 instr centered r_raw=+0.018 r_part=+0.027 p=0.3329 MDE80=0.079
+2026-08-17 16:08:55,053 [INFO]     L13 instr zscored  r_raw=+0.021 r_part=+0.028 p=0.3199 MDE80=0.079
+2026-08-17 16:08:55,580 [INFO]     L13 last  centered r_raw=-0.038 r_part=-0.055 p=0.0545 MDE80=0.081
+2026-08-17 16:08:56,118 [INFO]     L13 last  zscored  r_raw=-0.036 r_part=-0.054 p=0.0585 MDE80=0.081
+2026-08-17 16:08:56,479 [INFO]     L14 name  centered r_raw=+0.019 r_part=+0.013 p=0.6433 MDE80=0.079
+2026-08-17 16:08:56,840 [INFO]     L14 name  zscored  r_raw=+0.016 r_part=+0.010 p=0.6818 MDE80=0.078
+2026-08-17 16:08:57,202 [INFO]     L14 instr centered r_raw=+0.020 r_part=+0.027 p=0.3437 MDE80=0.079
+2026-08-17 16:08:57,562 [INFO]     L14 instr zscored  r_raw=+0.026 r_part=+0.032 p=0.2614 MDE80=0.080
+2026-08-17 16:08:58,090 [INFO]     L14 last  centered r_raw=-0.032 r_part=-0.052 p=0.0672 MDE80=0.081
+2026-08-17 16:08:58,624 [INFO]     L14 last  zscored  r_raw=-0.030 r_part=-0.050 p=0.0790 MDE80=0.080
+2026-08-17 16:08:58,983 [INFO]     L15 name  centered r_raw=+0.008 r_part=+0.007 p=0.8153 MDE80=0.079
+2026-08-17 16:08:59,342 [INFO]     L15 name  zscored  r_raw=+0.008 r_part=+0.006 p=0.8313 MDE80=0.079
+2026-08-17 16:08:59,700 [INFO]     L15 instr centered r_raw=+0.038 r_part=+0.046 p=0.0917 MDE80=0.079
+2026-08-17 16:09:00,058 [INFO]     L15 instr zscored  r_raw=+0.040 r_part=+0.049 p=0.0795 MDE80=0.079
+2026-08-17 16:09:00,585 [INFO]     L15 last  centered r_raw=-0.031 r_part=-0.048 p=0.0837 MDE80=0.081
+2026-08-17 16:09:01,136 [INFO]     L15 last  zscored  r_raw=-0.028 r_part=-0.045 p=0.1062 MDE80=0.081
+2026-08-17 16:09:05,768 [INFO]       DIRECT L16 name centered: retrieval=0.980 (null 0.020, p=0.4725274725274725) mean_r=+0.962 names_only=+0.977 increment=-0.015 (p=0.35764235764235763)
+2026-08-17 16:09:05,768 [INFO]     L16 name  centered r_raw=+0.007 r_part=+0.000 p=0.9965 MDE80=0.080
+2026-08-17 16:09:06,140 [INFO]     L16 name  zscored  r_raw=+0.010 r_part=+0.004 p=0.8893 MDE80=0.080
+2026-08-17 16:09:10,773 [INFO]       DIRECT L16 instr centered: retrieval=0.920 (null 0.020, p=1.0) mean_r=+0.923 names_only=+0.977 increment=-0.054 (p=0.7862137862137862)
+2026-08-17 16:09:10,773 [INFO]     L16 instr centered r_raw=+0.036 r_part=+0.041 p=0.1312 MDE80=0.078
+2026-08-17 16:09:11,142 [INFO]     L16 instr zscored  r_raw=+0.037 r_part=+0.043 p=0.1100 MDE80=0.078
+2026-08-17 16:09:16,193 [INFO]       DIRECT L16 last centered: retrieval=0.940 (null 0.020, p=0.8781218781218781) mean_r=+0.932 names_only=+0.977 increment=-0.044 (p=0.1088911088911089)
+2026-08-17 16:09:16,193 [INFO]     L16 last  centered r_raw=-0.030 r_part=-0.046 p=0.0980 MDE80=0.080
+2026-08-17 16:09:16,734 [INFO]     L16 last  zscored  r_raw=-0.027 r_part=-0.044 p=0.1137 MDE80=0.080
+2026-08-17 16:09:16,753 [INFO]   arm=annotated: 800 prompts, 13364 matched triples
+2026-08-17 16:09:16,753 [INFO]   calibrating the confound-residue envelope for arm=annotated on this roster's own controls (200 replicates, CPU)
+2026-08-17 16:09:21,252 [INFO]     floor(|r_partial|, p95) = 0.06646858044596626 (chance-only control: 0.05450957450113737)
+2026-08-17 16:09:30,908 [INFO]     prompts 205-491 tokens
+2026-08-17 16:09:31,295 [INFO]     L 0 name  centered r_raw=+0.037 r_part=+0.033 p=0.2359 MDE80=0.079
+2026-08-17 16:09:31,661 [INFO]     L 0 name  zscored  r_raw=+0.037 r_part=+0.030 p=0.2807 MDE80=0.078
+2026-08-17 16:09:32,047 [INFO]     L 1 name  centered r_raw=+0.054 r_part=+0.052 p=0.0745 MDE80=0.081
+2026-08-17 16:09:32,410 [INFO]     L 1 name  zscored  r_raw=+0.044 r_part=+0.043 p=0.1275 MDE80=0.079
+2026-08-17 16:09:32,774 [INFO]     L 1 instr centered r_raw=+0.006 r_part=+0.025 p=0.3469 MDE80=0.076
+2026-08-17 16:09:33,136 [INFO]     L 1 instr zscored  r_raw=+0.010 r_part=+0.025 p=0.3434 MDE80=0.076
+2026-08-17 16:09:33,667 [INFO]     L 1 last  centered r_raw=+0.001 r_part=-0.005 p=0.8513 MDE80=0.079
+2026-08-17 16:09:34,211 [INFO]     L 1 last  zscored  r_raw=+0.025 r_part=+0.036 p=0.1870 MDE80=0.079
+2026-08-17 16:09:34,578 [INFO]     L 2 name  centered r_raw=+0.029 r_part=+0.025 p=0.3629 MDE80=0.079
+2026-08-17 16:09:34,942 [INFO]     L 2 name  zscored  r_raw=+0.026 r_part=+0.023 p=0.4079 MDE80=0.079
+2026-08-17 16:09:35,303 [INFO]     L 2 instr centered r_raw=+0.013 r_part=+0.024 p=0.3707 MDE80=0.077
+2026-08-17 16:09:35,665 [INFO]     L 2 instr zscored  r_raw=+0.008 r_part=+0.012 p=0.6506 MDE80=0.076
+2026-08-17 16:09:36,197 [INFO]     L 2 last  centered r_raw=+0.045 r_part=+0.068 p=0.0212 MDE80=0.080
+2026-08-17 16:09:36,740 [INFO]     L 2 last  zscored  r_raw=+0.034 r_part=+0.056 p=0.0487 MDE80=0.079
+2026-08-17 16:09:37,102 [INFO]     L 3 name  centered r_raw=+0.023 r_part=+0.019 p=0.4836 MDE80=0.079
+2026-08-17 16:09:37,467 [INFO]     L 3 name  zscored  r_raw=+0.028 r_part=+0.026 p=0.3364 MDE80=0.078
+2026-08-17 16:09:37,837 [INFO]     L 3 instr centered r_raw=+0.002 r_part=-0.010 p=0.6848 MDE80=0.075
+2026-08-17 16:09:38,208 [INFO]     L 3 instr zscored  r_raw=+0.004 r_part=-0.005 p=0.8538 MDE80=0.076
+2026-08-17 16:09:38,743 [INFO]     L 3 last  centered r_raw=+0.028 r_part=+0.033 p=0.2307 MDE80=0.079
+2026-08-17 16:09:39,286 [INFO]     L 3 last  zscored  r_raw=+0.032 r_part=+0.040 p=0.1580 MDE80=0.080
+2026-08-17 16:09:39,650 [INFO]     L 4 name  centered r_raw=+0.028 r_part=+0.028 p=0.3217 MDE80=0.079
+2026-08-17 16:09:40,013 [INFO]     L 4 name  zscored  r_raw=+0.025 r_part=+0.020 p=0.4709 MDE80=0.079
+2026-08-17 16:09:40,376 [INFO]     L 4 instr centered r_raw=-0.001 r_part=-0.017 p=0.4939 MDE80=0.071
+2026-08-17 16:09:40,740 [INFO]     L 4 instr zscored  r_raw=-0.001 r_part=-0.016 p=0.5454 MDE80=0.073
+2026-08-17 16:09:41,272 [INFO]     L 4 last  centered r_raw=+0.020 r_part=+0.027 p=0.3199 MDE80=0.079
+2026-08-17 16:09:41,816 [INFO]     L 4 last  zscored  r_raw=+0.023 r_part=+0.031 p=0.2679 MDE80=0.079
+2026-08-17 16:09:42,177 [INFO]     L 5 name  centered r_raw=+0.036 r_part=+0.043 p=0.1240 MDE80=0.079
+2026-08-17 16:09:42,540 [INFO]     L 5 name  zscored  r_raw=+0.029 r_part=+0.028 p=0.3137 MDE80=0.078
+2026-08-17 16:09:42,903 [INFO]     L 5 instr centered r_raw=+0.000 r_part=-0.011 p=0.6753 MDE80=0.073
+2026-08-17 16:09:43,265 [INFO]     L 5 instr zscored  r_raw=+0.001 r_part=-0.010 p=0.7136 MDE80=0.074
+2026-08-17 16:09:43,796 [INFO]     L 5 last  centered r_raw=+0.016 r_part=+0.023 p=0.4096 MDE80=0.078
+2026-08-17 16:09:44,336 [INFO]     L 5 last  zscored  r_raw=+0.021 r_part=+0.030 p=0.2792 MDE80=0.079
+2026-08-17 16:09:44,698 [INFO]     L 6 name  centered r_raw=+0.033 r_part=+0.031 p=0.2712 MDE80=0.079
+2026-08-17 16:09:45,061 [INFO]     L 6 name  zscored  r_raw=+0.021 r_part=+0.015 p=0.6016 MDE80=0.079
+2026-08-17 16:09:45,424 [INFO]     L 6 instr centered r_raw=+0.004 r_part=-0.005 p=0.8415 MDE80=0.075
+2026-08-17 16:09:45,786 [INFO]     L 6 instr zscored  r_raw=+0.006 r_part=-0.001 p=0.9723 MDE80=0.075
+2026-08-17 16:09:46,319 [INFO]     L 6 last  centered r_raw=+0.016 r_part=+0.020 p=0.4561 MDE80=0.078
+2026-08-17 16:09:46,864 [INFO]     L 6 last  zscored  r_raw=+0.020 r_part=+0.026 p=0.3424 MDE80=0.078
+2026-08-17 16:09:47,228 [INFO]     L 7 name  centered r_raw=+0.033 r_part=+0.032 p=0.2572 MDE80=0.078
+2026-08-17 16:09:47,593 [INFO]     L 7 name  zscored  r_raw=+0.022 r_part=+0.018 p=0.5264 MDE80=0.079
+2026-08-17 16:09:47,956 [INFO]     L 7 instr centered r_raw=+0.005 r_part=-0.002 p=0.9373 MDE80=0.074
+2026-08-17 16:09:48,324 [INFO]     L 7 instr zscored  r_raw=+0.003 r_part=-0.007 p=0.7953 MDE80=0.076
+2026-08-17 16:09:48,856 [INFO]     L 7 last  centered r_raw=+0.010 r_part=+0.004 p=0.8815 MDE80=0.077
+2026-08-17 16:09:49,397 [INFO]     L 7 last  zscored  r_raw=+0.016 r_part=+0.011 p=0.6771 MDE80=0.077
+2026-08-17 16:09:49,758 [INFO]     L 8 name  centered r_raw=+0.024 r_part=+0.024 p=0.3784 MDE80=0.079
+2026-08-17 16:09:50,122 [INFO]     L 8 name  zscored  r_raw=+0.017 r_part=+0.014 p=0.6051 MDE80=0.079
+2026-08-17 16:09:50,484 [INFO]     L 8 instr centered r_raw=+0.004 r_part=-0.002 p=0.9483 MDE80=0.075
+2026-08-17 16:09:50,847 [INFO]     L 8 instr zscored  r_raw=+0.005 r_part=+0.003 p=0.9088 MDE80=0.076
+2026-08-17 16:09:51,378 [INFO]     L 8 last  centered r_raw=+0.014 r_part=+0.006 p=0.8258 MDE80=0.078
+2026-08-17 16:09:51,921 [INFO]     L 8 last  zscored  r_raw=+0.012 r_part=+0.001 p=0.9730 MDE80=0.078
+2026-08-17 16:09:52,283 [INFO]     L 9 name  centered r_raw=+0.031 r_part=+0.036 p=0.2029 MDE80=0.078
+2026-08-17 16:09:52,654 [INFO]     L 9 name  zscored  r_raw=+0.025 r_part=+0.027 p=0.3377 MDE80=0.078
+2026-08-17 16:09:53,019 [INFO]     L 9 instr centered r_raw=+0.002 r_part=-0.009 p=0.7336 MDE80=0.075
+2026-08-17 16:09:53,381 [INFO]     L 9 instr zscored  r_raw=+0.002 r_part=-0.005 p=0.8520 MDE80=0.076
+2026-08-17 16:09:53,911 [INFO]     L 9 last  centered r_raw=+0.007 r_part=+0.002 p=0.9410 MDE80=0.077
+2026-08-17 16:09:54,454 [INFO]     L 9 last  zscored  r_raw=+0.006 r_part=-0.002 p=0.9328 MDE80=0.078
+2026-08-17 16:09:54,817 [INFO]     L10 name  centered r_raw=+0.024 r_part=+0.025 p=0.3597 MDE80=0.078
+2026-08-17 16:09:55,180 [INFO]     L10 name  zscored  r_raw=+0.024 r_part=+0.024 p=0.3922 MDE80=0.078
+2026-08-17 16:09:55,540 [INFO]     L10 instr centered r_raw=-0.005 r_part=-0.025 p=0.3512 MDE80=0.076
+2026-08-17 16:09:55,903 [INFO]     L10 instr zscored  r_raw=-0.006 r_part=-0.026 p=0.3432 MDE80=0.077
+2026-08-17 16:09:56,433 [INFO]     L10 last  centered r_raw=+0.002 r_part=-0.001 p=0.9655 MDE80=0.078
+2026-08-17 16:09:56,978 [INFO]     L10 last  zscored  r_raw=+0.001 r_part=-0.006 p=0.8375 MDE80=0.079
+2026-08-17 16:09:57,346 [INFO]     L11 name  centered r_raw=+0.027 r_part=+0.026 p=0.3467 MDE80=0.078
+2026-08-17 16:09:57,712 [INFO]     L11 name  zscored  r_raw=+0.029 r_part=+0.024 p=0.3762 MDE80=0.078
+2026-08-17 16:09:58,075 [INFO]     L11 instr centered r_raw=+0.001 r_part=-0.004 p=0.8920 MDE80=0.078
+2026-08-17 16:09:58,438 [INFO]     L11 instr zscored  r_raw=+0.002 r_part=-0.003 p=0.9148 MDE80=0.078
+2026-08-17 16:09:58,972 [INFO]     L11 last  centered r_raw=+0.002 r_part=+0.001 p=0.9743 MDE80=0.078
+2026-08-17 16:09:59,513 [INFO]     L11 last  zscored  r_raw=+0.005 r_part=+0.001 p=0.9575 MDE80=0.078
+2026-08-17 16:10:04,113 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6173826173826173) mean_r=+0.946 names_only=+0.977 increment=-0.031 (p=0.36563436563436563)
+2026-08-17 16:10:04,113 [INFO]     L12 name  centered r_raw=+0.014 r_part=+0.007 p=0.7888 MDE80=0.078
+2026-08-17 16:10:04,480 [INFO]     L12 name  zscored  r_raw=+0.008 r_part=+0.001 p=0.9670 MDE80=0.078
+2026-08-17 16:10:09,084 [INFO]       DIRECT L12 instr centered: retrieval=0.840 (null 0.020, p=0.9200799200799201) mean_r=+0.801 names_only=+0.977 increment=-0.176 (p=0.6483516483516484)
+2026-08-17 16:10:09,084 [INFO]     L12 instr centered r_raw=-0.010 r_part=-0.016 p=0.5521 MDE80=0.078
+2026-08-17 16:10:09,455 [INFO]     L12 instr zscored  r_raw=-0.009 r_part=-0.014 p=0.6058 MDE80=0.078
+2026-08-17 16:10:14,224 [INFO]       DIRECT L12 last centered: retrieval=0.900 (null 0.020, p=0.997002997002997) mean_r=+0.930 names_only=+0.977 increment=-0.046 (p=0.1068931068931069)
+2026-08-17 16:10:14,224 [INFO]     L12 last  centered r_raw=+0.007 r_part=+0.006 p=0.8323 MDE80=0.080
+2026-08-17 16:10:14,780 [INFO]     L12 last  zscored  r_raw=+0.008 r_part=+0.006 p=0.8208 MDE80=0.080
+2026-08-17 16:10:15,144 [INFO]     L13 name  centered r_raw=+0.029 r_part=+0.014 p=0.5949 MDE80=0.078
+2026-08-17 16:10:15,506 [INFO]     L13 name  zscored  r_raw=+0.019 r_part=+0.012 p=0.6458 MDE80=0.077
+2026-08-17 16:10:15,869 [INFO]     L13 instr centered r_raw=-0.015 r_part=-0.026 p=0.3469 MDE80=0.078
+2026-08-17 16:10:16,232 [INFO]     L13 instr zscored  r_raw=-0.015 r_part=-0.026 p=0.3507 MDE80=0.078
+2026-08-17 16:10:16,765 [INFO]     L13 last  centered r_raw=-0.043 r_part=-0.059 p=0.0430 MDE80=0.082
+2026-08-17 16:10:17,310 [INFO]     L13 last  zscored  r_raw=-0.042 r_part=-0.058 p=0.0477 MDE80=0.082
+2026-08-17 16:10:17,673 [INFO]     L14 name  centered r_raw=+0.019 r_part=+0.013 p=0.6351 MDE80=0.079
+2026-08-17 16:10:18,037 [INFO]     L14 name  zscored  r_raw=+0.016 r_part=+0.012 p=0.6488 MDE80=0.078
+2026-08-17 16:10:18,398 [INFO]     L14 instr centered r_raw=-0.012 r_part=-0.022 p=0.4299 MDE80=0.078
+2026-08-17 16:10:18,761 [INFO]     L14 instr zscored  r_raw=-0.008 r_part=-0.016 p=0.5744 MDE80=0.079
+2026-08-17 16:10:19,292 [INFO]     L14 last  centered r_raw=-0.036 r_part=-0.055 p=0.0557 MDE80=0.081
+2026-08-17 16:10:19,831 [INFO]     L14 last  zscored  r_raw=-0.035 r_part=-0.052 p=0.0677 MDE80=0.081
+2026-08-17 16:10:20,193 [INFO]     L15 name  centered r_raw=+0.008 r_part=+0.006 p=0.8200 MDE80=0.079
+2026-08-17 16:10:20,557 [INFO]     L15 name  zscored  r_raw=+0.008 r_part=+0.006 p=0.8130 MDE80=0.079
+2026-08-17 16:10:20,919 [INFO]     L15 instr centered r_raw=-0.007 r_part=-0.005 p=0.8593 MDE80=0.079
+2026-08-17 16:10:21,281 [INFO]     L15 instr zscored  r_raw=-0.002 r_part=+0.003 p=0.9235 MDE80=0.080
+2026-08-17 16:10:21,814 [INFO]     L15 last  centered r_raw=-0.036 r_part=-0.054 p=0.0577 MDE80=0.081
+2026-08-17 16:10:22,359 [INFO]     L15 last  zscored  r_raw=-0.035 r_part=-0.052 p=0.0700 MDE80=0.081
+2026-08-17 16:10:26,961 [INFO]       DIRECT L16 name centered: retrieval=0.980 (null 0.020, p=0.4725274725274725) mean_r=+0.962 names_only=+0.977 increment=-0.015 (p=0.35764235764235763)
+2026-08-17 16:10:26,961 [INFO]     L16 name  centered r_raw=+0.007 r_part=+0.001 p=0.9705 MDE80=0.080
+2026-08-17 16:10:27,334 [INFO]     L16 name  zscored  r_raw=+0.010 r_part=+0.005 p=0.8593 MDE80=0.080
+2026-08-17 16:10:31,950 [INFO]       DIRECT L16 instr centered: retrieval=0.840 (null 0.020, p=1.0) mean_r=+0.837 names_only=+0.977 increment=-0.140 (p=0.5754245754245755)
+2026-08-17 16:10:31,950 [INFO]     L16 instr centered r_raw=-0.011 r_part=-0.008 p=0.7763 MDE80=0.080
+2026-08-17 16:10:32,321 [INFO]     L16 instr zscored  r_raw=-0.007 r_part=-0.003 p=0.9195 MDE80=0.080
+2026-08-17 16:10:37,090 [INFO]       DIRECT L16 last centered: retrieval=0.920 (null 0.020, p=0.9560439560439561) mean_r=+0.918 names_only=+0.977 increment=-0.058 (p=0.38161838161838163)
+2026-08-17 16:10:37,090 [INFO]     L16 last  centered r_raw=-0.037 r_part=-0.058 p=0.0460 MDE80=0.081
+2026-08-17 16:10:37,643 [INFO]     L16 last  zscored  r_raw=-0.034 r_part=-0.054 p=0.0620 MDE80=0.081
+2026-08-17 16:10:37,658 [INFO]   POSITIVE CONTROL: 48 cell lines, 768 prompts, drug fixed at 'Proglumide'
+2026-08-17 16:10:47,327 [INFO]     PC L 0 name  r_raw=+0.006 r_part=+0.003 p=0.9170
+2026-08-17 16:10:47,765 [INFO]     PC L12 name  r_raw=+0.077 r_part=+0.079 p=0.0175
+2026-08-17 16:10:48,186 [INFO]     PC L12 instr r_raw=+0.036 r_part=+0.033 p=0.2149
+2026-08-17 16:10:48,770 [INFO]     PC L12 last  r_raw=+0.188 r_part=+0.187 p=0.0005
+2026-08-17 16:10:49,191 [INFO]     PC L16 name  r_raw=+0.061 r_part=+0.058 p=0.0555
+2026-08-17 16:10:49,610 [INFO]     PC L16 instr r_raw=+0.090 r_part=+0.089 p=0.0055
+2026-08-17 16:10:50,195 [INFO]     PC L16 last  r_raw=+0.293 r_part=+0.298 p=0.0005
+2026-08-17 16:10:50,202 [INFO] === base (vandijklab/C2S-Scale-Pythia-1b-pt) ===
+2026-08-17 16:10:50,409 [INFO] HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-08-17 16:10:50,566 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:10:50,572 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/config.json "HTTP/1.1 200 OK"
+2026-08-17 16:10:50,877 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:10:50,886 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-08-17 16:10:51,205 [INFO] HTTP Request: GET https://huggingface.co/api/models/vandijklab/C2S-Scale-Pythia-1b-pt/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-17 16:10:51,391 [INFO] HTTP Request: GET https://huggingface.co/api/models/vandijklab/C2S-Scale-Pythia-1b-pt/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-08-17 16:10:51,866 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:10:51,872 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s]Loading weights:   1%|          | 1/196 [00:01<03:19,  1.02s/it]Loading weights:  26%|██▌       | 50/196 [00:01<00:02, 58.19it/s]Loading weights:  36%|███▌      | 71/196 [00:01<00:01, 71.27it/s]Loading weights:  45%|████▍     | 88/196 [00:01<00:01, 72.84it/s]Loading weights:  52%|█████▏    | 101/196 [00:01<00:01, 80.78it/s]Loading weights:  58%|█████▊    | 114/196 [00:01<00:01, 81.87it/s]Loading weights:  64%|██████▍   | 126/196 [00:01<00:00, 80.23it/s]Loading weights:  70%|██████▉   | 137/196 [00:02<00:00, 85.70it/s]Loading weights:  76%|███████▌  | 148/196 [00:02<00:00, 88.72it/s]Loading weights:  81%|████████  | 159/196 [00:02<00:00, 81.36it/s]Loading weights:  92%|█████████▏| 180/196 [00:02<00:00, 74.07it/s]Loading weights: 100%|██████████| 196/196 [00:02<00:00, 71.43it/s]
+2026-08-17 16:10:55,160 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:10:55,167 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/generation_config.json "HTTP/1.1 200 OK"
+2026-08-17 16:10:55,644 [INFO]   16 layers, hidden 2048; reading layers [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] at positions ['name', 'instr', 'last']
+2026-08-17 16:10:55,664 [INFO]   arm=blind: 800 prompts, 19178 matched triples
+2026-08-17 16:11:05,306 [INFO]     prompts 209-492 tokens
+2026-08-17 16:11:05,677 [INFO]     L 0 name  centered r_raw=+0.036 r_part=+0.030 p=0.2902 MDE80=0.079
+2026-08-17 16:11:06,039 [INFO]     L 0 name  zscored  r_raw=+0.037 r_part=+0.026 p=0.3397 MDE80=0.078
+2026-08-17 16:11:06,418 [INFO]     L 1 name  centered r_raw=+0.054 r_part=+0.048 p=0.0922 MDE80=0.080
+2026-08-17 16:11:06,782 [INFO]     L 1 name  zscored  r_raw=+0.043 r_part=+0.038 p=0.1767 MDE80=0.078
+2026-08-17 16:11:07,141 [INFO]     L 1 instr centered r_raw=+0.018 r_part=+0.041 p=0.1380 MDE80=0.077
+2026-08-17 16:11:07,503 [INFO]     L 1 instr zscored  r_raw=+0.021 r_part=+0.040 p=0.1407 MDE80=0.077
+2026-08-17 16:11:08,024 [INFO]     L 1 last  centered r_raw=+0.022 r_part=+0.033 p=0.2402 MDE80=0.081
+2026-08-17 16:11:08,555 [INFO]     L 1 last  zscored  r_raw=+0.035 r_part=+0.048 p=0.0952 MDE80=0.081
+2026-08-17 16:11:08,916 [INFO]     L 2 name  centered r_raw=+0.030 r_part=+0.023 p=0.4026 MDE80=0.079
+2026-08-17 16:11:09,275 [INFO]     L 2 name  zscored  r_raw=+0.026 r_part=+0.019 p=0.4761 MDE80=0.078
+2026-08-17 16:11:09,634 [INFO]     L 2 instr centered r_raw=+0.019 r_part=+0.038 p=0.1697 MDE80=0.078
+2026-08-17 16:11:10,002 [INFO]     L 2 instr zscored  r_raw=+0.018 r_part=+0.030 p=0.2792 MDE80=0.078
+2026-08-17 16:11:10,528 [INFO]     L 2 last  centered r_raw=+0.060 r_part=+0.083 p=0.0097 MDE80=0.081
+2026-08-17 16:11:11,064 [INFO]     L 2 last  zscored  r_raw=+0.040 r_part=+0.056 p=0.0545 MDE80=0.080
+2026-08-17 16:11:11,425 [INFO]     L 3 name  centered r_raw=+0.027 r_part=+0.020 p=0.4599 MDE80=0.078
+2026-08-17 16:11:11,785 [INFO]     L 3 name  zscored  r_raw=+0.029 r_part=+0.025 p=0.3579 MDE80=0.077
+2026-08-17 16:11:13,091 [INFO]     L 3 instr centered r_raw=+0.004 r_part=+0.004 p=0.8853 MDE80=0.078
+2026-08-17 16:11:13,462 [INFO]     L 3 instr zscored  r_raw=+0.012 r_part=+0.013 p=0.6351 MDE80=0.078
+2026-08-17 16:11:13,989 [INFO]     L 3 last  centered r_raw=+0.022 r_part=+0.028 p=0.3187 MDE80=0.078
+2026-08-17 16:11:14,523 [INFO]     L 3 last  zscored  r_raw=+0.023 r_part=+0.027 p=0.3357 MDE80=0.078
+2026-08-17 16:11:14,884 [INFO]     L 4 name  centered r_raw=+0.021 r_part=+0.016 p=0.5469 MDE80=0.079
+2026-08-17 16:11:15,245 [INFO]     L 4 name  zscored  r_raw=+0.015 r_part=+0.006 p=0.8140 MDE80=0.079
+2026-08-17 16:11:15,607 [INFO]     L 4 instr centered r_raw=+0.008 r_part=+0.007 p=0.7998 MDE80=0.078
+2026-08-17 16:11:15,967 [INFO]     L 4 instr zscored  r_raw=+0.009 r_part=+0.005 p=0.8488 MDE80=0.079
+2026-08-17 16:11:16,494 [INFO]     L 4 last  centered r_raw=-0.001 r_part=+0.003 p=0.9170 MDE80=0.078
+2026-08-17 16:11:17,037 [INFO]     L 4 last  zscored  r_raw=+0.002 r_part=+0.006 p=0.8310 MDE80=0.078
+2026-08-17 16:11:17,403 [INFO]     L 5 name  centered r_raw=+0.038 r_part=+0.042 p=0.1362 MDE80=0.079
+2026-08-17 16:11:17,764 [INFO]     L 5 name  zscored  r_raw=+0.025 r_part=+0.020 p=0.4611 MDE80=0.078
+2026-08-17 16:11:18,125 [INFO]     L 5 instr centered r_raw=+0.008 r_part=+0.004 p=0.8870 MDE80=0.079
+2026-08-17 16:11:18,487 [INFO]     L 5 instr zscored  r_raw=+0.010 r_part=+0.004 p=0.8800 MDE80=0.079
+2026-08-17 16:11:19,012 [INFO]     L 5 last  centered r_raw=+0.005 r_part=+0.008 p=0.7691 MDE80=0.078
+2026-08-17 16:11:19,547 [INFO]     L 5 last  zscored  r_raw=+0.012 r_part=+0.015 p=0.5699 MDE80=0.079
+2026-08-17 16:11:19,906 [INFO]     L 6 name  centered r_raw=+0.035 r_part=+0.031 p=0.2652 MDE80=0.079
+2026-08-17 16:11:20,266 [INFO]     L 6 name  zscored  r_raw=+0.023 r_part=+0.012 p=0.6636 MDE80=0.079
+2026-08-17 16:11:20,627 [INFO]     L 6 instr centered r_raw=+0.011 r_part=+0.006 p=0.8280 MDE80=0.079
+2026-08-17 16:11:20,987 [INFO]     L 6 instr zscored  r_raw=+0.018 r_part=+0.011 p=0.6773 MDE80=0.079
+2026-08-17 16:11:21,513 [INFO]     L 6 last  centered r_raw=-0.002 r_part=-0.004 p=0.8800 MDE80=0.078
+2026-08-17 16:11:22,047 [INFO]     L 6 last  zscored  r_raw=+0.004 r_part=+0.001 p=0.9660 MDE80=0.079
+2026-08-17 16:11:22,409 [INFO]     L 7 name  centered r_raw=+0.027 r_part=+0.026 p=0.3562 MDE80=0.078
+2026-08-17 16:11:22,768 [INFO]     L 7 name  zscored  r_raw=+0.017 r_part=+0.008 p=0.7496 MDE80=0.079
+2026-08-17 16:11:23,127 [INFO]     L 7 instr centered r_raw=+0.008 r_part=+0.002 p=0.9278 MDE80=0.079
+2026-08-17 16:11:23,486 [INFO]     L 7 instr zscored  r_raw=+0.012 r_part=+0.004 p=0.8715 MDE80=0.079
+2026-08-17 16:11:24,006 [INFO]     L 7 last  centered r_raw=-0.008 r_part=-0.009 p=0.7278 MDE80=0.079
+2026-08-17 16:11:24,540 [INFO]     L 7 last  zscored  r_raw=-0.008 r_part=-0.016 p=0.5536 MDE80=0.078
+2026-08-17 16:11:24,900 [INFO]     L 8 name  centered r_raw=+0.025 r_part=+0.022 p=0.4206 MDE80=0.078
+2026-08-17 16:11:25,260 [INFO]     L 8 name  zscored  r_raw=+0.015 r_part=+0.009 p=0.7411 MDE80=0.078
+2026-08-17 16:11:25,620 [INFO]     L 8 instr centered r_raw=+0.008 r_part=+0.006 p=0.8375 MDE80=0.078
+2026-08-17 16:11:25,981 [INFO]     L 8 instr zscored  r_raw=+0.011 r_part=+0.007 p=0.7871 MDE80=0.079
+2026-08-17 16:11:26,505 [INFO]     L 8 last  centered r_raw=-0.018 r_part=-0.022 p=0.4219 MDE80=0.079
+2026-08-17 16:11:27,037 [INFO]     L 8 last  zscored  r_raw=-0.012 r_part=-0.018 p=0.5074 MDE80=0.079
+2026-08-17 16:11:27,407 [INFO]     L 9 name  centered r_raw=+0.029 r_part=+0.031 p=0.2629 MDE80=0.078
+2026-08-17 16:11:27,770 [INFO]     L 9 name  zscored  r_raw=+0.018 r_part=+0.012 p=0.6446 MDE80=0.078
+2026-08-17 16:11:28,132 [INFO]     L 9 instr centered r_raw=+0.010 r_part=+0.007 p=0.8023 MDE80=0.078
+2026-08-17 16:11:28,493 [INFO]     L 9 instr zscored  r_raw=+0.016 r_part=+0.012 p=0.6611 MDE80=0.078
+2026-08-17 16:11:29,018 [INFO]     L 9 last  centered r_raw=-0.023 r_part=-0.027 p=0.3269 MDE80=0.078
+2026-08-17 16:11:29,552 [INFO]     L 9 last  zscored  r_raw=-0.017 r_part=-0.024 p=0.3772 MDE80=0.079
+2026-08-17 16:11:29,913 [INFO]     L10 name  centered r_raw=+0.016 r_part=+0.009 p=0.7276 MDE80=0.078
+2026-08-17 16:11:30,273 [INFO]     L10 name  zscored  r_raw=+0.009 r_part=-0.001 p=0.9625 MDE80=0.078
+2026-08-17 16:11:30,634 [INFO]     L10 instr centered r_raw=+0.027 r_part=+0.033 p=0.2399 MDE80=0.079
+2026-08-17 16:11:30,994 [INFO]     L10 instr zscored  r_raw=+0.033 r_part=+0.037 p=0.1835 MDE80=0.079
+2026-08-17 16:11:31,519 [INFO]     L10 last  centered r_raw=+0.002 r_part=-0.006 p=0.8165 MDE80=0.078
+2026-08-17 16:11:32,065 [INFO]     L10 last  zscored  r_raw=+0.006 r_part=-0.008 p=0.7626 MDE80=0.078
+2026-08-17 16:11:32,426 [INFO]     L11 name  centered r_raw=+0.019 r_part=+0.010 p=0.7136 MDE80=0.078
+2026-08-17 16:11:32,787 [INFO]     L11 name  zscored  r_raw=+0.014 r_part=+0.001 p=0.9625 MDE80=0.079
+2026-08-17 16:11:33,147 [INFO]     L11 instr centered r_raw=+0.005 r_part=+0.009 p=0.7348 MDE80=0.081
+2026-08-17 16:11:33,506 [INFO]     L11 instr zscored  r_raw=+0.008 r_part=+0.011 p=0.7051 MDE80=0.081
+2026-08-17 16:11:34,031 [INFO]     L11 last  centered r_raw=+0.033 r_part=+0.038 p=0.1677 MDE80=0.078
+2026-08-17 16:11:34,565 [INFO]     L11 last  zscored  r_raw=+0.036 r_part=+0.038 p=0.1665 MDE80=0.078
+2026-08-17 16:11:39,192 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6603396603396603) mean_r=+0.957 names_only=+0.977 increment=-0.020 (p=0.5654345654345654)
+2026-08-17 16:11:39,193 [INFO]     L12 name  centered r_raw=+0.027 r_part=+0.023 p=0.4049 MDE80=0.078
+2026-08-17 16:11:39,560 [INFO]     L12 name  zscored  r_raw=+0.027 r_part=+0.020 p=0.4736 MDE80=0.079
+2026-08-17 16:11:44,195 [INFO]       DIRECT L12 instr centered: retrieval=0.920 (null 0.020, p=0.955044955044955) mean_r=+0.904 names_only=+0.977 increment=-0.073 (p=0.7892107892107892)
+2026-08-17 16:11:44,195 [INFO]     L12 instr centered r_raw=+0.009 r_part=+0.011 p=0.6751 MDE80=0.081
+2026-08-17 16:11:44,562 [INFO]     L12 instr zscored  r_raw=+0.008 r_part=+0.007 p=0.7923 MDE80=0.081
+2026-08-17 16:11:49,363 [INFO]       DIRECT L12 last centered: retrieval=0.820 (null 0.020, p=0.6943056943056943) mean_r=+0.828 names_only=+0.977 increment=-0.149 (p=0.12987012987012986)
+2026-08-17 16:11:49,363 [INFO]     L12 last  centered r_raw=+0.025 r_part=+0.021 p=0.4591 MDE80=0.078
+2026-08-17 16:11:49,907 [INFO]     L12 last  zscored  r_raw=+0.025 r_part=+0.019 p=0.5079 MDE80=0.078
+2026-08-17 16:11:50,267 [INFO]     L13 name  centered r_raw=+0.046 r_part=+0.045 p=0.1002 MDE80=0.078
+2026-08-17 16:11:50,626 [INFO]     L13 name  zscored  r_raw=+0.037 r_part=+0.039 p=0.1625 MDE80=0.079
+2026-08-17 16:11:50,987 [INFO]     L13 instr centered r_raw=+0.007 r_part=+0.009 p=0.7313 MDE80=0.081
+2026-08-17 16:11:51,349 [INFO]     L13 instr zscored  r_raw=+0.006 r_part=+0.007 p=0.8053 MDE80=0.081
+2026-08-17 16:11:51,873 [INFO]     L13 last  centered r_raw=+0.014 r_part=+0.004 p=0.8800 MDE80=0.079
+2026-08-17 16:11:52,415 [INFO]     L13 last  zscored  r_raw=+0.013 r_part=+0.000 p=0.9985 MDE80=0.079
+2026-08-17 16:11:52,775 [INFO]     L14 name  centered r_raw=+0.045 r_part=+0.053 p=0.0647 MDE80=0.078
+2026-08-17 16:11:53,133 [INFO]     L14 name  zscored  r_raw=+0.042 r_part=+0.049 p=0.0822 MDE80=0.078
+2026-08-17 16:11:53,494 [INFO]     L14 instr centered r_raw=+0.009 r_part=+0.012 p=0.6606 MDE80=0.081
+2026-08-17 16:11:53,854 [INFO]     L14 instr zscored  r_raw=+0.005 r_part=+0.006 p=0.8198 MDE80=0.081
+2026-08-17 16:11:54,377 [INFO]     L14 last  centered r_raw=+0.022 r_part=+0.015 p=0.5981 MDE80=0.079
+2026-08-17 16:11:54,912 [INFO]     L14 last  zscored  r_raw=+0.018 r_part=+0.009 p=0.7656 MDE80=0.079
+2026-08-17 16:11:55,271 [INFO]     L15 name  centered r_raw=+0.043 r_part=+0.044 p=0.1232 MDE80=0.079
+2026-08-17 16:11:55,636 [INFO]     L15 name  zscored  r_raw=+0.033 r_part=+0.035 p=0.2202 MDE80=0.080
+2026-08-17 16:11:55,997 [INFO]     L15 instr centered r_raw=+0.008 r_part=-0.002 p=0.9485 MDE80=0.082
+2026-08-17 16:11:56,357 [INFO]     L15 instr zscored  r_raw=+0.007 r_part=-0.003 p=0.9205 MDE80=0.082
+2026-08-17 16:11:56,881 [INFO]     L15 last  centered r_raw=+0.041 r_part=+0.053 p=0.0572 MDE80=0.080
+2026-08-17 16:11:57,418 [INFO]     L15 last  zscored  r_raw=+0.041 r_part=+0.050 p=0.0660 MDE80=0.080
+2026-08-17 16:12:02,044 [INFO]       DIRECT L16 name centered: retrieval=0.940 (null 0.020, p=0.6223776223776224) mean_r=+0.950 names_only=+0.977 increment=-0.027 (p=0.45454545454545453)
+2026-08-17 16:12:02,044 [INFO]     L16 name  centered r_raw=+0.038 r_part=+0.039 p=0.1682 MDE80=0.079
+2026-08-17 16:12:02,409 [INFO]     L16 name  zscored  r_raw=+0.034 r_part=+0.036 p=0.2002 MDE80=0.080
+2026-08-17 16:12:07,039 [INFO]       DIRECT L16 instr centered: retrieval=0.880 (null 0.020, p=0.936063936063936) mean_r=+0.893 names_only=+0.977 increment=-0.084 (p=0.7612387612387612)
+2026-08-17 16:12:07,039 [INFO]     L16 instr centered r_raw=-0.000 r_part=-0.009 p=0.7338 MDE80=0.082
+2026-08-17 16:12:07,406 [INFO]     L16 instr zscored  r_raw=-0.003 r_part=-0.011 p=0.6966 MDE80=0.082
+2026-08-17 16:12:12,182 [INFO]       DIRECT L16 last centered: retrieval=0.880 (null 0.020, p=0.936063936063936) mean_r=+0.892 names_only=+0.977 increment=-0.085 (p=0.4025974025974026)
+2026-08-17 16:12:12,182 [INFO]     L16 last  centered r_raw=+0.049 r_part=+0.071 p=0.0187 MDE80=0.079
+2026-08-17 16:12:12,730 [INFO]     L16 last  zscored  r_raw=+0.056 r_part=+0.075 p=0.0147 MDE80=0.079
+2026-08-17 16:12:12,749 [INFO]   arm=annotated: 800 prompts, 13364 matched triples
+2026-08-17 16:12:22,463 [INFO]     prompts 209-495 tokens
+2026-08-17 16:12:22,845 [INFO]     L 0 name  centered r_raw=+0.036 r_part=+0.032 p=0.2459 MDE80=0.079
+2026-08-17 16:12:23,208 [INFO]     L 0 name  zscored  r_raw=+0.037 r_part=+0.029 p=0.2942 MDE80=0.078
+2026-08-17 16:12:23,592 [INFO]     L 1 name  centered r_raw=+0.054 r_part=+0.052 p=0.0755 MDE80=0.081
+2026-08-17 16:12:23,954 [INFO]     L 1 name  zscored  r_raw=+0.043 r_part=+0.042 p=0.1425 MDE80=0.079
+2026-08-17 16:12:24,315 [INFO]     L 1 instr centered r_raw=+0.007 r_part=+0.026 p=0.3292 MDE80=0.076
+2026-08-17 16:12:24,678 [INFO]     L 1 instr zscored  r_raw=+0.009 r_part=+0.023 p=0.3782 MDE80=0.076
+2026-08-17 16:12:25,209 [INFO]     L 1 last  centered r_raw=+0.008 r_part=+0.004 p=0.8668 MDE80=0.078
+2026-08-17 16:12:25,749 [INFO]     L 1 last  zscored  r_raw=+0.024 r_part=+0.037 p=0.1852 MDE80=0.078
+2026-08-17 16:12:26,113 [INFO]     L 2 name  centered r_raw=+0.030 r_part=+0.025 p=0.3539 MDE80=0.079
+2026-08-17 16:12:26,477 [INFO]     L 2 name  zscored  r_raw=+0.026 r_part=+0.022 p=0.4121 MDE80=0.078
+2026-08-17 16:12:26,842 [INFO]     L 2 instr centered r_raw=+0.012 r_part=+0.021 p=0.4351 MDE80=0.076
+2026-08-17 16:12:27,204 [INFO]     L 2 instr zscored  r_raw=+0.006 r_part=+0.008 p=0.7561 MDE80=0.076
+2026-08-17 16:12:27,734 [INFO]     L 2 last  centered r_raw=+0.027 r_part=+0.046 p=0.1072 MDE80=0.079
+2026-08-17 16:12:28,276 [INFO]     L 2 last  zscored  r_raw=+0.019 r_part=+0.031 p=0.2639 MDE80=0.078
+2026-08-17 16:12:28,638 [INFO]     L 3 name  centered r_raw=+0.027 r_part=+0.022 p=0.4276 MDE80=0.078
+2026-08-17 16:12:28,999 [INFO]     L 3 name  zscored  r_raw=+0.029 r_part=+0.028 p=0.3167 MDE80=0.078
+2026-08-17 16:12:29,360 [INFO]     L 3 instr centered r_raw=-0.000 r_part=-0.016 p=0.5249 MDE80=0.074
+2026-08-17 16:12:29,720 [INFO]     L 3 instr zscored  r_raw=+0.001 r_part=-0.012 p=0.6338 MDE80=0.075
+2026-08-17 16:12:30,248 [INFO]     L 3 last  centered r_raw=+0.018 r_part=+0.024 p=0.3892 MDE80=0.078
+2026-08-17 16:12:30,787 [INFO]     L 3 last  zscored  r_raw=+0.017 r_part=+0.021 p=0.4401 MDE80=0.078
+2026-08-17 16:12:31,148 [INFO]     L 4 name  centered r_raw=+0.021 r_part=+0.019 p=0.4961 MDE80=0.080
+2026-08-17 16:12:31,509 [INFO]     L 4 name  zscored  r_raw=+0.015 r_part=+0.009 p=0.7553 MDE80=0.079
+2026-08-17 16:12:31,870 [INFO]     L 4 instr centered r_raw=-0.002 r_part=-0.019 p=0.4419 MDE80=0.071
+2026-08-17 16:12:32,234 [INFO]     L 4 instr zscored  r_raw=-0.001 r_part=-0.017 p=0.5201 MDE80=0.073
+2026-08-17 16:12:32,772 [INFO]     L 4 last  centered r_raw=+0.010 r_part=+0.012 p=0.6636 MDE80=0.079
+2026-08-17 16:12:33,311 [INFO]     L 4 last  zscored  r_raw=+0.010 r_part=+0.012 p=0.6723 MDE80=0.079
+2026-08-17 16:12:33,673 [INFO]     L 5 name  centered r_raw=+0.038 r_part=+0.044 p=0.1210 MDE80=0.079
+2026-08-17 16:12:34,035 [INFO]     L 5 name  zscored  r_raw=+0.025 r_part=+0.022 p=0.4219 MDE80=0.079
+2026-08-17 16:12:34,397 [INFO]     L 5 instr centered r_raw=-0.002 r_part=-0.019 p=0.4636 MDE80=0.073
+2026-08-17 16:12:34,759 [INFO]     L 5 instr zscored  r_raw=-0.002 r_part=-0.021 p=0.4271 MDE80=0.074
+2026-08-17 16:12:35,289 [INFO]     L 5 last  centered r_raw=+0.009 r_part=+0.015 p=0.5884 MDE80=0.078
+2026-08-17 16:12:35,835 [INFO]     L 5 last  zscored  r_raw=+0.015 r_part=+0.023 p=0.4001 MDE80=0.078
+2026-08-17 16:12:36,198 [INFO]     L 6 name  centered r_raw=+0.035 r_part=+0.033 p=0.2349 MDE80=0.080
+2026-08-17 16:12:36,560 [INFO]     L 6 name  zscored  r_raw=+0.023 r_part=+0.014 p=0.6156 MDE80=0.080
+2026-08-17 16:12:36,921 [INFO]     L 6 instr centered r_raw=-0.001 r_part=-0.014 p=0.5831 MDE80=0.075
+2026-08-17 16:12:37,282 [INFO]     L 6 instr zscored  r_raw=+0.000 r_part=-0.013 p=0.6438 MDE80=0.075
+2026-08-17 16:12:37,817 [INFO]     L 6 last  centered r_raw=+0.001 r_part=-0.000 p=0.9880 MDE80=0.077
+2026-08-17 16:12:38,358 [INFO]     L 6 last  zscored  r_raw=+0.005 r_part=+0.005 p=0.8518 MDE80=0.077
+2026-08-17 16:12:38,719 [INFO]     L 7 name  centered r_raw=+0.027 r_part=+0.027 p=0.3372 MDE80=0.079
+2026-08-17 16:12:39,081 [INFO]     L 7 name  zscored  r_raw=+0.017 r_part=+0.010 p=0.7168 MDE80=0.079
+2026-08-17 16:12:39,442 [INFO]     L 7 instr centered r_raw=+0.001 r_part=-0.012 p=0.6588 MDE80=0.074
+2026-08-17 16:12:39,804 [INFO]     L 7 instr zscored  r_raw=+0.002 r_part=-0.008 p=0.7671 MDE80=0.076
+2026-08-17 16:12:40,335 [INFO]     L 7 last  centered r_raw=-0.003 r_part=-0.006 p=0.8085 MDE80=0.078
+2026-08-17 16:12:40,878 [INFO]     L 7 last  zscored  r_raw=+0.000 r_part=-0.003 p=0.9193 MDE80=0.078
+2026-08-17 16:12:41,240 [INFO]     L 8 name  centered r_raw=+0.025 r_part=+0.024 p=0.3827 MDE80=0.079
+2026-08-17 16:12:41,601 [INFO]     L 8 name  zscored  r_raw=+0.015 r_part=+0.011 p=0.6936 MDE80=0.079
+2026-08-17 16:12:42,070 [INFO]     L 8 instr centered r_raw=-0.002 r_part=-0.015 p=0.5659 MDE80=0.076
+2026-08-17 16:12:42,432 [INFO]     L 8 instr zscored  r_raw=-0.000 r_part=-0.015 p=0.5794 MDE80=0.076
+2026-08-17 16:12:42,960 [INFO]     L 8 last  centered r_raw=-0.005 r_part=-0.011 p=0.6841 MDE80=0.078
+2026-08-17 16:12:43,498 [INFO]     L 8 last  zscored  r_raw=-0.001 r_part=-0.005 p=0.8585 MDE80=0.078
+2026-08-17 16:12:43,859 [INFO]     L 9 name  centered r_raw=+0.029 r_part=+0.033 p=0.2369 MDE80=0.078
+2026-08-17 16:12:44,221 [INFO]     L 9 name  zscored  r_raw=+0.018 r_part=+0.015 p=0.5924 MDE80=0.078
+2026-08-17 16:12:44,693 [INFO]     L 9 instr centered r_raw=-0.003 r_part=-0.020 p=0.4319 MDE80=0.075
+2026-08-17 16:12:45,054 [INFO]     L 9 instr zscored  r_raw=-0.003 r_part=-0.022 p=0.4096 MDE80=0.076
+2026-08-17 16:12:45,694 [INFO]     L 9 last  centered r_raw=-0.010 r_part=-0.015 p=0.5884 MDE80=0.079
+2026-08-17 16:12:46,346 [INFO]     L 9 last  zscored  r_raw=-0.005 r_part=-0.009 p=0.7443 MDE80=0.078
+2026-08-17 16:12:46,712 [INFO]     L10 name  centered r_raw=+0.016 r_part=+0.011 p=0.6796 MDE80=0.078
+2026-08-17 16:12:47,074 [INFO]     L10 name  zscored  r_raw=+0.009 r_part=+0.001 p=0.9830 MDE80=0.078
+2026-08-17 16:12:47,436 [INFO]     L10 instr centered r_raw=+0.004 r_part=-0.005 p=0.8393 MDE80=0.076
+2026-08-17 16:12:47,798 [INFO]     L10 instr zscored  r_raw=+0.007 r_part=+0.003 p=0.9233 MDE80=0.076
+2026-08-17 16:12:48,326 [INFO]     L10 last  centered r_raw=-0.007 r_part=-0.022 p=0.4314 MDE80=0.077
+2026-08-17 16:12:48,866 [INFO]     L10 last  zscored  r_raw=-0.005 r_part=-0.022 p=0.4371 MDE80=0.078
+2026-08-17 16:12:49,228 [INFO]     L11 name  centered r_raw=+0.019 r_part=+0.012 p=0.6548 MDE80=0.078
+2026-08-17 16:12:49,588 [INFO]     L11 name  zscored  r_raw=+0.014 r_part=+0.003 p=0.9080 MDE80=0.079
+2026-08-17 16:12:49,951 [INFO]     L11 instr centered r_raw=+0.007 r_part=+0.007 p=0.7808 MDE80=0.079
+2026-08-17 16:12:50,423 [INFO]     L11 instr zscored  r_raw=+0.005 r_part=+0.005 p=0.8530 MDE80=0.079
+2026-08-17 16:12:50,953 [INFO]     L11 last  centered r_raw=+0.011 r_part=+0.005 p=0.8638 MDE80=0.079
+2026-08-17 16:12:51,493 [INFO]     L11 last  zscored  r_raw=+0.015 r_part=+0.006 p=0.8190 MDE80=0.079
+2026-08-17 16:12:56,103 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6603396603396603) mean_r=+0.957 names_only=+0.977 increment=-0.020 (p=0.5654345654345654)
+2026-08-17 16:12:56,103 [INFO]     L12 name  centered r_raw=+0.027 r_part=+0.026 p=0.3514 MDE80=0.079
+2026-08-17 16:12:56,469 [INFO]     L12 name  zscored  r_raw=+0.027 r_part=+0.023 p=0.4111 MDE80=0.079
+2026-08-17 16:13:01,092 [INFO]       DIRECT L12 instr centered: retrieval=0.640 (null 0.020, p=0.9200799200799201) mean_r=+0.600 names_only=+0.977 increment=-0.377 (p=0.8181818181818182)
+2026-08-17 16:13:01,092 [INFO]     L12 instr centered r_raw=+0.008 r_part=+0.008 p=0.7673 MDE80=0.079
+2026-08-17 16:13:01,457 [INFO]     L12 instr zscored  r_raw=+0.001 r_part=-0.003 p=0.9243 MDE80=0.079
+2026-08-17 16:13:06,247 [INFO]       DIRECT L12 last centered: retrieval=0.720 (null 0.020, p=0.35064935064935066) mean_r=+0.709 names_only=+0.977 increment=-0.267 (p=0.27372627372627373)
+2026-08-17 16:13:06,248 [INFO]     L12 last  centered r_raw=+0.005 r_part=-0.000 p=0.9915 MDE80=0.079
+2026-08-17 16:13:06,801 [INFO]     L12 last  zscored  r_raw=+0.006 r_part=-0.000 p=0.9878 MDE80=0.079
+2026-08-17 16:13:07,162 [INFO]     L13 name  centered r_raw=+0.046 r_part=+0.048 p=0.0822 MDE80=0.078
+2026-08-17 16:13:07,524 [INFO]     L13 name  zscored  r_raw=+0.037 r_part=+0.041 p=0.1372 MDE80=0.079
+2026-08-17 16:13:07,890 [INFO]     L13 instr centered r_raw=+0.010 r_part=+0.014 p=0.5826 MDE80=0.079
+2026-08-17 16:13:08,253 [INFO]     L13 instr zscored  r_raw=+0.002 r_part=+0.001 p=0.9780 MDE80=0.079
+2026-08-17 16:13:08,781 [INFO]     L13 last  centered r_raw=-0.003 r_part=-0.014 p=0.6131 MDE80=0.079
+2026-08-17 16:13:09,319 [INFO]     L13 last  zscored  r_raw=-0.002 r_part=-0.013 p=0.6473 MDE80=0.079
+2026-08-17 16:13:09,681 [INFO]     L14 name  centered r_raw=+0.045 r_part=+0.055 p=0.0525 MDE80=0.078
+2026-08-17 16:13:10,044 [INFO]     L14 name  zscored  r_raw=+0.042 r_part=+0.052 p=0.0707 MDE80=0.079
+2026-08-17 16:13:10,406 [INFO]     L14 instr centered r_raw=+0.009 r_part=+0.013 p=0.6333 MDE80=0.079
+2026-08-17 16:13:10,768 [INFO]     L14 instr zscored  r_raw=+0.001 r_part=-0.002 p=0.9243 MDE80=0.079
+2026-08-17 16:13:11,299 [INFO]     L14 last  centered r_raw=+0.004 r_part=-0.006 p=0.8335 MDE80=0.079
+2026-08-17 16:13:11,838 [INFO]     L14 last  zscored  r_raw=+0.005 r_part=-0.007 p=0.8045 MDE80=0.079
+2026-08-17 16:13:12,199 [INFO]     L15 name  centered r_raw=+0.043 r_part=+0.046 p=0.1060 MDE80=0.079
+2026-08-17 16:13:12,562 [INFO]     L15 name  zscored  r_raw=+0.033 r_part=+0.037 p=0.1997 MDE80=0.080
+2026-08-17 16:13:12,926 [INFO]     L15 instr centered r_raw=+0.009 r_part=+0.012 p=0.6638 MDE80=0.079
+2026-08-17 16:13:13,289 [INFO]     L15 instr zscored  r_raw=+0.006 r_part=+0.004 p=0.8803 MDE80=0.079
+2026-08-17 16:13:13,820 [INFO]     L15 last  centered r_raw=+0.024 r_part=+0.021 p=0.4604 MDE80=0.080
+2026-08-17 16:13:14,361 [INFO]     L15 last  zscored  r_raw=+0.026 r_part=+0.022 p=0.4299 MDE80=0.080
+2026-08-17 16:13:19,004 [INFO]       DIRECT L16 name centered: retrieval=0.940 (null 0.020, p=0.6223776223776224) mean_r=+0.950 names_only=+0.977 increment=-0.027 (p=0.45454545454545453)
+2026-08-17 16:13:19,004 [INFO]     L16 name  centered r_raw=+0.038 r_part=+0.042 p=0.1360 MDE80=0.080
+2026-08-17 16:13:19,373 [INFO]     L16 name  zscored  r_raw=+0.034 r_part=+0.038 p=0.1790 MDE80=0.080
+2026-08-17 16:13:23,995 [INFO]       DIRECT L16 instr centered: retrieval=0.720 (null 0.020, p=0.8881118881118881) mean_r=+0.719 names_only=+0.977 increment=-0.257 (p=0.8181818181818182)
+2026-08-17 16:13:23,995 [INFO]     L16 instr centered r_raw=+0.003 r_part=+0.001 p=0.9663 MDE80=0.079
+2026-08-17 16:13:24,364 [INFO]     L16 instr zscored  r_raw=+0.001 r_part=-0.003 p=0.9138 MDE80=0.079
+2026-08-17 16:13:29,169 [INFO]       DIRECT L16 last centered: retrieval=0.840 (null 0.020, p=0.977022977022977) mean_r=+0.863 names_only=+0.977 increment=-0.114 (p=0.09490509490509491)
+2026-08-17 16:13:29,169 [INFO]     L16 last  centered r_raw=+0.035 r_part=+0.043 p=0.1110 MDE80=0.081
+2026-08-17 16:13:29,715 [INFO]     L16 last  zscored  r_raw=+0.039 r_part=+0.045 p=0.1020 MDE80=0.081
+2026-08-17 16:13:29,730 [INFO]   POSITIVE CONTROL: 48 cell lines, 768 prompts, drug fixed at 'Proglumide'
+2026-08-17 16:13:39,429 [INFO]     PC L 0 name  r_raw=+0.006 r_part=+0.003 p=0.9110
+2026-08-17 16:13:39,855 [INFO]     PC L12 name  r_raw=+0.032 r_part=+0.029 p=0.3318
+2026-08-17 16:13:40,272 [INFO]     PC L12 instr r_raw=-0.011 r_part=-0.015 p=0.6012
+2026-08-17 16:13:40,849 [INFO]     PC L12 last  r_raw=+0.006 r_part=-0.000 p=0.9885
+2026-08-17 16:13:41,267 [INFO]     PC L16 name  r_raw=+0.026 r_part=+0.022 p=0.4703
+2026-08-17 16:13:41,685 [INFO]     PC L16 instr r_raw=-0.004 r_part=-0.010 p=0.7566
+2026-08-17 16:13:42,262 [INFO]     PC L16 last  r_raw=+0.011 r_part=+0.005 p=0.8496
+2026-08-17 16:13:42,509 [INFO] -> /home/3180408/tahoe/RESULTS/drug_geometry_rsa_G1_CVCL_0546.json   (the ONLY path this script writes)
+### G2 REPLICATION : CVCL_0459 ###
+2026-08-17 16:14:33,015 [INFO] panel 946 from /data/BuffaF-Projetcs/florian_c2s/data_diverse2_endcell_big/l1000_panel.json
+2026-08-17 16:14:33,234 [INFO] loaded 19998 examples from tier tier2_unseen_drugs
+2026-08-17 16:14:33,333 [INFO] group = (cell_line CVCL_0459, plate ALL_PLATES) at scope cell_line; 50 drugs over the 10-cell floor
+2026-08-17 16:14:33,333 [INFO] 50 drugs after the cell floor and the --n_drugs cap
+2026-08-17 16:14:33,334 [INFO] building the biological matrix (residual signed-rank frame)
+2026-08-17 16:16:01,798 [INFO]   rel_B companions (REPORT ONLY): full-panel=0.4288811276469013, well-split=None over 1 drugs
+2026-08-17 16:16:01,853 [INFO]   rel_B = {'rel_B': 0.34780254736150906, 'half_split_spearman': 0.210509068880407, 'n_splits': 25, 'n_boot_ok': 4000, 'floored_at_zero': False, 'clustered_on': 'drug', 'unit': 'cluster bootstrap over drugs, 95%', 'lo': 0.21615483904232025, 'hi': 0.47275596830558253, 'boot_sd': 0.06512839480629934}
+2026-08-17 16:16:01,853 [INFO]   activity: R2(B ranks | activity only) = 0.00037512211472690016, leading eig share of B = 0.1733043864475284
+2026-08-17 16:16:01,853 [INFO]   GATE  : attenuation_limited (headline permitted: True)
+2026-08-17 16:20:57,497 [INFO]   dose frame: parse rate 1.000, x6 built = True, median frac of cells at the modal dose string = 1.0
+2026-08-17 16:20:57,499 [INFO]   cell line name 'NCI-H460', fixed dose '0.05 uM', K=16 shared control sentences (plate_matched_exact_K)
+2026-08-17 16:22:02,232 [INFO]   positive control: 48 cell lines, rel_B = 0.972477570432469, gate = ok (REPORTED, never applied -- this is a control, not a claim)
+2026-08-17 16:22:02,470 [INFO] device = cuda
+2026-08-17 16:22:02,470 [INFO] === finetuned (/data/BuffaF-Projetcs/florian_c2s/checkpoints/pythia_sft_endcell/final) ===
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s]Loading weights: 100%|██████████| 196/196 [00:00<00:00, 12192.02it/s]
+2026-08-17 16:22:16,135 [INFO]   16 layers, hidden 2048; reading layers [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] at positions ['name', 'instr', 'last']
+2026-08-17 16:22:16,159 [INFO]   arm=blind: 800 prompts, 19359 matched triples
+2026-08-17 16:22:16,159 [INFO]   calibrating the confound-residue envelope for arm=blind on this roster's own controls (200 replicates, CPU)
+2026-08-17 16:22:24,897 [INFO]     floor(|r_partial|, p95) = 0.06463115528791333 (chance-only control: 0.05450957450113737)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer GPTNeoXTokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+2026-08-17 16:22:35,253 [INFO]     prompts 174-469 tokens
+2026-08-17 16:22:35,633 [INFO]     L 0 name  centered r_raw=+0.031 r_part=+0.006 p=0.8158 MDE80=0.079
+2026-08-17 16:22:35,994 [INFO]     L 0 name  zscored  r_raw=+0.039 r_part=+0.013 p=0.6213 MDE80=0.078
+2026-08-17 16:22:36,375 [INFO]     L 1 name  centered r_raw=+0.033 r_part=+0.008 p=0.7741 MDE80=0.080
+2026-08-17 16:22:36,734 [INFO]     L 1 name  zscored  r_raw=+0.028 r_part=+0.004 p=0.8900 MDE80=0.079
+2026-08-17 16:22:37,092 [INFO]     L 1 instr centered r_raw=+0.010 r_part=+0.012 p=0.6543 MDE80=0.076
+2026-08-17 16:22:37,452 [INFO]     L 1 instr zscored  r_raw=+0.021 r_part=+0.025 p=0.3547 MDE80=0.075
+2026-08-17 16:22:37,979 [INFO]     L 1 last  centered r_raw=+0.009 r_part=+0.006 p=0.8333 MDE80=0.082
+2026-08-17 16:22:38,512 [INFO]     L 1 last  zscored  r_raw=+0.024 r_part=+0.022 p=0.4234 MDE80=0.081
+2026-08-17 16:22:38,871 [INFO]     L 2 name  centered r_raw=+0.024 r_part=+0.000 p=0.9913 MDE80=0.080
+2026-08-17 16:22:39,233 [INFO]     L 2 name  zscored  r_raw=+0.009 r_part=-0.018 p=0.5371 MDE80=0.079
+2026-08-17 16:22:39,590 [INFO]     L 2 instr centered r_raw=+0.007 r_part=+0.007 p=0.7843 MDE80=0.077
+2026-08-17 16:22:39,949 [INFO]     L 2 instr zscored  r_raw=+0.023 r_part=+0.025 p=0.3454 MDE80=0.077
+2026-08-17 16:22:40,475 [INFO]     L 2 last  centered r_raw=+0.034 r_part=+0.033 p=0.2329 MDE80=0.082
+2026-08-17 16:22:41,013 [INFO]     L 2 last  zscored  r_raw=+0.049 r_part=+0.055 p=0.0555 MDE80=0.080
+2026-08-17 16:22:41,371 [INFO]     L 3 name  centered r_raw=+0.013 r_part=-0.013 p=0.6428 MDE80=0.080
+2026-08-17 16:22:41,729 [INFO]     L 3 name  zscored  r_raw=+0.022 r_part=+0.001 p=0.9763 MDE80=0.079
+2026-08-17 16:22:42,086 [INFO]     L 3 instr centered r_raw=+0.021 r_part=+0.023 p=0.3727 MDE80=0.077
+2026-08-17 16:22:42,444 [INFO]     L 3 instr zscored  r_raw=+0.025 r_part=+0.022 p=0.4091 MDE80=0.076
+2026-08-17 16:22:42,972 [INFO]     L 3 last  centered r_raw=+0.052 r_part=+0.057 p=0.0442 MDE80=0.078
+2026-08-17 16:22:43,504 [INFO]     L 3 last  zscored  r_raw=+0.053 r_part=+0.055 p=0.0517 MDE80=0.078
+2026-08-17 16:22:43,861 [INFO]     L 4 name  centered r_raw=+0.011 r_part=-0.011 p=0.7088 MDE80=0.080
+2026-08-17 16:22:44,220 [INFO]     L 4 name  zscored  r_raw=+0.018 r_part=-0.005 p=0.8670 MDE80=0.079
+2026-08-17 16:22:44,580 [INFO]     L 4 instr centered r_raw=+0.032 r_part=+0.036 p=0.1785 MDE80=0.077
+2026-08-17 16:22:44,944 [INFO]     L 4 instr zscored  r_raw=+0.033 r_part=+0.032 p=0.2322 MDE80=0.077
+2026-08-17 16:22:45,469 [INFO]     L 4 last  centered r_raw=+0.047 r_part=+0.052 p=0.0562 MDE80=0.077
+2026-08-17 16:22:46,006 [INFO]     L 4 last  zscored  r_raw=+0.050 r_part=+0.053 p=0.0580 MDE80=0.078
+2026-08-17 16:22:46,364 [INFO]     L 5 name  centered r_raw=+0.026 r_part=+0.012 p=0.6698 MDE80=0.079
+2026-08-17 16:22:46,724 [INFO]     L 5 name  zscored  r_raw=+0.026 r_part=+0.006 p=0.8438 MDE80=0.079
+2026-08-17 16:22:47,084 [INFO]     L 5 instr centered r_raw=+0.031 r_part=+0.031 p=0.2389 MDE80=0.077
+2026-08-17 16:22:47,442 [INFO]     L 5 instr zscored  r_raw=+0.035 r_part=+0.031 p=0.2499 MDE80=0.078
+2026-08-17 16:22:47,969 [INFO]     L 5 last  centered r_raw=+0.046 r_part=+0.049 p=0.0770 MDE80=0.077
+2026-08-17 16:22:48,501 [INFO]     L 5 last  zscored  r_raw=+0.052 r_part=+0.054 p=0.0520 MDE80=0.077
+2026-08-17 16:22:48,860 [INFO]     L 6 name  centered r_raw=+0.030 r_part=+0.009 p=0.7576 MDE80=0.080
+2026-08-17 16:22:49,223 [INFO]     L 6 name  zscored  r_raw=+0.023 r_part=-0.003 p=0.9153 MDE80=0.078
+2026-08-17 16:22:49,581 [INFO]     L 6 instr centered r_raw=+0.041 r_part=+0.047 p=0.0917 MDE80=0.077
+2026-08-17 16:22:49,940 [INFO]     L 6 instr zscored  r_raw=+0.035 r_part=+0.034 p=0.2027 MDE80=0.078
+2026-08-17 16:22:51,375 [INFO]     L 6 last  centered r_raw=+0.033 r_part=+0.026 p=0.3397 MDE80=0.077
+2026-08-17 16:22:52,614 [INFO]     L 6 last  zscored  r_raw=+0.038 r_part=+0.030 p=0.2602 MDE80=0.076
+2026-08-17 16:22:52,975 [INFO]     L 7 name  centered r_raw=+0.022 r_part=+0.001 p=0.9773 MDE80=0.079
+2026-08-17 16:22:53,334 [INFO]     L 7 name  zscored  r_raw=+0.022 r_part=+0.003 p=0.9323 MDE80=0.079
+2026-08-17 16:22:53,694 [INFO]     L 7 instr centered r_raw=+0.027 r_part=+0.031 p=0.2432 MDE80=0.077
+2026-08-17 16:22:54,050 [INFO]     L 7 instr zscored  r_raw=+0.028 r_part=+0.028 p=0.2997 MDE80=0.077
+2026-08-17 16:22:54,576 [INFO]     L 7 last  centered r_raw=+0.008 r_part=-0.032 p=0.2509 MDE80=0.078
+2026-08-17 16:22:55,108 [INFO]     L 7 last  zscored  r_raw=+0.030 r_part=-0.010 p=0.7186 MDE80=0.078
+2026-08-17 16:22:55,465 [INFO]     L 8 name  centered r_raw=+0.016 r_part=-0.004 p=0.8920 MDE80=0.079
+2026-08-17 16:22:55,832 [INFO]     L 8 name  zscored  r_raw=+0.014 r_part=-0.006 p=0.8213 MDE80=0.079
+2026-08-17 16:22:56,194 [INFO]     L 8 instr centered r_raw=+0.024 r_part=+0.029 p=0.2889 MDE80=0.078
+2026-08-17 16:22:56,554 [INFO]     L 8 instr zscored  r_raw=+0.024 r_part=+0.028 p=0.3022 MDE80=0.078
+2026-08-17 16:22:57,764 [INFO]     L 8 last  centered r_raw=+0.002 r_part=-0.040 p=0.1572 MDE80=0.080
+2026-08-17 16:22:58,307 [INFO]     L 8 last  zscored  r_raw=+0.018 r_part=-0.024 p=0.3879 MDE80=0.080
+2026-08-17 16:22:58,667 [INFO]     L 9 name  centered r_raw=+0.022 r_part=+0.006 p=0.8353 MDE80=0.079
+2026-08-17 16:22:59,030 [INFO]     L 9 name  zscored  r_raw=+0.019 r_part=+0.001 p=0.9723 MDE80=0.079
+2026-08-17 16:22:59,395 [INFO]     L 9 instr centered r_raw=+0.021 r_part=+0.029 p=0.2972 MDE80=0.078
+2026-08-17 16:22:59,753 [INFO]     L 9 instr zscored  r_raw=+0.022 r_part=+0.028 p=0.3019 MDE80=0.079
+2026-08-17 16:23:00,281 [INFO]     L 9 last  centered r_raw=+0.011 r_part=-0.028 p=0.3154 MDE80=0.080
+2026-08-17 16:23:00,813 [INFO]     L 9 last  zscored  r_raw=+0.026 r_part=-0.012 p=0.6736 MDE80=0.079
+2026-08-17 16:23:01,170 [INFO]     L10 name  centered r_raw=+0.030 r_part=+0.011 p=0.6913 MDE80=0.079
+2026-08-17 16:23:01,528 [INFO]     L10 name  zscored  r_raw=+0.026 r_part=+0.005 p=0.8525 MDE80=0.079
+2026-08-17 16:23:01,887 [INFO]     L10 instr centered r_raw=+0.028 r_part=+0.039 p=0.1550 MDE80=0.079
+2026-08-17 16:23:02,246 [INFO]     L10 instr zscored  r_raw=+0.025 r_part=+0.032 p=0.2457 MDE80=0.079
+2026-08-17 16:23:02,772 [INFO]     L10 last  centered r_raw=+0.044 r_part=+0.012 p=0.6618 MDE80=0.079
+2026-08-17 16:23:03,309 [INFO]     L10 last  zscored  r_raw=+0.044 r_part=+0.014 p=0.6041 MDE80=0.079
+2026-08-17 16:23:03,668 [INFO]     L11 name  centered r_raw=+0.048 r_part=+0.035 p=0.2094 MDE80=0.080
+2026-08-17 16:23:04,028 [INFO]     L11 name  zscored  r_raw=+0.048 r_part=+0.033 p=0.2414 MDE80=0.080
+2026-08-17 16:23:04,387 [INFO]     L11 instr centered r_raw=-0.015 r_part=-0.007 p=0.7818 MDE80=0.078
+2026-08-17 16:23:04,745 [INFO]     L11 instr zscored  r_raw=-0.014 r_part=-0.006 p=0.8220 MDE80=0.078
+2026-08-17 16:23:05,273 [INFO]     L11 last  centered r_raw=+0.019 r_part=+0.001 p=0.9605 MDE80=0.080
+2026-08-17 16:23:05,808 [INFO]     L11 last  zscored  r_raw=+0.020 r_part=-0.002 p=0.9478 MDE80=0.080
+2026-08-17 16:23:10,535 [INFO]       DIRECT L12 name centered: retrieval=0.960 (null 0.020, p=0.8431568431568431) mean_r=+0.936 names_only=+0.972 increment=-0.036 (p=0.45554445554445555)
+2026-08-17 16:23:10,536 [INFO]     L12 name  centered r_raw=+0.044 r_part=+0.032 p=0.2509 MDE80=0.080
+2026-08-17 16:23:10,910 [INFO]     L12 name  zscored  r_raw=+0.046 r_part=+0.034 p=0.2324 MDE80=0.080
+2026-08-17 16:23:15,604 [INFO]       DIRECT L12 instr centered: retrieval=0.960 (null 0.020, p=1.0) mean_r=+0.952 names_only=+0.972 increment=-0.020 (p=0.3886113886113886)
+2026-08-17 16:23:15,604 [INFO]     L12 instr centered r_raw=-0.038 r_part=-0.032 p=0.2379 MDE80=0.078
+2026-08-17 16:23:15,969 [INFO]     L12 instr zscored  r_raw=-0.038 r_part=-0.033 p=0.2209 MDE80=0.078
+2026-08-17 16:23:21,079 [INFO]       DIRECT L12 last centered: retrieval=0.900 (null 0.020, p=0.22077922077922077) mean_r=+0.884 names_only=+0.972 increment=-0.088 (p=0.22377622377622378)
+2026-08-17 16:23:21,080 [INFO]     L12 last  centered r_raw=+0.022 r_part=+0.008 p=0.7851 MDE80=0.078
+2026-08-17 16:23:21,634 [INFO]     L12 last  zscored  r_raw=+0.027 r_part=+0.011 p=0.6903 MDE80=0.079
+2026-08-17 16:23:21,995 [INFO]     L13 name  centered r_raw=+0.060 r_part=+0.042 p=0.1365 MDE80=0.080
+2026-08-17 16:23:22,356 [INFO]     L13 name  zscored  r_raw=+0.050 r_part=+0.037 p=0.1870 MDE80=0.079
+2026-08-17 16:23:22,715 [INFO]     L13 instr centered r_raw=-0.044 r_part=-0.042 p=0.1197 MDE80=0.078
+2026-08-17 16:23:23,074 [INFO]     L13 instr zscored  r_raw=-0.039 r_part=-0.038 p=0.1697 MDE80=0.078
+2026-08-17 16:23:23,601 [INFO]     L13 last  centered r_raw=+0.004 r_part=-0.004 p=0.8940 MDE80=0.080
+2026-08-17 16:23:24,133 [INFO]     L13 last  zscored  r_raw=+0.005 r_part=-0.006 p=0.8343 MDE80=0.081
+2026-08-17 16:23:24,491 [INFO]     L14 name  centered r_raw=+0.058 r_part=+0.055 p=0.0542 MDE80=0.080
+2026-08-17 16:23:24,850 [INFO]     L14 name  zscored  r_raw=+0.050 r_part=+0.045 p=0.1132 MDE80=0.079
+2026-08-17 16:23:25,209 [INFO]     L14 instr centered r_raw=-0.047 r_part=-0.043 p=0.1127 MDE80=0.078
+2026-08-17 16:23:25,571 [INFO]     L14 instr zscored  r_raw=-0.043 r_part=-0.041 p=0.1330 MDE80=0.078
+2026-08-17 16:23:26,110 [INFO]     L14 last  centered r_raw=+0.001 r_part=-0.009 p=0.7318 MDE80=0.080
+2026-08-17 16:23:26,650 [INFO]     L14 last  zscored  r_raw=+0.007 r_part=-0.005 p=0.8648 MDE80=0.080
+2026-08-17 16:23:27,011 [INFO]     L15 name  centered r_raw=+0.054 r_part=+0.046 p=0.1065 MDE80=0.082
+2026-08-17 16:23:27,370 [INFO]     L15 name  zscored  r_raw=+0.050 r_part=+0.043 p=0.1230 MDE80=0.081
+2026-08-17 16:23:27,731 [INFO]     L15 instr centered r_raw=-0.040 r_part=-0.023 p=0.4049 MDE80=0.080
+2026-08-17 16:23:28,090 [INFO]     L15 instr zscored  r_raw=-0.038 r_part=-0.021 p=0.4624 MDE80=0.080
+2026-08-17 16:23:28,618 [INFO]     L15 last  centered r_raw=+0.003 r_part=-0.004 p=0.8773 MDE80=0.080
+2026-08-17 16:23:29,153 [INFO]     L15 last  zscored  r_raw=+0.007 r_part=-0.001 p=0.9633 MDE80=0.080
+2026-08-17 16:23:33,828 [INFO]       DIRECT L16 name centered: retrieval=0.980 (null 0.020, p=0.06693306693306693) mean_r=+0.954 names_only=+0.972 increment=-0.018 (p=0.1258741258741259)
+2026-08-17 16:23:33,828 [INFO]     L16 name  centered r_raw=+0.045 r_part=+0.040 p=0.1537 MDE80=0.081
+2026-08-17 16:23:34,192 [INFO]     L16 name  zscored  r_raw=+0.049 r_part=+0.047 p=0.1002 MDE80=0.081
+2026-08-17 16:23:39,890 [INFO]       DIRECT L16 instr centered: retrieval=0.820 (null 0.020, p=0.5894105894105894) mean_r=+0.812 names_only=+0.972 increment=-0.161 (p=0.7032967032967034)
+2026-08-17 16:23:39,890 [INFO]     L16 instr centered r_raw=-0.024 r_part=-0.013 p=0.6406 MDE80=0.080
+2026-08-17 16:23:40,947 [INFO]     L16 instr zscored  r_raw=-0.023 r_part=-0.012 p=0.6571 MDE80=0.079
+2026-08-17 16:23:46,970 [INFO]       DIRECT L16 last centered: retrieval=0.960 (null 0.020, p=0.14085914085914086) mean_r=+0.931 names_only=+0.972 increment=-0.041 (p=0.03796203796203796)
+2026-08-17 16:23:46,970 [INFO]     L16 last  centered r_raw=+0.001 r_part=-0.004 p=0.8805 MDE80=0.080
+2026-08-17 16:23:47,521 [INFO]     L16 last  zscored  r_raw=+0.003 r_part=-0.004 p=0.8933 MDE80=0.080
+2026-08-17 16:23:47,541 [INFO]   arm=annotated: 800 prompts, 13450 matched triples
+2026-08-17 16:23:47,541 [INFO]   calibrating the confound-residue envelope for arm=annotated on this roster's own controls (200 replicates, CPU)
+2026-08-17 16:23:52,044 [INFO]     floor(|r_partial|, p95) = 0.06646858044596626 (chance-only control: 0.05450957450113737)
+2026-08-17 16:24:01,913 [INFO]     prompts 174-472 tokens
+2026-08-17 16:24:02,294 [INFO]     L 0 name  centered r_raw=+0.031 r_part=+0.010 p=0.7191 MDE80=0.079
+2026-08-17 16:24:02,661 [INFO]     L 0 name  zscored  r_raw=+0.039 r_part=+0.016 p=0.5516 MDE80=0.078
+2026-08-17 16:24:03,047 [INFO]     L 1 name  centered r_raw=+0.033 r_part=+0.013 p=0.6313 MDE80=0.080
+2026-08-17 16:24:03,410 [INFO]     L 1 name  zscored  r_raw=+0.028 r_part=+0.008 p=0.7658 MDE80=0.079
+2026-08-17 16:24:03,779 [INFO]     L 1 instr centered r_raw=+0.004 r_part=+0.015 p=0.5449 MDE80=0.074
+2026-08-17 16:24:04,145 [INFO]     L 1 instr zscored  r_raw=+0.008 r_part=+0.009 p=0.7226 MDE80=0.074
+2026-08-17 16:24:04,687 [INFO]     L 1 last  centered r_raw=+0.014 r_part=+0.008 p=0.7776 MDE80=0.081
+2026-08-17 16:24:05,238 [INFO]     L 1 last  zscored  r_raw=+0.028 r_part=+0.035 p=0.1997 MDE80=0.078
+2026-08-17 16:24:05,607 [INFO]     L 2 name  centered r_raw=+0.024 r_part=+0.003 p=0.9120 MDE80=0.080
+2026-08-17 16:24:05,973 [INFO]     L 2 name  zscored  r_raw=+0.009 r_part=-0.015 p=0.5964 MDE80=0.079
+2026-08-17 16:24:06,441 [INFO]     L 2 instr centered r_raw=-0.003 r_part=-0.003 p=0.9233 MDE80=0.077
+2026-08-17 16:24:06,916 [INFO]     L 2 instr zscored  r_raw=+0.007 r_part=+0.005 p=0.8598 MDE80=0.075
+2026-08-17 16:24:07,455 [INFO]     L 2 last  centered r_raw=+0.042 r_part=+0.052 p=0.0687 MDE80=0.081
+2026-08-17 16:24:07,999 [INFO]     L 2 last  zscored  r_raw=+0.042 r_part=+0.055 p=0.0510 MDE80=0.079
+2026-08-17 16:24:08,369 [INFO]     L 3 name  centered r_raw=+0.013 r_part=-0.009 p=0.7453 MDE80=0.080
+2026-08-17 16:24:08,735 [INFO]     L 3 name  zscored  r_raw=+0.022 r_part=+0.004 p=0.8700 MDE80=0.079
+2026-08-17 16:24:09,203 [INFO]     L 3 instr centered r_raw=+0.000 r_part=-0.011 p=0.6788 MDE80=0.075
+2026-08-17 16:24:09,672 [INFO]     L 3 instr zscored  r_raw=+0.002 r_part=-0.014 p=0.5844 MDE80=0.075
+2026-08-17 16:24:10,216 [INFO]     L 3 last  centered r_raw=+0.038 r_part=+0.043 p=0.1195 MDE80=0.079
+2026-08-17 16:24:10,778 [INFO]     L 3 last  zscored  r_raw=+0.046 r_part=+0.052 p=0.0632 MDE80=0.079
+2026-08-17 16:24:11,146 [INFO]     L 4 name  centered r_raw=+0.011 r_part=-0.007 p=0.8125 MDE80=0.080
+2026-08-17 16:24:11,511 [INFO]     L 4 name  zscored  r_raw=+0.018 r_part=-0.002 p=0.9553 MDE80=0.079
+2026-08-17 16:24:11,875 [INFO]     L 4 instr centered r_raw=+0.002 r_part=+0.003 p=0.9108 MDE80=0.070
+2026-08-17 16:24:12,238 [INFO]     L 4 instr zscored  r_raw=+0.004 r_part=+0.005 p=0.8460 MDE80=0.072
+2026-08-17 16:24:12,780 [INFO]     L 4 last  centered r_raw=+0.025 r_part=+0.031 p=0.2532 MDE80=0.078
+2026-08-17 16:24:13,339 [INFO]     L 4 last  zscored  r_raw=+0.029 r_part=+0.036 p=0.1965 MDE80=0.078
+2026-08-17 16:24:13,710 [INFO]     L 5 name  centered r_raw=+0.026 r_part=+0.016 p=0.5716 MDE80=0.079
+2026-08-17 16:24:14,078 [INFO]     L 5 name  zscored  r_raw=+0.026 r_part=+0.009 p=0.7506 MDE80=0.079
+2026-08-17 16:24:14,546 [INFO]     L 5 instr centered r_raw=+0.003 r_part=+0.002 p=0.9330 MDE80=0.072
+2026-08-17 16:24:14,911 [INFO]     L 5 instr zscored  r_raw=+0.003 r_part=+0.000 p=0.9865 MDE80=0.074
+2026-08-17 16:24:15,462 [INFO]     L 5 last  centered r_raw=+0.021 r_part=+0.025 p=0.3474 MDE80=0.078
+2026-08-17 16:24:16,022 [INFO]     L 5 last  zscored  r_raw=+0.026 r_part=+0.034 p=0.2217 MDE80=0.078
+2026-08-17 16:24:16,389 [INFO]     L 6 name  centered r_raw=+0.030 r_part=+0.013 p=0.6588 MDE80=0.080
+2026-08-17 16:24:16,754 [INFO]     L 6 name  zscored  r_raw=+0.023 r_part=+0.001 p=0.9620 MDE80=0.078
+2026-08-17 16:24:17,222 [INFO]     L 6 instr centered r_raw=+0.007 r_part=+0.006 p=0.8230 MDE80=0.074
+2026-08-17 16:24:17,586 [INFO]     L 6 instr zscored  r_raw=+0.008 r_part=+0.005 p=0.8515 MDE80=0.074
+2026-08-17 16:24:18,128 [INFO]     L 6 last  centered r_raw=+0.018 r_part=+0.016 p=0.5511 MDE80=0.077
+2026-08-17 16:24:18,677 [INFO]     L 6 last  zscored  r_raw=+0.020 r_part=+0.019 p=0.4696 MDE80=0.077
+2026-08-17 16:24:19,044 [INFO]     L 7 name  centered r_raw=+0.022 r_part=+0.005 p=0.8675 MDE80=0.079
+2026-08-17 16:24:19,411 [INFO]     L 7 name  zscored  r_raw=+0.022 r_part=+0.006 p=0.8190 MDE80=0.079
+2026-08-17 16:24:19,880 [INFO]     L 7 instr centered r_raw=+0.002 r_part=-0.005 p=0.8475 MDE80=0.073
+2026-08-17 16:24:20,348 [INFO]     L 7 instr zscored  r_raw=+0.003 r_part=-0.007 p=0.7881 MDE80=0.074
+2026-08-17 16:24:20,892 [INFO]     L 7 last  centered r_raw=+0.008 r_part=-0.013 p=0.6446 MDE80=0.079
+2026-08-17 16:24:21,445 [INFO]     L 7 last  zscored  r_raw=+0.021 r_part=+0.002 p=0.9440 MDE80=0.079
+2026-08-17 16:24:21,811 [INFO]     L 8 name  centered r_raw=+0.016 r_part=+0.001 p=0.9573 MDE80=0.079
+2026-08-17 16:24:22,175 [INFO]     L 8 name  zscored  r_raw=+0.014 r_part=-0.002 p=0.9395 MDE80=0.079
+2026-08-17 16:24:22,643 [INFO]     L 8 instr centered r_raw=+0.001 r_part=-0.005 p=0.8623 MDE80=0.075
+2026-08-17 16:24:23,113 [INFO]     L 8 instr zscored  r_raw=-0.000 r_part=-0.009 p=0.7366 MDE80=0.076
+2026-08-17 16:24:23,656 [INFO]     L 8 last  centered r_raw=+0.012 r_part=+0.004 p=0.8775 MDE80=0.079
+2026-08-17 16:24:24,209 [INFO]     L 8 last  zscored  r_raw=+0.025 r_part=+0.017 p=0.5179 MDE80=0.079
+2026-08-17 16:24:24,578 [INFO]     L 9 name  centered r_raw=+0.022 r_part=+0.012 p=0.6626 MDE80=0.079
+2026-08-17 16:24:24,943 [INFO]     L 9 name  zscored  r_raw=+0.019 r_part=+0.007 p=0.7871 MDE80=0.079
+2026-08-17 16:24:25,410 [INFO]     L 9 instr centered r_raw=-0.003 r_part=-0.013 p=0.6021 MDE80=0.076
+2026-08-17 16:24:25,773 [INFO]     L 9 instr zscored  r_raw=-0.003 r_part=-0.015 p=0.5736 MDE80=0.076
+2026-08-17 16:24:26,313 [INFO]     L 9 last  centered r_raw=+0.010 r_part=+0.003 p=0.9028 MDE80=0.079
+2026-08-17 16:24:26,865 [INFO]     L 9 last  zscored  r_raw=+0.023 r_part=+0.017 p=0.5379 MDE80=0.079
+2026-08-17 16:24:27,232 [INFO]     L10 name  centered r_raw=+0.030 r_part=+0.015 p=0.5954 MDE80=0.079
+2026-08-17 16:24:27,596 [INFO]     L10 name  zscored  r_raw=+0.026 r_part=+0.010 p=0.7321 MDE80=0.079
+2026-08-17 16:24:27,960 [INFO]     L10 instr centered r_raw=+0.001 r_part=-0.008 p=0.7571 MDE80=0.076
+2026-08-17 16:24:28,323 [INFO]     L10 instr zscored  r_raw=-0.001 r_part=-0.011 p=0.6763 MDE80=0.076
+2026-08-17 16:24:28,870 [INFO]     L10 last  centered r_raw=+0.044 r_part=+0.043 p=0.1322 MDE80=0.081
+2026-08-17 16:24:29,427 [INFO]     L10 last  zscored  r_raw=+0.048 r_part=+0.046 p=0.1057 MDE80=0.081
+2026-08-17 16:24:29,798 [INFO]     L11 name  centered r_raw=+0.048 r_part=+0.038 p=0.1755 MDE80=0.080
+2026-08-17 16:24:30,165 [INFO]     L11 name  zscored  r_raw=+0.048 r_part=+0.037 p=0.1960 MDE80=0.080
+2026-08-17 16:24:30,529 [INFO]     L11 instr centered r_raw=-0.020 r_part=-0.034 p=0.2019 MDE80=0.079
+2026-08-17 16:24:30,893 [INFO]     L11 instr zscored  r_raw=-0.020 r_part=-0.034 p=0.1990 MDE80=0.079
+2026-08-17 16:24:31,433 [INFO]     L11 last  centered r_raw=+0.022 r_part=+0.024 p=0.3757 MDE80=0.079
+2026-08-17 16:24:31,986 [INFO]     L11 last  zscored  r_raw=+0.024 r_part=+0.022 p=0.4471 MDE80=0.080
+2026-08-17 16:24:36,678 [INFO]       DIRECT L12 name centered: retrieval=0.960 (null 0.020, p=0.8431568431568431) mean_r=+0.936 names_only=+0.972 increment=-0.036 (p=0.45554445554445555)
+2026-08-17 16:24:36,678 [INFO]     L12 name  centered r_raw=+0.044 r_part=+0.035 p=0.2097 MDE80=0.080
+2026-08-17 16:24:37,051 [INFO]     L12 name  zscored  r_raw=+0.046 r_part=+0.039 p=0.1667 MDE80=0.080
+2026-08-17 16:24:41,848 [INFO]       DIRECT L12 instr centered: retrieval=0.700 (null 0.020, p=0.6443556443556444) mean_r=+0.666 names_only=+0.972 increment=-0.307 (p=0.7802197802197802)
+2026-08-17 16:24:41,848 [INFO]     L12 instr centered r_raw=-0.024 r_part=-0.029 p=0.2794 MDE80=0.080
+2026-08-17 16:24:42,331 [INFO]     L12 instr zscored  r_raw=-0.026 r_part=-0.034 p=0.2144 MDE80=0.080
+2026-08-17 16:24:47,194 [INFO]       DIRECT L12 last centered: retrieval=0.840 (null 0.020, p=0.9820179820179821) mean_r=+0.862 names_only=+0.972 increment=-0.111 (p=0.5664335664335665)
+2026-08-17 16:24:47,194 [INFO]     L12 last  centered r_raw=+0.015 r_part=-0.005 p=0.8615 MDE80=0.079
+2026-08-17 16:24:47,761 [INFO]     L12 last  zscored  r_raw=+0.018 r_part=-0.001 p=0.9668 MDE80=0.079
+2026-08-17 16:24:48,134 [INFO]     L13 name  centered r_raw=+0.060 r_part=+0.045 p=0.1105 MDE80=0.080
+2026-08-17 16:24:48,501 [INFO]     L13 name  zscored  r_raw=+0.050 r_part=+0.041 p=0.1412 MDE80=0.079
+2026-08-17 16:24:48,972 [INFO]     L13 instr centered r_raw=-0.024 r_part=-0.031 p=0.2564 MDE80=0.080
+2026-08-17 16:24:49,443 [INFO]     L13 instr zscored  r_raw=-0.023 r_part=-0.034 p=0.2132 MDE80=0.080
+2026-08-17 16:24:49,988 [INFO]     L13 last  centered r_raw=+0.011 r_part=+0.004 p=0.8908 MDE80=0.080
+2026-08-17 16:24:50,544 [INFO]     L13 last  zscored  r_raw=+0.011 r_part=+0.001 p=0.9625 MDE80=0.080
+2026-08-17 16:24:50,910 [INFO]     L14 name  centered r_raw=+0.058 r_part=+0.058 p=0.0435 MDE80=0.080
+2026-08-17 16:24:51,276 [INFO]     L14 name  zscored  r_raw=+0.050 r_part=+0.050 p=0.0795 MDE80=0.079
+2026-08-17 16:24:51,745 [INFO]     L14 instr centered r_raw=-0.022 r_part=-0.028 p=0.2867 MDE80=0.080
+2026-08-17 16:24:52,213 [INFO]     L14 instr zscored  r_raw=-0.024 r_part=-0.035 p=0.2042 MDE80=0.080
+2026-08-17 16:24:52,757 [INFO]     L14 last  centered r_raw=+0.012 r_part=-0.004 p=0.8815 MDE80=0.079
+2026-08-17 16:24:53,307 [INFO]     L14 last  zscored  r_raw=+0.017 r_part=+0.003 p=0.9130 MDE80=0.079
+2026-08-17 16:24:53,675 [INFO]     L15 name  centered r_raw=+0.054 r_part=+0.049 p=0.0867 MDE80=0.082
+2026-08-17 16:24:54,039 [INFO]     L15 name  zscored  r_raw=+0.050 r_part=+0.047 p=0.0997 MDE80=0.081
+2026-08-17 16:24:54,509 [INFO]     L15 instr centered r_raw=-0.032 r_part=-0.027 p=0.3214 MDE80=0.080
+2026-08-17 16:24:54,976 [INFO]     L15 instr zscored  r_raw=-0.030 r_part=-0.024 p=0.3734 MDE80=0.080
+2026-08-17 16:24:55,519 [INFO]     L15 last  centered r_raw=+0.010 r_part=-0.003 p=0.9270 MDE80=0.079
+2026-08-17 16:24:56,076 [INFO]     L15 last  zscored  r_raw=+0.013 r_part=+0.001 p=0.9788 MDE80=0.079
+2026-08-17 16:25:00,772 [INFO]       DIRECT L16 name centered: retrieval=0.980 (null 0.020, p=0.06693306693306693) mean_r=+0.954 names_only=+0.972 increment=-0.018 (p=0.1258741258741259)
+2026-08-17 16:25:00,772 [INFO]     L16 name  centered r_raw=+0.045 r_part=+0.043 p=0.1237 MDE80=0.081
+2026-08-17 16:25:01,149 [INFO]     L16 name  zscored  r_raw=+0.049 r_part=+0.050 p=0.0772 MDE80=0.081
+2026-08-17 16:25:06,275 [INFO]       DIRECT L16 instr centered: retrieval=0.800 (null 0.020, p=0.7532467532467533) mean_r=+0.807 names_only=+0.972 increment=-0.165 (p=0.4205794205794206)
+2026-08-17 16:25:06,275 [INFO]     L16 instr centered r_raw=-0.023 r_part=-0.015 p=0.5624 MDE80=0.080
+2026-08-17 16:25:06,762 [INFO]     L16 instr zscored  r_raw=-0.020 r_part=-0.012 p=0.6433 MDE80=0.080
+2026-08-17 16:25:11,622 [INFO]       DIRECT L16 last centered: retrieval=0.960 (null 0.020, p=0.14085914085914086) mean_r=+0.932 names_only=+0.972 increment=-0.040 (p=0.03196803196803197)
+2026-08-17 16:25:11,623 [INFO]     L16 last  centered r_raw=+0.010 r_part=-0.003 p=0.9063 MDE80=0.079
+2026-08-17 16:25:12,186 [INFO]     L16 last  zscored  r_raw=+0.013 r_part=+0.000 p=0.9963 MDE80=0.079
+2026-08-17 16:25:12,203 [INFO]   POSITIVE CONTROL: 48 cell lines, 768 prompts, drug fixed at 'Abiraterone acetate'
+2026-08-17 16:25:22,032 [INFO]     PC L 0 name  r_raw=+0.006 r_part=+0.003 p=0.9170
+2026-08-17 16:25:22,468 [INFO]     PC L12 name  r_raw=+0.077 r_part=+0.079 p=0.0175
+2026-08-17 16:25:22,888 [INFO]     PC L12 instr r_raw=+0.059 r_part=+0.056 p=0.0505
+2026-08-17 16:25:23,474 [INFO]     PC L12 last  r_raw=+0.201 r_part=+0.200 p=0.0005
+2026-08-17 16:25:23,894 [INFO]     PC L16 name  r_raw=+0.061 r_part=+0.058 p=0.0555
+2026-08-17 16:25:24,314 [INFO]     PC L16 instr r_raw=+0.077 r_part=+0.075 p=0.0150
+2026-08-17 16:25:24,903 [INFO]     PC L16 last  r_raw=+0.274 r_part=+0.277 p=0.0005
+2026-08-17 16:25:24,910 [INFO] === base (vandijklab/C2S-Scale-Pythia-1b-pt) ===
+2026-08-17 16:25:25,140 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:25:25,146 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/config.json "HTTP/1.1 200 OK"
+2026-08-17 16:25:25,460 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:25:25,466 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-08-17 16:25:25,802 [INFO] HTTP Request: GET https://huggingface.co/api/models/vandijklab/C2S-Scale-Pythia-1b-pt/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-17 16:25:25,970 [INFO] HTTP Request: GET https://huggingface.co/api/models/vandijklab/C2S-Scale-Pythia-1b-pt/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-08-17 16:25:26,475 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:25:26,483 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s]Loading weights:  19%|█▉        | 38/196 [00:00<00:00, 366.60it/s]Loading weights:  62%|██████▏   | 122/196 [00:00<00:00, 625.17it/s]Loading weights: 100%|██████████| 196/196 [00:00<00:00, 689.82it/s]
+2026-08-17 16:25:27,325 [INFO] HTTP Request: HEAD https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-17 16:25:27,332 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vandijklab/C2S-Scale-Pythia-1b-pt/830e4689d4238bbb5e2ec9a89b76e6a6d48061db/generation_config.json "HTTP/1.1 200 OK"
+2026-08-17 16:25:27,808 [INFO]   16 layers, hidden 2048; reading layers [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] at positions ['name', 'instr', 'last']
+2026-08-17 16:25:27,830 [INFO]   arm=blind: 800 prompts, 19359 matched triples
+2026-08-17 16:25:37,734 [INFO]     prompts 178-473 tokens
+2026-08-17 16:25:38,114 [INFO]     L 0 name  centered r_raw=+0.031 r_part=+0.006 p=0.8210 MDE80=0.079
+2026-08-17 16:25:38,476 [INFO]     L 0 name  zscored  r_raw=+0.039 r_part=+0.013 p=0.6298 MDE80=0.078
+2026-08-17 16:25:38,859 [INFO]     L 1 name  centered r_raw=+0.032 r_part=+0.008 p=0.7921 MDE80=0.080
+2026-08-17 16:25:39,219 [INFO]     L 1 name  zscored  r_raw=+0.026 r_part=+0.003 p=0.9113 MDE80=0.079
+2026-08-17 16:25:39,581 [INFO]     L 1 instr centered r_raw=+0.009 r_part=+0.012 p=0.6651 MDE80=0.076
+2026-08-17 16:25:39,942 [INFO]     L 1 instr zscored  r_raw=+0.022 r_part=+0.027 p=0.2979 MDE80=0.075
+2026-08-17 16:25:40,469 [INFO]     L 1 last  centered r_raw=+0.010 r_part=+0.006 p=0.8160 MDE80=0.081
+2026-08-17 16:25:41,008 [INFO]     L 1 last  zscored  r_raw=+0.023 r_part=+0.021 p=0.4501 MDE80=0.080
+2026-08-17 16:25:41,369 [INFO]     L 2 name  centered r_raw=+0.024 r_part=+0.001 p=0.9843 MDE80=0.080
+2026-08-17 16:25:41,729 [INFO]     L 2 name  zscored  r_raw=+0.010 r_part=-0.016 p=0.5801 MDE80=0.079
+2026-08-17 16:25:42,090 [INFO]     L 2 instr centered r_raw=+0.009 r_part=+0.009 p=0.7321 MDE80=0.077
+2026-08-17 16:25:42,452 [INFO]     L 2 instr zscored  r_raw=+0.024 r_part=+0.026 p=0.3384 MDE80=0.077
+2026-08-17 16:25:42,988 [INFO]     L 2 last  centered r_raw=+0.048 r_part=+0.055 p=0.0582 MDE80=0.081
+2026-08-17 16:25:43,527 [INFO]     L 2 last  zscored  r_raw=+0.054 r_part=+0.065 p=0.0220 MDE80=0.078
+2026-08-17 16:25:43,887 [INFO]     L 3 name  centered r_raw=+0.015 r_part=-0.012 p=0.6643 MDE80=0.080
+2026-08-17 16:25:44,247 [INFO]     L 3 name  zscored  r_raw=+0.023 r_part=+0.000 p=0.9995 MDE80=0.079
+2026-08-17 16:25:44,608 [INFO]     L 3 instr centered r_raw=+0.026 r_part=+0.025 p=0.3369 MDE80=0.076
+2026-08-17 16:25:44,967 [INFO]     L 3 instr zscored  r_raw=+0.027 r_part=+0.018 p=0.4971 MDE80=0.076
+2026-08-17 16:25:45,494 [INFO]     L 3 last  centered r_raw=+0.057 r_part=+0.065 p=0.0217 MDE80=0.077
+2026-08-17 16:25:46,033 [INFO]     L 3 last  zscored  r_raw=+0.056 r_part=+0.062 p=0.0280 MDE80=0.077
+2026-08-17 16:25:46,403 [INFO]     L 4 name  centered r_raw=+0.004 r_part=-0.019 p=0.5111 MDE80=0.080
+2026-08-17 16:25:46,764 [INFO]     L 4 name  zscored  r_raw=+0.012 r_part=-0.011 p=0.7123 MDE80=0.080
+2026-08-17 16:25:47,126 [INFO]     L 4 instr centered r_raw=+0.039 r_part=+0.035 p=0.1960 MDE80=0.077
+2026-08-17 16:25:47,487 [INFO]     L 4 instr zscored  r_raw=+0.038 r_part=+0.029 p=0.2767 MDE80=0.077
+2026-08-17 16:25:48,017 [INFO]     L 4 last  centered r_raw=+0.034 r_part=+0.044 p=0.1085 MDE80=0.077
+2026-08-17 16:25:48,557 [INFO]     L 4 last  zscored  r_raw=+0.035 r_part=+0.041 p=0.1282 MDE80=0.077
+2026-08-17 16:25:48,919 [INFO]     L 5 name  centered r_raw=+0.024 r_part=+0.009 p=0.7511 MDE80=0.080
+2026-08-17 16:25:49,280 [INFO]     L 5 name  zscored  r_raw=+0.026 r_part=+0.006 p=0.8288 MDE80=0.079
+2026-08-17 16:25:49,646 [INFO]     L 5 instr centered r_raw=+0.036 r_part=+0.027 p=0.3174 MDE80=0.078
+2026-08-17 16:25:50,009 [INFO]     L 5 instr zscored  r_raw=+0.037 r_part=+0.024 p=0.3589 MDE80=0.078
+2026-08-17 16:25:50,540 [INFO]     L 5 last  centered r_raw=+0.025 r_part=+0.039 p=0.1400 MDE80=0.078
+2026-08-17 16:25:51,079 [INFO]     L 5 last  zscored  r_raw=+0.031 r_part=+0.043 p=0.1062 MDE80=0.078
+2026-08-17 16:25:51,446 [INFO]     L 6 name  centered r_raw=+0.030 r_part=+0.009 p=0.7406 MDE80=0.080
+2026-08-17 16:25:51,809 [INFO]     L 6 name  zscored  r_raw=+0.026 r_part=-0.002 p=0.9495 MDE80=0.079
+2026-08-17 16:25:52,170 [INFO]     L 6 instr centered r_raw=+0.041 r_part=+0.034 p=0.2104 MDE80=0.078
+2026-08-17 16:25:52,532 [INFO]     L 6 instr zscored  r_raw=+0.042 r_part=+0.031 p=0.2572 MDE80=0.078
+2026-08-17 16:25:53,062 [INFO]     L 6 last  centered r_raw=+0.016 r_part=+0.026 p=0.3344 MDE80=0.078
+2026-08-17 16:25:53,601 [INFO]     L 6 last  zscored  r_raw=+0.018 r_part=+0.025 p=0.3562 MDE80=0.078
+2026-08-17 16:25:53,963 [INFO]     L 7 name  centered r_raw=+0.022 r_part=+0.004 p=0.8778 MDE80=0.079
+2026-08-17 16:25:54,325 [INFO]     L 7 name  zscored  r_raw=+0.024 r_part=+0.004 p=0.8970 MDE80=0.079
+2026-08-17 16:25:54,686 [INFO]     L 7 instr centered r_raw=+0.039 r_part=+0.032 p=0.2412 MDE80=0.078
+2026-08-17 16:25:55,046 [INFO]     L 7 instr zscored  r_raw=+0.039 r_part=+0.029 p=0.2792 MDE80=0.078
+2026-08-17 16:25:55,574 [INFO]     L 7 last  centered r_raw=+0.004 r_part=+0.008 p=0.7611 MDE80=0.078
+2026-08-17 16:25:56,113 [INFO]     L 7 last  zscored  r_raw=+0.005 r_part=+0.005 p=0.8495 MDE80=0.078
+2026-08-17 16:25:56,479 [INFO]     L 8 name  centered r_raw=+0.025 r_part=+0.007 p=0.8033 MDE80=0.079
+2026-08-17 16:25:56,843 [INFO]     L 8 name  zscored  r_raw=+0.024 r_part=+0.006 p=0.8463 MDE80=0.079
+2026-08-17 16:25:57,204 [INFO]     L 8 instr centered r_raw=+0.040 r_part=+0.038 p=0.1657 MDE80=0.079
+2026-08-17 16:25:57,565 [INFO]     L 8 instr zscored  r_raw=+0.045 r_part=+0.041 p=0.1430 MDE80=0.079
+2026-08-17 16:25:58,095 [INFO]     L 8 last  centered r_raw=-0.000 r_part=-0.010 p=0.7096 MDE80=0.078
+2026-08-17 16:25:58,635 [INFO]     L 8 last  zscored  r_raw=+0.002 r_part=-0.013 p=0.6261 MDE80=0.078
+2026-08-17 16:25:58,995 [INFO]     L 9 name  centered r_raw=+0.026 r_part=+0.012 p=0.6671 MDE80=0.079
+2026-08-17 16:25:59,356 [INFO]     L 9 name  zscored  r_raw=+0.026 r_part=+0.010 p=0.7121 MDE80=0.079
+2026-08-17 16:25:59,721 [INFO]     L 9 instr centered r_raw=+0.043 r_part=+0.037 p=0.1795 MDE80=0.079
+2026-08-17 16:26:00,082 [INFO]     L 9 instr zscored  r_raw=+0.048 r_part=+0.039 p=0.1615 MDE80=0.079
+2026-08-17 16:26:00,609 [INFO]     L 9 last  centered r_raw=+0.003 r_part=+0.001 p=0.9820 MDE80=0.077
+2026-08-17 16:26:01,148 [INFO]     L 9 last  zscored  r_raw=+0.004 r_part=-0.008 p=0.7838 MDE80=0.077
+2026-08-17 16:26:01,508 [INFO]     L10 name  centered r_raw=+0.018 r_part=-0.004 p=0.8843 MDE80=0.079
+2026-08-17 16:26:01,875 [INFO]     L10 name  zscored  r_raw=+0.015 r_part=-0.009 p=0.7501 MDE80=0.079
+2026-08-17 16:26:02,235 [INFO]     L10 instr centered r_raw=+0.041 r_part=+0.036 p=0.2039 MDE80=0.080
+2026-08-17 16:26:02,596 [INFO]     L10 instr zscored  r_raw=+0.044 r_part=+0.036 p=0.2009 MDE80=0.080
+2026-08-17 16:26:03,122 [INFO]     L10 last  centered r_raw=+0.001 r_part=-0.007 p=0.7956 MDE80=0.078
+2026-08-17 16:26:03,658 [INFO]     L10 last  zscored  r_raw=+0.006 r_part=-0.009 p=0.7338 MDE80=0.079
+2026-08-17 16:26:04,017 [INFO]     L11 name  centered r_raw=+0.024 r_part=+0.001 p=0.9768 MDE80=0.079
+2026-08-17 16:26:04,376 [INFO]     L11 name  zscored  r_raw=+0.026 r_part=+0.003 p=0.9090 MDE80=0.079
+2026-08-17 16:26:04,735 [INFO]     L11 instr centered r_raw=+0.008 r_part=+0.001 p=0.9683 MDE80=0.080
+2026-08-17 16:26:05,096 [INFO]     L11 instr zscored  r_raw=+0.013 r_part=+0.004 p=0.8870 MDE80=0.080
+2026-08-17 16:26:05,632 [INFO]     L11 last  centered r_raw=+0.011 r_part=+0.005 p=0.8435 MDE80=0.076
+2026-08-17 16:26:06,171 [INFO]     L11 last  zscored  r_raw=+0.018 r_part=+0.009 p=0.7391 MDE80=0.077
+2026-08-17 16:26:10,886 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6073926073926074) mean_r=+0.952 names_only=+0.972 increment=-0.020 (p=0.24075924075924077)
+2026-08-17 16:26:10,886 [INFO]     L12 name  centered r_raw=+0.025 r_part=+0.003 p=0.9023 MDE80=0.079
+2026-08-17 16:26:11,255 [INFO]     L12 name  zscored  r_raw=+0.022 r_part=+0.000 p=0.9908 MDE80=0.079
+2026-08-17 16:26:15,961 [INFO]       DIRECT L12 instr centered: retrieval=0.900 (null 0.020, p=0.2987012987012987) mean_r=+0.891 names_only=+0.972 increment=-0.082 (p=0.3276723276723277)
+2026-08-17 16:26:15,961 [INFO]     L12 instr centered r_raw=-0.003 r_part=-0.012 p=0.6513 MDE80=0.079
+2026-08-17 16:26:16,330 [INFO]     L12 instr zscored  r_raw=+0.001 r_part=-0.013 p=0.6511 MDE80=0.079
+2026-08-17 16:26:21,220 [INFO]       DIRECT L12 last centered: retrieval=0.700 (null 0.020, p=0.8711288711288712) mean_r=+0.692 names_only=+0.972 increment=-0.280 (p=0.6753246753246753)
+2026-08-17 16:26:21,220 [INFO]     L12 last  centered r_raw=+0.015 r_part=+0.000 p=0.9923 MDE80=0.076
+2026-08-17 16:26:21,772 [INFO]     L12 last  zscored  r_raw=+0.016 r_part=-0.002 p=0.9443 MDE80=0.076
+2026-08-17 16:26:22,134 [INFO]     L13 name  centered r_raw=+0.025 r_part=-0.000 p=0.9843 MDE80=0.079
+2026-08-17 16:26:22,493 [INFO]     L13 name  zscored  r_raw=+0.025 r_part=+0.005 p=0.8428 MDE80=0.079
+2026-08-17 16:26:22,855 [INFO]     L13 instr centered r_raw=+0.003 r_part=-0.006 p=0.8220 MDE80=0.079
+2026-08-17 16:26:23,216 [INFO]     L13 instr zscored  r_raw=+0.006 r_part=-0.009 p=0.7518 MDE80=0.079
+2026-08-17 16:26:23,743 [INFO]     L13 last  centered r_raw=+0.026 r_part=+0.003 p=0.9038 MDE80=0.078
+2026-08-17 16:26:24,281 [INFO]     L13 last  zscored  r_raw=+0.025 r_part=-0.001 p=0.9768 MDE80=0.078
+2026-08-17 16:26:24,644 [INFO]     L14 name  centered r_raw=+0.015 r_part=-0.006 p=0.8440 MDE80=0.079
+2026-08-17 16:26:25,009 [INFO]     L14 name  zscored  r_raw=+0.020 r_part=+0.001 p=0.9785 MDE80=0.079
+2026-08-17 16:26:25,370 [INFO]     L14 instr centered r_raw=+0.000 r_part=-0.009 p=0.7456 MDE80=0.079
+2026-08-17 16:26:25,730 [INFO]     L14 instr zscored  r_raw=+0.000 r_part=-0.014 p=0.6161 MDE80=0.079
+2026-08-17 16:26:26,259 [INFO]     L14 last  centered r_raw=+0.019 r_part=-0.006 p=0.8210 MDE80=0.078
+2026-08-17 16:26:26,797 [INFO]     L14 last  zscored  r_raw=+0.014 r_part=-0.012 p=0.6613 MDE80=0.078
+2026-08-17 16:26:27,159 [INFO]     L15 name  centered r_raw=+0.050 r_part=+0.029 p=0.3047 MDE80=0.079
+2026-08-17 16:26:27,519 [INFO]     L15 name  zscored  r_raw=+0.045 r_part=+0.025 p=0.3722 MDE80=0.079
+2026-08-17 16:26:27,880 [INFO]     L15 instr centered r_raw=-0.013 r_part=-0.020 p=0.4599 MDE80=0.081
+2026-08-17 16:26:28,242 [INFO]     L15 instr zscored  r_raw=-0.008 r_part=-0.019 p=0.4986 MDE80=0.080
+2026-08-17 16:26:28,772 [INFO]     L15 last  centered r_raw=+0.016 r_part=+0.022 p=0.4156 MDE80=0.079
+2026-08-17 16:26:29,315 [INFO]     L15 last  zscored  r_raw=+0.021 r_part=+0.024 p=0.3799 MDE80=0.079
+2026-08-17 16:26:34,030 [INFO]       DIRECT L16 name centered: retrieval=0.960 (null 0.020, p=0.7112887112887113) mean_r=+0.945 names_only=+0.972 increment=-0.028 (p=0.04595404595404595)
+2026-08-17 16:26:34,030 [INFO]     L16 name  centered r_raw=+0.075 r_part=+0.064 p=0.0272 MDE80=0.080
+2026-08-17 16:26:34,398 [INFO]     L16 name  zscored  r_raw=+0.071 r_part=+0.059 p=0.0382 MDE80=0.080
+2026-08-17 16:26:39,111 [INFO]       DIRECT L16 instr centered: retrieval=0.860 (null 0.020, p=0.978021978021978) mean_r=+0.878 names_only=+0.972 increment=-0.095 (p=0.8471528471528471)
+2026-08-17 16:26:39,111 [INFO]     L16 instr centered r_raw=-0.015 r_part=-0.026 p=0.3569 MDE80=0.081
+2026-08-17 16:26:39,476 [INFO]     L16 instr zscored  r_raw=-0.013 r_part=-0.027 p=0.3402 MDE80=0.081
+2026-08-17 16:26:44,362 [INFO]       DIRECT L16 last centered: retrieval=0.900 (null 0.020, p=0.17282717282717283) mean_r=+0.895 names_only=+0.972 increment=-0.077 (p=0.17582417582417584)
+2026-08-17 16:26:44,363 [INFO]     L16 last  centered r_raw=+0.017 r_part=+0.023 p=0.3987 MDE80=0.080
+2026-08-17 16:26:44,917 [INFO]     L16 last  zscored  r_raw=+0.020 r_part=+0.021 p=0.4434 MDE80=0.080
+2026-08-17 16:26:44,937 [INFO]   arm=annotated: 800 prompts, 13450 matched triples
+2026-08-17 16:26:54,882 [INFO]     prompts 178-476 tokens
+2026-08-17 16:26:55,278 [INFO]     L 0 name  centered r_raw=+0.031 r_part=+0.010 p=0.7238 MDE80=0.079
+2026-08-17 16:26:55,645 [INFO]     L 0 name  zscored  r_raw=+0.039 r_part=+0.016 p=0.5564 MDE80=0.078
+2026-08-17 16:26:56,040 [INFO]     L 1 name  centered r_raw=+0.032 r_part=+0.013 p=0.6453 MDE80=0.080
+2026-08-17 16:26:56,405 [INFO]     L 1 name  zscored  r_raw=+0.026 r_part=+0.008 p=0.7876 MDE80=0.079
+2026-08-17 16:26:56,769 [INFO]     L 1 instr centered r_raw=+0.004 r_part=+0.013 p=0.6058 MDE80=0.074
+2026-08-17 16:26:57,133 [INFO]     L 1 instr zscored  r_raw=+0.007 r_part=+0.005 p=0.8450 MDE80=0.074
+2026-08-17 16:26:57,664 [INFO]     L 1 last  centered r_raw=+0.022 r_part=+0.017 p=0.5509 MDE80=0.079
+2026-08-17 16:26:58,208 [INFO]     L 1 last  zscored  r_raw=+0.030 r_part=+0.038 p=0.1650 MDE80=0.078
+2026-08-17 16:26:58,572 [INFO]     L 2 name  centered r_raw=+0.024 r_part=+0.003 p=0.9065 MDE80=0.080
+2026-08-17 16:26:58,939 [INFO]     L 2 name  zscored  r_raw=+0.010 r_part=-0.014 p=0.6341 MDE80=0.079
+2026-08-17 16:26:59,410 [INFO]     L 2 instr centered r_raw=-0.003 r_part=-0.007 p=0.7883 MDE80=0.076
+2026-08-17 16:26:59,880 [INFO]     L 2 instr zscored  r_raw=+0.006 r_part=+0.001 p=0.9828 MDE80=0.075
+2026-08-17 16:27:00,417 [INFO]     L 2 last  centered r_raw=+0.041 r_part=+0.045 p=0.1020 MDE80=0.079
+2026-08-17 16:27:00,960 [INFO]     L 2 last  zscored  r_raw=+0.039 r_part=+0.044 p=0.1057 MDE80=0.077
+2026-08-17 16:27:01,332 [INFO]     L 3 name  centered r_raw=+0.015 r_part=-0.008 p=0.7668 MDE80=0.080
+2026-08-17 16:27:01,701 [INFO]     L 3 name  zscored  r_raw=+0.023 r_part=+0.004 p=0.8868 MDE80=0.079
+2026-08-17 16:27:02,171 [INFO]     L 3 instr centered r_raw=+0.001 r_part=-0.017 p=0.5181 MDE80=0.075
+2026-08-17 16:27:02,641 [INFO]     L 3 instr zscored  r_raw=+0.002 r_part=-0.019 p=0.4764 MDE80=0.075
+2026-08-17 16:27:03,175 [INFO]     L 3 last  centered r_raw=+0.037 r_part=+0.033 p=0.2104 MDE80=0.077
+2026-08-17 16:27:03,719 [INFO]     L 3 last  zscored  r_raw=+0.042 r_part=+0.041 p=0.1350 MDE80=0.077
+2026-08-17 16:27:04,084 [INFO]     L 4 name  centered r_raw=+0.004 r_part=-0.015 p=0.5999 MDE80=0.080
+2026-08-17 16:27:04,450 [INFO]     L 4 name  zscored  r_raw=+0.012 r_part=-0.008 p=0.7846 MDE80=0.080
+2026-08-17 16:27:04,815 [INFO]     L 4 instr centered r_raw=+0.000 r_part=-0.003 p=0.8860 MDE80=0.070
+2026-08-17 16:27:05,178 [INFO]     L 4 instr zscored  r_raw=+0.002 r_part=-0.005 p=0.8478 MDE80=0.072
+2026-08-17 16:27:05,817 [INFO]     L 4 last  centered r_raw=+0.010 r_part=+0.008 p=0.7413 MDE80=0.076
+2026-08-17 16:27:06,359 [INFO]     L 4 last  zscored  r_raw=+0.015 r_part=+0.016 p=0.5444 MDE80=0.076
+2026-08-17 16:27:06,730 [INFO]     L 5 name  centered r_raw=+0.024 r_part=+0.013 p=0.6426 MDE80=0.080
+2026-08-17 16:27:07,101 [INFO]     L 5 name  zscored  r_raw=+0.026 r_part=+0.010 p=0.7246 MDE80=0.079
+2026-08-17 16:27:07,569 [INFO]     L 5 instr centered r_raw=+0.001 r_part=-0.005 p=0.8265 MDE80=0.072
+2026-08-17 16:27:08,035 [INFO]     L 5 instr zscored  r_raw=+0.002 r_part=-0.009 p=0.7391 MDE80=0.073
+2026-08-17 16:27:08,569 [INFO]     L 5 last  centered r_raw=+0.011 r_part=+0.015 p=0.5626 MDE80=0.077
+2026-08-17 16:27:09,112 [INFO]     L 5 last  zscored  r_raw=+0.018 r_part=+0.029 p=0.2922 MDE80=0.077
+2026-08-17 16:27:09,477 [INFO]     L 6 name  centered r_raw=+0.030 r_part=+0.013 p=0.6421 MDE80=0.080
+2026-08-17 16:27:09,842 [INFO]     L 6 name  zscored  r_raw=+0.026 r_part=+0.002 p=0.9335 MDE80=0.079
+2026-08-17 16:27:10,317 [INFO]     L 6 instr centered r_raw=+0.007 r_part=+0.006 p=0.8303 MDE80=0.074
+2026-08-17 16:27:10,787 [INFO]     L 6 instr zscored  r_raw=+0.009 r_part=+0.006 p=0.8285 MDE80=0.075
+2026-08-17 16:27:11,322 [INFO]     L 6 last  centered r_raw=+0.003 r_part=+0.009 p=0.7448 MDE80=0.076
+2026-08-17 16:27:11,867 [INFO]     L 6 last  zscored  r_raw=+0.009 r_part=+0.018 p=0.4921 MDE80=0.077
+2026-08-17 16:27:12,241 [INFO]     L 7 name  centered r_raw=+0.022 r_part=+0.007 p=0.7961 MDE80=0.080
+2026-08-17 16:27:12,609 [INFO]     L 7 name  zscored  r_raw=+0.024 r_part=+0.007 p=0.8023 MDE80=0.079
+2026-08-17 16:27:13,081 [INFO]     L 7 instr centered r_raw=+0.002 r_part=+0.003 p=0.9093 MDE80=0.073
+2026-08-17 16:27:13,552 [INFO]     L 7 instr zscored  r_raw=+0.003 r_part=+0.001 p=0.9545 MDE80=0.075
+2026-08-17 16:27:14,088 [INFO]     L 7 last  centered r_raw=-0.003 r_part=-0.002 p=0.9558 MDE80=0.077
+2026-08-17 16:27:14,633 [INFO]     L 7 last  zscored  r_raw=+0.005 r_part=+0.007 p=0.7891 MDE80=0.077
+2026-08-17 16:27:15,004 [INFO]     L 8 name  centered r_raw=+0.025 r_part=+0.012 p=0.6628 MDE80=0.079
+2026-08-17 16:27:15,371 [INFO]     L 8 name  zscored  r_raw=+0.024 r_part=+0.010 p=0.7226 MDE80=0.079
+2026-08-17 16:27:15,842 [INFO]     L 8 instr centered r_raw=+0.005 r_part=+0.006 p=0.7901 MDE80=0.072
+2026-08-17 16:27:16,207 [INFO]     L 8 instr zscored  r_raw=+0.006 r_part=+0.003 p=0.8915 MDE80=0.073
+2026-08-17 16:27:16,739 [INFO]     L 8 last  centered r_raw=-0.001 r_part=-0.003 p=0.9023 MDE80=0.077
+2026-08-17 16:27:17,284 [INFO]     L 8 last  zscored  r_raw=+0.008 r_part=+0.007 p=0.8033 MDE80=0.077
+2026-08-17 16:27:17,649 [INFO]     L 9 name  centered r_raw=+0.026 r_part=+0.017 p=0.5294 MDE80=0.079
+2026-08-17 16:27:18,013 [INFO]     L 9 name  zscored  r_raw=+0.026 r_part=+0.015 p=0.5836 MDE80=0.079
+2026-08-17 16:27:18,482 [INFO]     L 9 instr centered r_raw=+0.004 r_part=-0.000 p=0.9943 MDE80=0.072
+2026-08-17 16:27:18,951 [INFO]     L 9 instr zscored  r_raw=+0.006 r_part=+0.000 p=0.9888 MDE80=0.073
+2026-08-17 16:27:19,486 [INFO]     L 9 last  centered r_raw=-0.002 r_part=-0.005 p=0.8475 MDE80=0.077
+2026-08-17 16:27:20,029 [INFO]     L 9 last  zscored  r_raw=+0.005 r_part=+0.004 p=0.8893 MDE80=0.077
+2026-08-17 16:27:20,395 [INFO]     L10 name  centered r_raw=+0.018 r_part=+0.001 p=0.9850 MDE80=0.079
+2026-08-17 16:27:20,760 [INFO]     L10 name  zscored  r_raw=+0.015 r_part=-0.004 p=0.8798 MDE80=0.079
+2026-08-17 16:27:21,231 [INFO]     L10 instr centered r_raw=+0.002 r_part=-0.002 p=0.9528 MDE80=0.073
+2026-08-17 16:27:21,700 [INFO]     L10 instr zscored  r_raw=+0.001 r_part=-0.003 p=0.9228 MDE80=0.074
+2026-08-17 16:27:22,233 [INFO]     L10 last  centered r_raw=+0.007 r_part=-0.005 p=0.8595 MDE80=0.078
+2026-08-17 16:27:22,779 [INFO]     L10 last  zscored  r_raw=+0.013 r_part=-0.002 p=0.9423 MDE80=0.078
+2026-08-17 16:27:23,151 [INFO]     L11 name  centered r_raw=+0.024 r_part=+0.006 p=0.8163 MDE80=0.079
+2026-08-17 16:27:23,518 [INFO]     L11 name  zscored  r_raw=+0.026 r_part=+0.008 p=0.7631 MDE80=0.079
+2026-08-17 16:27:23,882 [INFO]     L11 instr centered r_raw=-0.002 r_part=-0.009 p=0.7261 MDE80=0.077
+2026-08-17 16:27:24,245 [INFO]     L11 instr zscored  r_raw=-0.004 r_part=-0.013 p=0.6103 MDE80=0.078
+2026-08-17 16:27:24,780 [INFO]     L11 last  centered r_raw=+0.002 r_part=-0.011 p=0.6931 MDE80=0.078
+2026-08-17 16:27:25,321 [INFO]     L11 last  zscored  r_raw=+0.005 r_part=-0.011 p=0.6901 MDE80=0.078
+2026-08-17 16:27:30,046 [INFO]       DIRECT L12 name centered: retrieval=0.980 (null 0.020, p=0.6073926073926074) mean_r=+0.952 names_only=+0.972 increment=-0.020 (p=0.24075924075924077)
+2026-08-17 16:27:30,046 [INFO]     L12 name  centered r_raw=+0.025 r_part=+0.010 p=0.7223 MDE80=0.079
+2026-08-17 16:27:30,425 [INFO]     L12 name  zscored  r_raw=+0.022 r_part=+0.007 p=0.8015 MDE80=0.079
+2026-08-17 16:27:35,269 [INFO]       DIRECT L12 instr centered: retrieval=0.640 (null 0.020, p=0.6843156843156843) mean_r=+0.591 names_only=+0.972 increment=-0.381 (p=0.99000999000999)
+2026-08-17 16:27:35,269 [INFO]     L12 instr centered r_raw=-0.005 r_part=-0.010 p=0.6873 MDE80=0.076
+2026-08-17 16:27:35,745 [INFO]     L12 instr zscored  r_raw=-0.009 r_part=-0.020 p=0.4631 MDE80=0.077
+2026-08-17 16:27:40,640 [INFO]       DIRECT L12 last centered: retrieval=0.580 (null 0.020, p=0.961038961038961) mean_r=+0.589 names_only=+0.972 increment=-0.384 (p=0.7922077922077922)
+2026-08-17 16:27:40,640 [INFO]     L12 last  centered r_raw=-0.008 r_part=-0.024 p=0.3859 MDE80=0.079
+2026-08-17 16:27:41,199 [INFO]     L12 last  zscored  r_raw=-0.011 r_part=-0.028 p=0.3159 MDE80=0.079
+2026-08-17 16:27:41,565 [INFO]     L13 name  centered r_raw=+0.025 r_part=+0.007 p=0.8053 MDE80=0.079
+2026-08-17 16:27:41,931 [INFO]     L13 name  zscored  r_raw=+0.025 r_part=+0.012 p=0.6528 MDE80=0.079
+2026-08-17 16:27:42,402 [INFO]     L13 instr centered r_raw=+0.002 r_part=+0.007 p=0.8133 MDE80=0.076
+2026-08-17 16:27:43,159 [INFO]     L13 instr zscored  r_raw=-0.004 r_part=-0.010 p=0.7196 MDE80=0.077
+2026-08-17 16:27:43,704 [INFO]     L13 last  centered r_raw=+0.000 r_part=-0.015 p=0.6056 MDE80=0.081
+2026-08-17 16:27:44,256 [INFO]     L13 last  zscored  r_raw=+0.003 r_part=-0.011 p=0.6926 MDE80=0.080
+2026-08-17 16:27:44,623 [INFO]     L14 name  centered r_raw=+0.015 r_part=+0.001 p=0.9765 MDE80=0.079
+2026-08-17 16:27:44,990 [INFO]     L14 name  zscored  r_raw=+0.020 r_part=+0.008 p=0.7691 MDE80=0.079
+2026-08-17 16:27:45,459 [INFO]     L14 instr centered r_raw=-0.001 r_part=-0.001 p=0.9635 MDE80=0.076
+2026-08-17 16:27:45,929 [INFO]     L14 instr zscored  r_raw=-0.005 r_part=-0.012 p=0.6411 MDE80=0.077
+2026-08-17 16:27:46,463 [INFO]     L14 last  centered r_raw=-0.012 r_part=-0.036 p=0.2109 MDE80=0.081
+2026-08-17 16:27:47,011 [INFO]     L14 last  zscored  r_raw=-0.006 r_part=-0.031 p=0.2774 MDE80=0.080
+2026-08-17 16:27:47,376 [INFO]     L15 name  centered r_raw=+0.050 r_part=+0.037 p=0.1830 MDE80=0.079
+2026-08-17 16:27:47,742 [INFO]     L15 name  zscored  r_raw=+0.045 r_part=+0.034 p=0.2267 MDE80=0.079
+2026-08-17 16:27:48,211 [INFO]     L15 instr centered r_raw=-0.009 r_part=-0.014 p=0.6076 MDE80=0.078
+2026-08-17 16:27:48,574 [INFO]     L15 instr zscored  r_raw=-0.010 r_part=-0.020 p=0.4584 MDE80=0.079
+2026-08-17 16:27:49,109 [INFO]     L15 last  centered r_raw=+0.044 r_part=+0.037 p=0.1637 MDE80=0.078
+2026-08-17 16:27:49,656 [INFO]     L15 last  zscored  r_raw=+0.044 r_part=+0.036 p=0.1917 MDE80=0.078
+2026-08-17 16:27:54,363 [INFO]       DIRECT L16 name centered: retrieval=0.960 (null 0.020, p=0.7112887112887113) mean_r=+0.945 names_only=+0.972 increment=-0.028 (p=0.04595404595404595)
+2026-08-17 16:27:54,363 [INFO]     L16 name  centered r_raw=+0.075 r_part=+0.076 p=0.0102 MDE80=0.080
+2026-08-17 16:27:54,739 [INFO]     L16 name  zscored  r_raw=+0.071 r_part=+0.069 p=0.0170 MDE80=0.080
+2026-08-17 16:27:59,460 [INFO]       DIRECT L16 instr centered: retrieval=0.660 (null 0.020, p=1.0) mean_r=+0.642 names_only=+0.972 increment=-0.331 (p=0.985014985014985)
+2026-08-17 16:27:59,461 [INFO]     L16 instr centered r_raw=-0.010 r_part=-0.019 p=0.4714 MDE80=0.079
+2026-08-17 16:27:59,833 [INFO]     L16 instr zscored  r_raw=-0.010 r_part=-0.020 p=0.4664 MDE80=0.079
+2026-08-17 16:28:04,721 [INFO]       DIRECT L16 last centered: retrieval=0.800 (null 0.020, p=0.988011988011988) mean_r=+0.822 names_only=+0.972 increment=-0.151 (p=0.2077922077922078)
+2026-08-17 16:28:04,721 [INFO]     L16 last  centered r_raw=+0.044 r_part=+0.040 p=0.1472 MDE80=0.080
+2026-08-17 16:28:05,267 [INFO]     L16 last  zscored  r_raw=+0.039 r_part=+0.030 p=0.2757 MDE80=0.080
+2026-08-17 16:28:05,284 [INFO]   POSITIVE CONTROL: 48 cell lines, 768 prompts, drug fixed at 'Abiraterone acetate'
+2026-08-17 16:28:15,150 [INFO]     PC L 0 name  r_raw=+0.006 r_part=+0.003 p=0.9110
+2026-08-17 16:28:15,581 [INFO]     PC L12 name  r_raw=+0.032 r_part=+0.029 p=0.3318
+2026-08-17 16:28:16,000 [INFO]     PC L12 instr r_raw=+0.025 r_part=+0.020 p=0.5147
+2026-08-17 16:28:16,590 [INFO]     PC L12 last  r_raw=+0.038 r_part=+0.032 p=0.2834
+2026-08-17 16:28:17,012 [INFO]     PC L16 name  r_raw=+0.026 r_part=+0.022 p=0.4703
+2026-08-17 16:28:17,432 [INFO]     PC L16 instr r_raw=+0.065 r_part=+0.062 p=0.0360
+2026-08-17 16:28:18,018 [INFO]     PC L16 last  r_raw=+0.145 r_part=+0.144 p=0.0010
+2026-08-17 16:28:18,230 [INFO] -> /home/3180408/tahoe/RESULTS/drug_geometry_rsa_G2_CVCL_0459.json   (the ONLY path this script writes)
+### done rc=0 ###

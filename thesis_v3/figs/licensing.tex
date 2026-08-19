@@ -1,0 +1,1825 @@
+% ===========================================================================
+% licensing.tex -- fig:licensing, what the probe's positive licenses and what
+% the negative that never arrived would have licensed.
+% FIGURE BODY ONLY. No preamble, no document environment, no float, no caption.
+% \input it from inside a figure/fullwidth float in
+% Sections/04b-representation.tex, at \beatsection sec:methods-probe, straight
+% after the paragraph "The probe, and why its positive is nearly free"
+% (04b-representation.tex:108-113). The complete float is staged, commented, at
+% the foot of this file.
+%
+% Compiles against thesis_v2/preamble.tex and nothing else: no \includegraphics,
+% no external data, no TikZ library beyond the ones preamble.tex already loads
+% (this file uses arrows.meta for the two Stealth heads and
+% decorations.pathreplacing for the mirrored brace under the prompt strip).
+%
+% WHAT IT IS. Two panels. LEFT: where the drug name enters the prompt, and
+% where the probe reads. RIGHT: the two ways a model can ignore a drug it was
+% told about, one of them struck by the positive and the other left standing,
+% beside the small licence the strike buys and the large one a failure would
+% have bought. The figure draws an ASYMMETRY, not a result: the section's own
+% discount, that a positive here was near-certain in advance while a negative
+% would have been decisive, has no graphical form anywhere in the document, and
+% nothing in thesis_v2 draws the prompt, its fields, or the read position.
+%
+% EVERY NUMBER DRAWN, AND WHERE IT COMES FROM
+% -------------------------------------------
+% Nothing in this figure is a plotted coordinate. Four accuracies appear as
+% TEXT and seven layer indices are the only quantity with a POSITION. Sibling
+% ledger of every one of them at machine precision: thesis_v2/figs/licensing.json.
+%
+%   set as text, panel A                       source
+%   0.821  probe at layer 9        RESULTS_cluster/workspace_probe.json ::
+%                                  layers.9.drug_decode = 0.8208333333333334
+%   0.758  probe at layer 16       ... :: layers.16.drug_decode
+%                                       = 0.7583333333333334
+%   0.083  shuffled-label floor    ... :: chance = 0.08333333333333333
+%                                  (identical at layers.<L>.chance)
+%   0.883  context removed, L16    ... :: layers.16.drug_decode_context_removed
+%                                       = 0.8833333333333332
+%   480    prompt count            COMPUTED, not stored: config.n_drugs 12 x
+%                                  config.n_per_drug 40. The thesis prints
+%                                  \num{480} at 04b-representation.tex:115-120.
+%   12, 40 twelve drugs, forty     ... :: n_drug_classes = 12, config.n_drugs
+%          cells each              = 12, config.n_per_drug = 40
+%
+%   [SUPERSEDED IN PART BY PASS 12, below: the four ACCURACIES 0.821, 0.758,
+%   0.083 and 0.883 are no longer set in this figure at all. 480, 12 and 40
+%   remain, and the block above is kept verbatim because the ledger's
+%   removed_from_drawing entries are audited against it.]
+%
+%   DRAWN AS A POSITION, panel A
+%   2, 4, 6, 8, 9, 12, 16          ... :: config.layers = "2,4,6,8,9,12,16".
+%   The seven ticks on the depth column are at TRUE layer spacing,
+%   y = 2.10 + (L/16)*4.80, so the even grid and the one added layer (9) are
+%   visible as such. This is the figure's only scaled mark and it is a scale of
+%   depth, not of any measured quantity. The seven y values are, and are
+%   CHECKED against the map rather than against the eye:
+%     L    2     4     6     8     9     12    16
+%     y   2.70  3.30  3.90  4.50  4.80  5.70  6.90
+%   Layer 12 was drawn at 6.00 in the first build and is a repaired defect; see
+%   design decision 2.
+%
+%   NOT FROM ANY JSON -- design facts, cited by line, drawn_true false in the
+%   ledger. This is the handling slab.json gives the appendix's +2.75 nats.
+%   the five prompt fields, in this order:
+%     cell line | drug | dose | mechanism | control cell sentence
+%     Sections/03-Apparatus.tex:250-252, "The prompt supplies cell line, drug,
+%     dose, mechanism and the control cell's sentence".
+%     CHECKED AGAINST figs/hook.tex:335-339, which draws the same strip for
+%     sec:res-used: the five labels are spelled identically and are in the same
+%     order, and hook.tex's header records the same measured \scriptsize widths
+%     (cell line 0.954, drug 0.616 bold, dose 0.579, mechanism 1.424, control
+%     cell sentence 2.511; total ink 6.084cm), arrived at independently. Only
+%     the cell edges differ, because hook's strip is 8.20cm and this one is
+%     7.20cm and each distributes its own slack. The two figures are meant to
+%     read as one object seen twice, and they do.
+%   the read position, "the last prompt position ... where generation begins":
+%     Sections/04b-representation.tex:115-118.
+%   the two failure modes, every word of F1 and F2:
+%     Sections/04b-representation.tex:33-36, the \begin{question}[3] box.
+%
+% AGREEMENT WITH THE TEXT (checked against the Sections file, not assumed):
+%   04b:126-127  "reads $82\%$ at layer 9 and $76\%$ at layer 16, the deepest
+%                measured, against the $\approx 8\%$ floor"
+%                -> panel A prints 0.821, 0.758 and the 0.083 floor.        OK
+%   04b:131-132  "once cell line, plate and dose are projected out, the series
+%                rises with depth instead, to $0.883$ ($88\%$)"
+%                -> panel A prints 0.883 with that condition attached.      OK
+%   04b:118-120  "A cross-validated multinomial logistic-regression classifier
+%                learns which of the twelve drugs the prompt named"         OK
+%   04b:122-124  "Folds are stratified over prompts and not grouped by well"
+%                -> drawn verbatim as the probe's stated limitation.        OK
+%   04b:108-110  "The prompt names the drug in plain text ..., so recovering
+%                it ... establishes only that the model did not discard what
+%                it was handed" -> B12 is that sentence, split over two lines,
+%                and it is the ONLY entry in the licence that exists.       OK
+%   04b:110-112  "The informative outcome would have been a negative, and what
+%                the probe buys is the depth at which one would appear"
+%                -> B13's second line, "the layer at which it is lost".     OK
+%   04b:33-36    "Either the drug never enters its computation, an
+%                activation-side encoding failure that target- and input-side
+%                fixes might reach, or it enters and nothing reads it, a
+%                decoder failure only an objective-side fix could reach"
+%                -> F1, F2 and B13's last two lines are that partition,
+%                word for word.                                             OK
+%   04b:142-144  claim box: "It rules out that the drug field is lost before
+%                the decoder runs, an encoding failure in the activations. It
+%                does not rule out that the decoder ignores it."
+%                -> the strike lands on F1 and only on F1.                  OK
+% tab:workspace (04b:228-234) prints the same 0.821, 0.758 and 0.883 in its
+% Decode columns; this figure sets them as text, not as marks, so no scale
+% here can be read against that table.
+%
+% The subtitle of panel B, "a negative, at the 0.083 floor, would have been
+% decisive", names the floor a second time on purpose. Without it the figure
+% never states what a failure would have LOOKED like, and the only cue left is
+% the word "failed" in the right-hand tag; the acceptance question this figure
+% is built to answer is precisely "what would the probe have had to return".
+%
+% DESIGN DECISIONS, each with the reason that forced it
+% -----------------------------------------------------
+%  1. THE FIGURE CARRIES NO AXIS AND NO PLOTTED VALUE. The four accuracies are
+%     set as text. An accuracy axis was the obvious alternative and was
+%     rejected twice over: fig:comparators row A already plots exactly these
+%     numbers on exactly that rule, so a second one would be a redraw; and an
+%     axis invites the reader to read the height of 0.821 as the size of the
+%     finding, when the section's whole point is that the finding's size is
+%     nearly irrelevant because a positive was near-certain in advance.
+%  2. THE ONLY SCALED MARK IS DEPTH. The seven ticks sit at true layer spacing
+%     rather than evenly, because "seven layers" and "the depth at which a
+%     negative would have appeared" is what the probe actually buys (04b:111-112),
+%     and an evenly spaced tick row would hide that the grid is even except for
+%     the one layer added at 9. The 8/9 pair is 0.30cm apart, the document's
+%     minimum label separation, which is why the column is 4.80cm tall; it may
+%     not be shortened without either dropping a numeral or lying about the grid.
+%     REPAIRED, PASS 9: layer 12 was drawn at y = 6.00 and the map gives 5.70.
+%     Measured off the 200dpi render, 2->4->6->8->9 ran at 0.30cm a layer, then
+%     9->12 at 0.40 a layer and 12->16 at 0.225, so on the page three layers
+%     occupied more room than four and layer 12 sat where layer 13 belongs. The
+%     column is the figure's only scaled mark and the section's payoff is the
+%     depth a negative would have named, so a grid step of error here is the one
+%     error the figure cannot carry. Checked safe before drawing: 5.70 is 0.90
+%     above the layer-9 tick and 1.20 below layer 16, and the nearest ink at
+%     that height is the val node on baseline 5.97, which ends near x = 5.5,
+%     well clear of the tick column at x = 7.02.
+%  2b.THE 8/9 NUMERALS ARE NOT BRACED, AND THAT IS A DECISION, NOT AN OVERSIGHT.
+%     A reviewer measured 0.102cm of clear white between the two numerals
+%     against a glyph height of 0.203cm and asked for comparators.tex's brace
+%     idiom, "9, 8" named as an ordered set. Overruled. comparators braces marks
+%     whose POSITIONS a reader cannot resolve on a measured axis, and fanning
+%     them would claim a resolution the estimates do not have; here the two
+%     positions are exactly right, each numeral is unambiguously attached to its
+%     own 0.42cm tick, and the tightness IS the datum -- layers 8 and 9 are
+%     adjacent in a sixteen-layer stack and must look it. Bracing them would
+%     hide the one thing the added layer at 9 is there to show. The pair was
+%     re-read at 200dpi after the numerals went quietink and the two glyphs are
+%     separate and legible. The column cannot be lengthened either: its bottom
+%     is pinned to the caret at y = 2.10 (which is layer 0, the prompt) and its
+%     top to the "layer" label at 7.12, so the most 16 layers could ever have is
+%     4.95cm, 0.009cm a layer more than they have now.
+%  3. NO PANEL LETTERS. Two uppercase sans word tags in accent, the corpus
+%     convention (circularity.tex, slab.tex); (a)/(b) appears nowhere in this
+%     document's figures.
+%  4. THE STRIKE IS THE ONLY MARK ABOVE 1.0pt. 1.1pt, the same weight as
+%     circularity.tex:156, where one struck edge carries that figure's claim.
+%     REPAIRED, PASS 9: it is now ONE HORIZONTAL stroke through the x-height of
+%     line one, 8.70 to 13.50 at y = 5.60, and not the diagonal
+%     (8.86,5.20)--(13.94,5.64) of the first build. Both reviewers reported the
+%     diagonal as blocking and the render agrees: its left end sat exactly on
+%     line two's baseline and its right end 0.11cm above line one's, so it
+%     entered along the bottom of "an activation" and left through the x-height
+%     of "computation", and at print size "an activation" was a smear. Its right
+%     end was also 0.26cm from the box border with the accent arrow to "struck"
+%     starting at 14.20 on nearly the same line, so the two read as one
+%     continuous pointer out of the box. A rule through the x-height leaves the
+%     words readable, because the eye completes struck text and cannot complete
+%     text cut along its baseline. LINE ONE ONLY: line one is the proposition
+%     the positive eliminates and line two is its gloss, so one stroke does the
+%     work and the 1.1pt register stays "used exactly once". Extent measured off
+%     the render: line one's ink is 8.76 to 13.44, the stroke overhangs 0.06cm
+%     each side, and it stops 0.70cm short of the box's right border, which is
+%     what kills the leader reading.
+%     Everything else here is 0.30-0.90pt, so weight alone says
+%     which mark is the argument. The struck box is drawn and STRUCK, not
+%     deleted: a deleted box leaves the caption nothing to point at, and the
+%     partition is two-membered whether or not one member survives. The two
+%     boxes carry IDENTICAL borders for the same reason -- the struck one was
+%     drawn at rulegrey!55 in the first build, and if the box is also fainter
+%     then two marks say the same thing and neither says it alone.
+%  5. THE TWO LICENCE BLOCKS ARE SIZED BY THEIR CONTENTS AND BY NOTHING ELSE.
+%     The one the positive buys holds one sentence; the one a failure would
+%     have bought holds four lines. That difference in footprint IS the
+%     asymmetry, readable before a word is read. It quantifies nothing, and
+%     both the caption and the ledger say so.
+%  6. SOLID-AND-WHITE MEANS "HAPPENED", DASHED-AND-CREAM MEANS "DID NOT".
+%     One register, used once each, so the counterfactual block cannot be
+%     mistaken for a second result. REPAIRED, PASS 9: the cream is now panelbg
+%     straight, the same cream slab.tex and hook.tex use, and so is the depth
+%     column's. Three creams were in play across this slate -- panelbg in hook
+%     and slab, panelbg!60 in the column, panelbg!45 in the counterfactual box
+%     -- and the last two are about 2% ink, which will not reliably reproduce on
+%     uncoated stock; a tint that does not print is a tint doing no work while
+%     adding a third cream to the system. The DASHED border is what carries
+%     "this did not happen"; the fill only says "a filled region".
+%  7. THE LICENCE THAT EXISTS HAS NO SECOND ENTRY AND NO "which fixes it points
+%     at" LINE. The answer to that question is nothing, and an absent line says
+%     it better than the word "none", which would read as a measured category.
+%     Same principle as comparators.tex's bare dot for a quantity with no
+%     interval: the absence is the mark.
+%  8. THE DRUG CELL IS THE ONLY ACCENT MARK IN THE PROMPT STRIP, at accent!12
+%     fill with an accent border and an accent bold label, so the eye finds it
+%     before it reads anything. It is the reason every number in the left-hand
+%     block is what it is.
+%  9. NO INTERVAL IS DRAWN ANYWHERE. The probe returns a cross-validated
+%     accuracy and workspace_probe.json stores no interval for it; the document
+%     draws bars only where the instrument returns its convention
+%     (comparators.tex, style_v2.py). Nothing here is a bar, a whisker or a
+%     dot on a scale, so nothing invites one.
+% 10. THE ACCENT BUDGET IS THE DRUG CELL, THE CARET, THE SEVEN DEPTH TICKS,
+%     THE STRIKE AND ITS ARROW AND LABEL, AND THE FOUR WORD TAGS.
+%     REPAIRED, PASS 9: the seven depth NUMERALS were accent and are now
+%     quietink. With them the figure carried about 24 accent marks against a
+%     corpus ceiling near 16 (comparators.tex gives accent exactly two jobs),
+%     and roughly fourteen of them stood inside one 0.4 x 4.8cm column, making
+%     it the densest accent region on the page -- so the eye landed on the tick
+%     column first and then hunted beside tick 9 for "0.821", which is set as
+%     prose three centimetres to its left. A numeral beside a tick is an axis
+%     label, which is what quietink is for in every other figure in the corpus
+%     (comparators.tex:70-72, gate.tex, purify.tex). The TICKS stay accent
+%     because the depth grid is what \cref{sec:methods-probe} says the probe
+%     actually buys. Re-rasterised at 115dpi after the change -- about print
+%     size at arm's length -- and the first fixation is now the drug cell.
+% 11. NO 0.50 CHANCE RULE APPEARS. This instrument's floor is 1/12 = 0.083, not
+%     0.50, and it is set as text rather than as a rule because there is no
+%     axis for a rule to cross. (Recorded because the corpus is split on how a
+%     chance rule is drawn: style_v2.chance_line() mandates thin solid black,
+%     while ladder.tex:112-115, the only TikZ precedent, draws it densely
+%     dotted. This figure needs neither.)
+%
+% LAYOUT NOTES, all forced by a build or by a measurement
+% -------------------------------------------------------
+%   * fullwidth = textwidth 142mm + marginparwidth 28mm + marginparsep 4mm
+%     = 174mm = 493.23pt. (preamble.tex's own comment beside
+%     \newenvironment{fullwidth} says 171mm and is stale arithmetic.) The box
+%     is pinned with a bare \path to 17.30cm = 491.4pt, 1.8pt inside the
+%     measure. Nothing is drawn outside x in [0, 17.30] except the 0.2pt
+%     half-width of B13's right border.
+%   * EVERY MULTI-LINE BLOCK IS SEPARATE anchor=base west NODES. No node in
+%     this file uses align= or text width. frames.tex measured a 3.7pt drift
+%     from that: TikZ's align builds a minipage whose first-line height follows
+%     the AMBIENT \baselineskip, so a node's ink moves with whatever prose
+%     precedes the float. Every y below IS a baseline. Within-block leading is
+%     0.33cm = 9.39pt, one \scriptsize line; between blocks it is 0.45cm.
+%   * THE PROMPT STRIP'S CELL EDGES ARE SET FROM MEASURED STRING WIDTHS, not
+%     chosen. Every string in this figure was set in the real preamble and its
+%     \wd read back before a coordinate was written. At \scriptsize the five
+%     field names measure, in cm:
+%       cell line 0.954 | drug (bold) 0.616 | dose 0.579 | mechanism 1.424 |
+%       control cell sentence 2.511.  Total ink 6.084cm.
+%     The strip therefore cannot be the 6.78cm first laid out: at that width
+%     "mechanism" alone overruns its 1.28cm cell by 0.144cm and the five cells
+%     share 0.696cm of padding, 0.07cm a side. The strip is 7.20cm, the widest
+%     that keeps the depth column's numerals inside panel A, which leaves
+%     0.09-0.11cm each side -- more than the 1.6pt inner sep slab.tex sets on
+%     its own nodes. Cell edges: 0.00 / 1.13 / 1.93 / 2.69 / 4.29 / 7.20.
+%   * THE ELLIPSIS INSIDE THE FIFTH CELL WAS DROPPED, AND THE MEASUREMENT IS
+%     WHY. A typeset $\cdots$ at \scriptsize is 0.405cm and needs about 0.16cm
+%     of gap; the fifth cell is 2.91cm and its label is 2.511cm, leaving
+%     0.399cm in total. No strip width recovers it: pushing the caret past
+%     x = 7.30 drives the layer numerals to within 0.13cm of the panel divider.
+%     A drawn three-dot ellipsis (0.18cm) leaves a 0.066cm gap to the label,
+%     which is 1.9pt and reads as part of the last word.
+%   * THE FIFTH CELL'S RIGHT EDGE IS SOLID. It was drawn dotted first, on the
+%     reading that the strip has no horizontal scale. Two faults, both seen in
+%     the render: the caret covers the top 0.21cm of that edge, leaving a
+%     0.41cm dotted stub that reads as a printing fault; and a dotted edge at
+%     exactly the x the caret marks says both "the prompt ends here" and "this
+%     field runs on past here". The caret is the load-bearing mark, so the
+%     absence of scale is stated in the caption, in words, instead.
+%   * THE CARET STRADDLES THE STRIP'S RIGHT EDGE ON PURPOSE, and is centred on
+%     the depth column above it. The last prompt position is where the prompt
+%     ends, so the mark for it sits ON that boundary rather than inside the
+%     last cell. PASS 9: its apex is now the column's own bottom edge, y = 2.10,
+%     and the 0.5pt accent stub that used to bridge 2.04 to 2.10 is deleted.
+%     Inside a 3mm square at that corner there converged the strip's top rule,
+%     the strip's right rule, the caret, the stub, the column's bottom edge and
+%     the brace's right arm, and the stub crossed a rulegrey rule uninterrupted.
+%     Six strokes became five and the apex does the joining. The brace's right
+%     arm was left where it is: measured, it terminates at (7.20,1.30), which is
+%     0.12cm below the strip's bottom-right corner and 0.56cm below the caret's
+%     own base, so it is not part of that corner.
+%   * THE PROMPT CELLS ARE DRAWN AS figs/hook.tex DRAWS THEM. PASS 9: rulegrey
+%     0.35pt, panelbg fill, rounded corners=1pt for the four ordinary fields,
+%     and accent 0.4pt / accent!12 / rounded corners=1pt for the drug field.
+%     Before this pass licensing drew square-cornered WHITE cells sharing edges
+%     and hook drew rounded panelbg boxes with rounded gutters, so the same
+%     five-field prompt was drawn two incompatible ways in two figures a page
+%     apart while both captions insisted they were the same prompt. hook's is
+%     the better mark -- the rounding reads as token boundaries rather than as
+%     a table -- so licensing adopts it. Only the cell EDGES still differ, and
+%     they must: this strip is 7.20cm and hook's is 8.20cm, and each distributes
+%     its own slack. That is a difference of measure, not of treatment.
+%   * NO LEADER RUNS FROM THE CARET LABEL TO THE CARET. One was drawn and
+%     taken out: the only clear path from the label's lower right corner passes
+%     within 0.02cm of the depth column's bottom-left corner at (7.02,2.10), or
+%     else crosses the strip's top border at x = 6.94 and runs on inside the
+%     last cell. Both read as a stray stroke. The label's second line ends
+%     0.21cm from the caret's footprint with nothing between, inside the
+%     document's ~0.3cm leader threshold.
+%   * NO ACCENT MARK LIES LEFT OF x = 7.02. The seven depth ticks first ran
+%     from 6.92, within 0.49cm of the text block, and the block's line at
+%     y = 3.30 shares its baseline exactly with the layer-4 tick, so
+%     "0.883 once cell line, plate and dose are projected out ---- 4" read as
+%     one labelled row. The ticks now start at the column's own left edge.
+%   * PANEL A'S LINE LENGTH IS CAPPED AT 6.85cm, not the 6.35cm of the first
+%     layout: that limit followed the depth column, which moved right from
+%     6.60 to 7.02 when the strip was widened. The longest line drawn is
+%     "where generation begins; read at seven depths" right-aligned on 6.84,
+%     and the longest left-aligned line is "a cross-validated
+%     multinomial probe, twelve classes" at 6.57cm.
+%   * "READ AT SEVEN DEPTHS", NOT "READ AT EVERY LAYER". Beside a column that
+%     is sixteen layers tall and carries seven ticks, "every layer" left a
+%     reader unable to tell whether the ticks were the seven layers actually
+%     probed or an arbitrary sample of a sweep over all sixteen -- which is the
+%     one fact the column exists to carry. The review asked for "read at each of
+%     the seven marked depths"; measured, that is 1.94cm longer and the node is
+%     anchor=east on 6.84, so it would have started at x = -1.1 and taken the
+%     picture off the measure. "seven depths" is 20 characters against "every
+%     layer"'s 19 and cost nothing.
+%   * THE COUNTERFACTUAL BLOCK'S FIRST ENTRY LOST ITS FINITE VERB, and the
+%     review's own wording would not fit. "the drug is lost inside the model,"
+%     read as an assertion that the drug IS lost, the opposite of the section's
+%     conclusion; the review asked for "that the drug is lost inside the
+%     model,", which measures 4.66cm from x = 12.84 and put the picture 11.88pt
+%     over the measure -- the harness reported exactly that Overfull hbox on the
+%     build that tried it. "the drug lost inside the model," is 4.02cm, fits
+%     with 0.44cm to spare, and is the noun phrase the other three entries are.
+%   * THE CARET LABEL IS SHORT LINE OVER LONG LINE, not the reverse. Written
+%     long over short it sat 0.75cm under a left-aligned quietink line of the
+%     same width and register, and at print size the two read as one three-line
+%     grey paragraph. Short first, right-aligned, breaks that; the long second
+%     line then also fills the 3.8cm of empty measure that sat above the strip.
+%   * B14 IS FIGURE-WIDE, NOT PANEL-LOCAL. It measures 11.70cm at \footnotesize
+%     and is centred on 8.65, the figure's own centre, below the panel divider
+%     (which stops at y = 0.90). Panel-local it would have run from 7.10 to
+%     18.80 and off the measure.
+%   * TYPE. Ambient \small on the picture; every node sets its own size.
+%     \scriptsize = 8pt on all of it except the two panel subtitles and the
+%     closing line, which are \footnotesize = 10pt, and the four word tags,
+%     which are \sffamily\scriptsize\bfseries. Nothing is set at body size and
+%     nothing is scaled: 1cm here is 1cm on the page, no scale= key, no
+%     \resizebox.
+%
+% ===========================================================================
+% PASS 12 -- 2026-08-18. THE STYLE-CONTRACT REBUILD.
+% ===========================================================================
+% Everything above this line is the v1-v11 record and is left intact because
+% the thesis is audited against it. This section states what pass 12 changed,
+% and SUPERSEDES BY NAME every claim above that pass 12 makes false. Nothing
+% above has been edited away.
+%
+% WHY. The supervisor's verdict on the 4.8-4.12 slate: "go back over them and
+% iron them out even more ... make it look more professional, right now it
+% looks a bit sloppy and childish ... make sure that the figures are CORRECT
+% and display the idea we want to convey in the best way possible." The
+% reference standard is fig:mechanism (4.11, printed page 51): lowercase
+% parenthesised panel letters with sentence-case descriptive titles, rotated
+% axis labels that NAME the measured quantity, direct labels, no legend, no
+% all-caps banners, no italic aphorisms, no boxed callouts, and the whole
+% argument carried by a twenty-line caption. Measured against it this figure
+% was, before pass 12: 4 all-caps sans accent banners out of 4 panel heads,
+% 17% of its characters italic, 11.21% ink at 200dpi and 9.9 characters per
+% 100mm^2 -- DENSER THAN THE APPENDIX REFERENCE PLATE A.3 (9.7%, 6.4) while
+% sitting in the running argument of chapter 4.
+%
+% WHAT PASS 12 DELETED FROM THE DRAWING, AND WHY
+% ----------------------------------------------
+%  D1. THE FOUR ACCURACIES, set as running text in panel A: "$0.821$ at layer
+%      9 and $0.758$ at the deepest,", "against a $0.083$ shuffled-label
+%      floor", "$0.883$ once cell line, plate and dose are projected out", and
+%      the "what it returns" key that headed them. They sat immediately left of
+%      a scaled layer stack carrying ticks labelled 9 and 16, so a reader tries
+%      to read 0.821 off the stack at layer 9 and cannot -- and the caption had
+%      to spend two whole sentences denying the reading the drawing offered
+%      ("They are set here as text, not as marks on a rule; the accuracy rule
+%      is Figure 4.7, row one"). A caption that must deny a reading its own
+%      drawing invites is a defect in the drawing, not in the caption.
+%      All four are drawn or printed in three other places -- fig:comparators
+%      row (a), fig:mechanism panel (a), tab:workspace -- and this figure's own
+%      caption prints them as well. Under the cross-figure redundancy
+%      resolution, fig:mechanism (a) OWNS 0.821 and 0.883 because it is the
+%      only place the two series are drawn AS SERIES and the crossing at layer
+%      12 is visible; 4.7 row (a) keeps the chance floor because a comparator
+%      row without its comparator is not a comparator row. 4.8 keeps the
+%      ARGUMENT about the floor -- what a negative would have looked like --
+%      and loses the numerals. All four survive in licensing.json as
+%      removed_from_drawing entries with their key paths and with pointers to
+%      the figures that still draw them.
+%      SUPERSEDES: the "set as text, panel A" block above (kept verbatim, since
+%      the ledger's removed_from_drawing entries are audited against it); the
+%      AGREEMENT-WITH-THE-TEXT lines for 04b:126-127 and 04b:131-132 (the
+%      agreement is now the CAPTION's to carry, not the drawing's); design
+%      decision 1's second clause; and the paragraph beginning "The subtitle of
+%      panel B ... names the floor a second time on purpose", which is void
+%      because that subtitle is deleted (D3).
+%  D2. THE FOUR ALL-CAPS SANS ACCENT BANNERS -- "WHERE THE DRUG NAME ENTERS",
+%      "WHAT THE OUTCOME LICENSES", "WHAT THE POSITIVE BUYS", "IF IT HAD FAILED
+%      INSTEAD". Every one of them narrated rather than named. A.3 (figs/slab.tex)
+%      does use short accent caps banners, but it is an appendix reference
+%      plate a reader stops at and studies, its banners are noun phrases naming
+%      objects, and the caps sans accent face is byte-identical to the
+%      preamble's \marginlabel apparatus face -- which belongs to the margin,
+%      not to a figure in the running body. 4.11 and 4.13 carry zero banners.
+%      Replaced by 4.11's form: a lowercase parenthesised letter and a
+%      sentence-case descriptive title, \footnotesize roman ink, left-aligned
+%      to the panel's own x origin, no colon, no bold, no caps.
+%      SUPERSEDES design decision 3 ("NO PANEL LETTERS ... (a)/(b) appears
+%      nowhere in this document's figures") IN FULL. It was true when written
+%      and is now false: fig:mechanism sets "(a) encoded more, used no more"
+%      and "(b) ablation cost against a random null", and it is the reference
+%      standard the slate is being brought to.
+%  D3. THE THREE ITALIC SUBTITLES -- "the drug is named in the prompt itself",
+%      "a positive was near-certain in advance;", "a negative, at the $0.083$
+%      floor, would have been decisive" -- and D4's epigram. The subtitles were
+%      \footnotesize italic quietink, i.e. the LARGEST type in the figure was a
+%      grey italic editorial line while every measured thing was set 25%
+%      smaller. The last of the three is also the caption's own lede restated.
+%  D4. THE CENTRED ITALIC EPIGRAM "one run, two possible outcomes; the one that
+%      could not fail is the one that happened." It was 9.96pt Pagella-Italic
+%      quietink centred within 0.2pt of the figure's own x-centre, and the
+%      naive-reader pass reports the eye going to it BEFORE any mark, reading
+%      it as a second caption above the real one. In this document the argument
+%      lives in the caption. It is written to figs/_PENDING_CAPTIONS.tex.
+%  D5. THE FOUR BOX STROKES -- the two failure-mode boxes, the solid white
+%      "what the positive buys" block and the dashed panelbg counterfactual
+%      block. A stroked rectangle is drawn only where the rectangle IS an
+%      object in the argument (a token, a prompt field, a subspace, a scoring
+%      frame). These four enclosed SENTENCES, and the figure's own caption
+%      conceded that "the figure quantifies nothing about the size of a
+%      licence". Panels (c) and (d) are now two columns of equal width on one
+%      x-grid with baseline-aligned entries, in the frames.tex idiom.
+%      SUPERSEDES design decision 6 IN FULL (there is no dashed border and no
+%      cream fill left to carry "this did not happen"; quietink carries it, as
+%      it does everywhere else in the slate), and design decision 5's second
+%      sentence -- see C4 for what replaced the footprint asymmetry.
+%  D6. THE GREY FILL INSIDE THE LAYER STACK, and the stack itself as a filled
+%      column. It read as a BAR: the naive-reader pass's first question was
+%      what quantity the length of the grey bar encoded, and the answer is
+%      none. It also ran from y = 2.10 to 7.05, i.e. past the layer-2 tick
+%      below and the layer-16 tick above, implying that depth continues beyond
+%      the measured range. It is now a plain 0.40pt ink axis rule running from
+%      the layer-2 tick to the layer-16 tick and stopping exactly on them.
+%  D7. "folds stratified over prompts, not grouped by well". Prose already
+%      carried at 04b:122-124; it is a limitation of the instrument, which is
+%      caption and prose material, not a name for anything the figure draws.
+%      SUPERSEDES the AGREEMENT line for 04b:122-124 above.
+%
+% WHAT PASS 12 CHANGED, AND WHY
+% -----------------------------
+%  C1. THE AXIS NOW DEFINES ITSELF. This is the supervisor's first complaint
+%      and it is answered mechanically. The depth stack is the figure's only
+%      axis and it carried, before this pass, seven bare numerals and the word
+%      "layer" set as a 0.30cm-tall stub above the column top -- no quantity in
+%      axis-label position, no scope. It now carries 4.11's form exactly:
+%      rotated 90 degrees reading upward, immediately left of the tick
+%      numerals, line 1 \footnotesize roman ink "layer", line 2 \scriptsize
+%      quietink "residual stream read at the last prompt position, where
+%      generation begins". Line 2 is 258.63pt = 9.09cm set on one line, which
+%      does not fit beside a 4.20cm axis, so it is wrapped onto two typeset
+%      lines at the only break that keeps both under the 4.60cm of clear
+%      vertical measure available at that x: "residual stream read at the last
+%      prompt" (137.06pt = 4.817cm) over "position, where generation begins"
+%      (119.57pt = 4.202cm). It is ONE label line wrapped, not two label lines.
+%      Rotated multi-line text stacks toward increasing x, so line 1 ("layer")
+%      sits FARTHEST from the axis, at x = 5.44, exactly as a wrapped
+%      matplotlib ylabel does in 4.11.
+%  C2. THE PANEL-A PROSE BLOCK IS NOW ONE BLOCK OF TWO LINES, and it is the
+%      figure's only prose. "what is read: the residual stream at the last
+%      prompt position" measures 264.20pt = 9.29cm at \footnotesize and cannot
+%      be set on one line inside a 6.90cm panel; more to the point, C1 puts
+%      that exact fact in axis-label position, where the style contract wants
+%      it, so keeping it in the prose block as well would be a duplication.
+%      The block is therefore "what reads it: a cross-validated" over
+%      "multinomial probe, twelve classes" (4.851 and 5.241cm), \footnotesize
+%      roman ink, left edge on panel (a)'s x origin.
+%  C3. THE COLOUR INVERSION IS FIXED, and it was a correctness defect, not a
+%      preference. Before this pass the accent arrow marked the STRUCK branch,
+%      so accent meant ELIMINATED here and meant THE HEADLINE RESULT in the
+%      figure four pages earlier; the naive-reader pass read the accent arrow
+%      as the surviving branch. Across the slate accent now means one thing:
+%      the drug-side object the rest of the chapter measures. In this figure
+%      that is exactly two objects -- the drug cell in the prompt strip, and
+%      the SURVIVING failure mode with its arrow and its outcome label. The
+%      struck mode, its arrow, its outcome label and the whole of panel (d),
+%      which is a counterfactual, are quietink. Panel titles, the axis, the
+%      axis labels, the prose, the caret and panel (c) are ink; ticks, brace,
+%      dividers and the four ordinary prompt cells are rulegrey furniture.
+%      SUPERSEDES design decision 10's accent budget IN FULL: the seven depth
+%      ticks are no longer accent (they are furniture, 0.30pt rulegrey), the
+%      caret is no longer accent (it is part of the axis apparatus, ink), the
+%      strike is no longer accent (it is the black threshold-weight stroke, see
+%      C6), and the four word tags no longer exist (D2). It also supersedes the
+%      layout note "NO ACCENT MARK LIES LEFT OF x = 7.02", which is now
+%      trivially true for a different reason: the only accent in panel A is the
+%      drug cell, at x 1.12 to 1.90.
+%  C4. PANELS (c) AND (d) ARE NOW EQUAL. Two columns of equal width (4.60cm)
+%      on one x-grid, entries baseline-aligned, FOUR ENTRIES EACH. Before this
+%      pass the counterfactual block was the larger and more detailed of the
+%      pair -- one sentence against four lines, inside a bigger dashed box --
+%      so the eye landed on the thing that did not happen. The asymmetry the
+%      figure exists to draw is now carried by the WORDS rather than by the
+%      footprint: panel (c)'s entries 3 and 4 name, in the same slots and the
+%      same register as panel (d)'s entries 2 to 4, exactly what the positive
+%      did NOT buy -- "no layer, no class of failure," / "and no class of fix."
+%      against "the layer at which it is lost," / "an activation-side failure,
+%      and" / "target- and input-side fixes." A reader can now diff the two
+%      columns line by line, which is a stronger reading of the asymmetry than
+%      a difference of box size ever was.
+%      SUPERSEDES design decision 7 ("an absent line says it better than the
+%      word 'none'") and design decision 5's second sentence. The reason
+%      decision 7 gave still stands against the bare word "none", which would
+%      read as a measured category; what is drawn is not "none" but a named
+%      absence in a slot the facing column fills, which is the opposite of a
+%      category and cannot be read as a quantity.
+%  C5. ONE X ORIGIN PER PANEL, declared as a named coordinate and referenced by
+%      every element of that panel. Before this pass each banner sat 4.6pt
+%      (1.6mm) LEFT of the text it headed, four times over, and the central
+%      divider had 8.0pt of clearance on its left and 15.2pt on its right.
+%      Panel (a) origin x = 0.00; panels (b), (c) origin x = 7.75; panel (d)
+%      origin x = 12.70. The divider sits at x = 7.42, which is 0.33cm from
+%      panel (a)'s rightmost ink (the caret's right base at 7.09) and 0.33cm
+%      from panel (b)'s origin: the gutter is now equal on both sides to
+%      0.001cm.
+%  C6. FIVE STROKE WEIGHTS BECOME THREE, EACH WITH ONE MEANING.
+%        0.30pt rulegrey -- furniture: the seven ticks, the brace, the panel
+%                           divider, the (c)/(d) row rule, the four ordinary
+%                           prompt cells, and the two outcome leaders (which
+%                           carry their mark's colour, not rulegrey).
+%        0.40pt          -- the axis rule (ink) and the drug cell's border
+%                           (accent). Used twice, so it is not a singleton.
+%        0.90pt ink      -- the strike, and nothing else.
+%      The 1.1pt register of design decision 4 is retired: 0.90pt is the
+%      document's threshold weight (style_v2.chance_line() is hard-coded
+%      lw=0.9, and figs/family.pdf draws the pre-registered materiality margin
+%      at 0.90pt), and a figure that contains no threshold at all can carry its
+%      one mark of argument at that weight without any collision. THAT IS THE
+%      JUSTIFICATION the contract requires for a weight used in one kind of
+%      place: this figure has no chance rule, no gate, no margin and no floor
+%      (design decision 11, which still holds), so nothing else here may be
+%      black solid 0.90pt and nothing is.
+%      SUPERSEDES design decision 4's first sentence and its "used exactly
+%      once" clause: the strike is now TWO strokes, one through each of the two
+%      lines of the struck mode, because the mode is a two-line entry and a
+%      rule through its first line only left its second line standing. It also
+%      supersedes the cell-border weight recorded in the pass-9 prompt-cell
+%      note: 0.35pt is not one of the document's five weights and the ordinary
+%      cells are now 0.30pt. The cells' construction is otherwise unchanged and
+%      still matches hook.tex's \tokbox.
+%  C7. THE FIGURE FOOT CARRIES ONE \scriptsize QUIETINK DISCLOSURE LINE,
+%      left-aligned to the figure's x origin: "Nothing in this figure is a
+%      measured quantity; the depth ticks are the only scaled marks." Every
+%      figure in the slate carries exactly one such line. Here it does the job
+%      an interval declaration does elsewhere -- it tells the reader, without
+%      leaving the figure, that no mark on the page is an estimate. Design
+%      decision 9 (no interval is drawn anywhere) still holds and is now
+%      readable on the drawing rather than only in the ledger.
+%  C8. THE STRIP IS 6.90cm, NOT 7.20cm, and the caret is 0.40cm tall rather
+%      than 0.24cm. Both follow from C1: the rotated axis-label block needs a
+%      clear vertical measure of 4.82cm at x = 5.76, which puts its lower edge
+%      at y = 2.391, so the strip's top edge came down from 2.46 to 2.28 and
+%      the caret grew to span 2.28 to 2.70 -- 0.111cm of clearance, measured,
+%      between the rotated label's foot and the strip's top rule. The strip's
+%      slack is redistributed over the same five measured field widths:
+%      6.084cm of ink and 0.816cm of padding, 0.0816cm a side, giving cell
+%      edges 0.00 / 1.12 / 1.90 / 2.64 / 4.23 / 6.90 against the old
+%      0.00 / 1.13 / 1.93 / 2.69 / 4.29 / 7.20. NO FIELD CHANGED, no order
+%      changed, and the strip still carries no horizontal scale.
+%      SUPERSEDES the layout note "THE PROMPT STRIP'S CELL EDGES", the
+%      "PANEL A'S LINE LENGTH IS CAPPED AT 6.85cm" note (the cap is now 6.90cm,
+%      set by the strip, and the longest left-aligned line drawn is 5.241cm),
+%      the caret note's "apex is now the column's own bottom edge, y = 2.10"
+%      (the apex is the axis rule's own base at the layer-2 tick, y = 2.70),
+%      and the "B14 IS FIGURE-WIDE" note (B14 is deleted, D4).
+%      The ELLIPSIS note and the FIFTH CELL'S RIGHT EDGE note both still hold
+%      and were re-checked at the new width: the fifth cell is 2.67cm against a
+%      2.511cm label, so there is even less room for a $\cdots$ than there was.
+%  C9. WHAT DID NOT CHANGE, and must not, because it is the argument and the
+%      measurement: the seven depth ticks and their map y = 2.10 + (L/16)*4.80,
+%      giving 2.70 / 3.30 / 3.90 / 4.50 / 4.80 / 5.70 / 6.90 -- BYTE-IDENTICAL
+%      to pass 11, including the pass-9 repair of layer 12 from 6.00 to 5.70;
+%      the five prompt fields, their order, their measured widths and the
+%      accent on the drug cell; the caret at the strip's right edge and the
+%      read-here relation between the two; the brace and the count line
+%      "$480$ real tier-2 prompts: twelve drugs, forty cells each"; the strike
+%      on the eliminated mode and the two-member partition; and the fact that
+%      the figure draws no interval, no bar and no marker on a rule.
+%      Design decisions 2, 2b, 8 and 11 stand unchanged. NO NUMBER IN THIS
+%      FIGURE CHANGED VALUE IN PASS 12; four numbers left the drawing entirely
+%      and are recorded in licensing.json as removed_from_drawing.
+%
+% GEOMETRY OF PASS 12, all measured with \wd in the real preamble before a
+% coordinate was written (figs/_preview.py licensing, 200dpi, read at each step)
+% -------------------------------------------------------------------------
+%   panel (a) origin x = 0.00 ; panels (b) and (c) origin x = 7.75 ;
+%   panel (d) origin x = 12.70 ; divider x = 7.42 ; measure 0 to 17.30cm.
+%   axis rule x = 6.90, y 2.70 to 6.90 ; ticks 6.62 to 6.90 ; numerals
+%   anchor=east on 6.52 ; rotated "layer" at x = 5.44, wrapped scope note at
+%   x = 5.76 and 6.04, all centred on the axis midspan y = 4.80.
+%   Measured string widths used (cm, \footnotesize unless marked s = \scriptsize):
+%     (a) title 4.969 | (b) title 9.495 | (c) title 4.081 |
+%     (d) title, wrapped 4.157 over 1.921
+%     prose 4.851 / 5.241
+%     mode 1 5.842, gloss s 4.292 | mode 2 4.472, gloss s 2.093
+%     outcomes s 2.727 / 2.147 and 2.921 / 1.712
+%     (c) entries s 3.210 / 2.516 / 3.352 / 2.293
+%     (d) entries s 3.804 / 3.303 / 3.689 / 3.399
+%     count line s 6.557 | foot line s 10.860
+%     cell labels s: 0.954 / 0.616 bold / 0.579 / 1.424 / 2.511
+%   Widest object on the page is panel (b)'s title, 9.495cm, which ends at
+%   x = 17.245, 0.055cm inside the measure. No text crosses the measure.
+%
+% C10. THE EMPTY BAND IN PANEL (a) IS STRUCTURAL AND IS LEFT EMPTY ON PURPOSE.
+%   Measured on the 200dpi render it is about 5.2 x 4.0cm, at x 0.0-5.2 and
+%   y 2.4-6.4. It is forced, not careless, and four ways of removing it were
+%   built and rejected:
+%     (i)  shortening the axis. The 8/9 pair is 0.30cm apart at the current
+%          scale, which is the document's minimum label separation, so the
+%          16-layer span cannot be under 4.80cm and the drawn 2-to-16 span
+%          cannot be under 4.20cm without dropping a numeral or falsifying the
+%          grid. Design decision 2 and 2b, both still standing.
+%     (ii) narrowing the strip. Its five field names measure 6.084cm of ink and
+%          hook.tex sets the same five, so the strip cannot go below about
+%          6.7cm without either abbreviating a field or breaking the agreement
+%          with fig:hook that both captions assert.
+%     (iii)inverting the axis so the strip sits at the top and depth runs
+%          downward. This moves the band, it does not remove it, and it would
+%          draw the residual stream running the wrong way.
+%     (iv) moving panels (c) and (d) into the band. They need 2 x 4.60cm plus a
+%          gutter, which is 9.55cm; the band is 5.2cm wide.
+%   What is left is the space between the prompt and the read, which is the
+%   residual stream, and this figure deliberately draws nothing there: the
+%   stream's contents are fig:mechanism's subject and the slab's geometry is
+%   fig:slab's. Filling it with narration is exactly what pass 12 removed.
+% ===========================================================================
+% PASS 13 -- 2026-08-18. THE REFUTATION PASS.
+% ===========================================================================
+% Three adversarial refuters read the pass-12 render. Everything above is left
+% intact; this block states what pass 13 changed and SUPERSEDES BY NAME every
+% pass-12 claim it makes false. Each change is recorded at the code it changes
+% as well, so a reader of the drawing does not have to come back here.
+%
+% R1. THE COORDINATE RECORD IN "GEOMETRY OF PASS 12" AND IN C5 WAS WRONG IN
+%     SIX PLACES, AND THE HEADERS ARE WHAT THE THESIS IS AUDITED AGAINST.
+%     Superseded, by name, with the values the code actually drew in pass 12:
+%       divider x         header 7.42   -> DRAWN 7.40   (and now deleted)
+%       caret right base  header 7.09   -> DRAWN 7.05   (and now 7.02)
+%       divider gutters   header 0.33   -> DRAWN 0.35 both sides
+%       tick inner end    header 6.62   -> DRAWN 6.74   (and now 6.78)
+%       numerals anchor   header 6.52   -> DRAWN 6.64   (and now 6.70)
+%       rotated "layer"   header 5.44   -> DRAWN 5.36   (and now 6.18)
+%       scope line two    header 6.04   -> DRAWN 6.12   (and now deleted)
+%     The same block recorded the two failure-mode gloss lines at their
+%     \scriptsize widths ("gloss s 4.292", "gloss s 2.093") while pass 12's
+%     code set both at \footnotesize (5.365 and 2.616cm) -- and it is the gloss
+%     width that sets the strike's right end, so the header could not be used
+%     to check the one mark the file calls its argument. Pass 13 sets the modes
+%     at \scriptsize, so 4.292 and 2.093 are now the drawn widths and the
+%     record and the code agree for the first time.
+%     C4's "Two columns of equal width (4.60cm)" was also never true of the
+%     drawing: pass 12's origins were 7.75 and 12.70 on a 17.30 measure, i.e.
+%     4.95 and 4.60. See the (c)/(d) block for what pass 13 drew instead.
+%
+% R2. figs/_PENDING_CAPTIONS.tex DID NOT EXIST. D4 and the note above the
+%     staged float both asserted that the cut epigram and the pass-12
+%     replacement caption were "written to figs/_PENDING_CAPTIONS.tex"; the
+%     file was never created, so every sentence cut under D1, D3, D4 and D7 was
+%     unaccounted for outside a comment block in this file, and the caption
+%     that actually prints in the thesis is still the pass-11 one, which is
+%     false against the drawing in four places (it indexes the panels "Left,"
+%     and "Right,", it prints four accuracies as "set here as text", and it
+%     says the two licence blocks "are sized by their contents"). Pass 13
+%     creates figs/_PENDING_CAPTIONS.tex and writes the pass-13 caption and
+%     every deleted sentence into it, keyed by \label{fig:licensing}. This
+%     builder still does not edit Sections/. The copy below is retained as the
+%     audit trail and is marked a duplicate of the pending file.
+%
+% R3. THE STRIKES WERE BLACK SOLID 0.90pt, WHICH IS THE SLATE'S THRESHOLD
+%     STROKE. Corrected to quietink 0.40pt. Full reasoning at the code.
+%     SUPERSEDES C6's third weight; the figure now has two weights, 0.30 and
+%     0.40pt, neither a singleton.
+% R4. THE CARET'S APEX WAS THE AXIS BASE AND THE LAYER-2 TICK AT ONCE.
+%     Broken apart; apex 2.50, base 6.78-7.02. SUPERSEDES C8's apex clause.
+% R5. THE AXIS LABEL WAS THREE ROTATED LINES AND OVERRAN THE AXIS AT BOTH ENDS,
+%     with the quantity name outermost. One \footnotesize "layer" beside the
+%     numerals, one \scriptsize scope line outboard, 3.908cm inside a 4.20cm
+%     axis. SUPERSEDES C1's wrap arithmetic and its "line 1 is the outermost".
+% R6. PANELS (c) AND (d) COULD NOT BE READ ACROSS, and two of (c)'s four
+%     entries were unsupported. Three paired rows; "no class of failure,"
+%     deleted as contradicting this figure's own panel (b) and the claim box;
+%     "an activation-side failure," deleted as a duplicate of panel (b)'s own
+%     struck line; (d)'s first entry hedged to what a LINEAR probe's negative
+%     licenses. SUPERSEDES C4 in full and the ledger's
+%     entries_3_and_4_are_new_in_pass_12.
+% R7. THE VERTICAL DIVIDER AND THE DEPTH AXIS WERE PARALLEL HAIRLINES 0.50cm
+%     APART. The divider is deleted.
+% R8. PANEL (b)'s MODES WERE \footnotesize, i.e. the same size as the panel
+%     titles, and their outcome labels were \scriptsize on a different leading,
+%     so nothing lined up across the gutter. Both are \scriptsize now, on one
+%     leading, on one set of baselines. One leading per size across the figure:
+%     0.40cm at \footnotesize, 0.35cm at \scriptsize.
+% R9. SMALLER ITEMS: the mirrored brace's pointer aimed at empty white and is
+%     now a plain span rule; "$480$" set three digits in URWPalladioL-Roma
+%     against Pagella everywhere else and is now text; the prose block's
+%     pronoun had no antecedent on the reading line and now names the residual
+%     stream; the foot line conceded two counterexamples in its own second
+%     clause and now states what the counts are; the word "seven", deleted with
+%     the caret label in pass 12, is back on the drawing in that foot line,
+%     which is what the still-standing pass-9 layout note asks for.
+%
+% WHAT PASS 13 OVERRULED, AND WHY
+% -------------------------------
+%  O1. "REBUILD PANEL (a): DROP THE DEPTH SWEEP, OR SET LAYER HORIZONTALLY, OR
+%      SHORTEN THE AXIS BY TIGHTENING THE 8/9 PAIR." Overruled on all three
+%      counts. The seven-tick depth scale at true spacing is the figure's only
+%      scaled mark and its keep list names it; the 8/9 pair is already at true
+%      spacing and 0.30cm apart, the document's minimum label separation, so
+%      the span cannot shorten without dropping a numeral or falsifying the
+%      grid (design decisions 2 and 2b, both standing); a horizontal layer axis
+%      would draw the residual stream running the wrong way and would break the
+%      caret's read-here relation to the strip. C10's four rejected removals
+%      stand. What pass 13 did take from that finding is the head alignment:
+%      panels (a) and (b) now put their first content line on one baseline.
+%  O2. "RETITLE (a) 'where the drug name enters, and where the probe reads'."
+%      Overruled on measurement. Panel (b)'s title is 9.495cm of the 9.55cm the
+%      right half has and sits on the SAME baseline, so panel (a)'s title
+%      cannot exceed about 7.0cm; the proposed title measures 8.5cm and the
+%      shortest honest variant 7.7cm. The read is named at the axis instead,
+%      which is where the style contract wants it.
+%  O3. "DRAW THE CARET AS AN OPEN rulegrey CHEVRON." Overruled. rulegrey is
+%      furniture and the caret is content -- it is the one mark of the read
+%      position, and the keep list names the triangle. Breaking the coincidence
+%      and shrinking it to its pass-9 size answers the defect; recolouring it
+%      would demote a content mark to furniture.
+%  O4. "PUT PANEL (b)'s OUTCOME COLUMN ON PANEL (d)'s ORIGIN (12.40)."
+%      Overruled: the longer strike ends at 12.484, so the label column would
+%      begin inside the strike. It sits at 13.44, 0.50cm clear of that
+%      terminal, which is the separation the pass-9 note asks for.
+%  O5. "KEEP THE STRIKES AT 0.90pt IN quietink." Overruled in favour of 0.40pt.
+%      0.90pt is the slate's threshold weight whatever its colour, and at 0.90pt
+%      against \scriptsize the struck line does not survive at print size --
+%      which is the legibility failure the pass-12 ledger already records.
+%  O6. "REACH S15's 6.0% INK AND 5.0 CHARACTERS PER 100mm^2." Not reached, and
+%      the arithmetic is recorded rather than hidden: pass 13 measures 6.65%
+%      and 5.42, against pass 12's 7.95% and 6.05 and pass 11's 11.21% and 9.9.
+%      What is left is 697 characters of which 483 are mandated furniture --
+%      four panel titles, the axis definition, the definitional prose, the five
+%      field names, the count line and the one interval-style disclosure -- and
+%      214 are the partition and the two licences, which are the figure. The
+%      only cuts left would delete the axis definition that answers the
+%      supervisor's first complaint, or one of the two failure modes.
+% ===========================================================================
+% PASS 14 -- 2026-08-19. THE SECOND REFUTATION PASS.
+% ===========================================================================
+% Three adversarial refuters read the pass-13 render and returned thirty
+% findings. Everything above is left intact; this block states what pass 14
+% changed, what it OVERRULED and why, and SUPERSEDES BY NAME every pass-12 and
+% pass-13 claim it makes false. Each change is also recorded at the code it
+% changes. NO NUMBER IN THIS FIGURE CHANGED VALUE IN PASS 14: the seven depth
+% ticks are still y = 2.10 + (L/16)*4.80 -> 2.70/3.30/3.90/4.50/4.80/5.70/6.90,
+% byte-identical to passes 11, 12 and 13, and the count line still prints the
+% same 480, twelve and forty. The strip translated 0.14cm DOWN in y as one
+% rigid body; not one cell edge in x moved, and x is the only axis on which
+% that strip carries anything at all.
+%
+% S1. THE PENDING CAPTION FILE. All three refuters opened with the same
+%     blocking finding, and it is correct: figs/_PENDING_CAPTIONS.tex contains
+%     no \label{fig:licensing} block. R2 above asserts, in as many words, that
+%     "Pass 13 creates figs/_PENDING_CAPTIONS.tex and writes the pass-13
+%     caption and every deleted sentence into it"; the file exists and holds
+%     fig:materiality, fig:comparators and fig:hook blocks, and this figure's
+%     append was lost -- almost certainly clobbered by a concurrent
+%     read-modify-write from another builder, which is the hazard CF12 names.
+%     So pass 13 committed, one pass later, the identical failure it accused
+%     pass 12 of. SUPERSEDES R2's last three sentences and the "duplicate of
+%     the pending file" note above the staged float: they described an intent,
+%     not the filesystem.
+%     Pass 14 APPENDS the block (pure append, never a rewrite, so it cannot
+%     clobber another builder's), then READS THE FILE BACK to confirm the block
+%     survived, and records the byte offset it landed at in licensing.json. The
+%     block carries the pass-14 caption, the four clauses of the live pass-11
+%     caption at 04b:117-140 that are false against this drawing with their
+%     line numbers, and every sentence passes 12, 13 and 14 cut from the
+%     drawing, each against the caption sentence that now carries it.
+%
+% S2. "no class of fix" IS DELETED FROM PANEL (c), AND THIS IS THE ONE
+%     CORRECTNESS DEFECT IN THE PASS-13 DRAWING. Full argument at the code.
+%     In one line: 04b:31-36 is a two-member partition in which each member
+%     names its own fix class, panel (b) strikes one member and says so on this
+%     page, so the survivor and its fix class stand -- and pass 13 had already
+%     deleted the sibling entry "no class of failure," for exactly this reason
+%     without applying it here. (d)'s "target- and input-side fixes" goes with
+%     it, because a row with one side is not a row. Both fix classes move to
+%     the caption, which can state the condition a two-word slot cannot.
+%     SUPERSEDES R6's list of surviving entries and C4 in full.
+%
+% S3. THE TWO OUTCOME LEADERS ARE DELETED. Measured: the quietink one left a
+%     0.24cm gap at its left end and a 0.10cm gap at its right, touching
+%     neither mark nor label, and lay midway between two quietink strikes so
+%     the eye read the verdict "struck by the positive," as itself struck; the
+%     accent one began 1.397cm PAST the mark it claimed to join. The pass-13
+%     ledger recorded the opposite as a measured property, having measured only
+%     the first of the two. Colour and exactly shared baselines carry the
+%     pairing, which is 4.11's discipline. The outcome column moves 13.44 ->
+%     13.00. SUPERSEDES C6's leader clause, O4's arithmetic, and pass 13's
+%     lead/.style rationale; lead/.style itself is deleted.
+%
+% S4. THE CARET IS NAMED AT ITSELF and the three cues that made it an axis
+%     arrowhead are broken: it gains a \scriptsize ink direct label "the last
+%     prompt position" 0.08cm off its left base, the strip's 0.14cm drop puts
+%     0.34cm between its apex and the axis base, and its base widens to 0.28cm
+%     so it no longer shares an endpoint with the tick lane. Under the figure's
+%     own map it now occupies layers 0.13 to 0.87, below the drawn scale.
+%     SUPERSEDES R4 and licensing.json's read_position note.
+%
+% S5. THE ROTATED SCOPE LINE IS DELETED and "layer" moves off the layer-9 tick.
+%     The scope line shared the five-word clause "at the last prompt position"
+%     with the caption that actually prints, which S18 forbids, and it named at
+%     90 degrees and 1.14cm away the one glyph that had no name of its own.
+%     "layer" was centred on the axis midspan, which is the layer-9 position by
+%     arithmetic (2.10 + (9/16)*4.80 = 4.80 = (2.70+6.90)/2), so it read
+%     "layer 9"; 5.70-to-6.90 is the only tick gap on this axis long enough to
+%     hold it clear. SUPERSEDES R5 and C1.
+%
+% S6. THE SPAN RULE UNDER THE STRIP IS DELETED. It duplicated the strip's own
+%     bottom border at the same colour, weight and length 0.12cm away, and it
+%     bracketed one schematic prompt under a line counting 480 of them.
+%     SUPERSEDES R9's span-rule clause.
+%
+% S7. PANEL (b)'s TITLE IS A NAME, NOT A SENTENCE: 9.495cm -> 5.821cm, so the
+%     widest object on the page is no longer a title that restated 04b:31-32.
+%     Panel (c)'s row one loses its wrap and its own S18 collision ("the model
+%     did not discard what it was handed" is seven words verbatim from
+%     04b:107-108, six lines above the float) and becomes "the drug field is
+%     not discarded", one line. The strikes start on the panel origin 7.75
+%     rather than 0.06cm left of it. The (c)/(d) group drops 0.30cm and its row
+%     pitch opens to 0.70cm, so deleting a row did not trade panel (a)'s hole
+%     for a new one in the bottom-right corner. The foot line drops its second
+%     clause. SUPERSEDES O2's measurement clause and R8's 0.52cm row gap.
+%
+% S8. THE PANEL-(a) BAND. The pass-13 drawing put one contiguous 56.2 x 39.2mm
+%     void -- 17.2% of the figure -- under the prose block and left of the
+%     axis, because pass 13 had moved that block from the band's middle up to
+%     the panel head to buy a shared first-content baseline with panel (b).
+%     Pass 14 moves it back to 5.00/4.60, centred on the axis midspan, and puts
+%     the caret's new label in the band's lower part; the band is now two voids
+%     of about 1.9 and 1.6cm and the block sits level with the axis it
+%     describes. The two TITLE baselines still align at 7.45, which is the
+%     alignment a reader sees. NOTHING FURTHER WAS PUT IN THE BAND, and the
+%     reason is the contract, not indifference: S4 allows at most one prose
+%     block per panel and panel (a) already has it, and C10's four ways of
+%     REMOVING the band (shorten the axis, narrow the strip, invert the axis,
+%     move (c)/(d) into it) were each rebuilt and each still fails. The band is
+%     the space between the prompt and the read; this figure draws nothing
+%     there because the stream's contents are 4.11's subject and the slab's
+%     geometry is A.3's. SUPERSEDES pass 13's placement repair (ii).
+%
+% S9. MEASURED AFTER ALL OF THE ABOVE (200dpi, clipped to the content bbox):
+%       content bbox   173.10 x 74.29mm   (S14 wants 170-174; cap 75mm)
+%       ink            5.826%             (was 6.65 at pass 13, 11.21 at 11)
+%       characters     596 non-space, 4.63 per 100mm^2  (was 5.44 at pass 13)
+%                      694 with spaces,  5.40 per 100mm^2  (was 6.41)
+%       stroke weights 0.30pt rulegrey furniture (4 ordinary cells, 7 ticks,
+%                      the (c)/(d) row rule) and 0.40pt (axis rule ink, drug
+%                      cell border accent, two strikes quietink). Two weights,
+%                      neither a singleton, no 0.90pt stroke, no arrowhead,
+%                      no leader, no dotted rule, no legend.
+%       type           two sizes: \footnotesize 10.0pt (four panel titles, the
+%                      prose block, the axis quantity name) and \scriptsize
+%                      8.0pt (everything else). 0% italic. 0 all-caps banners.
+%     S15's ink ceiling is met for the first time in this figure's history.
+%     The with-spaces character count is still 5.40 against a 5.0 ceiling and
+%     is recorded rather than hidden: the refuters' own measurement of that
+%     rule was taken on non-space characters (5.44 against 5.0), which is met
+%     at 4.63; closing the with-spaces gap needs 51 more characters and the
+%     only strings left are the four titles, the axis name, the five field
+%     names, the count line the spec's keep list mandates, the two failure
+%     modes and their outcomes, the two licence rows and the one disclosure
+%     line. Every one of them is mandated content.
+%
+% WHAT PASS 14 OVERRULED, AND WHY
+% -------------------------------
+%  P1. "SET THE SEVEN TICK NUMERALS IN INK AND LENGTHEN THE TICKS TO 0.20cm,
+%      BECAUSE THE AXIS READS AS A PANEL DIVIDER." Overruled on both counts.
+%      Quietink tick numerals are this corpus's convention, not an oversight:
+%      comparators.tex:70-72, gate.tex and purify.tex all set them so, and
+%      design decision 10 changed them from accent to quietink in pass 9 with
+%      that reason recorded. S8 assigns ink to axis LABELS, which is where
+%      "layer" is, and does not assign a colour to tick numerals; making this
+%      one figure's numerals black would break it away from the four figures it
+%      is being aligned to. The ticks cannot lengthen inward either: they run
+%      6.78-6.90 and the numerals are right-anchored on 6.70, so 0.20cm ticks
+%      would touch them. The divider reading the finding describes was created
+%      by the divider itself and died with it in pass 13 (R7); what is left is
+%      a rule with seven numbered ticks and a rotated quantity name, which is
+%      an axis.
+%  P2. "OPEN A GUTTER BETWEEN THE PROMPT CELLS, OR DROP rounded corners=1pt,
+%      BECAUSE THE ROUNDINGS LEAVE WHITE NOTCHES AT EVERY INTERNAL JUNCTION."
+%      The notches are real -- re-cropped at 1200dpi and seen -- and the fix is
+%      still overruled here. The finding's own evidence is that figs/hook.tex
+%      draws the identical construction at the identical radius, and both
+%      captions assert the two strips are the same prompt seen twice; a strip
+%      repaired in one file and not the other would break an agreement the text
+%      states, to remove a 0.1mm artefact. This builder may not edit hook.tex.
+%      Recorded in licensing.json as a coordinated repair the two files owe
+%      together, so the next pass that touches both can make it once.
+%  P3. "SET THE PROSE BLOCK AS ONE LINE AND DROP IT A RANK, BECAUSE IT IS THE
+%      SAME SIZE AS THE PANEL TITLES." Overruled, and the finding concedes the
+%      contract point itself: S4 mandates \footnotesize for definitional prose
+%      and states in terms that prose OUTRANKS labels, which is A.3's ranking
+%      and the one the contract chose to keep. A one-line rewrite either drops
+%      "the residual stream", which is the antecedent R9 put there and the only
+%      naming of the object the axis stands for, or drops "cross-validated",
+%      which is why the accuracy is a presence test at all.
+%  P4. "RESTORE THE PROBE'S TASK TO THE DRAWING: 'over the twelve drug
+%      classes'." Overruled as to the drawing, accepted as to the record. The
+%      figure is at its ink ceiling, the count line already prints "twelve
+%      drugs" 2.4cm below, and naming the instrument does not require naming
+%      its class count. The twelve-class task AND the fold caveat (04b:155-157,
+%      cut in pass 12 as D7) are both in the pass-14 caption, and
+%      licensing.json records under explicitly_not_drawn that the drawing names
+%      the instrument without its target and why.
+%  P5. "LEAVE PANEL (c)'s SLOTS BLANK, OR SET AN EN-DASH IN THEM, SO THE SMALL
+%      LICENCE LOOKS SMALL." Overruled. An empty slot under a head reading
+%      "what the positive buys" is ambiguous between "nothing" and "not drawn
+%      yet", and design decision 7's own supersession at C4 gives the reason a
+%      named absence beats a blank or the bare word "none". The finding's
+%      underlying complaint -- that the two licences were drawn the same size,
+%      with the smaller one in darker ink and more lines -- is answered by S2
+%      and S7 above: (c) now sets 39 characters against (d)'s 58 and its second
+%      entry is 0.991cm against (d)'s 3.233cm.
+%  P6. "DRAW THE TIE BETWEEN THE DEPTH AXIS AND (d)'s 'the layer at which it is
+%      lost', SO THE AXIS HAS A STATED ROLE." Overruled as a drawn mark. A
+%      leader across 5.5cm of figure would be the only connector on the page
+%      and would assert an argument, and a line saying "a negative would have
+%      named one of these seven depths" is argument, not definition, which S4
+%      and S18 put in the caption. The pass-14 caption says it in those words.
+%      The axis is now fully DEFINED on the drawing -- quantity name, seven
+%      numbered ticks, and the position it is read at, labelled at the caret --
+%      which is what S5 asks of it.
+%  P7. "MAKE THE VERTICAL RULE THE RESIDUAL STREAM, SO THE PROSE BLOCK HAS A
+%      DRAWN REFERENT." Overruled. The rule is a LAYER axis; the residual
+%      stream at one position is a 2048-dimensional vector at each of seven
+%      depths, and renaming a depth coordinate after the object sampled along
+%      it would put two names on one rule and cost S5 its clean reading. The
+%      prose block was instead moved level with the axis and the caret named,
+%      so the reading relation the block defines -- position, depths, probe --
+%      is drawn beside it rather than four centimetres above it.
+% ===========================================================================
+% inner sep=0pt on every node, so that anchor=base west puts the START OF THE
+% INK exactly on the panel's x origin and a node's width is exactly the \wd
+% measured for its string. With TikZ's default 0.3333em the picture ran 5.43pt
+% past the fullwidth measure (the harness reported exactly that Overfull hbox),
+% because panel (b)'s title is 9.495cm of the 9.55cm the right half has.
+% PASS 14: that title is now 5.821cm, so inner sep=0pt is no longer what keeps
+% the picture inside the measure -- but it is kept, because it is also what
+% makes anchor=base west put the START OF THE INK on the panel origin, which is
+% what S13's one-x-origin check measures. The widest object is now panel (d)'s
+% title, ending at x = 17.247, 0.053cm inside the 17.30cm measure.
+%
+% ===========================================================================
+% v-BLOCK, 2026-08-19: WHOLE-SLATE PASS (fig:comparators, fig:licensing,
+% fig:purify, fig:hook, fig:materiality reconciled against one another and
+% against fig:mechanism, which is the document's reference standard and was
+% NOT rebuilt). Nothing above this line is deleted; where an earlier claim is
+% now false it is superseded EXPLICITLY below.
+%
+% WHY. The five figures were rebuilt independently and drifted. This pass owns
+% only the differences BETWEEN them. No value changed in any of the five; the
+% sibling .json ledgers carry the value-to-position maps, old and new.
+%
+% THE SLATE RULES THAT NOW HOLD ACROSS ALL FIVE (each stated once here, in
+% every file, so any future single-figure edit can see what it would break):
+%
+%  R1 TICK NUMERALS are quietink, \scriptsize, inner sep 0, anchored north on
+%     the tick and set 0.16cm below the axis rule, over a 0.10cm rulegrey
+%     0.30pt tick. Before: comparators/licensing/purify quietink, hook and
+%     materiality ink; ticks 0.10 / 0.12 / 0.14cm; three different gaps.
+%  R2 A THRESHOLD'S OWN LABEL IS BLACK, matching the black solid 0.90pt rule
+%     it names (S6). Before: comparators black, purify's "gate, 0.8" and
+%     materiality's two margin labels ink.
+%  R3 ONE NAME PER OBJECT (S19). The pre-registered 10% rule is "10%
+%     materiality margin" in fig:comparators row (c), fig:materiality (a) and
+%     (b), and in figs/family.py, which is where the name comes from.
+%     fig:comparators' "pre-registered margin" is superseded; "pre-registered"
+%     is now the caption's word, not the drawing's. Zero, where it is the null
+%     a bar is read against, is "zero: no identity effect" in BOTH
+%     fig:comparators row (c) and fig:materiality (b) -- one quantity, one
+%     wording. V_pure is spelt with \textrm everywhere, as figs/slab.tex does.
+%  R4 COLOUR KEY, one key for five figures (S8). accent = the drug-side object
+%     under test. quietink = every comparator, null, control, replication or
+%     discounted arm, AND its label, AND its leader. ink/black = thresholds,
+%     axis rules, axis labels, panel heads, definitional prose. rulegrey =
+%     furniture only. Within quietink the GLYPH separates two kinds: an OPEN
+%     disc is a construction built to carry no signal (a null, a control, a
+%     raw/before series); a FILLED disc is a real measurement that is not the
+%     headline. fig:hook (d) drew both its null and its cell-line control in
+%     ink and is corrected.
+%  R5 PROJECTION AND ZERO RULES are quietink 0.50pt densely dotted (S7).
+%     fig:hook's two panel-(c) projection lines were rulegrey 0.30pt densely
+%     dashed and are corrected.
+%  R6 DEFINITIONAL PROSE is \footnotesize ink and OUTRANKS every label (S4);
+%     at most one block per figure, on the panel's own x origin. fig:hook's
+%     one prose line was \scriptsize and is raised. fig:purify's panel-(b)
+%     block carried an argument clause ("so causal claims use the purified
+%     slab, not the raw") that its caption already carries, and is now
+%     definitional only.
+%  R7 ONE INTERVAL DECLARATION per figure, \scriptsize quietink, at the foot,
+%     on the figure's x origin, opening with the word "Intervals:" and naming
+%     EVERY panel including the ones with no measured mark (S17).
+%     fig:comparators already did this and is the model; the other four now
+%     match its form.
+%  R8 THE FIVE-FIELD PROMPT STRIP is ONE object drawn in two figures, and the
+%     two drawings are now congruent: cell boundaries 0 / 1.12 / 1.90 / 2.64 /
+%     4.23 / 6.90 cm and cell height 0.42cm in both fig:licensing (a) and
+%     fig:hook (a) and (b), labels centred in their cells, the drug cell
+%     accent-bordered at 0.40pt on accent!12 and its label NOT bold. Before:
+%     licensing 6.90cm wide with 0.62cm cells and a bold label, hook 7.44cm
+%     wide with 0.42cm cells and a plain label -- the same five fields at two
+%     sizes, four pages apart, with each caption pointing at the other.
+%  R9 MEASURE. Every fullwidth figure draws 172.0-174.0mm; the one textwidth
+%     figure draws 140.3mm. Ink at 200dpi inside the content bbox, counted as
+%     greyscale luminance below 230 (the contract's own method), is now
+%     5.63-5.99% on all five, under the 6.0% body ceiling, where before this
+%     pass it ran 5.36-6.54%.
+%
+% WHAT THIS PASS DELIBERATELY DID NOT UNIFY, so that a later reader does not
+% think it was missed:
+%  * PANEL-HEAD CASE. fig:comparators sets "(a) Is it there?" and the other
+%    four set "(a) where the drug name enters". comparators' heads are
+%    interrogative SENTENCES and sentence case is correct for a sentence; the
+%    v4 header argued this and the argument stands. fig:mechanism's lowercase
+%    heads are noun phrases, not questions. One capital letter, four times.
+%  * PANEL-HEAD POSITION. fig:comparators puts its heads in a right-aligned
+%    left stub, the other four above the panel at its x origin. Moving them
+%    above the rules costs about 20mm of height against a 118mm cap that the
+%    figure already meets at 117.60mm. Not available.
+%  * TWO-COLUMN GUTTER. purify and hook split at x = 8.40cm, licensing at
+%    7.75cm. licensing cannot move right: "(d) what a negative would buy" is
+%    4.85cm wide and its origin is already at 12.40 of a 17.30cm measure, with
+%    1.5pt of slack. Moving purify and hook LEFT to 7.75 would be arbitrary.
+% ===========================================================================
+%
+% CHANGED IN THIS FILE. (i) The prompt strip adopts fig:hook's cell height,
+% 0.42cm, and fig:hook drops to this file's cell WIDTHS, so the two drawings
+% of the one object are congruent (R8); the strip's top stays at y = 2.14, so
+% the caret, the layer axis and everything above them are untouched, and the
+% strip's bottom rises from 1.52 to 1.72. Labels move from anchor=base at
+% y = 1.775 to centred at the cell's own mid-height, 1.92, with inner sep 0,
+% which is \tokbox's placement. (ii) The drug cell's label loses \bfseries: it
+% was the only bold glyph on the slate, and the accent colour plus the accent
+% border already carry the emphasis. (iii) The layer ticks go from 0.12 to
+% 0.10cm and the numerals from 6.70 to 6.74, a 0.06cm gap (R1). (iv) The
+% "480 real tier-2 prompts" line goes ink -> quietink, matching the same class
+% of line in fig:purify, and rises to y = 1.38 with the strip. (v) The prose
+% block moves from y 5.00/4.60 to 5.55/5.15 so its first line sits on panel
+% (b)'s second-mode baseline, 5.55, giving the two columns a shared
+% horizontal. (vi) The foot line takes the slate's declaration form (R7).
+% NOT FIXED, and it is this figure's real weakness: panel (a) is an L -- a
+% 4.20cm vertical layer axis at the column's right edge and a 6.90cm strip
+% along its bottom -- so about 6.0 x 3.4cm of the column is empty. The pass-12
+% header records four rejected fills and this pass adds no fifth; the void is
+% the (position x depth) plane in which this figure measures nothing, and the
+% prose block sits in it to break it rather than to disguise it.
+% RE-MEASURED: 173.10 x 74.30mm; ink 5.975%; 726 characters, 5.65 per 100mm^2,
+% which is over S15's 5.0 and is the one contract clause this figure still
+% misses -- see pass 12's arithmetic, unchanged by this pass. Exactly two type
+% sizes, 9.96 and 7.97, in one face, no bold, no italic, no sans, no CM.
+% One page, zero Overfull, zero Underfull.
+% ===========================================================================
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small, inner sep=0pt]
+  \tikzset{
+    % 4.11's panel head: lowercase parenthesised letter, sentence-case
+    % descriptive title, \footnotesize roman ink, left on the panel's origin.
+    ttl/.style ={font=\footnotesize, text=ink, anchor=base west},
+    % the figure's ONE prose register: definitional only, \footnotesize ink.
+    def/.style ={font=\footnotesize, text=ink, anchor=base west},
+    % the surviving branch -- the object the rest of the chapter measures.
+    % PASS 13: \scriptsize, not \footnotesize. These are the two branches of a
+    % partition, i.e. direct labels of drawn objects, not definitional prose;
+    % under S1 the largest size in the figure must belong to a panel title, an
+    % axis label or definitional prose, and 4.11 sets its in-plot labels one
+    % step below its titles. They now share a size and a baseline grid with
+    % their own outcome labels, which is what fixed the cross-gutter splay.
+    liv/.style ={font=\scriptsize, text=accent, anchor=base west},
+    % the struck branch, and every counterfactual.
+    ded/.style ={font=\scriptsize, text=quietink, anchor=base west},
+    % \scriptsize registers: labels, entries, scope and foot lines.
+    lab/.style ={font=\scriptsize, text=ink, anchor=base west},
+    qlab/.style={font=\scriptsize, text=quietink, anchor=base west},
+    alab/.style={font=\scriptsize, text=accent, anchor=base west},
+    tick/.style={font=\scriptsize, text=quietink, anchor=east},
+    % The prompt cell is drawn as figs/hook.tex draws it (\tokbox): panelbg
+    % fill, rounded corners=1pt. PASS 12: the border is 0.30pt, the document's
+    % furniture weight, not the 0.35pt of pass 9, which is not one of the five
+    % weights the slate uses.
+    cell/.style={draw=rulegrey, line width=0.30pt, fill=panelbg,
+                 rounded corners=1pt},
+    % The two outcome connectors were IDENTICAL plain leaders. PASS 13 deleted
+    % the Stealth heads: a single arrowhead is reserved for an operation acting
+    % in a direction and its label must be a verb of action, and "struck by the
+    % positive" and "survives" are outcomes, not operations.
+    % PASS 14 DELETES lead/.style AND BOTH LEADERS. Reasoning at the two mode
+    % blocks and in the pass-14 header at S3. The figure now contains no
+    % arrowhead and no connector of any kind, and its only glyph that could be
+    % mistaken for either -- the caret -- carries a direct label at itself.
+    }
+
+% ---------------------------------------------------------------------------
+% ONE X ORIGIN PER PANEL. Every element below references its panel's origin,
+% so the spread of text-line x0 inside a panel is exactly zero.
+% ---------------------------------------------------------------------------
+  \coordinate (OA) at (0.00,0);    % panel (a)
+  \coordinate (OB) at (7.75,0);    % panels (b) and (c)
+  \coordinate (OD) at (12.40,0);   % panel (d)
+  \coordinate (OBL) at (13.44,0);  % panel (b)'s outcome column
+
+% PASS 13: THE VERTICAL PANEL DIVIDER IS DELETED. It stood at x = 7.40 and the
+% depth axis stands at x = 6.90, so the two were parallel hairlines 0.50cm
+% apart with an empty channel between them; measured on the render, the band
+% between them carried 0.16% ink over the full height. At print size they read
+% as one doubled boundary, and panel (a)'s only scaled object was thereby read
+% as frame furniture. The lettered panel heads and a 0.85cm gutter partition
+% the figure without it, which is 4.11's own arrangement -- it draws no
+% dividers at all. SUPERSEDES C5's divider clause and its gutter arithmetic.
+
+% ###########################################################################
+% # PANEL (a) -- where the drug name enters
+% ###########################################################################
+  \node[ttl] at (0.00,7.45) {(a) where the drug name enters};
+
+  % --- the figure's only prose block: definitional, two lines -------------
+  % PASS 13, TWO REPAIRS.
+  %  (i) THE PRONOUN HAD NO ANTECEDENT ON THE READING LINE. Pass 12 read "what
+  %      reads it: ...", and the only occurrence of "residual stream" was
+  %      inside the rotated \scriptsize scope line, 4cm away and at 90 degrees.
+  %      The block now names the object it defines. "twelve classes" leaves the
+  %      block: the line "a cross-validated linear probe, twelve classes"
+  %      measures 6.68cm and the panel's prose is capped at 5.48cm by the
+  %      rotated label column at x = 5.62 (see the axis block below). "linear"
+  %      is the word worth the space, because it is what makes panel (d)'s
+  %      "the drug not linearly readable" the right counterfactual, and twelve
+  %      still reaches the reader through the count line under the strip.
+  % (ii) IT MOVED FROM THE PANEL'S VERTICAL MIDDLE TO THE PANEL'S HEAD, so that
+  %      panels (a) and (b) put their first content line on ONE baseline, 6.70,
+  %      0.75cm under their titles. Pass 12 set it at 5.90/5.50, which gave
+  %      panel (a) a 1.55cm head-to-content gap against panel (b)'s 0.75cm and
+  %      put panel (a)'s only substantial ink level with panels (c) and (d), so
+  %      the lettering order and the spatial order disagreed.
+  %      SUPERSEDES C10's placement paragraph ("three tiers with voids of 1.55
+  %      and 3.22cm"); C10's four rejected ways of REMOVING the band all still
+  %      stand, and the band is still deliberately empty, because it is the
+  %      space between the prompt and the read, i.e. the residual stream.
+  %      Clearance measured: line one is 4.880cm and line two 4.592cm, both
+  %      clear of the rotated scope column's left edge at x = 5.62 by more than
+  %      0.7cm at every y.
+  % PASS 14: THE BLOCK MOVES BACK INTO THE BAND, at 5.00/4.60, centred on the
+  % axis midspan 4.80. Pass 13's (ii) above bought a shared first-content
+  % baseline with panel (b) and paid for it with ONE CONTIGUOUS VOID of
+  % 56.2 x 39.2mm -- 17.2% of the figure's whole area, measured at 200dpi --
+  % under the block and left of the axis, so panel (a) read as text at the top,
+  % a stranded vertical stick in the middle and a hole between them. The two
+  % TITLE baselines still align at 7.45, which is the alignment a reader
+  % actually sees; the first-content alignment across a 7.75cm gutter is not.
+  % Set here the block also sits level with the axis it describes, so "the
+  % residual stream" has the rule and its seven ticks beside it rather than
+  % 4cm above them. The band is now two voids of about 1.9 and 1.6cm rather
+  % than one of 3.5cm, and its lower part carries the caret's direct label.
+  % SUPERSEDES pass 13's repair (ii) at this block and C10's placement
+  % paragraph as re-stated there; C10's four rejected ways of REMOVING the
+  % band all still stand, and S4's "at most one block per panel" is why no
+  % second prose block was written into it.
+  \node[def] at (0.00,5.55) {what reads the residual stream:};
+  \node[def] at (0.00,5.15) {a cross-validated linear probe};
+
+  % --- the depth axis ------------------------------------------------------
+  % PASS 12: a plain 0.40pt ink rule from the layer-2 tick to the layer-16
+  % tick, terminating exactly on them. Before this pass it was a panelbg-filled
+  % 0.36cm-wide column running from 2.10 to 7.05, i.e. past both extreme ticks,
+  % which read as a bar whose length encoded nothing and implied depth beyond
+  % the measured range.
+  \draw[ink, line width=0.40pt] (6.90,2.70) -- (6.90,6.90);
+  % y = 2.10 + (L/16)*4.80 for every one of the seven, unchanged from pass 11
+  % and CHECKED against the map rather than against the eye:
+  %   L   2    4    6    8    9    12   16
+  %   y  2.70 3.30 3.90 4.50 4.80 5.70 6.90
+  % Tick length 0.12cm = 3.4pt, PASS 13, down from 0.16cm: 4.11's own ticks are
+  % about 3.5pt and the 0.04cm bought here is what lets the quantity name sit
+  % beside the numerals without touching them.
+  \foreach \L/\y in {2/2.70, 4/3.30, 6/3.90, 8/4.50, 9/4.80, 12/5.70, 16/6.90}{
+    \draw[rulegrey, line width=0.30pt] (6.80,\y) -- (6.90,\y);
+    \node[tick] at (6.74,\y) {\L};}
+  % AXIS LABEL, in axis-label position: rotated 90 degrees reading upward,
+  % centred on the axis midspan y = 4.80. PASS 13, TWO REPAIRS.
+  %  (i) THE RANKING IS INVERTED BACK. Pass 12 put the quantity name OUTERMOST,
+  %      at x = 5.36, with two wrapped \scriptsize grey lines between it and the
+  %      numerals, so the thing immediately left of the tick numerals was a grey
+  %      sentence and the quantity itself was 1.4cm further out -- the opposite
+  %      of what S5 asks for. "layer" now sits immediately left of the numerals
+  %      and the scope note outboard of it.
+  % (ii) THE SCOPE NOTE IS ONE LINE, NOT A WRAPPED TWO. Pass 12's note measured
+  %      9.09cm, wrapped onto two typeset lines of 4.817 and 4.202cm, and the
+  %      longer of the two OVERRAN a 4.20cm axis at both ends -- 3.0mm past the
+  %      layer-16 tick above and the same below -- which is the exact defect D6
+  %      records itself as having removed from the column. It also broke the
+  %      noun phrase across the wrap ("the last prompt / position"). The note is
+  %      now "read at the last prompt position", 111.20pt = 3.908cm, which lies
+  %      INSIDE the 4.20cm axis with 0.146cm of clearance at each end. "where
+  %      generation begins" is caption material and is in the caption.
+  %      SUPERSEDES C1's wrap arithmetic and its "line 1 is the outermost"
+  %      clause in full.
+  % x geometry, measured: at inner sep=0 a rotated \footnotesize line is 0.35cm
+  % wide in x and a \scriptsize one 0.28cm; the widest numeral ("16") is 8.0pt =
+  % 0.281cm and is right-anchored on 6.70, so it begins at x = 6.419.
+  % scope 5.62-5.90 | layer 6.005-6.355 | numerals 6.419-6.70 | ticks 6.78-6.90.
+  % PASS 14, TWO REPAIRS AT THIS BLOCK.
+  %  (i) THE SCOPE LINE IS DELETED AND ITS CONTENT MOVES TO THE MARK IT NAMES.
+  %      "read at the last prompt position" shared the five-word clause "at the
+  %      last prompt position" with the caption that actually prints
+  %      (04b:124-126, "the probe reads the residual stream at the last prompt
+  %      position, where generation begins"), which S18 forbids; and it named,
+  %      at 90 degrees and 1.14cm away, the one glyph on the page that had no
+  %      name of its own -- the caret. 4.11's discipline is to direct-label at
+  %      the mark, so the position is now labelled AT the caret, horizontally,
+  %      in \scriptsize ink, and the axis keeps only its quantity name. S5
+  %      makes the scope line optional; the mandatory \footnotesize roman ink
+  %      quantity name in axis-label position is still there and is still the
+  %      only thing between the tick numerals and panel (a)'s body.
+  %      SUPERSEDES pass 13's repair (ii) at this block in full.
+  % (ii) "layer" MOVES OFF THE LAYER-9 TICK. The axis midspan and the layer-9
+  %      position are the SAME y by arithmetic, not by accident:
+  %      2.10 + (9/16)*4.80 = 4.80 = (2.70 + 6.90)/2. So a rotated label
+  %      centred on the midspan was centred on one numeral, 1.96mm from it, and
+  %      read "layer 9". Measured, "layer" is 21.46pt = 0.754cm long, and the
+  %      seven tick gaps are 0.60/0.60/0.60/0.30/0.90/1.20cm, so 5.70-to-6.90
+  %      is the ONLY stretch of this axis long enough to hold the label with no
+  %      numeral inside its span. Centred at 6.30 it spans 5.923 to 6.677 and
+  %      the nearest numerals are 12 at 5.70 and 16 at 6.90. It stays in
+  %      axis-label position: x 6.005-6.355, immediately left of the numeral
+  %      column at 6.419-6.70, inside S5's 12pt band either side of that column.
+  \node[font=\footnotesize, text=ink, rotate=90, anchor=center]
+    at (6.18,6.30) {layer};
+
+  % --- the prompt strip ----------------------------------------------------
+  % Edges from the measured field-name widths: 6.084cm of ink, 0.816cm of
+  % padding shared as 0.0816cm a side. See C8.
+  % PASS 14: THE WHOLE STRIP DROPS 0.14cm, from y 1.66-2.28 to y 1.52-2.14.
+  % NO CELL EDGE IN x MOVED, no field changed, no order changed and the strip
+  % is still 6.90cm wide with the same five measured widths -- the change is
+  % one rigid translation in y, and it buys the 0.14cm the caret's direct label
+  % needs between the strip's top rule and the layer-2 numeral (see the read
+  % position below). The room exists because pass 14 deletes the span rule that
+  % occupied 1.46-1.54; the count line's baseline at 1.18 is unmoved and its
+  % ascenders now clear the strip's bottom rule by 0.14cm.
+  \draw[cell] (0.00,1.72) rectangle (1.12,2.14);
+  \draw[cell] (1.90,1.72) rectangle (2.64,2.14);
+  \draw[cell] (2.64,1.72) rectangle (4.23,2.14);
+  \draw[cell] (4.23,1.72) rectangle (6.90,2.14);
+  % the drug cell: the only accent mark in panel (a). Same construction as
+  % hook.tex's \tokdrug -- accent border, accent!12 fill, rounded corners=1pt.
+  \filldraw[fill=accent!12, draw=accent, line width=0.40pt, rounded corners=1pt]
+    (1.12,1.72) rectangle (1.90,2.14);
+
+  % baseline 1.775 = the strip's vertical centre 1.83 less 0.055, which centres
+  % the x-height band rather than the box. (Pass 13: 1.915 on a centre of 1.97.)
+  \node[font=\scriptsize, text=ink,    inner sep=0pt] at (0.560,1.92) {cell line};
+  \node[font=\scriptsize, text=accent, inner sep=0pt] at (1.510,1.92) {drug};
+  \node[font=\scriptsize, text=ink,    inner sep=0pt] at (2.270,1.92) {dose};
+  \node[font=\scriptsize, text=ink,    inner sep=0pt] at (3.435,1.92) {mechanism};
+  \node[font=\scriptsize, text=ink,    inner sep=0pt]
+    at (5.565,1.92) {control cell sentence};
+
+  % --- the read position ---------------------------------------------------
+  % The caret straddles the strip's right edge, which is where the prompt ends.
+  % It is ink, not accent: it is part of the axis apparatus, and accent in this
+  % figure means the drug field and the surviving branch and nothing else.
+  % PASS 13: IT NO LONGER TOUCHES THE AXIS AND NO LONGER SITS ON A NUMBERED
+  % TICK. Pass 12 put its apex at (6.90, 2.70), which is simultaneously the
+  % axis rule's base, the layer-2 tick and the largest filled black glyph in
+  % panel (a); measured on the render the apex and the layer-2 tick coincided
+  % to within a pixel. Three objects at one coordinate read two ways, both
+  % false: as a filled arrowhead terminating the depth axis downward, and as a
+  % mark AT LAYER 2 on the figure's only scaled axis -- which also falsified
+  % the foot line, since the caret would then occupy a position on the depth
+  % scale. It marks a token position, not a depth. The apex is now 2.50, a
+  % clear 0.20cm below the axis base at 2.70, and the triangle is back to the
+  % 0.24cm width of pass 9 (base 6.78 to 7.02, so it still straddles the
+  % strip's right edge at 6.90 symmetrically and overhangs it by 0.12cm rather
+  % than 0.15cm). It is named by the axis scope line 0.9cm to its left, which
+  % now reads "read at the last prompt position".
+  % SUPERSEDES C8's clause "the apex is the axis rule's own base at the layer-2
+  % tick, y = 2.70", and restores the pass-9 note's own reading that the apex
+  % belongs at a position the depth scale does not number.
+  % PASS 14: THE CARET IS NAMED AT ITSELF, AND THE THREE CUES THAT MADE IT AN
+  % ARROWHEAD ARE BROKEN ONE BY ONE. Pass 13 moved it 2mm and did not resolve
+  % the reading; all three refuters read it, unaided, as the axis's terminal
+  % arrowhead, and two of them read the layer-2 numeral as its label. Measured
+  % on the pass-13 render, three cues did that: (1) it was the only
+  % arrowhead-shaped glyph left in the figure and the largest solid black one
+  % in the panel; (2) its apex stood on the axis rule's own x, 2.00mm below the
+  % rule's bare square terminus; (3) its base ran 6.78 to 7.02 while the seven
+  % ticks run 6.78 to 6.90, so its left half lay exactly in the tick lane, and
+  % the "2" numeral's box bottom sat 0.25mm above its apex. Pass 14:
+  %   * it acquires a \scriptsize ink DIRECT LABEL at itself, "the last prompt
+  %     position", right-anchored at 6.68 so its ink stops 0.08cm from the
+  %     caret's left base -- inside the document's ~0.3cm leader threshold, so
+  %     no leader is owed. This is where that string was always meant to be:
+  %     it was set rotated in axis-label position until pass 14, where a reader
+  %     attached it to the axis rather than to the triangle;
+  %   * the strip drops 0.14cm, so the apex is now 0.34cm below the axis base
+  %     (was 0.20cm) and the label sits in the gap that opens;
+  %   * the base widens from 0.24 to 0.28cm, 6.76 to 7.04, so it no longer
+  %     shares an endpoint with the tick lane. It still straddles the strip's
+  %     right edge at 6.90 symmetrically, which is the pass-9 relation the keep
+  %     list names, and it is still ink, not rulegrey (O3 stands: rulegrey is
+  %     furniture and this mark is content).
+  % Under the figure's own map y = 2.10 + (L/16)*4.80 the triangle now occupies
+  % y 2.14 to 2.36, i.e. layers 0.13 to 0.87 -- BELOW layer 1, off the drawn
+  % scale, which is what "it marks a token position, not a depth" requires and
+  % what the pass-13 ledger claimed without arithmetic. SUPERSEDES pass 13's
+  % apex/base clause at this block and licensing.json's read_position note.
+  \fill[ink] (6.90,2.36) -- (6.76,2.14) -- (7.04,2.14) -- cycle;
+  \node[font=\scriptsize, text=ink, anchor=base east] at (6.68,2.28)
+    {the last prompt position};
+
+  % --- the span: the five fields are one prompt ----------------------------
+  % PASS 13: A PLAIN SPAN RULE WITH DOWNTURNED ENDS REPLACES THE MIRRORED
+  % BRACE. A brace has a central pointer, and pass 12 moved the count line from
+  % centred-on-the-brace to left-aligned on the panel origin (S13) without
+  % moving the pointer, so the notch at x = 3.45 aimed at 3.45cm of empty white
+  % while its label began at x = 0.00. A span rule carries the same "these five
+  % fields are one prompt" grouping, has no pointer to aim wrongly, and drops
+  % the decorations.pathreplacing dependency.
+  % PASS 14: THE SPAN RULE IS DELETED. All three refuters read it and all three
+  % called it. Measured on the pass-13 render it was a rulegrey 0.30pt rule of
+  % the strip's exact x-extent, 0.12cm below and parallel to the strip's own
+  % rulegrey 0.30pt bottom border -- same colour, same weight, same length --
+  % so it reproduced as a doubled edge or an offset re-impression rather than
+  % as a bracket, its 0.08cm downturns vanishing at print size. Its left
+  % downturn also ended 0.78mm directly above the "4" of "480" and read as a
+  % stray tick on the numeral. And it grouped ONE schematic prompt's five
+  % fields while the line beneath it counts 480 prompts, so on a strip that
+  % carries no horizontal scale a full-width bracket labelled 480 invited
+  % reading the width as the count. Nothing is lost: the five cells abut and
+  % already read as one object, and the count line sits under the strip on the
+  % strip's own left edge and names the population it is drawn from.
+  % SUPERSEDES pass 13's R9 span-rule clause and the "the five fields are one
+  % prompt" heading above it; the 0.14cm it frees is what lets the strip drop.
+  % The count line names the population the spanned object is drawn from. It is
+  % left-aligned to panel (a)'s origin, so panel (a) has exactly one x origin.
+  % \scriptsize: at \footnotesize it measures 8.196cm and would run past the
+  % panel's own measure. PASS 13: 480 is set as TEXT, not as $480$. In math
+  % mode the three digits rendered in URWPalladioL-Roma while every other
+  % numeral in the figure -- the seven tick labels, and the 2 of "tier-2" on
+  % this very line -- rendered in TeXGyrePagella-Regular. One figure, two digit
+  % faces, three characters. The measured width is 186.58pt = 6.5575cm either
+  % way, so no coordinate moved and no value changed.
+  \node[qlab] at (0.00,1.38)
+    {480 real tier-2 prompts: twelve drugs, forty cells each};
+
+% ###########################################################################
+% # PANEL (b) -- the two ways a model can ignore a drug it was told about
+% ###########################################################################
+  % PASS 14: THE TITLE IS A NAME, NOT A SENTENCE. "the two ways a model can
+  % ignore a drug it was told about" measured 270.16pt = 9.495cm, which made a
+  % TITLE the widest object on the page, set the figure's whole right measure,
+  % left 0.055cm of optical margin, and outweighed panel (a)'s title three to
+  % one on the baseline they share, so the two heads did not read as peers. It
+  % also restated 04b:31-32's own opening sentence ("A model that ignores a
+  % drug it was told about can fail in two ways"), which is the paragraph the
+  % float is attached to. 4.11's two titles run 29 and 38 characters; this one
+  % ran 60. "two ways to ignore a named drug" is 165.62pt = 5.821cm, keeps the
+  % "was told about" sense in the word NAMED -- which is also what panel (a)'s
+  % title says enters -- and ends at x = 13.571. The full sentence is in the
+  % caption. SUPERSEDES pass 13's O2 in its measurement clause: panel (a)'s
+  % title is no longer constrained by this one. It is left at 4.969cm anyway,
+  % because every longer variant either overruns panel (a)'s own 6.90cm measure
+  % or says the probe reads the drug name, which it does not -- it reads the
+  % stream, and the read is named at the caret and at the axis.
+  \node[ttl] at (7.75,7.45)
+    {(b) two ways to ignore a named drug};
+
+  % --- failure mode one: struck --------------------------------------------
+  % quietink, because it is eliminated. TWO strikes, one through each line: the
+  % entry is two lines and a rule through its first line only left the second
+  % standing. Each overhangs its line's ink by 0.06cm at each end, which is what
+  % a strikethrough does. Endpoints from the measured \scriptsize widths,
+  % 4.6741 and 4.2918cm: 7.69 to 12.484 and 7.69 to 12.102.
+  % PASS 13, THE COLOUR AND THE WEIGHT. The strikes were ink at 0.90pt, and
+  % that is the register S6 and CF2 reserve, across the whole slate, for a
+  % threshold: chance in 4.11(a), the removal gate in 4.9, the pre-registered
+  % materiality margin in 4.12 and 4.13, and style_v2.chance_line()'s own
+  % hard-coded color='black', lw=0.9. C6's defence was that this figure
+  % contains no threshold so nothing collides -- which answers S10's singleton
+  % clause but not S6's, whose check is that NOTHING WHICH IS NOT A THRESHOLD
+  % may be black solid 0.90pt. This figure prints six pages before the reader
+  % meets the first real threshold in the arc, and it is the first figure of
+  % the slate, so it was teaching the threshold stroke on a negation. Measured
+  % against it: the struck text is quietink (grey 107) and the strikes were ink
+  % (grey 25), so the branch the chapter DISCARDS carried the darkest ink on
+  % the page while the surviving branch receded -- the S8 inversion C3 fixed in
+  % colour, reintroduced in weight. Both strikes are now quietink 0.40pt, the
+  % colour and weight of the text they cross. 0.40pt is already live here (the
+  % axis rule and the drug cell's border), so no new register appears and no
+  % singleton is created; 0.50pt was rejected because S10 reserves it for a
+  % dotted coordinate. SUPERSEDES C6's third weight in full: the figure's
+  % weights are now 0.30pt furniture and 0.40pt, and no 0.90pt stroke exists.
+  % Strike y is the line's baseline + 0.065, half the \scriptsize x-height.
+  % PASS 14, TWO REPAIRS.
+  %  (i) THE STRIKES START ON THE PANEL'S OWN ORIGIN. They began at 7.69, which
+  %      is 0.06cm (1.7pt) LEFT of the 7.75 every other text line in panels (b)
+  %      and (c) starts on, so the panel's left margin was ragged and the item
+  %      protruding furthest left was the one the figure discards. A
+  %      strikethrough needs overhang at its TERMINAL, where the eye leaves the
+  %      word, not at its initial; the right ends are unchanged at 12.484 and
+  %      12.102, still 0.06cm past their lines' ink at 12.424 and 12.042.
+  % (ii) THE OUTCOME LEADER IS DELETED (both of them; see the surviving mode).
+  %      Measured on the pass-13 render this one ran 12.72 to 13.34 with a
+  %      0.24cm gap at its left end and a 0.10cm gap at its right, so it
+  %      touched neither the strike nor the label and read as a free-floating
+  %      dash. Worse, it was a THIRD quietink horizontal lying midway between
+  %      two quietink strikes 0.35cm apart, at the same colour and near the
+  %      same weight, so the eye completed strike + gap + leader + label into
+  %      one continuous rule and read the verdict "struck by the positive," as
+  %      itself struck -- the exact "strike and leader read as one continuous
+  %      pointer" fault the pass-9 note records itself as having killed on the
+  %      diagonal. Widening the gap did not kill it because the stroke was
+  %      still collinear in band, colour and register. Nothing is owed under
+  %      S22: there is no MARK here, only a text block, and the pairing is
+  %      carried twice over -- by colour (grey block to grey label, accent
+  %      block to accent label) and by baselines shared to 0.00pt, which is
+  %      4.11's own discipline. SUPERSEDES pass 13's lead/.style rationale and
+  %      C6's "the two outcome leaders" clause: the figure now has one stroke
+  %      weight for furniture (0.30pt) and one for the strikes and the axis
+  %      (0.40pt), and no connector of any kind.
+  \node[ded] at (7.75,6.70) {the drug never enters its computation};
+  \node[ded] at (7.75,6.35) {an activation-side encoding failure};
+  \draw[quietink, line width=0.40pt] (7.75,6.765) -- (12.484,6.765);
+  \draw[quietink, line width=0.40pt] (7.75,6.415) -- (12.102,6.415);
+  \node[qlab] at (13.00,6.70) {struck by the positive,};
+  \node[qlab] at (13.00,6.35) {and only this one};
+
+  % --- failure mode two: survives ------------------------------------------
+  % accent, because it is the object the rest of the chapter measures. The two
+  % leaders are identical in weight; only the label differs.
+  % PASS 13: EACH OUTCOME LABEL NOW SITS ON ITS MODE'S OWN BASELINES, 6.70/6.35
+  % and 5.55/5.20. Pass 12 set the modes \footnotesize on 0.40cm leading and
+  % their labels \scriptsize on 0.30cm leading, each block centred on the other,
+  % so no line matched its partner and the pair splayed in opposite directions
+  % across a 55mm gutter -- measured, 0.41mm apart at the first line and 0.60mm
+  % the other way at the second. One leading per size now holds across the whole
+  % figure: 0.40cm at \footnotesize, 0.35cm at \scriptsize.
+  % The outcome column moved from 14.28 to 13.44, which is what the \scriptsize
+  % modes freed. Its leader starts 0.50cm clear of the longer strike's terminal
+  % (12.484), against 0.17cm in pass 12, so strike and leader cannot read as one
+  % continuous pointer -- the fault that killed the pass-1 diagonal.
+  % PASS 14: THIS LEADER IS DELETED TOO, AND IT WAS THE WORSE OF THE PAIR.
+  % Measured on the pass-13 render, the accent mode's longest line ends at
+  % x = 11.328 and the leader began at 12.72, so it started 1.397cm -- 39.6pt,
+  % 14mm -- past the mark it claimed to join and covered 0.61 of a 2.13cm gap:
+  % at print size a 6.1mm dash floating in 14mm of white with nothing on its
+  % left. The pass-13 ledger recorded the OPPOSITE as a measured property
+  % ("the leader now starts 0.236cm past the longer strike's terminal"), which
+  % is true of the struck mode's leader only; the accent one's 1.397cm gap was
+  % never measured. Two leaders of visibly unequal reach were the alternative
+  % and were rejected: the struck one cannot be extended leftward without
+  % butting the strike and restoring the continuous-pointer reading.
+  % The outcome column moves 13.44 -> 13.00, which halves the unlinked gap on
+  % this mode from 2.11 to 1.67cm and still clears the longer strike's terminal
+  % (12.484) by 0.516cm, the 0.5cm separation the pass-9 note asks for.
+  % SUPERSEDES pass 13's O4 arithmetic (13.44) and its "the two leaders are
+  % identical in weight" clause -- there are no leaders.
+  \node[liv] at (7.75,5.55) {it enters and nothing reads it};
+  \node[liv] at (7.75,5.20) {a decoder failure};
+  \node[alab] at (13.00,5.55) {survives, and is the rest};
+  \node[alab] at (13.00,5.20) {of the chapter};
+
+% ###########################################################################
+% # PANELS (c) AND (d) -- the two licences, as two columns read across
+% ###########################################################################
+  % PASS 14: THE WHOLE (c)/(d) GROUP DROPS 0.30cm AND ITS ROW PITCH OPENS FROM
+  % 0.52 to 0.70cm. Deleting the third row (see the entries below) left the
+  % right half ending at y = 2.55 against panel (a)'s count line at 1.18, i.e.
+  % a fresh 9.5 x 1.8cm void in the bottom-right corner -- trading one hole for
+  % another is not a repair. Moving the rule to 4.05 also makes the gap from
+  % panel (b)'s last line (5.20) to the rule 1.15cm, which is exactly the gap
+  % between panel (b)'s own two mode blocks, so the right half now has one
+  % vertical rhythm. The title still sits 0.45cm under the rule, as before.
+  \draw[rulegrey, line width=0.30pt] (7.75,4.05) -- (17.30,4.05);
+
+  % PASS 13: BOTH TITLES ARE ONE LINE ON ONE BASELINE. (d) read "what a
+  % negative would have bought", 6.167cm, which does not fit a column and
+  % wrapped, so (c)'s head-to-body gap was 0.90cm against (d)'s 0.54cm on two
+  % columns the ledger called equal. "would buy" is 4.847cm and the conditional
+  % still carries the counterfactual against (c)'s indicative "buys"; the
+  % perfect tense survives in the caption. Origins are 7.75 and 12.40: (d)'s
+  % title then ends at 17.247, which is 0.053cm inside the measure, exactly the
+  % clearance panel (b)'s title already runs at. Columns are 4.65 and 4.90cm,
+  % and the content footprints are 4.081/4.847 (titles) and 3.210/3.697
+  % (entries), so neither column is the larger and more detailed one -- which is
+  % what C4's equalisation was for. SUPERSEDES C4's "equal width (4.60cm)",
+  % which was never true of the drawing: pass 12's origins were 7.75 and 12.70,
+  % i.e. 4.95 and 4.60.
+  \node[ttl] at (7.75,3.60) {(c) what the positive buys};
+  \node[ttl] at (12.40,3.60) {(d) what a negative would buy};
+
+  % THREE ENTRIES EACH, PAIRED ROW BY ROW. PASS 13, AND THIS IS THE CORRECTNESS
+  % REPAIR IN THIS PANEL, NOT A TYPOGRAPHIC ONE.
+  %  (i) THE ACROSS-READING WAS OFF BY ONE. Pass 12 set four baselines in each
+  %      column and asserted, in the ledger and in the caption, that they were
+  %      to be read across entry by entry. They could not be: (c) was two
+  %      sentences word-wrapped over four lines and (d) a single four-item
+  %      comma list, so row 1 paired "the model did not discard" with "the drug
+  %      lost inside the model," and the negation of the layer sat one row
+  %      above the layer it negated. Three of the four pairings were nonsense.
+  %      The rows are now grouped, not merely stacked: 0.32cm of leading WITHIN
+  %      a row and 0.52cm BETWEEN rows, so a wrapped entry cannot be mistaken
+  %      for the next entry. Each row's first line is on one baseline in both
+  %      columns, and the three pairs are exact.
+  % (ii) "no class of failure," IS DELETED, because it contradicts this
+  %      figure's own panel (b) and the claim box it is drawn from. 04b:142-144
+  %      reads "It rules out that the drug field is lost before the decoder
+  %      runs, an encoding failure in the activations", and panel (b) says so
+  %      on the page, 3.5cm above, in the words "struck by the positive, and
+  %      only this one". A positive that strikes one of two modes has bought a
+  %      class of failure ruled out; what it has not bought is a depth and a
+  %      fix. The two entries that survive, "no layer" and "no class of fix",
+  %      are the two the sources license: 04b:110-112, "what the probe buys is
+  %      the depth at which one would appear", and the caption's own lede, that
+  %      the negative "would have named the layer at which the drug was lost
+  %      and the class of fix that could reach it".
+  % (iii)"an activation-side failure, and" IS DELETED FROM (d), because panel
+  %      (b)'s struck line already reads "an activation-side encoding failure"
+  %      2.5cm away. One object, one name, drawn once; the fix classes stay,
+  %      because they are named nowhere else in the drawing.
+  % (iv) (d)'s first entry carries the hedge the instrument requires. The probe
+  %      is linear -- panel (a) now says so -- and a linear decode failure
+  %      licenses only that the drug is not linearly readable, not that it is
+  %      absent. The claim box is careful about exactly this ("Its identity is
+  %      linearly readable from the residual stream at every layer measured");
+  %      pass 12's "the drug lost inside the model," was not, and since the
+  %      figure's whole argument is a comparison of licence SIZES, an
+  %      overstated counterfactual inflates the asymmetry it exists to draw.
+  %      SUPERSEDES the pass-9 note "THE COUNTERFACTUAL BLOCK'S FIRST ENTRY
+  %      LOST ITS FINITE VERB" as to its wording only; the reason that note
+  %      gives -- that the entry must be a noun phrase, not an assertion that
+  %      the drug IS lost -- is preserved and strengthened by the hedge.
+  % (c) is ink: it happened. (d) is quietink: it did not.
+  % Leading is 0.35cm WITHIN a row -- the one \scriptsize leading in the figure,
+  % shared with panel (b) -- and 0.52cm BETWEEN rows.
+  % PASS 14, THREE ENTRIES BECOME TWO PAIRED ROWS OF ONE LINE EACH, AND ONE OF
+  % THE DELETIONS IS A CORRECTNESS REPAIR, NOT A TYPOGRAPHIC ONE.
+  %  (i) "no class of fix" IS DELETED, BY EXACTLY THE ARGUMENT PASS 13 USED TO
+  %      DELETE "no class of failure," ONE ROW ABOVE IT -- and that argument
+  %      was never applied to this entry, in the header or in the ledger.
+  %      04b:31-36 is a TWO-MEMBER partition and each member names its own fix
+  %      class: mode one is "an activation-side encoding failure that target-
+  %      and input-side fixes might reach", mode two "a decoder failure only an
+  %      objective-side fix could reach". Panel (b) strikes mode one and says
+  %      so on this page, 3.5cm above, in the words "struck by the positive,
+  %      and only this one". If one member of an exhaustive pair is struck the
+  %      survivor stands, and the survivor names its fix class -- so within
+  %      this figure's own frame the positive DOES buy a class of fix, and the
+  %      entry is false. It survived pass 13 only because panel (b) draws mode
+  %      two's gloss truncated to "a decoder failure", dropping the very clause
+  %      of its source sentence that refutes the entry. A drawing may not
+  %      contradict, at 8pt, the box it cites as its source.
+  %      The alternative repair -- rewriting the entry to the class the
+  %      positive does buy, "objective-side fixes only", against (d)'s
+  %      "target- and input-side fixes" -- was built and rejected: that licence
+  %      holds only CONDITIONALLY, on the model in fact ignoring the drug,
+  %      which is 4.4's and 4.5's finding and not this section's, and a
+  %      two-word slot cannot carry the condition without overstating it. Both
+  %      fix classes go to the caption, which can state the condition.
+  %      (d)'s "target- and input-side fixes" goes with it, because a row with
+  %      one side is not a row and the entry is named nowhere else it is owed.
+  % (ii) ROW ONE LOSES ITS WRAP AND ITS S18 COLLISION. "the model did not
+  %      discard what it was handed" is seven words verbatim from 04b:107-108,
+  %      the paragraph the float is attached to ("recovering it from the
+  %      activations establishes only that the model did not discard what it
+  %      was handed"), six lines of source above the float -- which S18 forbids
+  %      outright. It was also the only entry in either column that wrapped, so
+  %      (c) read as three items against (d)'s two and the across-reading broke
+  %      at row one: measured, the white gap between rows 1 and 2 was 6.76pt in
+  %      (c) and 16.68pt in (d), a 2.47x difference in the same two rows.
+  %      "the drug field is not discarded" is 106.48pt = 3.742cm, one line,
+  %      inside (c)'s 4.65cm column, keeps the sense the positive licenses, and
+  %      shares no five-word clause with the prose or with any caption.
+  % (iii)WITH EVERY ENTRY ON ONE LINE THERE IS NO WITHIN-ROW LEADING LEFT, so
+  %      the two rows sit at one pitch of 0.60cm in both columns and the
+  %      pairing needs no rule and no cue. The asymmetry the figure exists to
+  %      draw is now also visible as ink for the first time: (c) sets 39
+  %      characters against (d)'s 58, and (c)'s second entry is 0.991cm against
+  %      (d)'s 3.233cm, so the small licence is the small column.
+  %      SUPERSEDES pass 13's (ii)/(iii) rationale at this block as to the
+  %      entries that survive, and C4's "FOUR ENTRIES EACH" in full.
+  \node[lab]  at (7.75,2.85) {the drug field is not discarded};
+  \node[qlab] at (12.40,2.85) {the drug not linearly readable};
+
+  \node[lab]  at (7.75,2.15) {no layer};
+  \node[qlab] at (12.40,2.15) {the layer at which it is lost};
+
+% --- the figure's one disclosure line ---------------------------------------
+% PASS 13: REWORDED. "Nothing in this figure is a measured quantity" sat 0.9cm
+% under a line printing 480, twelve and forty, and then exempted the depth
+% ticks in its own second clause, so it read as a blanket claim followed
+% immediately by two counterexamples. The counts are the probe's design, not
+% its results, and saying so is shorter than conceding an exception. It also
+% now carries the count "seven", which pass 12 deleted with the caret label and
+% which the pass-9 layout note (still standing) argues is the one fact the
+% depth column exists to carry: without it a reader cannot tell whether the
+% ticks are the depths probed or a sample of a sweep over all sixteen.
+% One line, 389.66pt = 13.695cm, left-aligned to the figure's x origin.
+% PASS 14: THE SECOND CLAUSE GOES, AND THE FIRST IS WHAT WAS DOING THE WORK.
+% Pass 13 added "the counts are the probe's design" because the pass-12 wording
+% ("Nothing in this figure is a measured quantity") sat under a line printing
+% 480, twelve and forty and read as a blanket claim with two counterexamples
+% beneath it. But pass 13 made TWO changes at once, and it was the other one --
+% "a measured quantity" becoming "an estimate" -- that removed the
+% contradiction, since a count is not an estimate. The clause was therefore
+% belt and braces on a line already sound, at 35 characters, in the longest
+% string in the figure, on a drawing over S15's ink ceiling. At 76 characters
+% the line still answers the acceptance question ("can the reader say, without
+% leaving the figure, that nothing here is a measured quantity?") on its own
+% and still carries the count "seven" the pass-9 layout note asks for. The line
+% is now 9.60cm rather than 13.695cm and is no longer the widest \scriptsize
+% object on the page. SUPERSEDES pass 13's R9 foot-line clause as to the second
+% sentence only; its rewording of "measured quantity" to "estimate" stands.
+  \node[qlab] at (0.00,0.38)
+    {Intervals: none in any panel; nothing here is an estimate, and the seven
+     depth ticks are the only scaled marks.};
+
+  % the bounding box IS the fullwidth measure, less 1.8pt
+  \path (0,0.16) rectangle (17.30,7.72);
+\end{tikzpicture}
+
+% ---------------------------------------------------------------------------
+% READY TO PASTE into Sections/04b-representation.tex, at \beatsection
+% sec:methods-probe, immediately after the paragraph "The probe, and why its
+% positive is nearly free" (04b-representation.tex:108-113) and before
+% "Forward passes only." Not written into the Section file by this build.
+%
+% THE PASS-11 CAPTION IS RETAINED BELOW, COMMENTED OUT AND MARKED SUPERSEDED,
+% because the thesis is audited against these headers. It is FALSE against the
+% pass-12 and pass-13 drawings in four places: it indexes the panels "Left,"
+% and "Right," where the drawing sets four lowercase panel letters, it says the
+% three accuracies and the floor are "set here as text" (they are not set here
+% at all any more), it spends two sentences denying a reading the drawing no
+% longer offers, and it says the two licence blocks "are sized by their
+% contents", which was the footprint asymmetry pass 12 replaced.
+%
+% The PASS-13 REPLACEMENT IS WRITTEN TO figs/_PENDING_CAPTIONS.tex, keyed by
+% \label{fig:licensing}, together with every sentence pass 12 and pass 13 cut
+% from the drawing. PASS 13 CREATED THAT FILE: pass 12 asserted twice that it
+% had, and it did not exist. This builder does not edit Sections/. The block
+% below is a DUPLICATE of the pending file, kept so this file is self-contained
+% and the audit trail is here; the pending file is the one an integrator reads.
+%
+% ###########################################################################
+% PASS 14 SUPERSEDES THE WHOLE OF THE PARAGRAPH ABOVE, AND THE PASS-13 CAPTION
+% BELOW IS NOW HISTORY, NOT THE PROPOSAL.
+%
+% (i) The paragraph above is FALSE AS WRITTEN. figs/_PENDING_CAPTIONS.tex did
+%     exist when pass 13 ran (it was created by the pass-10 repair of
+%     fig:materiality), and pass 13's APPEND TO IT DID NOT SURVIVE: read on
+%     2026-08-19 the file held fig:materiality, fig:comparators and fig:hook
+%     blocks and no fig:licensing block at all. All three pass-14 refuters
+%     opened with that finding and all three were right. The likeliest cause is
+%     a concurrent read-modify-write from another figure's builder, which is
+%     the hazard CF12 names about this shared file.
+% (ii) PASS 14 APPENDED the block, in place, to figs/_PENDING_CAPTIONS.tex, and
+%     READ THE FILE BACK TWICE -- once immediately after the append and once at
+%     the end of the pass. Both times the block was there and the
+%     fig:materiality, fig:comparators and fig:hook blocks were all still
+%     there. It was appended at the END rather than inserted in figure order
+%     deliberately: an append cannot destroy another builder's block and an
+%     ordered insert can, which is what happened to pass 13.
+%     NO LINE NUMBER IS RECORDED FOR IT, and that is the point of the two
+%     reads: between them another builder appended to the fig:comparators
+%     block and every heading below it moved -- this block went from line 484
+%     to 597 and fig:hook from 306 to 369 -- so a line number written into
+%     this header would be false within the hour. The \label heading is the
+%     stable address.
+% (iii)THE PASS-14 CAPTION IS THE ONE IN THE PENDING FILE, and it is NOT
+%     duplicated here. Keeping a second copy in this header is what let pass 13
+%     believe it had staged a caption it had not; one copy, in the file an
+%     integrator is told to read, is the safer arrangement. What is recorded
+%     here instead is what the pass-14 caption differs from the pass-13 draft
+%     below in, so the audit trail is complete without a duplicate:
+%       * it prints NONE of the four accuracies, where the pass-13 draft set
+%         all four. It names them ("the raw peak and the deepest, the
+%         context-removed deepest and the $1/12$ floor") and points at
+%         \cref{tab:workspace} and \cref{fig:mechanism}(a). This is the
+%         cross-figure redundancy resolution applied to the caption as well as
+%         to the drawing: 0.821 and 0.883 are owned by 4.11(a), the only place
+%         the two series are drawn AS series with their crossing at layer 12
+%         visible, and printing them a fourth time here is the redraw the
+%         resolution exists to stop. The values stay in the prose at
+%         04b:159-166, in the claim box, and in \cref{tab:workspace};
+%       * it carries the two FIX CLASSES in full, with the premise they depend
+%         on, because pass 14 deleted "no class of fix" and "target- and
+%         input-side fixes" from panels (c) and (d);
+%       * it restates each failure mode's gloss in full, because the drawing
+%         abbreviates both;
+%       * it drops "The two licence blocks are sized by their contents", which
+%         the pass-13 draft had already dropped, and also drops "the figure
+%         quantifies nothing about the size of a licence": with the boxes gone
+%         and (c)/(d) set as plain text columns, nothing on the page reads as
+%         an area, and a caption denying a reading the drawing no longer offers
+%         is the defect that sentence was meant to fix;
+%       * it says "the single position read, the last of the prompt" rather
+%         than "at the last prompt position", because the drawing now sets
+%         "the last prompt position" as the caret's direct label and S18 bars
+%         a shared five-word clause.
+%     MEASURED: 2554 characters, 22 typeset lines under the real preamble in a
+%     fullwidth float with the pass-14 drawing above it, against the live
+%     pass-11 caption's 1692 characters and 15 lines, and against the 19-22 the
+%     rest of the 4.7-4.12 arc runs at. It compiles with zero errors and zero
+%     Overfull boxes on one page.
+% ###########################################################################
+%
+% ---- PASS 13 REPLACEMENT CAPTION, SUPERSEDED BY PASS 14, kept for the audit
+% ---- trail. DO NOT PASTE THIS ONE. -----------------------------------------
+% \begin{figure}[htbp]
+% \begin{fullwidth}
+% \centering
+% \input{figs/licensing}
+% \caption[The probe's cheap positive]{\textbf{The drug is named in plain text
+% in the prompt, so a positive was near-certain before the probe was run: it
+% eliminates one of the two ways the model could be ignoring the drug and
+% leaves the other standing, whereas the negative that did not arrive would
+% have named the depth at which the drug was lost and the class of fix that
+% could reach it.} One run, two possible outcomes, and the one that could not
+% fail is the one that happened; that asymmetry, and not any accuracy, is what
+% this figure draws. \emph{(a)} The drug is one of five prompt fields
+% (\cref{sec:methods-data}), and the probe reads the residual stream at one
+% position, the last of the prompt, where generation begins; the caret marks
+% that position and the axis beside it names the seven depths. The strip is a
+% schematic of \emph{fields}: cells are sized to their typeset labels and not
+% to their token counts, so it carries no horizontal scale, and the control
+% cell's sentence, which runs to hundreds of tokens, is not drawn hundreds of
+% times wider. Tick spacing on that axis is the one thing here drawn to scale,
+% and the scale is layer index rather than accuracy --- the grid is even apart
+% from the layer added at $9$. The classifier is cross-validated and
+% multinomial over the twelve drug classes, with folds stratified over prompts
+% and not grouped by well. \emph{(b)} The partition this chapter opens with.
+% Accent marks the branch that survives, because it is what \cref{sec:res-used}
+% and \cref{sec:res-mechanism} spend the rest of the chapter measuring; the
+% eliminated branch and the counterfactual column are quiet. \emph{(c)} and
+% \emph{(d)} are read across, row by row: each row sets what the positive
+% bought beside what a negative would have bought in the same slot. Because the
+% instrument is linear, a negative would have licensed only that the drug is
+% not linearly recoverable, which is the form \emph{(d)} states it in.
+% \textbf{No accuracy is drawn or printed here.} The probe reads $0.821$ at
+% layer $9$ and $0.758$ at layer $16$ against a floor of $1/12 \approx 0.083$,
+% and $0.883$ at layer $16$ once cell line, plate and dose are projected out;
+% those four are \cref{tab:workspace}'s and \cref{fig:mechanism}(a)'s, which
+% plots them against depth on a real accuracy axis and is the only place a
+% reader can see that the context-removed series \emph{exceeds} the raw one at
+% layers $12$ and $16$ rather than sitting under it. No mark on this page
+% carries an interval and none could: the probe returns a cross-validated
+% accuracy and \texttt{workspace\_probe.json} stores no dispersion for it. The
+% two licence columns quantify nothing about the size of a licence.}
+% \label{fig:licensing}
+% \end{fullwidth}
+% \end{figure}
+%
+% ---- WHAT THE PASS-12 CAPTION SAID, AND WHY PASS 13 CHANGED IT -------------
+% The pass-12 replacement was never integrated (it was staged in this file and
+% nowhere else). It differed from the block above in four clauses, all four
+% superseded here by name rather than silently rewritten:
+%   (i)   "\emph{(c)} and \emph{(d)} are two equal columns and are meant to be
+%         read across, entry by entry" -- it described a correspondence the
+%         pass-12 geometry did not draw: four baselines carrying a two-sentence
+%         block against a four-item list, so three of the four pairings were
+%         nonsense. Pass 13 draws three paired rows and the caption now says
+%         what each row does.
+%   (ii)  it did not say the instrument is linear, so it did not carry the
+%         hedge a linear decode failure actually licenses. The new clause
+%         "Because the instrument is linear ..." does.
+%   (iii) it did not name the classifier's twelve classes or the fold design;
+%         both were drawn up to pass 11, "twelve classes" left the drawing in
+%         pass 13 for measure (see the prose block) and the folds line left it
+%         in pass 12 under D7, so the caption now carries both.
+%   (iv)  "nothing on the page is an estimate, none of it carries an interval"
+%         shared a clause with the figure's own foot line, which S18 forbids.
+%         Reworded to "No mark on this page carries an interval and none
+%         could", against a foot line that now reads "Nothing here is an
+%         estimate: ...".
+%
+% ---- SUPERSEDED, PASS 11 CAPTION, kept for the audit trail -----------------
+% \caption[The probe's cheap positive]{\textbf{The positive rules out
+% one of the two ways the model could be ignoring the drug and localises
+% nothing, while the negative that did not arrive would have named the layer at
+% which the drug was lost and the class of fix that could reach it.}
+% \emph{Left,} the drug is one field of the prompt
+% (\cref{sec:methods-data}), and the probe reads the residual stream at the
+% last prompt position, where generation begins, at each of seven layers. The
+% three accuracies and the floor are read from
+% \texttt{workspace\_probe.json} and are also printed in
+% \cref{tab:workspace}: $0.821$ at layer 9 and $0.758$ at the deepest against a
+% $0.083$ shuffled-label floor, and $0.883$ at the deepest once cell line,
+% plate and dose are projected out. They are set here as text, not as marks on
+% a rule; the accuracy rule is \cref{fig:comparators}, row one. The prompt
+% strip is a schematic of \emph{fields}: cells are sized to their labels and
+% not to their token counts, so it carries no horizontal scale, and the control
+% cell's sentence, which is hundreds of tokens, is not drawn hundreds of times
+% wider. The tick spacing on the stack is the only scaled thing in
+% the figure, and it is depth, not accuracy: the grid is even apart from the
+% layer added at $9$. \emph{Right,} the partition this section opens with. A
+% positive strikes the first mode and only the first; the second is what
+% \cref{sec:res-used} and \cref{sec:res-mechanism} spend the rest of the
+% chapter on. The two licence blocks are sized by their contents and by nothing
+% else --- the figure quantifies nothing about the size of a licence, carries
+% no interval, and no mark in it may be read as a measured quantity.}
+% ---------------------------------------------------------------------------

@@ -1,0 +1,102 @@
+{
+ "figure": "fig:splitref",
+ "label": "fig:splitref",
+ "source_tex": "thesis_v2/figs/splitref.tex",
+ "estimator": "within-well split-half precision reference; one half of a condition's cells scored against the other half's truth, residual frame, NIR scale",
+ "frame": "residual",
+ "chance": 0.5,
+ "y_axis_range_drawn": [
+  0.82,
+  0.98
+ ],
+ "y_axis_truncated": true,
+ "shared_scale_across_panels": true,
+ "drawing": {
+  "kind": "tikz",
+  "width_mm_measured": 132.9,
+  "height_mm_measured": 77.74,
+  "textwidth_mm": 142.0,
+  "fullwidth_used": false,
+  "measured_by": "thesis_v2/figs/_harness_splitref.tex"
+ },
+ "intervals_drawn": false,
+ "intervals_note": "No interval is carried for this reference in CANONICAL_NUMBERS.json, scramble_stratum_audit_v4.json or re_v3.json. Bare markers; none invented.",
+ "sources": {
+  "panel_a": "RESULTS_cluster/CANONICAL_NUMBERS.json -> ceilings{}; identical to scramble_stratum_audit_v4.json -> split_comparability{}.<split>.ceiling",
+  "panel_a_spread": "RESULTS_cluster/scramble_stratum_audit_v4.json -> split_comparability.max_ceiling_spread",
+  "panel_b": "RECONSTRUCTED. No file holds these. Recomputed from RESULTS_cluster/re_v3.json -> records[], keeping repro_cos > 0.109 and averaging `ceiling` per split. Reproduces the three values the thesis prints.",
+  "reliability_line": "thesis_v2/Sections/04c-reencoding.tex:211,219 -- measured null 95th percentile +0.109"
+ },
+ "panel_a_as_scored": {
+  "train": {
+   "value_drawn": 0.9555005636354709,
+   "value_printed_in_figure": 0.956,
+   "value_printed_in_thesis": 0.956,
+   "n_conditions": 300
+  },
+  "unseen_combo": {
+   "value_drawn": 0.823719688195642,
+   "value_printed_in_figure": 0.824,
+   "value_printed_in_thesis": 0.824,
+   "n_conditions": 895
+  },
+  "unseen_drug": {
+   "value_drawn": 0.8364771344172793,
+   "value_printed_in_figure": 0.836,
+   "value_printed_in_thesis": 0.836,
+   "n_conditions": 199
+  }
+ },
+ "panel_a_spread": {
+  "value_drawn": 0.13178087543982886,
+  "value_printed_in_figure": 0.132,
+  "value_printed_in_thesis": 0.132
+ },
+ "panel_b_training_line_imposed": {
+  "train": {
+   "value_drawn": 0.9553901784064045,
+   "value_printed_in_figure": 0.955,
+   "value_printed_in_thesis": 0.955,
+   "n_conditions_kept": 299,
+   "n_conditions_before": 300,
+   "reconstructed": true
+  },
+  "unseen_combo": {
+   "value_drawn": 0.9605587337611011,
+   "value_printed_in_figure": 0.961,
+   "value_printed_in_thesis": 0.961,
+   "n_conditions_kept": 394,
+   "n_conditions_before": 895,
+   "reconstructed": true
+  },
+  "unseen_drug": {
+   "value_drawn": 0.9597733688273701,
+   "value_printed_in_figure": 0.96,
+   "value_printed_in_thesis": 0.96,
+   "n_conditions_kept": 111,
+   "n_conditions_before": 199,
+   "reconstructed": true
+  }
+ },
+ "panel_b_spread": {
+  "value_printed_in_figure": 0.006,
+  "value_printed_in_thesis": 0.006,
+  "value_reconstructed_raw": 0.0051685553546966245,
+  "reconstructed": true
+ },
+ "not_drawn": {
+  "n_conditions_panel_b": "The kept counts {'train': 299, 'unseen_combo': 394, 'unseen_drug': 111} are a reconstruction and are not printed in the figure or caption. coda_errata/ERRATA.md:2368 quotes '499 of 895' discarded on unseen_combo, i.e. 396 kept, against 394 here; the two differ by the two conditions sitting between 0.1086 and 0.109.",
+  "chance_line": "0.50 is off the truncated scale. It is marked at the foot of a broken axis rather than drawn as a rule."
+ },
+ "discrepancies": [
+  {
+   "what": "right-panel spread",
+   "thesis_text": 0.006,
+   "reconstructed_raw": 0.0051685553546966245,
+   "reconstructed_rounded": 0.005,
+   "explanation": "0.006 is max(rounded) - min(rounded) = 0.961 - 0.955. The raw spread is 0.00517, i.e. 0.005. The left panel's 0.132 is by contrast the raw 0.13178 rounded, so the two panels quote their spreads under different conventions.",
+   "drawn_in_figure": 0.006,
+   "why_that_choice": "The figure prints what Sections/05-Limitations.tex:189 and 243 and Sections/04c-reencoding.tex:844 already state. Changing it would put the figure at odds with three places in the prose. Reported upward rather than resolved here."
+  }
+ ]
+}

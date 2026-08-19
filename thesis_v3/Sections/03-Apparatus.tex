@@ -1,0 +1,526 @@
+% 03-Apparatus.tex <- v1 sec:methods-data. Numbers verbatim from v1.
+% NO claim block: the absence is structural.
+
+\chapter{The atlas, the model and the rules of measurement}
+\label{sec:methods-data}
+\framedecl{ER}
+
+\begin{question}
+What has to be settled before a score on this atlas means anything? Four
+things. What is measured, on what population, against what reference, with what
+uncertainty. Tahoe answers none by convention, so each is settled below by a
+measurement, and each narrows a claim later.
+\end{question}
+
+\section{The panel is a budget, not a biology}
+
+Tahoe-100M~\cite{tahoe100m} holds drug-treated single-cell transcriptomes across
+cancer cell lines, with plate-matched DMSO controls. Metadata supplies cell line
+(Cellosaurus ID), drug, dose (\texttt{drugname\_drugconc}), plate, and a
+fine-grained mechanism-of-action annotation (\texttt{moa-fine}), six fields that
+are the whole of what any prompt below can carry.
+
+All analysis is restricted to the $G = 946$ genes in the intersection of the
+L1000 landmark set~\cite{l1000} with Tahoe's measured genes, library-normalised
+to counts per $10{,}000$ and transformed as $\log_{10}(1 + x)$. The restriction
+is a budget choice, not a biological one: the context is $8192$ tokens and a
+prompt carries an instruction line and two cell sentences, so the transcriptome
+does not fit. Normalisation multiplies every gene in a cell by one constant and
+the logarithm is monotone, so within a cell the ordering, and therefore the
+sentence, is invariant to both.
+
+\paragraph{What it does change} Everything downstream of a single cell. Scaling
+by library size improves comparability across cells of different depth,
+but the profiles remain compositional, not absolute, so pseudobulk means, the
+drug-specific residual, and every cosine and Euclidean quantity built on them
+depend on the normalisation even though the sentences do not. Depth also shapes
+which genes are detected, though never their order.
+
+\section{Only abundance checks gene identity}
+
+Tahoe's per-cell \texttt{genes} field holds vocabulary token identifiers, not
+positional indices into the gene metadata table. Mapping them positionally
+scrambles gene identity quietly; the values exceed the metadata row count, so
+the error surfaces only as an out-of-bounds index at the tail. All expression
+construction here maps \texttt{gene\_metadata['token\_id']} to gene symbol to
+panel index.
+
+The obvious check cannot fail. Permuting the panel's columns is an orthogonal
+transform of the row space, so distances, principal components and accuracy are
+preserved exactly, and a PCA cell-line probe returns $0.864$ against a chance
+rate of $0.02$ on the correct panel and $0.864$ on a scrambled one. What
+discriminates is abundance, a property of the gene and not of the panel.
+\texttt{GAPDH} is the most abundant of the $946$ genes and \texttt{RPS6} the
+second, and across the canonical high-expressors the median abundance rank is
+$19.5$, against $473.5$ expected under a permuted index ($p = 0.00015$,
+$20{,}000$ draws; \texttt{gene\_identity\_check.py}). The probe that survives
+the permutation is the probe that cannot detect it.
+
+\section{Every treatment sits in one well}
+
+Tahoe applies one drug at one dose to one \emph{well} holding roughly $49$ cell
+lines. This project's cache spans more plates than the three its scored
+conditions fall on (\texttt{plate4}, \texttt{plate5}, \texttt{plate6}), and
+holds $289$ treated wells, a mean of $48.6$ cell lines each (median $49$, range
+$43$--$50$), with $286$ of $287$ distinct (drug, dose) treatments occurring in
+exactly one well.
+
+Those figures describe this cache, not the atlas: Tahoe includes further plates,
+among them a replication plate, so ``one well'' below means one well
+\emph{here}. The single exception, one treatment spread over three wells, is
+also the whole of the cross-plate structure at condition level, and it accounts
+for the $49$ (drug, dose, cell line) groups the unit audit finds on more than
+one plate. Every other condition on more than one plate differs in dose, and
+each drug is assayed on its own plate or plates with plate-matched controls.
+
+\paragraph{Three consequences} Conditions from one well share a physical
+assignment, so they are not independent (\cref{sec:apparatus-clusters}); drug
+and plate are partially confounded, so discrimination is measured within plate
+(\cref{sec:res-blind}); and a (drug, cell line) pair cannot be held out cleanly
+(\cref{sec:methods-holdout}). \cref{fig:confound} draws the three in that
+order.
+
+\begin{figure}[htbp]
+\centering
+\input{figs/confound}
+\caption[The well is the unit the atlas actually assigns]{\textbf{One
+assignment, many conditions.} The roughly $49$ conditions from one well share
+an assignment and a batch (a). Each drug is assayed on its own plate or plates,
+so a drug contrast across plates is also a plate contrast (b). Removing a (drug,
+cell line) pair leaves its well in training through the other $\approx 48$ lines
+(c). Squares are conditions, twelve per well for legibility.}
+\label{fig:confound}
+\end{figure}
+
+\begin{defn}{Condition, treated well, batch unit}
+A \emph{condition} is a (drug, cell line, plate, dose) tuple, and it is the unit
+everything below is scored at. The physical assignment is the \emph{treated
+well}, so a condition sits inside an assignment and is not one. Plates are
+numbered within cell line, not globally, so the batch unit is the pair (cell
+line, plate), never the plate label alone. A \emph{pseudobulk} is a group's mean
+expression profile; a \emph{control pseudobulk} is the same over plate-matched
+DMSO cells.
+\end{defn}
+
+Dose is a molar concentration resolved from \texttt{drugname\_drugconc}; an
+earlier pipeline kept only the numeric part, which collides $1\,\mu$M with
+$1\,$nM. An audit of all $289$ treated wells found $289$ usable molar doses
+with zero unit collisions, so the defect was a demonstrated possibility that did
+not materialise. Combination treatments are dropped, not analysed as their first
+component.
+
+\begin{scopelimit}[carried into \cref{sec:methods-holdout} and \cref{sec:limitations}]
+A (drug, cell line) pair cannot be held out cleanly on this cache. Removing the
+pair removes one condition, and its well remains in training through the other
+$\approx 48$ lines. The residual arm therefore builds its own, larger holdout.
+\end{scopelimit}
+
+\section{Barely half the atlas is identifiable}
+
+\cref{tab:scale} states the quantities every $n$ in the investigation should be
+located against. One symbol in it runs ahead of its
+derivation.\seealso{\cref{sec:res-metrics} derives $\NIR$ and audits its chance
+level with empirical control arms.} $\NIR$, the normalised inverse rank, is the
+fraction of a declared comparison set whose truth a prediction resembles less
+than its own, so chance is $0.50$ under the exchangeability condition of
+\cref{sec:res-metrics}.
+
+\begin{scopelimit}[carried into \cref{sec:res-blind} and \cref{sec:res-encoding}]
+Two populations are used and they are not interchangeable. The broad
+characterisation (\cref{sec:res-blind}) streams a wide sample of the atlas, over
+more plates and drugs than cached, so the drug and condition counts in its block
+of \cref{tab:scale} count that sample, not the cache. The residual arm
+(\cref{sec:res-encoding} onward) works from a smaller cached subset. A count
+from one block does not bound a count in the other.
+\end{scopelimit}
+
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{The populations behind every $n$ quoted in the investigation.}
+The upper block is a streamed sample of the atlas; the lower two are the cache
+built once and reused.}
+\label{tab:scale}
+\small
+\centering
+\begin{tabular}{p{0.64\linewidth}r}
+\toprule
+\multicolumn{2}{l}{\thead{Task characterisation} (streamed sample)} \\
+\midrule
+conditions characterised & \num{6628} \\
+\hangindent1em\hangafter0 of which statistically active against DMSO & 3,647 / 5,014 (72.7\%) \\
+\hangindent1em\hangafter0 empirically identifiable at the tested pseudobulk budget (own within-plate
+  split-half $\NIR \geq 0.8$) & 3,064 (46.2\%) \\
+\hangindent1em\hangafter0 with a plate-mate closer than their own split-half & 78.7\% \\
+median cells per condition & 44 \\
+median \#DEGs per condition (BH $q<0.05$) & 0 \\
+median SNR (effect $\div$ within-well split-half noise) & 0.75 \\
+drugs with a real dose series & 218 / 351 (62.1\%) \\
+drugs seen in $\geq 3$ cell lines & 227 \\
+\midrule
+\multicolumn{2}{l}{\thead{Residual-frame cache} (rebuilt targets,
+  \cref{sec:methods-residual})} \\
+\midrule
+cells (treated / control) & 620,564 (600,000 / 20,564) \\
+(cell line, plate) groups behind scored conditions & 119 \\
+drugs / cell lines & 106 / 50 \\
+conditions with $\geq40$ treated and $\geq20$ control cells & 6,617 \\
+\hangindent1em\hangafter0 by split after inventory filters (train / held-out wells / held-out drugs)
+  & 4,999 / 900 / 711 \\
+\hangindent1em\hangafter0 retained by the data-resolved reliability line & 2,523 of 4,999 train
+  (50.5\%) \\
+training examples / well-held-out validation examples & 147,710 / 3,600 \\
+\midrule
+\multicolumn{2}{l}{\thead{Evaluation sets}} \\
+\midrule
+tier 1 (seen conditions) / tier 2 (unseen drugs) / tier 3 (unseen combinations)
+  & 4,325 / 2,188 / 99 \\
+conditions scored per tier, generation evaluations & 400 \\
+\raggedright tier-2 conditions in the expression-frame $\NIR$ benchmark
+  (within plate) & 606 \\
+conditions scored in the residual-frame evaluation & 1,394 \\
+\hangindent1em\hangafter0 by split (train / \texttt{unseen\_combo} / \texttt{unseen\_drug})
+  & 300 / \needsaudit{895} / 199 \\
+\hangindent1em\hangafter0 treated wells behind them (no well spans two splits) & 136 / 36 / 28 \\
+\hangindent1em\hangafter0 drugs per split (90 distinct in total) & 76 / 34 / 10 \\
+\hangindent1em\hangafter0 cell lines per split (42 distinct in total) & 39 / 42 / 40 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The $72.7\%$ figure is over the $5{,}014$ conditions whose (cell line,
+plate) group carries plate-matched DMSO cells, not all $6{,}628$.
+\item The identifiability bar is per-condition, distinct from the aggregate
+ceilings of \cref{tab:ceilings}.
+\item The \texttt{unseen\_combo} count is flagged pending a cluster rerun; no
+argument turns on its exact value.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+\paragraph{The upper block is a result} It describes Tahoe-100M, not this
+project. Across the $5{,}014$ control-reachable conditions the median has no
+differentially expressed gene at BH $q<0.05$ and a signal-to-noise ratio of
+$0.75$ against its own within-well split-half noise, while $72.7\%$ are active
+on the whole profile, leaving $27.3\%$ statistically inert. A per-gene test is
+far harsher, and $27.3\%$ alone would make the atlas sound better resolved than
+it is. The typical condition carries a real response
+measured with too few cells, and not no response (\cref{sec:res-blind}).
+
+The identifiability bar is per-condition: a condition's own split-half $\NIR$
+against its plate-mates has to clear $0.8$. Of the $6{,}628$ conditions,
+$46.2\%$ clear it, and $78.7\%$ have a plate-mate lying closer to them than
+their own second half does. Identifiability is a property of the pairing, not of
+the drug: over the $227$ drugs assayed in at least three cell lines, the median
+drug's split-half reference spans $0.83$ between its most and least identifiable
+context (\texttt{drug\_biology\_atlas.json}). A benchmark omitting those figures
+quotes accuracies over a population barely half of which is empirically
+identifiable at the tested pseudobulk budget, and a per-drug leaderboard on it
+ranks pairings.
+
+% The term is first used in tab:scale above, inside a float, where a marginpar
+% cannot be set. This is its first prose use and the chapter's definition point,
+% per the \gloss convention (definition at first use in each chapter). Wording
+% is the one 05-Limitations.tex already uses, so the two agree word for word.
+\paragraph{A filter this table does not total} The middle block records
+$2{,}523$ of $4{,}999$ training conditions as \emph{retained by the
+data-resolved reliability line},\gloss{reliability line}{The half-split cosine
+threshold above which a condition's residual counts as reproducible.} which
+\cref{sec:methods-residual} resolves from the data and applies to the training
+split alone. It does not state the pool
+once the held-out splits join that filtered set. The channel gate of
+\cref{sec:res-scope} later scores \needsaudit[the retained pool]{4{,}131}
+retained conditions; a cluster rerun settles whether that is this table's
+three-way tally under another name, and no figure here depends on it.
+
+The three tiers of the last block are defined by what training contained.
+\emph{Tier 1} holds conditions whose (drug, cell line) pairing was
+seen in training, so it measures fit and not generalisation. \emph{Tier 2} holds
+conditions whose drug never appeared, Leave-Drugs-Out in the vocabulary of
+\cref{sec:lit-dreval}. \emph{Tier 3} holds pairings whose drug and cell line
+were each seen but never together, Leave-Pairs-Out; it is small ($99$
+conditions) and is reported only where adequately powered. The residual arm
+builds its own, larger holdout instead: \cref{sec:apparatus-vocab} names its
+three splits, and \cref{sec:methods-holdout} settles the unit they are keyed
+at.
+
+\section{The backbone has seen no perturbation}
+
+A cell is written as a \emph{cell sentence}, its expressed panel genes in
+descending order, terminated by \ENDCELL. The prompt supplies cell line, drug,
+dose, mechanism and the control cell's sentence; what the model must produce is
+the treated cell's. \ENDCELL{} and (for the residual arm) \DOWN{} are registered
+as atomic special tokens; unregistered, \DOWN{} splits into sub-words and the
+up/down boundary stops being a clean symbol.
+
+The backbone is \texttt{C2S-Scale-Pythia-1b-pt}~\cite{c2sscale}, a C2S-Scale
+checkpoint on the Pythia-1b decoder~\cite{pythia}, cold-started for every arm
+from the same base checkpoint with identical hyperparameters (1 epoch, learning
+rate $10^{-5}$, gradient accumulation 16, maximum length 8192,
+bf16).\seealso{\cref{sec:appendix} tabulates the training arms.} Cold-starting
+makes the arms comparable; the training target or objective is the only
+variable.
+
+\paragraph{What the checkpoint has seen} It is pretrained on over 50 million
+human and mouse cells from 825 single-cell datasets in CELLxGENE and the Human
+Cell Atlas, an atlas corpus with no chemical or genetic perturbation data. Its
+model card lists cell and tissue prediction, conditioned generation and gene-set
+conversion, but not perturbation prediction. The base model arrives at
+fine-tuning here having never seen a drug-treated cell.
+
+\paragraph{Two channels stay open} The decoder underneath is Pythia-1b,
+pretrained on text in which drug names, targets and mechanisms occur, and every
+prompt supplies the drug's \texttt{moa-fine} annotation. A drug the fine-tuning
+never saw is not a drug the system knows nothing about.
+
+\begin{scopelimit}[carried into \cref{sec:res-scope} and \cref{sec:limitations}]
+``Held out'' therefore means held out from Tahoe fine-tuning, with mechanism
+supplied, and every unseen-drug result below is read under that narrower scope.
+\end{scopelimit}
+
+\section{The generic replaces the target}
+\label{sec:apparatus-vocab}
+
+Two \emph{measurement frames} run through the investigation and are never
+interchangeable (\cref{fig:frames}): the \emph{expression frame} scores a
+predicted cell profile against other drugs on the same plate, the
+\emph{residual frame} (\cref{sec:methods-residual}) scores the drug-specific
+residual against other drugs in the same cell line. Both put chance at $0.50$. The
+\emph{comparison set} $J$, the conditions a prediction is ranked against, is
+what fixes it there, and it is declared at every score below. A score without
+its comparison set is not a score. The \emph{similarity} $\sigma$, the function
+by which a prediction is judged closer to one truth than to another, separates
+the frames in the same way, and it follows neither from the scored object nor
+from the comparison set: a negated Euclidean distance on decoded expression in
+the expression frame, a cosine on the signed rank-discounted residual in the
+residual frame, the two instances \cref{tab:sigma} fixes with their comparison
+sets. A score without its similarity is not a score either, and both are to be
+declared before a number is read.
+
+\input{figs/frames}
+
+\begin{defn}{The generic and the residual target}
+The \emph{generic} is the drug-agnostic mean response subtracted to form the
+residual, operationally the mean shift over the other drugs at the stated scope,
+conventionally read as the stress and cell-cycle programme common to all
+drugs --- a reading used for intuition and nowhere tested. The
+\emph{residual target} is what remains. It is built \emph{split-before-fit}
+(holdout fixed from metadata before any statistic is estimated) and
+\emph{leave-one-drug-out} (no condition's generic contains its own drug). The \emph{scope}, \texttt{cell\_line} or \texttt{plate}, is the set
+of drugs the mean is taken over.
+\end{defn}
+
+% 39.0% is main.scope.generic_energy_share = 0.38993 from
+% figs/04c-residual-energy.json, i.e. ||g||^2 / ||s||^2 under shared/inference.py
+% :: energy_shares. Nothing is centred there, so this is a share of a squared
+% Euclidean norm and not a variance; the function's "variance decomposition"
+% docstring is a misnomer. Term defined at \glentry{$\lVert\cdot\rVert$} in
+% 00-HowToRead.tex; 01-Introduction.tex:291 and 04c-reencoding.tex:293 carry the
+% same number and must keep the same wording.
+The generic carries $39.0\%$ of the perturbation shift's squared norm
+(\cref{sec:res-transfer}), so subtracting it does not clean the target up but
+replaces it: every residual-frame number is a score on what is left.
+
+\paragraph{Baselines and splits} \emph{Control-copy} predicts the untreated cell
+unchanged; carrying zero drug information, it is the floor a drug-aware model
+has to clear. The residual arm's split has three parts,
+\texttt{train}, \texttt{unseen\_combo} (an unseen \emph{well} of a seen drug)
+and \texttt{unseen\_drug}, sampled under an explicit per-split \emph{quota},
+because a uniform draw reproduces the pool's proportions and starves the
+held-out splits (\cref{sec:methods-holdout}). Five training \emph{arms} differ
+only in target or objective; where a claim is multiplicity corrected, the family
+is those five by up to seven depths.
+
+\section{One estimator, and not a replicate}
+
+Almost every negative result below is stated as a distance from a
+\emph{ceiling}. The word names one estimator, not seven.
+
+\begin{defn}{Within-well split-half precision reference}
+The score obtained when a disjoint cell subset of the same treated well is
+substituted for the prediction, recomputed for every stratum scored, so its
+value moves with the stratum. It is not a replicate ceiling. What varies across
+the rows of \cref{tab:ceilings} is the frame, the comparison set and the cell
+budget, never the estimator.
+\end{defn}
+
+Two properties limit how the ceilings read. First, they are \emph{split-half}
+estimates and not biological replicates, because this cache places $286$ of
+$287$ treatments in exactly one well. Second, a split-half ceiling estimates
+within-well sampling precision, which is optimistic relative to true biological
+reproducibility, and every coverage figure in \cref{sec:res-lookup} inherits
+that optimism.
+
+\paragraph{The one exception} One ceiling is not that estimator and not a row in
+\cref{tab:ceilings}. The positive control inside the expression-frame $\DRF$
+audit of \cref{sec:res-metrics} is a denoised interpolated duplicate, not a raw
+split-half, and that section turns on the difference.
+
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{One estimator, seven settings.} Every ``ceiling'' here is a
+within-well split-half precision reference, the score of a disjoint subset of
+the same treated well's cells. They differ in frame, comparison set, cell budget
+and split contents.}
+\label{tab:ceilings}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.18\linewidth}
+  >{\raggedright\arraybackslash}p{0.27\linewidth}
+  >{\raggedright\arraybackslash}p{0.24\linewidth}X@{}}
+\toprule
+\thead{Ceiling} & \thead{Frame and metric} & \thead{Comparison set and budget}
+  & \thead{Where used} \\
+\midrule
+$0.76$ & expression, $\DEdr$ & two real cells & metric audit
+  (\cref{sec:res-metrics}) \\
+$0.625$ / $0.575$ & expression, $\NIR$ (negated Euclidean on decoded expression)
+  & leak audit; cross-plate / within plate
+  & plate leak (\cref{sec:res-blind}) \\
+$0.67$--$0.83$ & expression, forced choice & within plate, by cell budget
+  & \cref{sec:res-blind} \\
+$0.576$ & expression, $\NIR$ (negated Euclidean on decoded expression)
+  & within plate, tier 2 & the blindness verdict \\
+$0.61$ / $0.76$ / $0.85$ & expression, $\NIR$ (negated Euclidean on raw
+  pseudobulk, undecoded) & \emph{cross-plate};
+  $10$/$40$/$120$ cells & identifiability curve \\
+$0.956$/$0.824$/$0.836$ & residual, $\NIR$ (cosine on the signed rank-discounted
+  residual) & within cell line;
+  train/combo/drug & \cref{sec:res-lookup} \\
+$0.742$ / $0.7432$ & retrieval, negated Euclidean on undecoded log-expression
+  & within condition, split-half
+  & \cref{sec:methods-residual} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The $\DRF$ positive control of \cref{sec:res-metrics} is the
+investigation's one exception and is not a row here.
+\item None of these is a biological replicate ($286$ of $287$ treatments sit in
+a single well).
+\item In the residual frame the raw reference is not constant across splits (a
+spread of $0.132$), but that spread is an artefact of how the splits were
+filtered and not a difference in recoverable signal; matched at the training
+reliability line the three agree to $0.006$ (\cref{sec:limitations}).
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+\begin{scopelimit}[carried into \cref{sec:res-lookup} and \cref{sec:limitations}]
+A distance to the reference is comparable within a split and not between them,
+because the splits are scored on populations selected by different rules. And
+because the reference is a sampling-precision estimate and not a biological
+replicate, every coverage figure computed against it is a distance to an
+optimistic bar by an unknown amount. Where one is quoted, the ordering carries
+the claim.
+\end{scopelimit}
+
+\section{Two crossed dependencies, not one}
+\label{sec:apparatus-clusters}
+
+Two rules apply to every result below, plus one statement of provisionality.
+Conditions are not independent, and not independent in two crossed ways at once
+(\cref{fig:clustering}): two from one treated well share a physical assignment
+and a batch, two from one cell line share the biology. Treating them as
+independent gives intervals about $1.5$ times too narrow on the scramble
+strata and $1.7$ to $2.5$ times too narrow on the contrasts against the lookup
+baselines. Clustering on the assignment unit alone uses the larger cluster
+count ($289$ wells against $\approx 50$ lines) and would tighten every interval
+while sounding more rigorous. That is the failure the estimator below avoids.
+
+\input{figs/clustering}
+
+Every interval on a \emph{mean} is therefore two-way cluster-robust
+(Cameron--Gelbach--Miller),
+\begin{equation}
+ V \;=\; V_{\textrm{line}} \;+\; V_{\textrm{well}} \;-\; V_{\textrm{intersection}},
+\end{equation}
+where the intersection of the two groupings is the single condition, so
+$V_{\textrm{intersection}}$ is the ordinary independent-sampling variance. When
+it goes non-positive in a finite sample, the wider one-way variance is used and
+the branch recorded. The formula above is valid only where the two groupings
+genuinely cross, which cell line and well do: a treated well spans
+$\approx 49$ cell lines and a cell line recurs across wells. Drug and well do
+\emph{not} cross, because one drug is assigned per well and wells therefore nest
+strictly inside drugs. Where an interval is reported on the drug axis the
+estimator tests the two groupings for nesting first and, finding it, clusters
+one-way on the drug rather than applying the expression above to a nested pair;
+the branch taken is recorded beside the interval. Reading ``two-way'' as
+``the equation above was applied to drug and well'' would therefore be wrong.
+It is asymptotic in clusters, so the reference distribution
+is Student's $t$ with one fewer degree of freedom than the smaller cluster
+count. The \texttt{unseen\_drug} arm shows what that costs: \cref{tab:scale}
+puts $199$ scored conditions behind it, drawn from $28$ treated wells and $40$
+cell lines, so the smaller cluster count is the $28$ wells, the reference is
+$t_{27}$ and not the normal, and the interval widens by $4.7\%$.
+
+For statistics over pairs of conditions, such as the transfer coefficient,
+neither grouping partitions the pairs, so those intervals use the
+Fafchamps--Gubert dyadic estimator, under which two pairs are dependent when
+they share either member.
+
+Throughout, an estimate is quoted as value [lower, upper], a two-way
+cluster-robust $95\%$ interval unless stated otherwise. DrEval~\cite{dreval}
+identifies the same structure more broadly, citing Hurlbert~\cite{hurlbert}:
+hundreds of thousands of cells resolving to a few hundred conditions over $50$
+cell lines.
+
+\section{The generation budget is part of the claim}
+
+The second rule concerns generation validity. The budget is a claim-level
+variable, not a runtime setting.
+
+A $600$-token cap truncated $26\%$ of predictions in an early run, silently,
+because nothing measured them. A prediction cut at the cap never reaches \DOWN{}
+and is scored with its whole down-block missing, and no completion rate was
+quoted beside the score.
+
+\paragraph{What it cost} The optimal-transport arm of
+\cref{sec:res-epsilon}, scored at that cap, gave a gap of
+\ci{+0.0144}{-0.0051}{+0.0338} against its geometry-defined \texttt{orth}
+partner, whose observed score is near chance. That interval spanned zero and the
+arm was printed as inert.\corrmark{The printed negative is retracted in
+\cref{sec:res-encoding}, in full and where it was made.} Re-run at the $1400$
+tokens the residual arm had, it gives \ci{+0.0292}{+0.0144}{+0.0441}, and the
+negative had to be withdrawn (\cref{sec:res-encoding}). The same cap had already
+halved the residual arm's own effect. Wherever a paired comparison is scored on
+variable-length predictions, then, the token budget is part of the claim, and a
+null quoted without its budget cannot be read.
+
+\paragraph{The rule that follows} Every generation-based evaluation computes the
+\ENDCELL{}/\DOWN{} completion rate, the fraction of emitted symbols that are
+valid panel genes, and the duplicate rate before any score is read from it, and
+no score below comes from a run whose validity block was not inspected.
+
+The intervals do not cover the generation configuration. Sampling is at
+temperature $0.8$ with top-$p$ $0.9$ throughout, over four budgets: $1200$
+tokens with eight predictions per condition in the expression-frame evaluations
+feeding \cref{sec:res-blind} and \cref{tab:epsilon}; $1400$ with four in the
+residual-frame evaluations of \cref{sec:res-encoding}; $600$ with four in the
+control arms until re-run at the residual arm's budget; and $3800$ for output
+invariance, which compares whole predictions and is not truncated to a scoring
+panel. Where a null turns on its budget the budget is named there, and every
+contrast uses a fixed per-(condition, arm) seed.
+
+% PLACEMENT: at the previous setting this box split across the chapter's last
+% page break, carrying two lines onto a page that is otherwise almost empty.
+% The box is ~9 lines; ask for enough room to keep it whole.
+\needspace{10\baselineskip}
+\begin{scopelimit}[carried into every residual-frame number below]
+Every residual-frame number comes from one generation run and its companion
+audits (\texttt{re\_v3} with the scramble-stratum audit, the matched variance
+decomposition, the two calibration runs and the channel gate). Numbers from the
+two earlier runs are not reconciled with these and are not quoted, except where
+a superseded estimate is named as such and the conclusion drawn from it
+withdrawn, because between runs the sign of several estimates changed and not
+only their magnitude.
+\end{scopelimit}
+
+Two components carried defects found after that run and have since been repaired
+and re-run, the $\DRF$ calibration bootstrap (\cref{sec:res-metrics}, both arms)
+and the channel-gate partner pool (\cref{sec:res-scope}); both are reported on
+the corrected runs.
+
+That is the apparatus. It settles what is measured, on what population, against
+what reference and with what uncertainty, and reaches no verdict about the
+model.

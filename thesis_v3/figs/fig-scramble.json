@@ -1,0 +1,114 @@
+{
+  "figure": "fig-scramble",
+  "source": "thesis_v2/figs/fig-scramble.tex",
+  "label": "fig:scramble",
+  "input_by": "thesis_v2/Sections/04a-ruler.tex:497  (was \\input{../thesis/figs/fig-scramble}, now \\input{figs/fig-scramble})",
+  "kind": "tikz schematic",
+  "data_dependency": "none",
+  "note": "Nothing in this figure is measured. No value here comes from RESULTS_cluster and none is claimed to. This sibling JSON exists because every thesis_v2 figure writes one, so the figure and the prose beside it can be diffed. What is recorded below is (a) the one symbolic quantity the figure sets, (b) the literal strings it prints, and (c) the measured geometry, which is the thing that actually changed in the rebuild.",
+
+  "quantities_drawn": {
+    "count_of_numerals_printed": 0,
+    "symbolic_definition": {
+      "as_typeset": "\\gap = \\NIR_{\\text{real}} - \\NIR_{\\text{scrambled}}",
+      "renders_as": "Delta_scr = NIR_real - NIR_scrambled",
+      "macro_expansions": {
+        "\\gap": "\\Delta_{\\textrm{scr}}  (preamble.tex:431, commented 'model - scramble')",
+        "\\NIR": "\\textrm{NIR}  (preamble.tex:425, 'normalised inverse rank')"
+      },
+      "provenance": "definition, not measurement. Stated in Sections/04a-ruler.tex:484."
+    },
+    "literal_strings_printed": {
+      "cell_line_both_arms": "MCF7",
+      "drug_real_arm": "Lapatinib",
+      "mechanism_real_arm": "EGFR inhibitor",
+      "drug_scrambled_arm": "Vorinostat",
+      "mechanism_scrambled_arm": "HDAC inhibitor",
+      "control_cell_both_arms": "ACTB GAPDH ...",
+      "truth_node": "truth for Lapatinib / drawn once",
+      "provenance": "all six carried over verbatim from thesis/figs/fig-scramble.tex (v1). They are an illustrative prompt pair, not a sampled record. Not one of them is changed by this rebuild."
+    },
+    "shaded_spans": {
+      "count": 2,
+      "which": ["the Drug value", "the Mechanism value"],
+      "claim_the_shading_carries": "these two spans, and only these two, differ between the arms",
+      "verified_by_diffing_the_two_tabulars": "Cell line and Control cell rows are byte-identical between p1 and p2; Drug and Mechanism rows differ. 2 of 4 rows differ, as shaded."
+    },
+    "truths_drawn": 1
+  },
+
+  "agreement_with_text": {
+    "checked_against": "thesis_v2/Sections/04a-ruler.tex",
+    "line_484": "'control- and batch-derived leakage cancels in the scramble gap $\\gap = \\NIR_{\\textrm{model}} - \\NIR_{\\textrm{scramble}}$, the only difference in this chapter whose leakage cancels by construction'. The figure's closing line and its caption say the same thing in the same direction: real minus scrambled, leakage cancelling because the control cell is shared.",
+    "numeric_disagreements_found": "none -- the figure prints no numerals",
+    "nomenclature_note_REPORTED_NOT_SILENTLY_FIXED": "The text subscripts the difference model/scramble; the figure subscripts it real/scrambled. Same quantity, same sign, same order of operands; only the words under the subscript differ, and the figure's choice is the one consistent with its own two arm labels ('real prompt' / 'scrambled prompt'). This wording is inherited unchanged from v1 and was NOT altered here, because harmonising it would be a content edit outside the three layout changes commissioned. Flagged for a decision, not decided.",
+    "banned_term_check": "the string 'noise ceiling' does not occur in this figure, its caption, or its comments."
+  },
+
+  "geometry_measured_from_the_build": {
+    "units": "TeX pt (72.27/in) unless stated; measured with a \\path let ... \\pgfextra probe on the compiled tikzpicture, then removed from the shipped file",
+    "text_block_width_pt": 404.02913,
+    "text_block_width_mm": 142.0,
+    "drawn_width_pt": 404.02887,
+    "drawn_width_mm": 141.99991,
+    "fraction_of_measure": 0.9999994,
+    "drawn_height_pt": 194.93917,
+    "drawn_height_mm": 68.51,
+    "v1_drawn_width_pt": 289.4,
+    "v1_drawn_width_mm": 101.7,
+    "v1_fraction_of_v2_measure": 0.7163,
+    "latex_scaling_applied": "none -- no \\resizebox, no scale= key, no width= key. The width was gained by re-laying-out coordinates, so every type size below is the size that prints.",
+    "bounding_box_pt": {"x": [0.0, 404.02887], "y": [-186.9316, 8.00757]}
+  },
+
+  "layout_anchors_pt": {
+    "prompt_card_east_edge": 159.72006,
+    "prompt_card_outer_width_cm": 5.6,
+    "prompt_card_text_width_key_cm": 5.248,
+    "truth_node_west_edge": 342.97809,
+    "truth_node_east_edge": 404.02887,
+    "gap_between_card_and_truth_pt": 183.25803,
+    "hang_point_on_lower_connector": {"pos_along_curve": 0.42, "x": 253.37439, "y": -120.65112},
+    "tick_length_cm": 0.62,
+    "gap_definition_node_span_pt": [183.19652, 323.55226],
+    "gap_definition_clearance_left_pt": 23.47646,
+    "gap_definition_clearance_right_pt": 19.42583,
+    "closing_sentence_anchor_cm": [7.1, -6.0],
+    "closing_sentence_is_centred_on_the_measure": "7.1cm = 142.0mm / 2"
+  },
+
+  "type": {
+    "prompt_field_names_and_values": "\\ttfamily\\scriptsize (Inconsolata, 8pt)",
+    "arm_labels": "\\scriptsize (Pagella, 8pt), text=quietink",
+    "closing_sentence": "\\scriptsize (Pagella, 8pt), text=ink",
+    "gap_definition": "\\small (10.95pt) -- the document's caption size, \\captionsetup{font=small} at preamble.tex:585",
+    "truth_node": "\\small with 'drawn once' at \\scriptsize",
+    "why_the_closing_sentence_is_8pt_and_not_10pt": "measured: the sentence sets to 360.25pt at \\scriptsize and 450.31pt at \\footnotesize against a 404.03pt measure. 10pt does not fit on one line, and one unbroken line was the commissioned fix. 8pt matches the arm labels, so the figure has exactly two type tiers: apparatus at 8pt and the one quantity at caption size."
+  },
+
+  "ink": {
+    "rules_and_card_borders": "rulegrey #9A9A9A",
+    "card_fill": "rulegrey!8",
+    "truth_fill": "rulegrey!10",
+    "span_shading": "rulegrey!35  (v1 used black!14; same value, expressed in the page's own rule ink)",
+    "connectors_and_tick": "quietink #6B6B6B  (v1 used black!65)",
+    "arm_labels": "quietink #6B6B6B",
+    "closing_sentence": "ink #1A1A1A",
+    "accent_used": false,
+    "colour_carrying_information": "none -- the two shaded spans are distinguished by shading, which position cannot do; everything else is greyscale hierarchy"
+  },
+
+  "changes_from_v1": [
+    "(1) the closing sentence is one unbroken line. v1 split it across two centred nodes with a dashed arrow between them, so the reader crossed a rule mid-clause at 'so control- and batch-derived / leakage cancels'.",
+    "(2) the dashed arrow under the figure is deleted. It had no node at either end and implied no quantity.",
+    "(3) the \\gap definition hangs off the lower curved connector on a 0.62cm vertical tick instead of floating between the two connectors.",
+    "(4) width re-laid-out from 101.7mm to 142.0mm without scaling.",
+    "unchanged: both prompt cards, the shading on the Drug and Mechanism spans, the single shared truth, the caption (verbatim), the label."
+  ],
+
+  "verification": {
+    "standalone_harness": "thesis_v2/_scrambletest.tex -- compiles, 0 errors, 0 Overfull, 0 Underfull",
+    "in_document_build": "pdflatex main.tex -- exit 0, 0 errors, 0 Overfull. Figure numbers 4.4, prints on page 37 (PDF page 43), anchor paragraph on page 36.",
+    "v1_tree_untouched": "thesis/figs/fig-scramble.tex mtime 2026-08-06 21:12, unchanged; nothing was written under thesis/."
+  }
+}
