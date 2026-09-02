@@ -1,0 +1,376 @@
+% ===========================================================================
+% 01-Introduction.tex  <- thesis/Sections/Introduction.tex
+%
+% SCOPE, per the skeleton and the brief: the problem, the object of study, the
+% four questions, the win condition, and a map of the argument. v1's
+% introduction also rehearsed most of the chapter-4 results; those are cut,
+% because a result stated before the reader knows what would count as a good
+% one is not an introduction to it. Every number kept below appears in v1 with
+% the same value, and none is added. No \needsaudit flags: this chapter touches
+% none of the three audited quantities.
+%
+% REBUILT. Three structural changes, all deliberate:
+%
+% (1) The chapter-level \begin{question} box is GONE. A framed panel standing
+%     before the first sentence of the thesis asked the reader to parse an
+%     instrument before they had the problem. Its three loads are redistributed
+%     into the running argument: the retrieval test lands in sec:intro-question
+%     where the metric is defined, the "bar is a lookup, not chance" and the
+%     verdict land in sec:intro-bar where the lookup is built. The opening is
+%     now two paragraphs of prose. This chapter has no opener box by design; do
+%     not restore one.
+%
+% (2) The run-in \paragraph heads are down from fifteen to one. The chapter
+%     read as an outline that had been filled in. Each section is now one or
+%     two movements that carry the reader forward without a head to re-orient
+%     them every eighty words.
+%
+% (3) sec:intro-map now comes FIRST of the three closing sections. The four
+%     questions are the spine of the investigation and must be stated before
+%     either instrument that judges them. sec:intro-question follows, so that
+%     NIR arrives as the answer to the second half of question one ("which
+%     metrics survive that control") rather than as a settled premise the
+%     reader is asked to accept three pages before the chapter asks whether the
+%     ruler can be trusted. sec:intro-bar stays last: the lookup is not one of
+%     the four questions, it is the bar the re-encoded arm fails to clear, so
+%     it closes the chapter with the win condition, the verdict and the map.
+%     All three labels are unchanged. sec:intro-question and sec:intro-bar are
+%     \cref'd only from inside this chapter; sec:intro-map is \cref'd from
+%     04b-representation.tex:7,31, and moving it earlier only renumbers it.
+%
+% The four questions themselves are the research arc, each arising from the
+% answer to the one before: broken ruler -> drug-blind on the repaired one ->
+% why (data, representation, or readout) -> does re-encoding the target repair
+% it. v1's fourth question was the lookup baseline; that is the judge of the
+% fourth answer, not a fifth line of enquiry, and it has been re-sited.
+%
+% RESTORED after the cutting pass, in the robustness paragraph that closes
+% sec:intro-bar: the list of what a backbone replication must preserve (split,
+% targets, sentinels, token budgets, within-plate galleries, training-only
+% lookups, validity and completion checks), verbatim from v1. That paragraph
+% used to carry the run-in head "What survives the changes", which presupposed
+% changes the chapter had never named; the head is gone and the four changes
+% are now introduced before they are listed. Without the list the chapter said
+% that scale is untested but no longer said what would make a scale test valid,
+% which is
+% the auditable half of the claim. The same cut had orphaned "It leaves an
+% auditable ladder" -- the pronoun read as the untested backbone; v1's "This
+% thesis does not supply that replication, but it leaves..." is back.
+%
+% The last paragraph carries the forward pointer to the reference apparatus,
+% which main.tex moved to the back. It cites \nameref{sec:howtoread}, the label
+% on the "Reference apparatus" chapter opener in 00-HowToRead.tex. \nameref and
+% not \cref because that opener is \chapter*, i.e. uncounted. The two
+% sentence-initial references in that paragraph are \Cref, not \cref: the
+% run-in \paragraph head ends in a period, so "Chapter 2 places..." opens a
+% sentence. v1 had "Section~\ref{...}" there and read "Section 2 places...";
+% the port to cleveref lost the capital and set "chapter 2 places...".
+%
+% TERMINOLOGY, sec:intro-bar, the three decomposition figures: the shares are
+% SQUARED EUCLIDEAN NORMS, not variances, and the prose now says so. Nothing is
+% centred anywhere in the computation, so ||s||^2 is a sum of squares about the
+% origin. The source of the old wording is a misnomer: inference.energy_shares
+% is docstringed "Exact variance decomposition" while computing ||r||^2/||s||^2
+% with no mean subtracted. Do not restore "energy" here on the strength of that
+% docstring. See \glentry{$\lVert\cdot\rVert$} in 00-HowToRead.tex, which fixes
+% L2 for the document and forecloses the variance reading.
+%
+% All three numbers trace to RESULTS_cluster/vardecomp_matched.json, main.scope:
+% residual_energy_share 0.6211 -> 62.1%, generic_energy_share 0.3899 -> 39.0%,
+% cross_energy_share -0.01106 -> -0.011; energy_shares_sum is 1.0 to 9 places,
+% which is what "closing the arithmetic" means. The JSON keys keep the old name
+% and are NOT renamed by this pass -- they are a data contract, and renaming
+% them would strand build_thesis_assets.py:62,66, which reads those paths.
+%
+% One caveat the sentence does not carry, and deliberately: each share is a
+% MEAN OVER CONDITIONS of a per-condition ratio (variance_decomposition.py:634,
+% np.mean(rn**2 / s2)), not the decomposition of one pooled shift vector. "Its"
+% therefore reads a little tighter than the estimator warrants. The glossary
+% entry states the mean-over-conditions caveat once, for the whole document,
+% which is the right place for it; do not expand this sentence to repeat it.
+%
+% One line-breaking hint, no words: the checkpoint name carries \allowbreak
+% after "Pythia-" as well as after "C2S-Scale-". The single break point was
+% not usable -- taking it left ~105pt to stretch, worse than tolerance -- so
+% TeX preferred a 27.5pt overfull line. Breaking after "Pythia-" leaves ~7pt.
+% ===========================================================================
+
+\chapter{Introduction}
+\label{sec:introduction}
+\framedecl{ER}
+
+\noindent
+Give a model an untreated cell and the name of a drug, and ask it what that
+drug will do to that cell. That is the task this thesis evaluates. It is worth
+answering because the answer is otherwise obtainable only by running the
+experiment.
+
+The thesis takes one published cell-sentence checkpoint, fine-tunes it on a
+hundred-million-cell drug atlas, and asks whether the predictions it produces
+identify the drug that produced them. They do not. Most of what follows is the
+apparatus that makes that a finding and not an anecdote: a metric calibrated
+before it was trusted, controls a drug-blind predictor cannot pass, and a bar
+that needs no model at all.
+
+% ---------------------------------------------------------------------------
+\section{The truth this task predicts is never observed}
+\label{sec:intro-task}
+
+A drug that enters a cell changes what that cell transcribes. Which genes move,
+by how much, and in which direction is the readout the field treats as its most
+direct account of what a drug does. That is a working premise, not an
+established fact. A substantial share of the treated conditions in the atlas
+used here are statistically inert or not empirically discriminable at the tested
+pseudobulk and cell budget (\cref{sec:methods-data}), and cannot support this
+evaluation.
+
+Reading one response is routine; reading every combination that might matter is
+not, because a drug behaves differently across doses and cellular backgrounds,
+and even the largest screens sample a small corner of the space. A computed
+response would make the untested combinations inspectable, which is what
+prediction is for. The task is simple to state: given the transcriptome of an
+untreated cell and the identity of a drug, predict the transcriptome that cell
+would have shown had the drug been applied.
+
+It is harder to grade than to state, because the ground truth is
+counterfactual. Sequencing destroys the cell it reads, so a prediction can only
+be checked against a \emph{different} cell that received the drug. Paired
+training data must therefore be assembled by matching cells, evaluation is
+framed at population level, and distinguishing a drug effect from ordinary
+cell-to-cell variation requires explicit controls. The units, the frames and
+the controls that follow all descend from that one fact.
+
+% ---------------------------------------------------------------------------
+\section{The atlas contributes breadth; the inferential unit decides what can be
+claimed}
+\label{sec:intro-atlas}
+
+Tahoe-100M~\cite{tahoe100m} makes that evaluation possible at unusual scale,
+with roughly one hundred million single-cell transcriptomes spanning about
+$1{,}100$ small molecules across $50$ cancer cell lines. Each condition, one
+drug at one dose in one cell line on one plate, is a population and not a
+single summary.\seealso{\cref{sec:methods-data}: the atlas layout, and which
+unit each interval is clustered on}
+
+A population per condition admits two questions. The first is the conditional one, what a
+drug does in a particular cellular context, is what the task asks. The second is the prior one, whether the apparent response is there to be predicted at all, and how much
+of it reproduces across disjoint halves of the same treated well. Standard
+evaluations blur the two; much of this thesis keeps them apart.
+
+Scale does not remove design limitations. Conditions are spread unevenly across
+drugs, doses, cell lines and treated wells, and plate membership can change
+which alternatives a rank-based score sees. Cells from the same well are not
+independent biological replicates, and neither are drug rows sharing a cell
+line. 
+
+% ---------------------------------------------------------------------------
+\section{A model can be fluent in cell sentences without reading the drug}
+\label{sec:intro-model}
+
+Cell2Sentence~\cite{c2s}, our main object of study, writes a cell as its gene names, in english, in descending order of
+expression of the gene sequencing. This turns gene sequencing into a form that any ordinary language model can
+consume.\gloss{cell sentence}{A cell written as its expressed
+genes, named in descending order of expression.} It discards expression
+magnitudes and keeps ranks; in exchange it needs no specialised architecture and any off the shelf language model can be used.
+C2S-Scale~\cite{c2sscale} extends it to models pretrained on more than $50$
+million cells from $825$ single-cell datasets, fine-tuned across
+classification, generation, captioning and perturbation tasks. Its published
+perturbation work covers cytokine stimulation and, for small molecules, bulk
+L1000 profiles and SciPlex3, evaluated primarily as distributions and not
+condition by condition.
+
+The checkpoint studied here is
+\texttt{C2S-Scale-}\allowbreak\texttt{Pythia-}\allowbreak\texttt{1b-pt}, the
+pretrained Pythia-1b model~\cite{pythia} from that family, with no drug-treated
+cells in its declared pretraining corpus. Fine-tuning uses several hundred
+thousand Tahoe cells, not the entire atlas. Every experiment arm we perform that requires different training is cold-started from that
+checkpoint with identical hyperparameters, so within an experiment the training
+target or objective is the only variable. The prompt supplies the cell line, the
+drug, the dose, a mechanism annotation and the untreated control cell's own
+sentence, and what the model returns for that prompt is the prediction that gets
+scored.
+
+The training target separates the two principal arms that we analyze throughout this work, and with it the frame each
+is scored in. The first arm predicts the treated cell's own sentence and is
+scored in what we call the expression frame (\Eframe), where a prediction is a cell profile
+ranked against other drugs on the same plate. The latter arm predicts the
+drug-specific residual, meaning what survives once the drug-agnostic mean
+response, the \emph{generic}, is subtracted from the treated-minus-control
+shift. It is scored in the residual frame (\Rframe), where a prediction is a
+drug-specific signature ranked against other drugs in the same cell line. Both
+frames put chance in the same place, and neither is interchangeable with the
+other. Which is in force is declared at the head of every section.
+
+The appeal of the encoding is also the scientific risk. Housekeeping genes
+dominate every ranked profile, treated cells retain most of the state of their
+untreated lineage, and many perturbations share a generic response programme. A
+model can therefore produce a plausible treated cell while remaining almost
+indifferent to which drug was named.
+
+\begin{scopelimit}[carried into every held-out result in \cref{sec:methods} and
+\cref{sec:limitations}]
+A held-out drug is not unseen by the whole pipeline. In natural-language
+pretraining the language backbone may have encountered drug names and their
+pharmacology, and every prompt supplies the drug name plus a \texttt{Mechanism}
+field, an annotation where one exists and the literal string \texttt{unclear}
+otherwise.
+``Held out'' therefore means absent from Tahoe fine-tuning, not absent from the
+model's prior world knowledge or from the inference prompt.
+\end{scopelimit}
+
+Holding data out comes at three levels of difficulty, not one. Trained
+conditions test whether the model can reproduce information available during
+fine-tuning. Unseen combinations hold out a whole treated well but often
+recombine a drug and a cell line each encountered separately. Unseen drugs
+remove all retained fine-tuning conditions for those drugs. These are not rungs
+on one clean learning curve. They differ in support and in empirical
+reliability, and only the last asks for a response without a Tahoe-trained
+per-drug memory. The thesis therefore avoids calling all held-out examples
+zero-shot and never pools the three strata into one transfer number.
+
+% ---------------------------------------------------------------------------
+\section{Four questions, each asked because of the answer to the last}
+\label{sec:intro-map}
+
+This thesis extends the cell-sentence line of work to chemical perturbation on
+Tahoe-100M and asks whether a model fine-tuned on this atlas learns what a
+particular drug does to a particular cell, that is does the model learn drug-specific responses or does it simply just learn a generic pertubation programme. A negative answer earns its place
+only if it can be made specific, so the investigation asks four questions in
+order, each one raised by the answer to the one before it.
+
+\begin{enumerate}
+  \item \textbf{What is the best way to evaluate the models predictions?} The training objective cannot answer
+  this queston: next-token cross-entropy against the true cell sentence rewards a
+  plausible cell and says nothing about whether it is \emph{this} drug's,
+  so the whole burden falls on the evaluation. To find the right metric we keep this question in mind: Can a predictor carrying
+  no drug information score well on the field's standard metrics, and
+  which metrics survive that control?
+  \item \textbf{Does the model read the drug?} Measured on whichever metric
+        survives the first question, with the input cell fixed and only the
+        prompt's drug changed, does the prediction move at all?
+  \item \textbf{Why does it behave that way?} Is the drug absent from the data,
+        absent from the model's internal representation, or present in the
+        representation but not consulted when the model generates?
+  \item \textbf{Does redefining the effect repair it?} If the target is
+        re-encoded as the drug-specific residual instead of the treated cell's
+        own sentence, does the model become sensitive to the drug in its prompt?
+\end{enumerate}
+
+\noindent
+The order is not presentational. A metric a zero-information predictor can
+saturate cannot grade anything asked after it, and four of the five metrics we
+tried fail the corresponding control: the field's standard score is topped
+outright by a predictor carrying no drug information at all. The survivor is a retrieval
+test, defined next, and it is the repaired metric every later answer is read
+from. The null the second question returns on it is worth little until the third
+locates it: drug identity is written into the activations and barely consulted
+when the model generates. That diagnosis is what motivates the fourth, which
+changes neither the model nor the data but the definition of what the model is
+asked to produce.
+
+% ---------------------------------------------------------------------------
+\section{The question is identification, not resemblance}
+\label{sec:intro-question}
+
+Distributional similarity and token likelihood reward a prediction for looking
+like a treated cell, even when the condition identity is wrong. The test left
+standing is harder, and it is a retrieval test: among the other drugs measured
+in the same context, does a prediction identify its own treatment?
+
+\begin{defn}{Normalised inverse rank ($\NIR$)}
+A prediction is compared with its own condition's truth and with the truths of
+the other conditions in a declared comparison set. $\NIR$ is the fraction of that
+set whose truth the prediction resembles \emph{less} than it resembles its own.
+The comparison set is what fixes chance at $0.50$, in both measurement frames and
+under an exchangeability condition that \cref{sec:res-metrics} audits with
+empirical control arms. The score is tie-aware, and any component shared by every
+candidate cancels.
+\end{defn}
+
+The metric is not infallible: its value depends on the gallery a prediction is
+ranked against, it can compress near one, and its uncertainty must respect the
+cell lines, drugs and wells that repeat in the design. What it will not do is
+pass a prediction for resembling a generic treated profile, because every
+treated profile does that.
+
+% ---------------------------------------------------------------------------
+\section{The bar is a dictionary, not chance}
+\label{sec:intro-bar}
+
+Two questions are routinely conflated in perturbation prediction. One is whether
+a drug has a characteristic response that transfers across cellular contexts.
+The other is whether a model uses the untreated cell to predict how \emph{this}
+context departs from that average.
+
+The first has a model-free answer. A per-drug lookup predicts a
+drug's residual as its mean residual over training conditions in other cell
+lines. It needs no checkpoint and no prompt, and it measures the shared
+component directly.\framecue{\Rframe}{scores here are on the drug-specific
+residual, \cref{sec:methods-residual}} What the lookup predicts is the larger part of the shift, not a leftover. The
+treated-minus-control shift's squared norm decomposes into a drug-specific
+residual of $0.621$, a generic programme of $0.390$ and a cross term of
+$-0.011$, which sum to one. The residual is therefore $62.1\%$ of the shift and
+the generic $39.0\%$, and the two are essentially orthogonal.
+
+The second is what a lookup cannot answer, because a per-drug constant makes the
+same prediction in every context. How much of a drug's residual is shared across
+contexts is measured in \cref{sec:res-transfer} by a disattenuated transfer
+coefficient, \ci{\Tcoef=0.553}{0.514}{0.593}. The complementary
+\ci{44.7\%}{40.7\%}{48.6\%} of that similarity scale is not shared across the
+compared contexts. It is not a drug-by-cell-line interaction and not a variance
+share; the estimator mixes cell line, dose, well and target-estimation
+differences at once. It bounds what a per-drug constant leaves unresolved
+without establishing that a model could recover any of it.
+
+The win condition, fixed in advance, is therefore demanding. A
+conditional model must beat the training-only drug lookup on common support;
+only then would its access to the control cell have supplied information the
+dictionary lacked. Beating chance would not do it, and neither would beating a
+drug-agnostic control.
+
+It was not met. On the $1{,}192$ conditions where model and lookup
+are both defined, the lookup scores $0.913$ against the model's $0.549$. Its
+advantage is not merely that it averages many cell lines; a lookup restricted to
+one other cell line still scores $0.822$.\seealso{\cref{sec:res-lookup}: the
+full baseline ladder, scored through one identical pipeline} Re-encoding the
+target does make the model sensitive to the drug named in its prompt, which is
+the project's first measurable trained-drug effect. Responding to the drug is
+not the same as predicting what it does: on held-out treated wells the prompt
+sensitivity survives, and biological transfer is \notestablished. Nothing built
+here reaches the dictionary.
+
+\begin{scopelimit}[carried into \cref{sec:res-metrics}, \cref{sec:res-lookup} and
+\cref{sec:limitations}]
+The within-well reference is a measuring instrument, not an oracle ceiling. It
+asks how well one half of a treated population retrieves the other among
+competing drugs. A model or a lookup may exceed it because it averages more
+cells, borrows information across lines, or is compared with a noisy half-sample;
+$\NIR$ also compresses close to one. The reference establishes empirical
+discriminability at a stated cell budget and comparison set. It does not state
+the maximum predictable fraction of biology, and it is recomputed within each
+stratum and never transported across them.
+\end{scopelimit}
+
+Every conclusion that follows is re-tested under four changes to the
+measurement: comparison sets are plate-matched, uncertainty is re-clustered on
+drug, token budgets are equalised, and generic components are fitted without the
+holdout they later grade. Not every conclusion survives them. Mechanism
+annotation, for one, looks like a usable route to an unseen drug while
+uncertainty is clustered on cell line, and stops looking like one once it is
+re-clustered on the drug. A larger backbone was not tested, and a replication
+with one is informative only if it receives the same split, targets, sentinels
+and token budgets; is scored against the same
+within-plate galleries and training-only lookups; and carries the same validity
+and completion checks. Otherwise architecture, tokenisation, optimisation and
+evaluation change together. This thesis does not supply that replication, but it
+leaves an auditable ladder into which one can be inserted without weakening the
+controls that produced the negative result.
+
+\paragraph{The chapters} \Cref{sec:litreview} places these questions against
+single-cell foundation models and the debate over whether deep perturbation
+models beat simple baselines. \Cref{sec:methods-data} sets out the atlas, the
+model and the rules of measurement; \cref{sec:methods} presents the investigation
+as one chronological argument; \cref{sec:limitations} separates what is closed by
+measurement from what remains untested; and \cref{sec:conclusions} concludes. The
+symbols, terms and conventions are collected at the back in \nameref{sec:howtoread},
+and nothing in the argument requires reading them first.
