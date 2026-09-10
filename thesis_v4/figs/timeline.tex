@@ -1,0 +1,194 @@
+% ===========================================================================
+% figs/timeline.tex -- fig:timeline, the nine-beat roadmap of chapter 4.
+%
+% FIGURE BODY ONLY. No preamble, no document environment, no float, no
+% caption. The owning float, \caption and \label stay in
+% Sections/04-Investigation.tex, which \input{figs/timeline}s this file.
+%
+% Requires from preamble.tex: tikz + arrows.meta (line 532-533), and the
+% colours accent / quietink / rulegrey (lines 148-150).
+%
+% Same nine beats, same ordinals, same \cref targets, same boustrophedon arrow
+% logic (row 1 left-to-right, row 2 right-to-left, row 3 left-to-right, so no
+% connector crosses a node). One title has since been rewritten: beat six now
+% reads "Responding to the drug is not predicting it". Everything else here is
+% box metrics, and that retitling is what forced item (2) and item (3) to be
+% re-derived. What changed and why:
+%
+% (1) TOPS DID NOT ALIGN. Every node was set at its default anchor=center, so
+%     a box whose title wrapped to two lines grew equally upward and downward
+%     and its top edge rose above its one-line neighbours. Three of the nine
+%     titles still wrap at the current width -- b2 ("The model is drug-blind"),
+%     b6 ("Responding to the drug is not predicting it") and b8 ("The
+%     unseen-drug regime") -- and in row two b6 wraps while b4 ("Content fixes
+%     fail") and b5 ("Re-encode the target") do not, so under the old anchor
+%     that row would still be starting on two different heights. Two fixes,
+%     both structural rather than per-box, so the fault cannot come back if a
+%     title is edited:
+%       - the title sits in a \parbox of FIXED height \beattitleht = two
+%         \small lines, top-set, so a one-line title and a two-line title
+%         produce the same content height;
+%       - every node carries anchor=north and a minimum height, so the top
+%         edge is the placed coordinate and the row shares it by construction.
+%     CONSTRAINT this buys: a beat title may run to at most two lines at
+%     \beattw. A third line does NOT fit, AND DOES NOT COMPLAIN. Corrected
+%     here, having been caught doing it: the fixed-height \parbox is set
+%     [t][\beattitleht][t], whose inner \vss shrinks without limit, so a
+%     third line simply runs past the bottom of the box and overprints the
+%     \beatsec pointer beneath it. The log stays clean. The only detector is
+%     to build the figure and look at it, which is why item (2) below records
+%     the width sweep rather than trusting a warning.
+%
+% (2) NO BOX MAY HYPHENATE, AND THE LONGEST TITLE MUST FIT IN TWO LINES. At
+%     the original text width=3.3cm (93.7pt) the title "A lookup table wins"
+%     measured just over one line and TeX broke it as "A lookup ta-" / "ble
+%     wins". A roadmap box must never hyphenate. Two fixes, both structural:
+%     \hyphenpenalty / \exhyphenpenalty are set to 10000 inside every node, so
+%     no box in this figure can ever hyphenate, and the explicit hyphens in
+%     "drug-blind", "unseen-drug" and "Re-encode" cannot be broken at either;
+%     and the shared text width was widened, first to 38mm and now to 43mm
+%     (122.3pt).
+%     43mm IS A MEASURED FLOOR, NOT A ROUND NUMBER. Beat six's title is
+%     213.6pt of text. Its cheapest two-line split is "Responding to the drug"
+%     / "is not predicting it", and the longer half sets at 121.0pt once
+%     microtype's font expansion is applied -- 2.3pt more than its natural
+%     118.7pt, which is exactly the trap. Swept at 0.5mm steps in the
+%     document's own fonts: at 42.5mm (120.9pt) the line misses by six
+%     hundredths of a point, the title falls to three lines, and the third
+%     line overprints the section pointer underneath it, silently, exactly as
+%     item (1) warns; 43mm clears it by 1.3pt. Do not narrow this
+%     figure below 43mm, and do not lengthen a title past that split, without
+%     rebuilding and looking at box six.
+%
+% (3) BOX ARITHMETIC, so the next editor does not have to re-derive it. Body
+%     block is 142.0mm. Three boxes per row, three rows:
+%       text width      43.000mm     minimum height  21.500mm
+%       inner xsep       2pt x 2      inner ysep      5pt
+%                      = 1.406mm      row pitch      27.500mm
+%       box width       44.406mm      vertical gap    6.000mm
+%       column pitch    47.797mm
+%       horizontal gap   3.391mm  (= the length of every horizontal arrow)
+%       total width  2 x 47.797 + 44.406 = 140.000mm, i.e. 2.0mm of slack in
+%                    the 142mm block; the picture's own natural width is
+%                    401.74pt against a \textwidth of 404.03pt.
+%       total height 2 x 27.500 + 21.500 = 76.500mm
+%     WHERE THE 5mm OF EXTRA TEXT WIDTH CAME FROM, since the row is no wider
+%     than it was. The horizontal gap paid most of it: 7.725mm to 3.391mm is
+%     4.334mm freed at each of the two gaps, 2.889mm per box once it is shared
+%     out. The rest came from splitting inner sep into inner xsep=2pt and
+%     inner ysep=5pt: the side padding gave up 3pt per edge, another 2.109mm
+%     per box. 2.889 + 2.109 = 4.998mm, which is the 5mm, and the total width
+%     lands on 140.000mm against the old 139.995mm. What this spends is arrow:
+%     the connectors are less than half their old length. 3.391mm still clears
+%     the 1.8mm arrowhead by enough shaft to read as an arrow rather than a
+%     tick, but there is nothing left to take, so a further widening of these
+%     boxes has to come out of the 2.0mm of slack and then stop.
+%     THE HEIGHT IS UNCHANGED. Because inner ysep is still 5pt, the widening
+%     is purely horizontal and the figure occupies exactly the vertical space
+%     it did before -- 76.5mm, same row pitch, same minimum height, same page.
+%     minimum height 21.500mm is a declared number, not an emergent one: the
+%     strutted content measures 21.24mm, so the 21.5mm floor is what every box
+%     actually is, and all nine are identical in the built PDF: one distinct
+%     width (125.87bp), one distinct height (60.95bp), three distinct row tops
+%     and three distinct row bottoms, measured off the built PDF at printed
+%     page 28. The row tops, the row bottoms and the box height are the same
+%     three numbers the pre-widening build printed, and the drawn figure
+%     starts and ends at the same two x positions it did before, so nothing
+%     on that page moved.
+%     STALE SIBLING: figs/timeline.json still records the pre-widening box
+%     metrics (41.5151mm wide, 49.2406mm column pitch) and beat six's previous
+%     title. Its ordinal-to-section audit is unaffected -- no ordinal, no
+%     \cref target and no section pointer moved -- but its box_metrics block
+%     and its sixth box_title need regenerating.
+%
+% (4) THE b3 -> b4 CONNECTOR. It was written (b3) -- (b4), which under
+%     anchor=center and unequal box heights left the shared column axis. With
+%     anchor=north both nodes hang from the same x, and the segment is written
+%     explicitly (b3.south) -- (b4.north) so it meets box four's top edge at
+%     that box's horizontal centre. Same for the b6 -> b7 drop.
+% ===========================================================================
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+  beat/.style={draw=rulegrey, line width=0.4pt, rounded corners=1.5pt,
+               fill=white, align=center, anchor=north,
+               text width=43mm, inner xsep=2pt, inner ysep=5pt,
+               minimum height=21.5mm},
+  arr/.style={-{Latex[length=1.8mm]}, draw=accent, line width=0.5pt}]
+
+% \beattitleht is expressed in the picture's own font (font=\small above), so
+% it tracks the document size rather than a hardcoded point value. It is a
+% \newcommand and not a \newlength on purpose: \newlength allocates globally
+% and would abort the build the second time this file is \input (the LoF pass,
+% a \savebox measurement, a two-column reprint). Every macro defined here is
+% local to the tikzpicture group and vanishes with it.
+\newcommand{\beattitleht}{\dimexpr2\baselineskip\relax}
+\newcommand{\beattw}{43mm}
+
+% \beatord and \beatsec are text formats, not TikZ styles: a node's ordinal
+% and its pointer are set INSIDE the node body, and a /.style is not a font
+% switch. Defined inside the tikzpicture group, so they are local and this
+% file may be \input more than once.
+% Every line carries a \strut. MEASURED, not defensive: without them the nine
+% nodes came out at five different heights spanning 2.07pt, because the height
+% of a line is the height of the glyphs actually on it. The ordinal line varies
+% with ascenders ("one" against "three"); the pointer line varies with the
+% oldstyle figures in the section number, where 3, 4, 5, 7 and 9 descend below
+% the baseline and 0, 1 and 2 do not, so "\S~0.1" set a shallower last line
+% than "\S\S~0.3 to 0.5". anchor=north held the tops together and let the
+% bottoms ripple. A \strut gives each line the full height and depth of its own
+% size, so all nine contents are now the same height by construction and the
+% boxes agree on both edges.
+\newcommand{\beatord}[1]{{\scriptsize\bfseries\color{accent}\strut#1}}
+\newcommand{\beatsec}[1]{{\scriptsize\color{quietink}\strut#1}}
+% \beatbody{ordinal}{title}{pointer}. The middle argument is the fixed-height
+% top-set box that makes every node the same height. \hyphenpenalty and
+% \exhyphenpenalty forbid every break inside a word, discretionary or explicit.
+\newcommand{\beatbody}[3]{%
+  \beatord{#1}\\[1pt]
+  \parbox[t][\beattitleht][t]{\beattw}{%
+    \centering\hyphenpenalty=10000 \exhyphenpenalty=10000
+    \bfseries\strut #2\par}\\[1pt]
+  \beatsec{#3}}
+
+% Row one, left to right.  x = 0, 4.77971, 9.55942 cm (the column pitch of
+% item (3): 44.406mm of box plus a 3.391mm gap).
+\node[beat] (b1) at (0,0)      {\beatbody{one}{The ruler was wrong}
+                                {\cref{sec:res-metrics}}};
+\node[beat] (b2) at (4.77971,0)  {\beatbody{two}{The model is drug-blind}
+                                {\cref{sec:res-blind}}};
+\node[beat] (b3) at (9.55942,0)  {\beatbody{three}{Represented, not read}
+                                {\crefrange{sec:methods-probe}{sec:res-mechanism}}};
+
+% Row two, right to left, so no connector crosses a node.
+\node[beat] (b4) at (9.55942,-2.75) {\beatbody{four}{Content fixes fail}
+                                {\cref{sec:res-epsilon}}};
+\node[beat] (b5) at (4.77971,-2.75) {\beatbody{five}{Re-encode the target}
+                                {\crefrange{sec:methods-residual}{sec:res-encoding}}};
+% Beat six is the box that sets this figure's width. See item (2): its title
+% is the longest of the nine and only just makes two lines at 43mm.
+% The title is kept on one source line, unbroken, so that a grep for it finds
+% it: a line break inside the argument would still set correctly, but the
+% string would no longer be searchable.
+\node[beat] (b6) at (0,-2.75)
+   {\beatbody{six}{Responding to the drug is not predicting it}
+                                {\cref{sec:res-generalisation}}};
+
+% Row three, left to right again.
+\node[beat] (b7) at (0,-5.50)     {\beatbody{seven}{A lookup table wins}
+                                {\cref{sec:res-lookup}}};
+\node[beat] (b8) at (4.77971,-5.50) {\beatbody{eight}{The unseen-drug regime}
+                                {\cref{sec:res-scope}}};
+\node[beat] (b9) at (9.55942,-5.50) {\beatbody{nine}{Which span is read}
+                                {\cref{sec:res-field}}};
+
+% Arrows. Anchors are named explicitly rather than left to border clipping:
+% every node is now the same size, so .east/.west sit at one shared height and
+% .south/.north at one shared column centre.
+\draw[arr] (b1.east) -- (b2.west);
+\draw[arr] (b2.east) -- (b3.west);
+\draw[arr] (b3.south) -- (b4.north);
+\draw[arr] (b4.west) -- (b5.east);
+\draw[arr] (b5.west) -- (b6.east);
+\draw[arr] (b6.south) -- (b7.north);
+\draw[arr] (b7.east) -- (b8.west);
+\draw[arr] (b8.east) -- (b9.west);
+\end{tikzpicture}

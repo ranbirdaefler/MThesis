@@ -1,0 +1,231 @@
+% ===========================================================================
+% gate.tex -- the channel gate, twelve intervals in three blocks.
+% \input by Sections/04d-baselines.tex, replacing the inline tikzpicture that
+% sat at lines 391-455 there. Compiles against thesis_v2/preamble.tex and
+% nothing else. NO external data at draw time: every coordinate below is a
+% literal transcribed from RESULTS_cluster/ and listed again, to full machine
+% precision and with its n and cluster keys, in the sibling figs/fig-gate.json.
+%
+% SOURCES, one per block. Nothing here is computed in the figure.
+%   block 1  RESULTS_cluster/channel_gate_v4.json
+%            channels.<ch>.{plate_matched,different_plate}.{gap,ci}
+%            ci is the two-way cell-line x well interval (df 38 / 40 / 41).
+%   block 2  RESULTS_cluster/channel_gate_v4_byaxis.json
+%            channels.target.<null>.ci_drug_well (df 17); the gap is the same
+%            number as in block 1 -- re-clustering moves the interval only.
+%   block 3  RESULTS_cluster/channel_gate_heldout_targets.json
+%            channels.<ch>.heldout_targets.{gap,ci}, cell line x well again
+%            (df 4 / 10 / 39).
+% Each row's n is the .n at that same path, transcribed with it; block 2 re-uses
+% block 1's records, so its counts are block 1's and only the clustering differs.
+% Every drawn value equals the four-decimal figure the prose and tab:channels
+% already print; the agreement was checked value by value, in both directions,
+% against 04d-baselines.tex lines 350-354, 369-376, 470-479, 521-526 and 684.
+%
+% WHAT CHANGED FROM THE VERSION IT REPLACES, and why. The old drawing was sound
+% -- greyscale-safe, no chartjunk, blocks separated, caption forbidding a read
+% across blocks -- and five things were wrong with it, the fifth found in a
+% review of this file's own first version:
+%
+%   1. THE AXIS HAD NO NAME. It carried ticks, a dotted line and a dashed line
+%      and nowhere said what was being measured, so a reader could not tell an
+%      NIR gap from a DRF or a coverage without going back to tab:channels one
+%      page earlier. There is now an axis title over the data area naming the
+%      quantity (a gap in NIR), its direction (arm minus matched null), its
+%      scale (NIR runs 0 to 1, chance 0.50) and what zero means. This is the
+%      one thing the figure genuinely needed. It ran to two lines as first
+%      written; the third, naming the frame, is fix 5 below.
+%
+%   2. THE ORIGIN WAS LABELLED IN WORDS while the other ticks were numerals --
+%      "zero" beside 0.10 and 0.20 on one axis. The origin is now 0.00, in the
+%      same face, size and colour as its neighbours, on the dotted rule.
+%
+%   3. THE TWO CALLOUTS SAT ON TOP OF EACH OTHER. "zero" and "margin" labelled
+%      two rules 5.5mm apart, in two different styles, at the same height. The
+%      zero rule now carries a numeral in the tick row; the margin keeps a
+%      worded callout, raised so the gap between the two label boxes is
+%      0.82 y-units = 4.4mm of clear space (y=5.4mm; inner sep is pinned at
+%      1pt below so this is box arithmetic, not judgement, and the ink gap is
+%      wider still). The dashed rule is carried up to meet its own callout, so
+%      no separate leader is needed.
+%
+%   4. THE AXIS STOPPED AT ZERO but two rows did not. mechanism-on-four runs to
+%      -0.0846 and chemistry-different-plate to -0.0097, so rows extended into
+%      a region with no tick and no label. The tick set now runs
+%      -0.10, 0.00, 0.10, 0.20 at a uniform 0.10 pitch and the negative region
+%      the third block occupies is labelled like any other.
+%
+%   5. THE AXIS NAMED THE QUANTITY BUT NOT THE FRAME, and no row carried its
+%      own n. Fix 1 said what was measured, a gap in NIR, and left out where it
+%      was measured. This document runs two measurement frames that both put
+%      chance at 0.50, and conflating them is its most common misread -- the
+%      running head exists for that reason alone -- so an NIR figure naming
+%      neither the frame nor the set the score is ranked against is
+%      under-labelled in exactly the way fix 1 was, one level up. A third title
+%      line now names both, in the wording 04d-baselines.tex uses at 714-716
+%      and fig:comparator uses in its caption: the residual frame, scored
+%      against the other drugs in the same cell line. The caption says it too,
+%      so the figure does not depend on the running head to carry its frame.
+%      Twelve rows also carried no counts while tab:channels, one page earlier,
+%      carries three; each row now prints its own n in a column of its own,
+%      headed n, so what a block rests on is visible where the block is. The
+%      three plate-matched counts in block 1 are tab:channels' n column, value
+%      for value; the chemistry count keeps that table's audit flag, since a
+%      quantity flagged in one place and printed clean in another is exactly
+%      the divergence the flag exists to prevent. Every count is in
+%      fig-gate.json, per row, with its source path.
+%
+% GEOMETRY, all of it derived rather than judged. x=108mm is the DATA area,
+% spanning \alo..\ahi = -0.115..0.265, so 0.10 of NIR is 28.4mm.
+%   padding    set by the data: leftmost ink is the -0.0846 whisker cap, 8.7mm
+%              clear of the left edge; rightmost the +0.2460 cap, 5.7mm clear
+%              of the right.
+%   labels     column 60.0mm = 0.5556 x-units, set by the longest string in it,
+%              the block head "targets restricted to drugs held out of
+%              training" at 166.38pt = 58.5mm (measured, figs/
+%              _measure_gate_strings.tex). Nothing in the column reaches the
+%              data area, so no label can foul the -0.10 rule, which stands
+%              4.3mm inside the left edge. Longest ROW label is 42.2mm.
+%   counts     the n column is right-aligned inside that same 60.0mm, its right
+%              edge 1.5mm clear of the data area and therefore 5.8mm clear of
+%              the -0.10 rule. Its widest entry is the audit-flagged 4,131 chip
+%              at 24.60pt = 8.65mm, and that entry sits on the row carrying the
+%              longest label, "chemical structure, plate-matched" at 120.04pt =
+%              42.19mm; label and count are 6.96mm apart with the 1pt inner sep
+%              counted at both ends, which is the tightest pair in the column.
+%              The column takes space the label column already had, so the
+%              drawing does not widen: the harness reports the same 484.15pt
+%              before and after.
+%   rules      block separators start 1mm left of the label column and end at
+%              the right edge of the data area.
+%   width      1.5648 x-units = 169.0mm against the 174mm a fullwidth float may
+%              use; 5mm of slack. MEASURED by figs/_harness_gate.tex, which
+%              \typeout s \wd of the tikzpicture against the real preamble.
+%   title      all three lines fit inside the 108mm data area they are centred
+%              on (78.76mm, 88.08mm and 102.13mm measured), so none widens the
+%              drawing. The block sits 0.65 y-units = 3.51mm higher than it did
+%              to make room for the frame line; height is the only dimension
+%              this change moves, and the float is nowhere near \topfraction.
+%
+% TYPE. \scriptsize throughout, matching fig:clustering and fig:confound. This
+% drawing is not scaled by anything, so 8pt here prints as 8pt.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+\begin{tikzpicture}[x=108mm, y=5.4mm, font=\small, inner sep=1pt]
+  \def\alo{-0.115}\def\ahi{0.265}  % data range of the x axis
+  \def\lx{-0.5556}                 % left edge of the row-label column (60.0mm)
+  \def\rx{-0.5648}                 % left end of the block rules      (61.0mm)
+  \def\ytop{0.72}                  % top of the tick rules and the zero rule
+  \def\ybot{-16.1}                 % bottom of the same
+  \def\cx{-1.5mm}                  % right edge of the n column, from x=0
+  \newcommand{\vx}[1]{{(#1-\alo)/(\ahi-\alo)}}
+
+  % --- one interval row: #1 y, #2 lo, #3 estimate, #4 hi, #5 label, #6 n ---
+  % FIX 5: #6 is the row's own count, right-aligned against \cx. A column, not a
+  % caption list: twelve counts in prose cannot be matched to twelve rows by eye,
+  % and this is how tab:channels carries them one page earlier.
+  \newcommand{\gaprow}[6]{%
+    \draw[quietink, line width=0.9pt] (\vx{#2},#1) -- (\vx{#4},#1);
+    \draw[quietink, line width=0.5pt]
+      (\vx{#2},#1-0.22) -- (\vx{#2},#1+0.22);
+    \draw[quietink, line width=0.5pt]
+      (\vx{#4},#1-0.22) -- (\vx{#4},#1+0.22);
+    \fill[ink] (\vx{#3},#1) circle (1.5pt);
+    \node[anchor=west, font=\scriptsize, text=ink] at (\lx,#1) {#5};
+    \node[anchor=east, font=\scriptsize, text=quietink, xshift=\cx]
+      at (0,#1) {#6};}
+  \newcommand{\blockhead}[2]{%
+    \node[anchor=west, font=\scriptsize\bfseries, text=accent]
+      at (\lx,#1) {#2};}
+
+  % --- FIX 1: the axis title. What is measured, in which direction, on what
+  % scale, and what zero means. Centred on the data area, not on the drawing.
+  % FIX 5 adds the middle line: in which frame, and against which set the score
+  % is ranked. Both frames in this document put chance at 0.50, so the scale
+  % line below does not distinguish them and cannot be left to do that work.
+  \node[anchor=south, font=\scriptsize\bfseries, text=ink] at (0.5,4.70)
+    {Gap in normalised inverse rank, channel arm $-$ matched null};
+  \node[anchor=south, font=\scriptsize, text=quietink] at (0.5,4.05)
+    {residual frame, $\NIR$ scored against the other drugs in the same
+     cell line};
+  \node[anchor=south, font=\scriptsize, text=quietink] at (0.5,3.40)
+    {$\NIR$ runs $0$ to $1$ with chance at $0.50$; a gap of $0.00$
+     is no advantage from the channel};
+
+  % --- the scale. FIX 4: the tick set now covers the negative region. ------
+  \foreach \v/\t in {-0.10/$-0.10$, 0.10/0.10, 0.20/0.20}{
+    \draw[rulegrey!55, line width=0.3pt] (\vx{\v},\ytop) -- (\vx{\v},\ybot);
+    \node[anchor=south, font=\scriptsize, text=quietink]
+      at (\vx{\v},\ytop+0.06) {\t};}
+
+  % zero, and FIX 2: a numeral, in the same row and register as the others.
+  \draw[ink, line width=0.5pt, densely dotted] (\vx{0},\ytop) -- (\vx{0},\ybot);
+  \node[anchor=south, font=\scriptsize, text=quietink]
+    at (\vx{0},\ytop+0.06) {0.00};
+
+  % the pre-set relevance margin. FIX 3: the rule is carried up to its own
+  % callout, 4.4mm of clear space above the tick numerals.
+  \draw[accent, line width=0.6pt, dashed] (\vx{0.03},2.35) -- (\vx{0.03},\ybot);
+  % (the 1.3mm stand-off is an xshift, not an addition to \vx: \vx expands to
+  % a braced pgfmath group and "{...}+0.012" is not a legal coordinate.)
+  \node[anchor=west, font=\scriptsize, text=accent, xshift=1.3mm]
+    at (\vx{0.03},2.35) {pre-set relevance margin, $0.03$};
+
+  % --- block 1: cell line x well, the axis the gate was run on -------------
+  % The n column is headed once, on the first block head's own row: that head is
+  % 38.4mm of the 60.0mm column and stops 11mm short of the column, so the two
+  % cannot touch. Blocks 2 and 3 keep the same column position and the caption
+  % names it, so the head is not repeated over rules it would be read across.
+  \blockhead{0}{clustered on cell line and well}
+  \node[anchor=east, font=\scriptsize, text=quietink, xshift=\cx] at (0,0) {$n$};
+  \gaprow{-1}{+0.0745}{+0.1351}{+0.1958}{protein target, plate-matched}{\num{712}}
+  \gaprow{-2}{+0.0648}{+0.1322}{+0.1996}{protein target, different-plate}{\num{599}}
+  \gaprow{-3}{+0.0279}{+0.0805}{+0.1332}{mechanism, plate-matched}{\num{921}}
+  \gaprow{-4}{+0.0243}{+0.0746}{+0.1249}{mechanism, different-plate}{\num{781}}
+  % the flagged count is tab:channels' own \needsaudit{4131}, carried here so the
+  % same quantity is not hedged in the table and clean in the figure.
+  \gaprow{-5}{+0.0035}{+0.0261}{+0.0487}{chemical structure, plate-matched}%
+    {\needsaudit{4{,}131}}
+  \gaprow{-6}{-0.0097}{+0.0118}{+0.0333}{chemical structure, different-plate}%
+    {\num{4090}}
+
+  % --- block 2: the same target arm, re-clustered on the drug --------------
+  % Same records as rows -1, -2 and the count-matched arm, so the counts repeat:
+  % re-clustering changes df (38 to 17), never n.
+  \draw[rulegrey, line width=0.3pt] (\rx,-7.0) -- (1.00,-7.0);
+  \blockhead{-7.8}{the same arm, clustered on drug and well}
+  \gaprow{-8.8}{+0.0287}{+0.1351}{+0.2416}{protein target, plate-matched}{\num{712}}
+  \gaprow{-9.8}{+0.0199}{+0.1322}{+0.2445}{protein target, different-plate}{\num{599}}
+  \gaprow{-10.8}{+0.0536}{+0.1498}{+0.2460}{protein target, count-matched}{\num{712}}
+
+  % --- block 3: targets restricted to drugs held out of training -----------
+  % Here the row label counts DRUGS and the column counts conditions; the two
+  % are different numbers for the same row, which is why the column earns its
+  % place most in this block.
+  \draw[rulegrey, line width=0.3pt] (\rx,-11.8) -- (1.00,-11.8);
+  \blockhead{-12.6}{targets restricted to drugs held out of training}
+  \gaprow{-13.6}{+0.0499}{+0.1197}{+0.1894}{protein target, on two drugs}{\num{161}}
+  \gaprow{-14.6}{-0.0846}{+0.0439}{+0.1723}{mechanism, on four}{\num{216}}
+  \gaprow{-15.6}{-0.0029}{+0.0378}{+0.0785}{chemical structure, on fourteen}{\num{898}}
+\end{tikzpicture}
+\caption[The channel gate, by conditioning]{\textbf{The gate's verdict is decided
+by what the interval is conditioned on, not by where the point estimate falls.}
+Every row is residual-frame $\NIR$ scored against the other drugs in the same
+cell line: the arm predicts a drug's residual from its annotated neighbours
+there, and its matched null draws the same number of partner drugs from that
+cell line.
+The dot is the estimate, the bar its $95\%$ two-way cluster-robust interval, the
+dashed line the pre-set relevance margin of $0.03$ that the gate asks the
+\emph{lower} bound to clear. The count beside each row label is the number of
+conditions that row scores, not of drugs; the first block's plate-matched counts
+are the $n$ of \cref{tab:channels}. The second block re-clusters the same target
+arm on the drug, the unit a claim about unseen drugs has to generalise across,
+leaving the point estimates untouched; the lower bound now falls short against both
+estimand-correct nulls and only the weaker count-matched one clears it. The third
+restricts the targets to drugs held out of training. Rows may be read within a
+block and not across blocks.}
+\label{fig:gate}
+\end{fullwidth}
+\end{figure}
