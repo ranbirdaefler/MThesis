@@ -1,0 +1,261 @@
+% ===========================================================================
+% circularity.tex -- the residual definition's loop, and the ordering that cuts
+% it. \input by Sections/04c-reencoding.tex at sec:methods-residual. Compiles
+% against thesis_v2/preamble.tex and nothing else: no external data, no
+% \includegraphics, no package this document does not already load
+% (tikz + arrows.meta, both in preamble.tex section 9).
+%
+% THIS IS A PROVENANCE DIAGRAM, NOT A RESULT. Deliberately absent: every NIR
+% value, every arm, every split-level number. Two counts appear, once, and both
+% are already in the prose of this same section. Sibling circularity.json lists
+% every number drawn.
+%
+% THE LEFT PANEL CARRIES NO BUILD LABEL, DELIBERATELY. It drew "THE EARLIER
+% BUILD -- NOT THE SHIPPED ONE" until this revision, which spent half a
+% full-width figure on a pipeline the thesis did not run. The historical fact
+% -- that an earlier build did close this loop -- is a disclosure, and a
+% disclosure belongs in prose where it can be qualified: it is stated at
+% Sections/04c-reencoding.tex:148-151 ("That is a loop [...], and an earlier
+% build closed it, with generic and filter estimated over every condition and
+% the holdout assigned afterwards"). That sentence stands on its own and was
+% NOT deleted when the label came off the panel. What the left panel draws now
+% is the structural hazard itself, in the present tense and attached to no
+% build: the cycle the four definitions form, and the edge that fitting before
+% splitting adds to it. The two panels therefore read hazard and remedy, which
+% is the only reason the staged ordering is load-bearing rather than fastidious.
+%
+%   2,523 of 4,999 training conditions retained (50.5%)   04c-reencoding.tex:211-212
+%   the resolved reliability line, +0.1086                 04c-reencoding.tex:211
+%
+% Cross-checked, all four agreeing, before drawing:
+%   Sections/03-Apparatus.tex:206     "2,523 of 4,999 train (50.5\%)"
+%   Sections/04c-reencoding.tex:212   "$2{,}523$ of $\num{4999}$ ... ($50.5\%$)"
+%   Sections/04d-baselines.tex:337    "only $\num{2523}$ are training"
+%   Sections/05-Limitations.tex:33    "$\num{2523}$ of $\num{4999}$ ... $\cos > 0.109$"
+% +0.109 is the measured null's 95th percentile and +0.1086 is what it resolves
+% to; the prose prints both, and the node carries the resolved value because
+% that is the one the builder applies.
+%
+% LAYOUT NOTES, all forced by a build:
+%   * fullwidth = 174mm = 493.23pt (textwidth 142mm + marginparsep 4mm +
+%     marginparwidth 28mm, preamble.tex:88-90 and :525). The bounding box is
+%     PINNED to 17.35cm = 491.81pt, 1.4pt inside the measure. Unpinned, the
+%     picture measured 3.10pt OVER and the figure body reported an overfull
+%     hbox: nodes with anchor=north west hang their 3.33pt inner sep left of
+%     the anchor at x=0.20, and the strip rules end at x=17.35. Pinning clips
+%     no ink -- no drawn object lies outside [0, 17.35] x [-0.95, 7.95].
+%   * NO node uses text width. Every line break is written by hand. The first
+%     build did use text width and TeX hyphenated inside the boxes
+%     ("the relia-/bility line"), grew four of them past their minimum heights
+%     and overlapped the rows below. Hand-broken lines make every box width and
+%     height deterministic, which is what lets the coordinates below be trusted.
+%   * the four objects are ONE node set drawn twice, same style, same wording,
+%     same 2.80cm minimum width, so the right panel reads as a re-laying of the
+%     left and not as a second diagram. Only the arrangement changes.
+%   * the fatal edge is drawn and STRUCK, not deleted. A deleted edge leaves
+%     nothing for the caption to point at, and the passage is about which single
+%     edge the ordering removes.
+%   * the two streams leaving SPLIT must not cross. They cannot both turn upward
+%     in the order they leave: the stream that leaves HIGHER (held-out, 2.2mm
+%     above the east anchor) turns up FIRST (x=10.30) and the stream that leaves
+%     LOWER (training keys, at the east anchor) turns up LATER (x=10.85). Any
+%     other pairing crosses, and a crossing here reads as contact between them.
+%   * both streams use -| rather than an explicit corner coordinate, so the
+%     corner inherits the node anchor's own y. Written as a literal corner, the
+%     first segment came out as a visible diagonal whenever a node's height
+%     differed by a hair from the value assumed at design time.
+%   * the held-out stream is routed over the top of the fit column, and its one
+%     arrowhead points right, into TRANSFORM. No arrowhead anywhere in the right
+%     panel points back left or up into the fit; that absence is the claim.
+%   * NO edge label is masked onto its arrow. The first build masked all of
+%     them and the labels ate the edges: the C->D gap in the left panel is
+%     1.20cm and "subtracted to give" is 1.15cm wide, so the bottom edge of the
+%     cycle disappeared and the loop stopped reading as a loop. Every label now
+%     sits beside its edge. The tightest is "training keys", hung under the
+%     corner at x = 10.43 to 11.27, between the held-out riser at 10.30 and the
+%     fit column's left edge at 11.35.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \useasboundingbox (0,-0.95) rectangle (17.35,7.95);
+  \tikzset{
+    % the shared node set. Identical style in both panels.
+    obj/.style={draw=rulegrey, line width=0.4pt, fill=white, inner sep=3pt,
+                align=center, font=\scriptsize, text=ink,
+                minimum width=2.80cm, minimum height=0.68cm},
+    edg/.style={-{Stealth[length=3.6pt,width=2.8pt]}, draw=ink,
+                line width=0.5pt},
+    lab/.style={font=\scriptsize, text=quietink, fill=white, inner sep=1pt,
+                align=center},
+    side/.style={font=\scriptsize, text=quietink, align=flush right,
+                 anchor=east, text width=3.20cm},
+    quiet/.style={font=\scriptsize\itshape, text=quietink, align=center},
+    tag/.style={font=\sffamily\scriptsize\bfseries, text=accent},
+    sub/.style={font=\footnotesize\itshape, text=quietink}}
+  \def\T#1{{\sffamily\scriptsize\bfseries\color{accent}#1}\\[1.0pt]}
+  \def\Q#1{\\[1.0pt]{\color{quietink}#1}}
+
+  % ======================= PANEL HEADS =====================================
+  % Hazard and remedy, one head each, same shape: a tag naming the structure
+  % and a sub saying what happens to the four objects. Neither names a build.
+  \node[tag, anchor=north west] at (0.20,7.90) {THE CIRCULARITY};
+  \node[sub, anchor=north west] at (0.20,7.55)
+    {the four objects define one another};
+  \node[tag, anchor=north west] at (7.50,7.90) {THE ORDERING THAT CUTS IT};
+  \node[sub, anchor=north west] at (7.50,7.55)
+    {the same four objects, staged by execution order};
+
+  \draw[rulegrey, line width=0.4pt] (7.20,1.15) -- (7.20,6.60);
+
+  % ======================= LEFT: THE CLOSED LOOP ===========================
+  \node[obj, anchor=north] (A) at (1.60,6.10) {the reliability line};
+  \node[obj, anchor=north] (B) at (5.60,6.10) {the training set};
+  \node[obj, anchor=north] (C) at (5.60,4.45) {the generic};
+  \node[obj, anchor=north] (D) at (1.60,4.45) {the residual};
+
+  % NONE of the four loop labels is masked onto its arrow. Masked, they ate the
+  % edges: the C->D gap is 1.20cm and "subtracted to give" is 1.15cm wide, so
+  % the bottom edge of the cycle vanished entirely and the loop stopped reading
+  % as a loop. Each label now sits beside its own edge -- the two horizontals
+  % labelled outside the cycle, the two verticals inside it -- and all four
+  % edges draw unbroken.
+  \draw[edg] (A.east) -- (B.west);
+  \draw[edg] (B.south) -- (C.north);
+  \draw[edg] (C.west) -- (D.east);
+  \draw[edg] (D.north) -- (A.south);
+  \node[lab, anchor=south] at (3.60,5.86) {selects};
+  \node[lab, anchor=east]  at (5.45,4.94) {fits};
+  % clears the box row's bottom edge at y=3.77: at y=3.97 its first line sat
+  % level with the two boxes' lower corners, 0.02cm from each, and read as a
+  % collision even though it was not one.
+  \node[lab, anchor=north] at (3.60,3.88) {subtracted\\to give};
+  \node[lab, anchor=west]  at (1.75,4.94) {must reproduce\\across a half-split};
+
+  % --- the fatal edge: drawn once, struck once, and labelled --------------
+  % Present tense, and attached to an ordering rather than to a build: this is
+  % what fitting before splitting does to the cycle, not what one run once did.
+  % The quiet italic under H answers "why would they enter the fit?" inside the
+  % panel, and mirrors the right panel's one quiet italic under SPLIT, so each
+  % half carries exactly one such annotation.
+  \node[obj, anchor=north] (H) at (1.60,2.60) {held-out conditions};
+  \draw[edg] (H.east) -| (C.south);
+  \node[lab, anchor=east] at (5.45,2.95) {enter the fit};
+  % Its y is the strike caption's y, not a value of its own: both are two-line
+  % blocks of the same size, so sharing anchor y = 1.74 gives them a common top
+  % AND a common bottom (0.944) and the bottom-left reads as one row rather than
+  % two blocks at two heights. Widest line measures 54.42pt = 1.91cm, so with
+  % inner sep the node spans x 0.53-2.67, clear of the strike caption's left
+  % edge at x = 3.10 by 0.43cm. Top sits 0.18cm under H, matching the 0.20cm
+  % the right panel leaves under SPLIT.
+  \node[quiet, anchor=north] at (1.60,1.74)
+    {when the fit\\precedes the split};
+  % the strike. One stroke. Nothing else in this figure is accent-coloured
+  % except the structural tags.
+  \draw[accent, line width=1.1pt] (4.25,1.94) -- (4.75,2.58);
+  \node[font=\sffamily\scriptsize, text=accent, anchor=north west,
+        align=left] at (3.10,1.74)
+    {struck: the one edge\\the ordering removes};
+
+  % ======================= RIGHT: THE STAGED PIPELINE ======================
+  \fill[panelbg] (7.45,3.55) rectangle (10.15,6.30);
+  \node[obj, anchor=north, minimum width=2.55cm] (INV) at (8.80,6.10)
+    {\T{INVENTORY}wells, drugs, doses};
+  \node[obj, anchor=north, minimum width=2.55cm] (SPL) at (8.80,5.10)
+    {\T{SPLIT}train \textbar{} held out};
+  \draw[edg] (INV.south) -- (SPL.north);
+  \node[quiet, anchor=north] at (8.80,4.22)
+    {metadata only:\\no expression data};
+
+  % FIT, and the training side that descends from it
+  \node[obj, anchor=north] (G) at (12.75,6.10) {\T{FIT}the generic};
+  \node[obj, anchor=north] (R) at (12.75,4.60) {the residual};
+  \node[obj, anchor=north] (L) at (12.75,3.30)
+    {the reliability line\Q{$+0.1086$}};
+  \node[obj, anchor=north] (S) at (12.75,1.90) {the training set};
+  \draw[edg] (G.south) -- (R.north);
+  \draw[edg] (R.south) -- (L.north);
+  \draw[edg] (L.south) -- (S.north);
+
+  \node[side] at (11.25,2.80) {$2{,}523$ of $4{,}999$ training conditions
+    retained ($50.5\%$)};
+  \node[side] at (11.25,1.56) {the residual targets the model is trained on};
+
+  % training keys, handed to the fit explicitly
+  % -| , not an explicit corner coordinate: the corner must inherit SPL.east's
+  % own y, or the first segment comes out as a visible diagonal when the node's
+  % height differs by a hair from the value assumed here.
+  % This is the one edge label NOT masked onto its arrow. The riser is 1.0cm
+  % long and a masked label ate 0.6cm of it, leaving the arrow looking like two
+  % disconnected stubs. It hangs under the corner instead, in the only clear
+  % space in the panel: x 10.43-11.27, below the horizontal and above the
+  % retention annotation, which tops out at y = 3.25.
+  \draw[edg] (SPL.east) -| (10.85,5.675) -- (G.west);
+  \node[font=\scriptsize, text=quietink, align=center, anchor=north]
+    at (10.85,4.50) {training\\keys};
+
+  % TRANSFORM, fed by the fitted generic and by a stream that bypasses the fit
+  \node[obj, anchor=north] (TR) at (15.95,6.10)
+    {\T{TRANSFORM}held-out conditions\\projected through\\the fitted generic};
+  \draw[edg] (G.east) -- (G.east -| TR.west);
+  \draw[edg] ([yshift=2.2mm]SPL.east) -| (10.30,6.45) -- (15.95,6.45)
+    -- (TR.north);
+  \node[font=\scriptsize, text=quietink, anchor=south] at (13.10,6.55)
+    {held-out keys --- they never enter the fit};
+
+  \node[obj, anchor=north] (HT) at (15.95,4.30)
+    {held-out residual\\targets};
+  \draw[edg] (TR.south) -- (HT.north);
+  \node[quiet, anchor=north] at (15.95,3.25)
+    {deliberately unfiltered};
+  \node[quiet, anchor=north] at (15.95,2.80)
+    {nothing here\\re-enters the fit};
+
+  % ======================= THE POISON TEST STRIP ===========================
+  \draw[rulegrey, line width=0.4pt] (0.20,0.85) -- (17.35,0.85);
+  \node[tag, anchor=north west, align=left] at (0.20,0.46)
+    {THE POISON\\TEST};
+  \node[font=\sffamily\scriptsize\bfseries, text=ink, anchor=north west]
+    at (3.30,0.55) {CORRUPTION APPLIED};
+  \node[font=\sffamily\scriptsize\bfseries, text=ink, anchor=north west]
+    at (9.60,0.55) {REQUIRED OUTCOME};
+  \draw[rulegrey, line width=0.4pt] (3.30,0.20) -- (17.35,0.20);
+  \node[font=\sffamily\footnotesize, text=ink, anchor=north west]
+    at (3.30,0.08) {corrupt every held-out expression vector};
+  \node[font=\sffamily\footnotesize, text=ink, anchor=north west]
+    at (9.60,0.08) {the training targets are byte-identical};
+  \node[font=\sffamily\footnotesize, text=ink, anchor=north west]
+    at (3.30,-0.40) {corrupt one training condition};
+  \node[font=\sffamily\footnotesize, text=ink, anchor=north west]
+    at (9.60,-0.40) {the training targets must move};
+  \draw[rulegrey, line width=0.4pt] (3.30,-0.85) -- (17.35,-0.85);
+\end{tikzpicture}
+\caption[The residual's circular definition, cut by
+ordering]{\textbf{The definition of the residual could have closed on itself,
+and what stops it is execution order, not an argument.} \emph{Left, the
+circularity.} A condition enters training only if
+its residual reproduces across a half-split; the residual exists only once the
+generic is subtracted; the generic is fitted on the training set; and the
+training set is what the reliability line selects. Estimate the generic and the
+filter over every condition and assign the holdout afterwards, and held-out
+conditions enter the fit --- the struck edge --- so each held-out
+target is defined partly by other held-out conditions. \emph{Right, the
+ordering that cuts it,} the build this thesis reports. The same four objects,
+staged. Inventory and split read
+metadata only, before any pseudobulk exists, so nothing downstream of the split
+can have defined it; the fit is handed the training keys explicitly; and
+transform projects held-out conditions through the fitted generic in one
+direction, with no path back into it. The generic is the mean over training
+drugs other than this one, within plate. The two counts are the
+\emph{training-set} retention at the resolved reliability line $+0.1086$, the
+$95$th percentile of a null pairing half $A$ of one condition with half $B$ of
+another; the held-out sets are deliberately unfiltered, since dropping held-out
+conditions for failing their own reproducibility bar would select the
+evaluation set on its own outcome. \emph{Beneath,} the two assertions that make
+the ordering checkable in both directions rather than merely asserted. This is
+a provenance diagram: no $\NIR$ value, arm or split-level result appears in
+it.}
+\label{fig:circularity}
+\end{fullwidth}
+\end{figure}

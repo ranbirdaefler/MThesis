@@ -1,0 +1,1183 @@
+% ===========================================================================
+% 04a-ruler.tex -- sec:res-metrics and sec:res-blind (legacy anchors kept).
+% ===========================================================================
+
+\beatsection{E}{1}{The metric is the first result}{sec:res-metrics}
+\label{sec:methods-metrics}   % legacy anchor, so v1 cross-references resolve
+
+\claimlede{The field's standard score is saturated by a predictor that carries
+no information, and of the five metrics audited only \NIR{} grades in the
+direction its name implies.}
+
+\begin{question}[1]
+Every claim in this chapter is a number handed down by a scoring rule, so the
+scoring rule is what has to be audited first. The instrument grades metrics, not
+models. It asks each candidate to separate a positive control from a predictor
+that knows no drug, and four of the five candidates fail.
+\end{question}
+
+\noindent
+A reported score is two claims at once, one about the model and one about the
+rule that graded it. Nobody checks the second. Two questions decide it. Does the
+score reward the thing it is named after, or can it be earned another way? And
+does it register a true positive when there is one?
+
+\paragraph{The score the field reports, and two companions} That score is a correlation between
+predicted and true change from control, restricted to the genes that actually
+move. The benchmarks of \cref{sec:lit-dispute} report it,
+Miller et al.~\cite{miller} find it poorly calibrated, DrEval~\cite{dreval}
+counts it among six standing obstacles. Write $x$ for the control profile, $y$
+for the treated truth and $\hat y$ for the
+prediction,\seealso{\cref{sec:methods-data} fixes $G$.} and let
+\begin{equation}
+ S_K \;=\; \operatorname*{arg\,top-}K_{\,g} \; \lvert y_g - x_g \rvert
+\end{equation}
+be the $K$ genes with the largest true change. Then
+\begin{equation}
+ \DEdr \;=\; \operatorname{corr}\!\big( \left(\hat{y} - x\right)\big|_{S_K}, \;
+ \left(y - x\right)\big|_{S_K} \big).
+\end{equation}
+All three are the panel profiles converted to ranks, absent genes tied at the
+worst rank $G$ (\cref{sec:app-convention}), so $S_K$ is selected on rank change
+too; the \emph{expression frame} label used elsewhere names the object scored, a
+cell profile rather than a residual, and not the units. We report $K = 50$,
+Pearson; $K \in \{20, 100, 200\}$ and Spearman move the
+numbers by under $0.02$, except at $K = 200$, where the top-$K$ set starts to
+include genes that do not move.
+
+Two companions to it are reported below, and neither is that score. Writing
+$s = (y-x)|_{S_K}$ and $\hat{s} = (\hat{y}-x)|_{S_K}$ for the true and the
+predicted shift, and $r$ for Pearson correlation on $S_K$,
+\emph{partial-}$\DEdr$ regresses the control out of both arguments first:
+\begin{equation}
+ \textrm{partial-}\DEdr \;=\;
+ \operatorname{corr}\!\big( \hat{s}, \, s \;\big|\; x|_{S_K} \big)
+ \;=\;
+ \frac{r_{\hat{s}s} \;-\; r_{\hat{s}x}\, r_{sx}}
+      {\sqrt{\left(1 - r_{\hat{s}x}^{2}\right)\left(1 - r_{sx}^{2}\right)}}.
+\end{equation}
+Both arguments of $\DEdr$ carry the same $-x$, so a predictor that merely
+reverts toward the control inherits agreement it did not earn; conditioning on
+$x$ leaves only what a prediction has beyond control-reversion, and the quotient
+is undefined rather than small when either shift is collinear with the control
+on $S_K$, its denominator vanishing. The second companion moves the other lever.
+$\paneltau$ is Kendall's $\tau$ between the predicted and the true rank vector
+over all $G$ panel genes,
+\begin{equation}
+ \paneltau \;=\; \tau\!\left(\hat{y}, \, y\right),
+\end{equation}
+with no top-$K$ restriction and no control subtracted: where $\DEdr$ picks its
+genes from the truth and scores a change, $\paneltau$ scores the ordering itself
+on a gene set fixed before any prediction is read. It depends on the absent-gene
+convention rather than escaping it, every omitted gene being tied at $G$, so it
+registers omissions that $\DEdr$ sees only when an omitted gene falls in $S_K$,
+and it is undefined when a prediction ties every gene.
+
+\paragraph{What the metric actually rewards} Score a predictor that contains
+nothing. Place every gene at the middle rank.\gloss{revert\_center}{Predicts
+every panel gene at the panel's middle rank, defined from the metric alone and
+needing no model, training set or atlas.} It scores $\DEdr(K{=}50) =$
+\ci{0.999913}{0.999908}{0.999919}, above the two-real-cell positive control of
+$0.76$ and above the model's $0.73$. Less information yields a higher score,
+the hallmark of an artefact; \cref{fig:calibration}, panel a, sets the five arms
+against that reference on one axis.
+
+Its partial-$\DEdr$ and $\paneltau$ are undefined, not merely poor, for two
+separate reasons. The prediction is the constant midpoint rank $\hat y = G/2$,
+so the shift from control is $G/2 - x$, an exact affine function of $x$ from
+which nothing survives partialling. And every predicted gene being tied, no rank
+ordering exists whose Kendall $\tau$ can be computed. The zero-shift
+construction, easily confused with this one, is \texttt{control\_copy},
+$\hat y = x$; \texttt{revert\_center} is not it.
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{$\DEdr$ is saturated by a control artefact.} The two arms
+needing no drug information sit above the positive control and above the model;
+regressing the control out leaves $\approx 0.26$ of drug-agnostic skill in the
+two rows where the partial is defined.}
+\label{tab:de-artifact}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\thead{Predictor} & \thead{Information} & \thead{$\DEdr$ (K50)}
+  & \thead{partial-$\DEdr$} \\
+\midrule
+\texttt{revert\_center} (genes $\rightarrow G/2$) & none & \textbf{0.9999}
+  & undefined \\
+\texttt{revert\_mean} (predict mean control) & none, no fit & 0.961 & 0.25 \\
+ridge linear (control $\rightarrow$ shift) & control & 0.947 & 0.28 \\
+\addlinespace
+positive control (two real cells) & -- & 0.76 & -- \\
+model (1B LLM) & control $+$ drug & 0.73 & not measured \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The $\DEdr$ column is tier 2; the partial column, tier 1.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Two innocent properties compose into the failure} $S_K$ is selected
+using the truth, and treated
+cells in this atlas regress toward a shared response, so a prediction reverting
+toward the population centre correlates with $y - x$ by construction.
+Partial-$\DEdr$ regresses the control out of both arguments first, closing that
+route and collapsing the raw $0.95$ to $\approx 0.26$ in the two baselines with
+a defined partial value, one of which performs no fitting at all.
+
+The model's own partial-$\DEdr$ was never computed,\footnote{It requires a GPU
+pass that was not run, so the cell in \cref{tab:de-artifact} is marked, not
+filled with an expected value.} so the comparison anchors to $\paneltau$,
+Kendall's $\tau$ over the full $\num{946}$-gene panel, measured for every arm.
+The calibration  finds $\paneltau$ inverted, so neither an absolute claim
+nor an ordering read off it counts as evidence of skill. What it can still show
+is an \emph{absence} of separation. \texttt{revert\_mean} scores $0.268$, ridge
+$0.265$ and the model $0.257$ (tier 2, \texttt{worst} convention), three arms
+inside a spread of $0.011$.
+
+The shift therefore decomposes into three parts: control reversion, an
+artefact; a generic drug programme worth $\approx 0.26$, trivially matched; and
+a drug-specific component no arm is shown capturing. Later residual-frame
+instruments show the checkpoint reads trained-drug information while still
+failing condition-specific prediction.
+
+\paragraph{The spike-in, in brief} One instrument recurs from here on and is
+worth naming before it is used. The \emph{spike-in} is a forced choice between
+two drug populations measured within a plate, and no model enters it: a
+reference pseudobulk is drawn from drug A's cells, and a metric must score a
+disjoint sample of A's own cells closer to that reference than a sample of drug
+B's, chance $0.50$. Difficulty is then dialled by titration --- B's population is
+contaminated with a known fraction of A's cells --- so the task runs from easy at
+zero contamination to impossible once B has been replaced by A and the two
+candidates are one population. Because the right answer is fixed by
+construction, the curve grades the metric and never a prediction, which is what
+makes it the place to ask whether an arbitrary scoring convention changes a
+score. Six metrics are run on it below.
+
+\paragraph{One convention, disclosed and then dropped} A cell sentence lists
+only expressed genes, so a rank-based metric needs a convention for the unranked
+panel genes: \texttt{worst} gives them the last rank $G$, \texttt{middle} a
+fixed middle rank $G/2$. Spike-in $\DEdr$ reads $0.952$ against $0.954$ and
+nothing here moves by more than $0.01$, so all figures are quoted under
+\texttt{worst}. That diagnostic went to no artifact, so it is a check that was
+run, not a reproducible result.
+
+\paragraph{The metric this investigation relies on instead} $\NIR$ is Wu
+et al.'s ``transposed-rank'' metric from PerturBench~\cite{perturbench}, which
+Miller et al.~\cite{miller} identify as one of the few consistently calibrated
+metrics across 14 Perturb-seq datasets. It asks not how closely a prediction
+matches its own truth, but whether it matches its own truth \emph{more closely
+than it matches anyone else's} --- much harder to answer by accident.
+
+\begin{defn}{Normalised Inverse Rank ($\NIR$)}
+For a prediction $\hat y$ of condition $i$, with truths $\{y_j\}$ over a declared
+comparison set $J$,
+\begin{equation}
+ \NIR(\hat{y}, i) \;=\; \frac{1}{|J|}\sum_{j \in J}
+ \Big[\mathbf{1}\{\sigma(\hat{y}, y_i) > \sigma(\hat{y}, y_j)\}
+ + \tfrac{1}{2}\,\mathbf{1}\{\sigma(\hat{y}, y_i) = \sigma(\hat{y}, y_j)\}\Big],
+\end{equation}
+the fraction of the other conditions in $J$ whose truth the prediction resembles
+less than its own, ties counted at one half. $\sigma$ is a \emph{similarity}, so
+higher means closer; one built from a distance is that distance negated. The
+score counts comparisons, so it reads $\sigma$ only through the ordering that
+$\sigma$ induces on $J$, and no strictly increasing transform of $\sigma$ changes
+it. Only $\sigma$ and $J$ change across frames, both declared per frame in
+\cref{tab:sigma}, with the single exception the table's note records: the
+token-retrieval row is computed with a strict inequality and no tie term.
+\end{defn}
+
+\Cref{fig:nir} draws one comparison set under this definition, with the three
+reading rules that follow from it, the half-tie rule among them.
+
+\input{figs/fig-nir}
+
+\paragraph{Why chance is $0.50$, and what that claim rests on} Chance sits at
+$0.50$ under a symmetry assumption, not as a consequence of using the same truth
+set, which is necessary but insufficient. Three things must hold for an
+uninformative prediction: $y_i$ exchangeable with the comparison truths
+$\{y_j\}$; its label conferring no privileged relation to the prediction; and
+symmetric tie handling. The reference is assumed, not proved, so it is checked
+empirically in each frame. In the expression frame the drug-agnostic linear map
+and control-copy score $0.500$ and $0.504$; in the residual frame: random,
+control-copy and \texttt{orth} score $0.501$, $0.506$ and $0.501$. In the
+residual frame one asymmetry survives \emph{between} arms: the split-half
+reference is scored against half-sample truths, every baseline against
+full-sample truths,\seealso{\cref{sec:methods-data} lists every reference in the
+chapter.} which makes the comparison conservative. In the expression frame every
+arm is scored against the same half-sample truths.
+
+\paragraph{The tie term is not cosmetic} Discard it as bookkeeping and the
+metric breaks in residual space (\cref{sec:methods-residual}), where a predictor
+of the generic response is exactly the zero vector, so every comparison is a
+tie. A strict inequality scores it $0.000$ instead of the
+$0.500$ it deserves, below every random predictor.
+
+\paragraph{The comparison set must be declared too} Conditions are grouped by
+(cell line, plate) in the expression frame and by cell line in the residual
+frame, and the two are not interchangeable. Widening $J$ across plates moves a
+drug-agnostic baseline from $0.161$ to $0.399$ (\cref{sec:res-blind}), more than
+double the score for the same predictor. And because the generic
+response sits in every truth in equal measure, it cancels, leaving only the
+drug-specific difference to decide the score --- the component the reversion
+artefact exploits.
+
+\paragraph{The expression frame compares two reconstructions} The model emits a
+cell sentence, which is gene ranks and nothing else, so no distance in expression
+units can be taken on what it produces. The prediction and the truth it is scored
+against are both decoded to an expression vector before any distance is
+taken,\seealso{\cref{sec:lit-c2s} states the map and the reconstruction argument
+C2S makes with it} through the functional form of the map in
+\cref{sec:lit-c2s}, fitted once for the whole run as a single slope and
+intercept on the base-$10$ logarithm of a gene's position in the sentence,
+clamped at zero, with every panel gene the sentence omits set to zero. The
+expression frame's $\sigma$ is therefore a distance between two reconstructions
+and not between two measured profiles, and the clamp and the zero fill make it
+one the underlying rank profiles do not determine.
+
+\paragraph{Three similarity functions, five declared pairs} Three similarity
+functions are computed and stored: a negated Euclidean distance, a correlation
+between rank profiles, and a cosine. Naming the function does not name the
+metric. What fixes the metric is $\sigma$ composed with the representation it
+reads, and the negated Euclidean is computed on three different vectors here.
+\Cref{tab:sigma} declares the pair $(\sigma, J)$ behind every quoted figure.
+
+
+\paragraph{Why each frame takes the similarity it does} 
+In the expression frame the number attached to a gene is a statement about where
+that gene sits in the ordering. The decode reads a gene's position in the
+sentence and nothing else, so a large value means near the front and a small one
+means far down, and magnitude is not a scale sitting on top of the signal but
+part of what the vector says. Two profiles agreeing in shape while differing in
+scale are therefore making different claims --- one puts its genes near the top
+of the list, the other puts the same genes in the middle --- and a cosine, which
+divides the scale out, would call them the same. The truths in a comparison set
+really do differ this way, listing different numbers of genes and so differing in
+magnitude as well as in pattern, and the Euclidean distance keeps both. What it
+keeps is a fact about the representation rather than about abundance, which is
+the price of scoring reconstructions.
+
+\paragraph{In the residual frame the choice does not arise} The expression frame
+demanded a judgement. Magnitude carries something there, so keeping it or
+discarding it is a decision with a cost either way, and the paragraph above
+argues for keeping it. In the residual frame there is no such judgement to make,
+and not because the cost happens to be small. The two candidate similarities
+return the same number.
+
+What makes that possible is that the residual frame never compares raw residuals.
+Both arguments pass through $\phi$ first, and $\phi$ assigns its weights by rank
+within a block rather than by anything about the condition: the $r$-th most
+up-regulated gene receives $1/\log_2(r+1)$ whichever gene it happens to be, the
+$r$-th most down-regulated receives its negative, and every other gene receives
+zero. Two conditions whose blocks are full therefore hold the same multiset of
+values and differ only in which gene holds which. The encoding has standardised
+the magnitude before any comparison takes place, so every truth in the comparison
+set has the same norm --- and a quantity that is constant across $J$ cannot
+separate one member of $J$ from another. There is nothing in the length for a
+cosine to throw away.
+
+That alone makes the cosine harmless. The equality is stronger than harmlessness,
+and it follows in two lines. Write $\hat{u} = \phi(\hat{y})$ and $u_j =
+\phi(y_j)$, and let $\lVert u_j \rVert = C$ for the scored truth and every truth
+in $J$, with $\hat{u} \neq 0$. Expanding the squared distance,
+\begin{equation}
+ -\lVert \hat{u} - u_j \rVert^{2}
+ \;=\; \underbrace{-\lVert \hat{u} \rVert^{2} - C^{2}}_{\text{independent of } j}
+ \;+\; 2\,\langle \hat{u},\, u_j \rangle ,
+\end{equation}
+and because $t \mapsto t^{2}$ is strictly increasing on $t \geq 0$, ordering $J$
+by $\sigma_{\mathrm{euc}}$ is ordering it by $-\lVert \hat{u} - u_j \rVert^{2}$,
+hence by $\langle \hat{u}, u_j \rangle$ alone. The cosine gives
+\begin{equation}
+ \sigma_{\cos}(\hat{u},\, u_j)
+ \;=\; \frac{\langle \hat{u},\, u_j \rangle}
+            {\lVert \hat{u} \rVert \, \lVert u_j \rVert}
+ \;=\; \frac{1}{C \lVert \hat{u} \rVert}\,\langle \hat{u},\, u_j \rangle ,
+\end{equation}
+a positive constant multiple of the same inner product, so it orders $J$ the same
+way and breaks the same ties. The two similarities do not take equal values ---
+one is a distance and the other is bounded in $[-1, 1]$ --- but $\NIR$ reads
+$\sigma$ only through the ordering it induces, and on that they are
+indistinguishable. Reporting the residual frame under either yields the identical
+score.
+
+The equal-norm hypothesis is what carries the result, and it is a property of the
+encoding rather than of the biology: it holds wherever both blocks are full, and a
+residual too sparse to fill one is the only case in which the two could come
+apart. That is also why the expression frame's argument does not transfer.
+There the truths genuinely differ in norm, because they list different numbers of
+genes, so magnitude is available to separate them and discarding it costs
+something real.
+
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{Every $(\sigma, J)$ pair behind a quoted $\NIR$ figure,
+declared once.} A negated Euclidean distance appears in three of the five rows
+and reads a different vector in each, so what fixes a metric here is the row and
+not the similarity function.}
+\label{tab:sigma}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.13\linewidth}
+  >{\raggedright\arraybackslash}p{0.13\linewidth}
+  >{\raggedright\arraybackslash}p{0.22\linewidth}
+  >{\raggedright\arraybackslash}p{0.18\linewidth}
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Name} & \thead{$\sigma$} & \thead{Vectors compared}
+  & \thead{Comparison set $J$} & \thead{Where quoted} \\
+\midrule
+\texttt{nir\_expr} & negated Euclidean & reconstructed expression pseudobulk,
+  prediction and truth both decoded & by (cell line, plate), and by cell line in
+  the cross-plate arm of \cref{tab:plateleak}
+  & the blindness verdict (\cref{sec:res-blind}), \cref{tab:plateleak},
+  \cref{fig:difficulty} \\
+\addlinespace
+$\NIR$ as the $\DRF$ audit computes it & negated Euclidean & measured pseudobulk
+  expression, no decode & by cell line, and by (cell line, plate) in the
+  same-plate arm & \cref{tab:drf} \\
+\addlinespace
+token retrieval & negated Euclidean & undecoded log-expression, as full, shift
+  and residual profiles & the group's other drugs, query and truth disjoint
+  halves of one condition & the retrieval rows of \cref{tab:ceilings} and
+  \cref{tab:divergence} \\
+\addlinespace
+\texttt{nir\_rank} & correlation of rank profiles & rank profiles over the
+  truth's expressed genes & by (cell line, plate) & the admissibility screen
+  below, and nothing else \\
+\addlinespace
+residual frame & cosine & signed rank-discounted residual vectors & by cell line
+  & the residual $\DRF$ below, and every residual-frame figure
+  (\cref{sec:methods-residual}) \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The token-retrieval row is the one departure from the definition above:
+its code counts strict wins over the comparison set and carries no half-tie
+term. Exact ties between Euclidean distances on continuous vectors are
+vanishingly rare, so no figure quoted from that row moves under the tie term,
+but the row is not an instance of the equation as written.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+
+\paragraph{Grading the metrics, not the models} The framework is Miller
+et al.'s~\cite{miller}. Ask not which model scores highest but which
+\emph{metric} can see quality at all. No model enters the audit; every predictor
+in it is built from measured expression.
+
+\begin{defn}{Dynamic Range Fraction ($\DRF$)}
+A metric is graded by where it places a predictor of known quality on its own
+scale. Fix three reference predictors and write $m(\cdot)$ for the metric's value
+on each:
+\begin{equation}
+ \DRF(m) \;=\; \frac{m(\textrm{pos}) - m(\textrm{neg})}%
+ {m(\textrm{perfect}) - m(\textrm{neg})} .
+\end{equation}
+The denominator is the entire range the metric has to work with, from a predictor
+carrying no drug information to one that is exactly right. The numerator is how
+much of that range a real but imperfect signal occupies. A $\DRF$ near $1$ is a
+metric that scores genuine signal almost as highly as perfection, $0$ one that
+cannot separate it from nothing at all, and a negative value one that placed the
+uninformative baseline \emph{above} the real signal.
+\end{defn}
+
+\paragraph{The three reference predictors} All three are pseudobulk profiles of
+measured expression, stratified by cell line. For each (drug, cell line) the
+cells are split in half: $S_{\textrm{GT}}$ supplies the target every predictor is
+scored against, and $S_{\textrm{TD}}$ supplies a technical duplicate of the same
+condition, disjoint in cells.
+
+\emph{Perfect} is $S_{\textrm{GT}}$ itself, which fixes the top of the scale at
+whatever value the metric returns on an identical pair rather than assuming it is
+one.
+
+\emph{Negative} is the drug-agnostic mean, the leave-one-out average over the
+other drugs in that cell line. It is a real expression profile and not noise,
+which is the point: a metric that rewards it is rewarding what every drug does,
+not what this drug did.
+
+\emph{Positive} is the \emph{interpolated duplicate}, the technical duplicate
+pulled gene by gene toward the negative control in proportion to how weakly that
+gene distinguishes the drug. Per gene,
+\begin{equation}
+ \mu_{\textrm{ID}} \;=\; \alpha\,\mu_{\textrm{TD}}
+ \;+\; (1-\alpha)\,\mu_{\textrm{mean}} ,
+ \qquad \alpha \;=\; 1 - p_{\textrm{DEG}} ,
+\end{equation}
+where $p_{\textrm{DEG}}$ is the gene's differential-expression $p$-value for this
+drug against the other drugs in the same cell line, computed on the duplicate
+half. A gene that separates the drug from its neighbours keeps its measured
+value; a gene that does not is pulled back to what any drug would have produced.
+What results is a predictor carrying real drug signal with the noise-only genes
+damped --- imperfect, but unambiguously better than knowing nothing, which is
+exactly the predictor a working metric must rank above the negative control.
+Every metric in \cref{tab:drf} sees the same three profiles.
+
+\paragraph{Reading a negative value as inversion} Taking a negative $\DRF$ to
+mean the metric is inverted takes one further step, that the sign belongs to the
+metric and not to the run.\gloss{inversion}{A metric placing the drug-agnostic
+baseline above the positive control, as a property of the metric and not of one
+run.} Three of the four negatives survive it; the fourth is carved out where it
+appears.
+
+\paragraph{How the number is formed} $\DRF$ is a ratio whose numerator and
+denominator are both estimated from the same data, and that makes three things
+decisions rather than defaults: how the point estimate is formed, how it is given
+an interval, and against what it is tested.\corrmark{The $\DRF$ bootstrap
+resampled the wrong unit and imposed no null; both repaired and both arms rerun
+before any figure here was read.}
+
+The estimate is a ratio of means and not a mean of ratios. Each of the three
+reference predictors is scored on every (drug, cell line) row, the three scores
+are averaged across rows, and the ratio is formed once from those averages.
+Forming a ratio per row and averaging afterwards would let any row whose
+denominator fell near zero dominate the result. Within the rank-based metrics
+ties take average ranks, since otherwise a tied gene's rank would be settled by
+its position in the panel, which is a fact about how the panel was ordered and
+not about the cell.
+
+The interval is a percentile cluster bootstrap resampling whole cell lines, the
+unit that repeats across rows, and it recomputes the entire ratio inside every
+draw. That second point is the one that matters. The denominator
+$m(\textrm{perfect}) - m(\textrm{neg})$ is not a known constant but an estimate,
+so an interval that resamples the numerator while holding the denominator at its
+observed value describes the uncertainty in the top half of the ratio and calls
+it the uncertainty in the ratio. It comes out too narrow. Letting the denominator
+move with the numerator keeps the interval about the quantity actually reported.
+The cluster is the cell line while the grouping unit is the (cell line, plate)
+pair, and the two are reported separately because they are different things; only
+the cell-line channel is clustered, so these intervals ignore the crossed well
+dimension and are narrower than fully crossed ones, a cost the declared exception
+below states in full.
+
+The test imposes its null rather than assuming it. A $p$ read straight off the
+observed resampling distribution asks how often the data disagree with
+themselves, which for a clearly positive statistic is never, so the $p$ pins to
+the Monte Carlo floor whatever the truth is and nothing is tested at all. The
+distribution is therefore recentred on $\DRF = 0$ before anything is counted, and
+the $p$ is the fraction of null draws reaching the observed value; with
+$\num{2000}$ draws the smallest one attainable is $1/2001$. Holm control runs
+across the five metrics at once, since they are tested together and read as one
+family.
+\paragraph{What the number survives} \Cref{tab:drf} carries the values. Every
+choice above guards against the estimator flattering itself; none of them says
+whether the configuration that produced the estimate is doing the work, and that
+is a separate question with separate answers. Under the imposed null no draw of
+$\num{2000}$ reaches $\NIR$'s observed value, so it sits at the floor in both
+arms and its estimate stands some forty cluster-robust standard errors from zero
+--- but a distance from zero is only as good as the setup that generated it.
+
+Three checks bound the setup. Restricting swap partners to the same plate changes
+no sign and matches the arms at $27$ cell lines within plate against $25$ across,
+so the separation is not an artefact of comparing across batches. A stricter
+configuration, capped at $25$ \emph{groups} and admitting only $18$ distinct cell
+lines, still gives $\NIR$ \ci{+0.519}{+0.479}{+0.546} over $335$ rows, so it is
+not an artefact of breadth either. And the inversion of the four rivals belongs
+to the data rather than to a leak: a leave-one-out correction barely moves the
+numbers, real cell lines carrying 20--204 drugs, and it survives holding the
+plate constant.
+
+What the argument then uses is the sign pattern and nothing finer, drawn for the
+same-plate arm in \cref{fig:calibration}, panel b. No ranking among the negative
+metrics is claimed.
+
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{Under the hardened protocol, $\NIR$ is the only one of the five
+whose $\DRF$ is positive, and the sign pattern is identical in both arms.} All
+four rivals score the drug-agnostic baseline above the positive control and
+exclude zero in both arms. The second column is what separates $\NIR$.}
+\label{tab:drf}
+\small
+\begin{tabularx}{\linewidth}{@{}l l r r
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Metric} & \thead{Scored against} & \thead{$\DRF$ all plates}
+  & \thead{$\DRF$ same plate} & \thead{Reading} \\
+\midrule
+$\NIR$ (measured expression) & other conditions' truths & $+0.635$ & $+0.545$
+  & the only positive \\
+\addlinespace
+\texttt{weighted\_r2} & its own truth & $-0.163$ & $-0.104$
+  & no directional claim \\
+$\paneltau$ & its own truth & $-0.319$ & $-0.250$ & inverted \\
+\texttt{spearman\_expr} & its own truth & $-0.650$ & $-0.500$ & inverted \\
+$\DEdr$ & its own truth & $-0.686$ & $-0.515$ & inverted; the default \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The $\NIR$ row is the audit's own construction, a negated Euclidean
+distance on measured pseudobulk expression with no decode, which is the second
+row of \cref{tab:sigma} and not the \texttt{nir\_expr} of the blindness verdict.
+\item The all-plates run has $\num{1820}$ rows (one drug within one cell line)
+clustered on the $25$ cell lines they nest in; the same-plate run has
+$\num{586}$ rows over $44$ cell-line$\times$plate groups spanning $27$ cell
+lines, clustered on cell line. $\NIR$ reads \ci{+0.635}{+0.604}{+0.663} and
+\ci{+0.545}{+0.516}{+0.569}, Holm $p = 0.002$ at the resampling floor in both
+arms. The four negatives are point estimates, each excluding zero on the same
+clustering in both arms; \texttt{weighted\_r2} sits closest to zero and its sign
+tracks cell count, hence no directional claim.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+
+\begin{figure}[htbp]
+\centering
+% drawn at 142mm by thesis_v2/figs/calibration.py, the width of the measure; no
+% width= key, so it is placed at scale 1.0 and its type prints at the point
+% sizes it was set in.
+\includegraphics{fig-calibration}
+\caption[A zero-information predictor outscores the model]{\textbf{A predictor
+carrying nothing about drug, cell or biology scores the field's standard metric
+above both the within-well reference and the model, and of five metrics only
+$\NIR$ grades in the direction its name implies.} (a) $\DEdr$, $K = 50$,
+Pearson, tier 2 unseen drugs, \texttt{worst} convention, $n = 400$ conditions;
+the axis runs from $0$ and is not truncated. The grey band marks the within-well
+split-half precision reference at $0.76$, the two-real-cell positive control of
+\cref{tab:de-artifact}: two halves of the same well, a precision figure and not
+a biological replicate. Its width is a drawing device, not an interval, and the
+arm marks are bare --- the source carries a normal-approximation interval over
+conditions, and this document draws only the clustered bootstrap, so nothing is
+drawn rather than an interval of another kind. (b) $\DRF$ for the five metrics
+of \cref{tab:drf}, the same-plate arm only: $586$ drugs over $44$
+cell-line$\times$plate groups spanning $27$ cell lines, the pale block at each
+arrowhead the $95\%$ percentile bootstrap interval clustered on cell line
+quoted there.}
+\label{fig:calibration}
+\end{figure}
+
+\paragraph{What this replicates, and where it does not} The methodological core
+of Miller et al.\ replicates, and this audit sharpens it. Metric choice
+dominates, and the
+control-referenced correlation they flag is the worst performer in both arms
+($\DEdr$, $-0.686$ across plates and $-0.515$ within). Their calibrated set does
+not transfer intact. \texttt{weighted\_r2}, this project's counterpart of the
+weighted $R^2\Delta$~\cite{mejia} they endorse, is negative in both audited
+arms, though closest to zero and sign-tracking cell count, so it carries no
+directional claim; the inversions of $\paneltau$ and \texttt{spearman\_expr}
+belong to neither calibrated set. Their endorsed $\NIR$ does survive. Being
+rank-based is not what protects it; refusing to score anything the generic
+response can supply is.
+
+\paragraph{Adopting the instrument is also a defence} Miller et al.\ conclude
+that under calibrated metrics deep models outperform uninformative baselines;
+\cref{sec:res-blind} finds ours at chance on that metric, in the decoded
+representation the verdict deploys and not in the one the audit
+graded.\seealso{\cref{sec:lit-dispute} sets out the dispute this audit enters.}
+Genetic against drug perturbation and a discriminative against a generative
+model are candidate explanations; \cref{sec:res-lookup} supplies a third.
+Adopting their metric also puts the verdict beyond the objections their own
+paper raises.
+
+\paragraph{One declared exception on the intervals} $\DRF$ is a ratio of means;
+the two-way estimator used everywhere else here is written for a
+mean.\bench{two-way cluster-robust intervals on every
+mean}{\cref{sec:methods-data}} Both $\DRF$ intervals are therefore
+\emph{one-way} percentile cluster bootstraps that resample whole cell lines and
+recompute the ratio inside each draw, respecting the cell-line dependence and
+ignoring the crossed well dimension, so they are narrower than fully crossed
+intervals. The separation they grade is far too large for that to change the
+sign, but the caveat belongs beside the number.
+
+\paragraph{Two questions about the instrument remain, and they differ} The first
+is whether the conditions are empirically discriminable at the tested budget. A
+spike-in forced choice answers it. Within a plate, a reference pseudobulk from
+drug A's cells must be scored closer to a disjoint sample of A's own cells than
+to drug B's, chance $0.50$, with contamination of B by A titrating the
+difficulty. At zero contamination three of the six metrics run on it
+separate the two populations essentially perfectly ($\paneltau = 1.000$,
+$\DEdr = 0.995$, top-$n$ $\tau = 0.987$, plate held constant); at full
+contamination those same three return $0.501$--$0.502$. The whole-profile
+similarities are much weaker even at zero contamination, cosine $0.740$,
+Spearman $0.680$, cosine on the shift $0.620$, which matters because a
+whole-profile similarity is what $\NIR$ uses here. Split-half retrieval
+establishes discriminability, not predictability from untreated input, so
+discriminability is not the sole bottleneck at this budget.
+
+The spike-in cannot answer the second question, whether $\NIR$ registers a true
+positive, since $\NIR$ was not among the metrics run on it. The evidence is the
+$\DRF$ audit's own positive control. Under $\NIR$ on measured expression the
+interpolated
+duplicate scores $0.802$ against the drug-agnostic mean's $0.457$ across plates,
+and $0.668$ against $0.272$ within plate; in the residual frame a split-half
+replicate reaches $0.854$ against negatives at $0.501$--$0.506$. None of those is
+the reference the verdict is measured against. That reference is the within-well
+split-half precision estimate recomputed on the tier-2 within-plate benchmark,
+where it sits above chance but not far above it; that, and not $1.0$, is the bar
+\cref{sec:res-blind} states the model against.
+
+\begin{scopelimit}[carried into \cref{sec:res-blind} and the rest of the chapter]
+The audit licenses $\NIR$ and nothing else. $\paneltau$ is inverted in both
+audited arms, so no absolute claim rests on it and no ordering read off it counts
+as evidence of skill; an inverted metric preserves neither. Where $\DEdr$
+appears later it is only as a paired comparison of two arms on one scale, never
+as an absolute score. And a metric is not calibrated by having a relative
+calibrated. What is graded here is a negated Euclidean distance on measured
+pseudobulk expression, the second row of \cref{tab:sigma}, and the residual
+frame's cosine similarity in its own frame, each against its own controls. The
+\texttt{nir\_expr} of the blindness verdict is that distance read on decoded
+pseudobulk, the first row, with controls of its own but no $\DRF$ of its own, so
+it stands on the assumption above. A third $\sigma$ would need its own audit.
+\end{scopelimit}
+
+\begin{claim}
+This audit grades five candidates, and $\NIR$ is the only
+one with a positive $\DRF$ (\ci{+0.635}{+0.604}{+0.663} on a one-way cluster
+bootstrap over the $25$ cell lines, the declared exception to this chapter's
+two-way rule, Holm $p = 0.002$; \ci{+0.545}{+0.516}{+0.569} over $27$ cell lines
+with same-plate partners, Holm $p = 0.002$), and the other four are negative with
+intervals excluding zero in both audited arms. Three of them ($\paneltau$,
+\texttt{spearman\_expr} and $\DEdr$) are inverted rather than merely
+uninformative, each ranking the drug-agnostic baseline above the positive
+control; \texttt{weighted\_r2} sits closest to zero and its sign tracks cell
+count, so no directional claim is made for it. The saturating predictor is not a
+curiosity. It carries no information about drug, cell or biology and scores
+$\DEdr = 0.9999$ in rank space, above the two-real-cell positive control of
+$0.76$ and above the model's $0.73$. Under $\NIR$ on measured expression the positive control is retrieved well clear of
+the negative ($0.802$ against $0.457$ across plates, $0.668$ against $0.272$
+within), so the instrument registers a true positive. Every drug-use claim in
+the rest of this chapter that rests on a continuous prediction score is
+therefore made on $\NIR$, in the audited construction where the audit reaches
+and in the decoded one that inherits its licence where it does not; $\DEdr$
+appears below only where two arms are compared with each other on the same
+scale, never as an absolute score of the model's drug use. The remaining instruments (forced-choice grading,
+output invariance, and the logit-space activation tests of
+\cref{sec:res-mechanism}) are deliberately on scales of their own, each with a
+fixed chance value or a paired control.
+\end{claim}
+
+% ===========================================================================
+% Beat 2.
+% ===========================================================================
+
+\beatsection{E}{2}{In the expression frame, the model is drug-blind}{sec:res-blind}
+\label{sec:methods-controls}   % legacy anchor, so v1 cross-references resolve
+
+
+\begin{question}[2]
+With a properly calibrated metric in hand, the investigation can ask the
+question it exists to answer. Does the model use the drug at all to make predictions? Four
+instruments answer it, and each exists because one specific objection would
+otherwise be fatal.
+\end{question}
+
+\noindent
+The answer is no, and reaching it takes more than a scoreboard. With the metric
+calibrated, the model can finally be scored on the tiers, and two readings follow
+that look nothing alike and settle nothing on their own.
+
+Within plate on tier 2 ($n = \num{606}$) the model scores $0.498$ against a
+within-well split-half precision reference of $0.576$.\bench{one estimator,
+seven settings}{\cref{tab:ceilings}} The gap is narrow, but so is the scale: the
+reference itself stands only a little above chance, and the model sits at chance
+inside it, matched by predictors that know nothing about the drug --- a
+drug-agnostic linear map at $0.500$ and a control-copy at $0.504$, against the
+global mean's $0.180$. That average also hides a split. Binning the same $\num{606}$
+conditions by their own reference gives $296$ on which the reference falls
+\emph{below} chance, at $0.287$, where not even a second sample of the same well
+scores above chance; $106$ marginal; and $204$ identifiable, whose reference
+clears the pre-set $0.80$ bar. On that last third the model looks far better and
+discriminates well above chance, reaching $0.768$. A control-copy carrying no
+drug information whatsoever reaches $0.766$.
+
+Neither reading is causal, and that is the whole difficulty. A model scoring at
+chance might be ignoring the drug, or reading it and failing to turn it into
+anything; a model scoring $0.768$ where a drug-blind predictor scores $0.766$
+might be adding nothing, or adding something too small for the metric to resolve.
+The two readings even point opposite ways, one suggesting the model has learned
+nothing and the other that it has learned a good deal, and both are consistent
+with the drug token never being consulted. No comparison of scores can separate
+these, because no comparison of scores intervenes on anything. What settles it is
+an experiment in which the drug changes and nothing else does.
+
+\paragraph{Four instruments, and each closes a different objection} The four are
+not four attempts at one measurement. The second is the experiment the previous
+paragraph asked for, and the others exist because that experiment is still scored
+by something, and whatever scores it could be blamed for the result. Each
+successive instrument removes another part of the apparatus from the argument.
+
+The first is the benchmark itself, run \emph{within plate}. Drug and plate are
+partially confounded by the atlas's design, so a comparison set free to span
+plates lets a batch effect stand in for drug identity and inflates every arm at
+once. Restricting the set to a single plate removes that channel before anything
+else is asked.
+
+The second is the scramble ablation, and it is the only manipulation among the
+four. The control cell is held fixed and only the drug name and mechanism in the
+prompt are replaced, by a different drug on the same plate; everything the model
+sees apart from the drug is unchanged. A gap between the two generations is
+caused by the drug or by nothing, which is what no comparison of scores could
+establish. Here the partner is drawn at random, and that carries a known risk: a
+swap to a drug with a similar true response makes an unchanged output correct
+rather than blind, which biases the test toward finding nothing. A swap-distance
+sweep bins (drug, swap) pairs by the response distance between the real and the
+swapped-in drug, turning the single test into a curve, and
+\cref{sec:res-generalisation} returns to the question with partners stratified by
+residual cosine, where a neutral null can be identified rather than assumed.
+
+The third is forced-choice grading. A prediction is scored against its own
+condition's truth and against another drug's truth from the same comparison set,
+and what is recorded is how often its own wins. 
+
+The fourth is output invariance, and it touches no truth at all. It asks only
+whether changing the drug token changes the generated text, comparing generations
+against other generations from the same fixed control cell. No similarity
+function against a ground truth, no comparison set and no decode enters it, so no
+scoring choice can confound it. It is the least informative of the four and the
+least confoundable, and those are the same property.
+
+Taken together they share a model and little else. The first can be defeated by
+batch leakage, the second by a badly chosen swap partner, the third by a
+degenerate comparison set, the fourth by nothing except the model genuinely
+ignoring the drug --- and it is that lack of a common failure mode, rather than
+any one of them, that carries the verdict.
+
+\paragraph{One measurement rule comes first} Drug and plate are partially
+confounded by the atlas's design
+(\cref{sec:methods-data}),\framecue{\Eframe}{all four instruments are scored in
+the expression frame} so grouping by cell line alone lets the batch effect
+stand in for drug identity. A drug-agnostic mean baseline, containing no drug
+information whatsoever, scores $0.399$ when the comparison set may span plates
+against $0.161$ when it may not, and the precision reference falls from $0.625$
+to $0.575$ alongside it, the batch
+effect having inflated that too.\seealso{\cref{tab:plateleak} is the leak
+audit, a wider run than the benchmark} That is plate leakage, measured and not
+assumed. Being wider, its within-plate figures sit slightly off the ones above;
+what it licenses is the rule, not a substitute set of scores.
+
+\begin{scopelimit}[carried into every discrimination result in this chapter]
+Every discrimination instrument gained a \texttt{--same\_plate\_only} mode and
+every discrimination result in this chapter was re-run within plate, except
+where a departure from that rule is named at the point of use, as with the
+swap-distance sweep that answers the fourth objection below, whose swap partners
+were not plate-restricted (\cref{sec:app-sweep}), and the residual-frame scores
+of \cref{sec:methods-residual}, whose comparison set is grouped by cell line and
+whose justification is given there. A third departure is the identifiability
+curve in \cref{tab:ceilings}: it is cross-plate because no within-plate sweep
+reaches the cell budgets it reports, the plate-matched version stopping at
+twenty cells per condition, and it is computed on raw pseudobulk rather than on
+the decoded expression the rest of that table uses. It is therefore read as a
+statement about aggregation and never set beside the within-plate references
+above it. Conclusions are unchanged; some magnitudes shrink.
+\end{scopelimit}
+
+\paragraph{The central manipulation is the scramble ablation} The prompt is left
+byte-identical except that the drug name and mechanism are replaced by another
+drug's, the control cell and the scoring truth unchanged. Control- and batch-derived leakage therefore cancels in
+the scramble gap $\gap = \NIR_{\textrm{model}} - \NIR_{\textrm{scramble}}$, the
+only difference in this chapter whose leakage cancels by construction. It does
+not displace the drug-agnostic comparisons above and below, which rest on the
+within-plate rule instead.
+
+Where that ablation is applied is a choice, and this chapter makes the hard one
+first. Every scramble in this section is scored on \texttt{tier2}, held-out
+drugs the checkpoint never saw in training, and the substituted partner is drawn
+from that same held-out tier --- so the model is asked to distinguish two drugs
+it knows nothing about. Nothing here is measured on trained conditions; the
+\texttt{tier1} arm of these runs returned no scoreable conditions at all, since
+$\NIR$ needs a per-condition pseudobulk and that tier averages roughly two cells
+per condition. \Cref{sec:res-encoding} later runs the easier version of the same
+manipulation, scoring a model on conditions it did train on, where a drug-blind
+model has memorisation to fall back on and any real drug sensitivity has its
+best chance of showing. That the expression-frame arms fail here, on the harder
+test, is what this section establishes; that the easier test does not rescue
+them is \cref{sec:res-epsilon}'s result, and that one target construction does
+separate under it is \cref{sec:res-encoding}'s.
+
+% PLACEMENT ONLY. The float was anchored six paragraphs lower (just before "The
+% third instrument"), which is where its [htbp] first became satisfiable -- the
+% top of the NEXT page -- and that page then had no room left for
+% \cref{tab:blind}, which was pushed a further page past the sentence that
+% introduces it (measured: anchor p35, caption p37). Anchoring the figure at the
+% paragraph it actually depicts, the scramble ablation itself, is earlier in the
+% flow, so the figure takes the top slot one page sooner and the table follows on
+% the page after its own anchor. Nothing about the figure or its caption changes.
+%
+% The paragraph above now carries the \cref, so the anchor is explicit and not
+% merely positional. Its second sentence lost the restatement "Both arms share
+% the same control cell, so ..." because the figure now sets that clause on one
+% unbroken line beneath the two arms; the inference is carried by "therefore"
+% off "the control cell ... unchanged" in the sentence before it. No claim,
+% hedge or magnitude changed, and the paragraph is one line shorter than it was.
+%
+% \input, not \includegraphics: figs/fig-scramble.tex is TikZ and carries its
+% own float, caption and \label. \input resolves against the main-document
+% directory, so this is thesis_v2/figs/, NOT the read-only ../thesis/figs/ that
+% \graphicspath adds for raster/PDF assets only.
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[x=21mm, y=1mm, font=\small]
+    \def\ur{180}                     % upper strip, mm per unit of the gap
+    \def\lz{-52}\def\ls{63}          % lower strip, origin and mm per unit
+    \def\lchance{\lz+(0.5-0.326)*\ls}% $\NIR = 0.50$ on the lower strip
+    % Four of the five gaps sit within a few thousandths of zero. The dot stays at
+    % its true height and the label drops straight down to one aligned row, so the
+    % series reads as the flat line it is rather than as five scattered labels.
+    \newcommand{\gapdot}[2]{%
+      \fill[ink] (#1,{#2*\ur}) circle (1.5pt);
+      \draw[rulegrey, line width=0.3pt] (#1,{#2*\ur}) -- (#1,-12.4);
+      \node[anchor=north, font=\scriptsize, text=ink] at (#1,-12.4) {$#2$};}
+    \newcommand{\nirdot}[2]{%
+      \fill[quietink] (#1,{\lz+(#2-0.326)*\ls}) circle (1.3pt);
+      \node[anchor=west, font=\scriptsize, text=quietink, fill=white, inner sep=1pt]
+        at (#1+0.06,{\lz+(#2-0.326)*\ls}) {$#2$};}
+  
+    % === upper strip, the scramble gap ========================================
+    \node[anchor=west, font=\scriptsize\bfseries, text=accent]
+      at (-0.42,29) {$\gap$, expression frame};
+    \node[anchor=east, font=\scriptsize\itshape, text=quietink]
+      at (4.40,29) {trend $\mathrm{corr}(\textrm{distance},\gap) = +0.051$};
+    \draw[ink, line width=0.5pt, densely dotted] (-0.42,0) -- (4.40,0);
+    \node[anchor=west, font=\scriptsize\itshape, text=ink] at (4.42,0) {zero};
+  
+    % the one bin for which an interval is quoted, drawn as an interval
+    \draw[accent!55, line width=1.6pt] (1,{-0.002*\ur}) -- (1,{0.124*\ur});
+    \fill[accent] (1,{0.060*\ur}) circle (1.6pt);
+    \node[anchor=west, font=\scriptsize, text=accent]
+      at (1.08,{0.060*\ur}) {$+0.060$};
+  
+    \gapdot{0}{-0.046}
+    \gapdot{2}{-0.006}
+    \gapdot{3}{-0.004}
+    \gapdot{4}{-0.019}
+  
+    % === the divider IS the argument: two quantities, two scales, one x =======
+    \draw[rulegrey, line width=0.4pt] (-0.42,-20) -- (4.40,-20);
+  
+    % === lower strip, the model's own score, which drifts =====================
+    \node[anchor=north west, font=\scriptsize\bfseries, text=quietink]
+      at (-0.42,-23) {the model's own $\NIR$ in the same bins, on its own scale};
+    \draw[ink, line width=0.5pt, densely dotted]
+      (-0.42,{\lchance}) -- (4.40,{\lchance});
+    \node[anchor=west, font=\scriptsize\itshape, text=ink]
+      at (4.42,{\lchance}) {chance};
+    \nirdot{0}{0.497}
+    \nirdot{1}{0.612}
+    \nirdot{2}{0.523}
+    \nirdot{3}{0.401}
+    \nirdot{4}{0.326}
+  
+    % === the one axis the two strips share ====================================
+    \foreach \i/\lab/\rng in {0/nearest/{2.75--4.03}, 1/{}/{4.03--4.60},
+                              2/{}/{4.60--4.93}, 3/{}/{4.93--5.32},
+                              4/farthest/{5.32--6.25}}{
+      \node[anchor=north, font=\scriptsize, text=quietink, align=center]
+        at (\i,-58) {\i\\\lab};
+      \node[anchor=north, font=\tiny, text=quietink] at (\i,-66) {\rng};}
+    \node[anchor=north, font=\scriptsize\itshape, text=quietink]
+      at (2,-72) {swap distance $\lVert y_A - y_B \rVert$, real drug to swapped-in drug};
+  \end{tikzpicture}
+  \caption[The scramble gap does not grow with swap distance]{\textbf{Naming a
+  drug whose response is far from the truth damages the prediction no more than
+  naming a near neighbour.} Results taken in the Tier 2. Upper strip, the scramble gap across five bins of swap
+  distance. A real dissimilarity effect would climb from left to right and peak at
+  the farthest bin; instead the correlation between distance and gap is $+0.051$,
+  and the only bin whose interval is quoted, \ci{+0.060}{-0.002}{+0.124}, is the
+  second of five. Lower strip, the model's own $\NIR$ in those same bins, which
+  does fall overall, though not monotonically, because drugs far from everything
+  populate the far bins. The two strips are different quantities on different
+  scales, and $\gap$ uses the same drug on both arms, so that drift cancels out of
+  it. Non-canonical: \texttt{max\_new\_tokens=1200}, $n = 40$ per bin, which
+  excludes a large dissimilarity effect without establishing a null.}
+  \label{fig:sweepbins}
+  \end{figure}
+
+\paragraph{Two constraints on the swap partner} The partner must be a different
+drug. Allowing the same drug at another dose or plate substitutes the drug for
+itself, an unchanged prediction is then correct and not blind, and the contamination
+concentrates in the most similar stratum. It must also be on the same plate,
+since residuals retain plate structure and a cross-plate partner would differ in
+batch as well as in drug.
+
+A scramble that swaps in a drug with a similar true response is a weak test, and
+that risk is structural here. In full-profile space the mechanism annotation is
+close to uninformative about transcriptional response. Same-mechanism drugs in
+Tahoe are just over two per cent closer to each other than arbitrary pairs
+are.\seealso{\cref{sec:res-encoding} quotes the distances behind that statement}
+Hence conditioning on mechanism fails to move $\DEdr$ in the grouping ladder of
+\cref{sec:res-lookup}, and a partner of different mechanism cannot be relied on
+for a different response. Mechanism does carry signal in the residual frame
+(\cref{sec:res-scope}); in full-profile space the generic response swamps it, a
+frame difference and not a contradiction.
+
+Two remedies are used, one here and one later. The first turns the single test
+into a curve. Within a (cell line, plate) group, each drug's cells are split in
+half and the distance between two drugs is taken between their half-sample truth
+pseudobulks, $\lVert y_A - y_B \rVert$. Because both profiles sit against the
+same plate-matched control, that distance is the same whether it is measured on
+profiles or on shifts, and it is exactly the distance $\NIR$ already uses to rank
+one condition's truth against another's. The sweep therefore inherits the
+benchmark's own geometry rather than importing a notion of similarity from
+elsewhere, and the axis is fixed before any generation: it is a property of the
+atlas, not of the model.
+
+Partners are drawn to span the quantiles of that distance from $A$, so each real
+drug contributes swaps from across its whole available range instead of one
+partner of unknown similarity. Every swap rebuilds $A$'s prompt with $B$'s name
+and mechanism, leaves the control cell and the rest of the prompt intact, and
+scores the generation against \emph{$A$'s} truth. The target never moves; only
+the label in the prompt does. Pooling the pairs and binning them by distance
+gives five bins running from nearest to farthest
+(\cref{fig:sweepbins}, \cref{sec:app-sweep}), and the gap is aggregated inside
+each bin with intervals clustered on cell line.
+
+What makes the curve worth reading is that each outcome was given its meaning
+before the run. A gap rising with distance would say the model does discriminate
+dissimilar drugs and that the flat aggregate had been diluted by near-twin swaps
+--- a correction to the claim, not a confirmation of it. A gap that stays flat
+into the far tail says the blindness holds at the hardest setting the plate
+affords, where the swapped-in drug's real response is as unlike the truth as the
+data allows.
+
+\paragraph{The third instrument is forced-choice grading} A prediction is scored
+against its own condition's truth and against another drug's truth from the same
+comparison set, recording how often its own wins. Chance is $0.50$ by
+construction, and the precision reference lands between $0.67$ and $0.83$
+depending on cells per condition.
+
+\paragraph{The fourth is output invariance} It asks whether the drug token
+changes the generated text at all, without reference to any truth. It is run at
+$3800$ tokens, the longest budget in the chapter, because
+truncation would cut the comparison
+itself.\seealso{\cref{sec:methods-data} records the four generation budgets} For
+a fixed control cell it compares
+% \resizebox, not a reflow: the two \underbrace labels are the width, and both
+% are wanted on one line so the subtraction reads as one sentence. Natural
+% width is 165.6mm against the 142mm block (67.15pt over), so this sets at
+% about 0.86. Nothing here is body text.
+\begin{equation}
+\resizebox{\linewidth}{!}{$\displaystyle
+ \textrm{invariance gap} \;=\;
+ \underbrace{\overline{\textrm{sim}}(\textrm{same prompt, resampled})}%
+   _{\textrm{sampling noise alone}}
+ \;-\; \underbrace{\overline{\textrm{sim}}(\textrm{prompts differing in the
+   drug})}_{\textrm{noise plus any drug effect}},
+$}
+\end{equation}
+with similarity as top-$100$ Kendall $\tau$ and as Jaccard overlap, over $8$
+contexts $\times$ $12$ drugs at temperature $0.8$. It is the least informative
+of the four and the least confoundable.
+
+\begin{table}[htbp]
+\begin{fullwidth}
+\begin{threeparttable}
+\caption{\textbf{Four independent instruments agree, and the two that return
+intervals bound the drug's effect instead of merely covering zero.} Near-ceiling
+$\DEdr$ is achieved identically with a wrong-mechanism drug, so that score is
+drug-independent.}
+\label{tab:blind}
+\small
+% Column 3 was `l'. At the widened measure its natural width ("$0.48$
+% ($\approx$ scramble; reference 0.67--0.83)") plus columns 1--2 left the X
+% column too narrow for the single unbreakable word "indistinguishable", which
+% ran 43.91pt past the fullwidth block. Column 3 is now a weighted X so it
+% wraps; the two \hsize factors sum to 2, which is what tabularx requires of
+% two X columns.
+\begin{tabularx}{\linewidth}{@{}l l
+  >{\hsize=1.20\hsize\raggedright\arraybackslash}X
+  >{\hsize=0.80\hsize\raggedright\arraybackslash}X@{}}
+\toprule
+\thead{Instrument} & \thead{Quantity} & \thead{Value} & \thead{Reading} \\
+\midrule
+Forced-choice grading & own-truth win rate
+  & $0.48$ ($\approx$ scramble; reference 0.67--0.83) & chance \\
+  Output invariance & invariance gap, top-$100$ $\tau$ & \ci{0.000}{-0.019}{+0.016}
+  & bounded, $\leq 0.016$ \\
+ & invariance gap, Jaccard & \ci{+0.000}{-0.008}{+0.008}
+  & bounded, $\leq 0.008$ \\
+\addlinespace
+Scramble, tier 1 & $\DEdr$ & $0.740$ real vs $0.739$ scrambled
+  & indistinguishable \\
+Scramble, tier 2 & $\DEdr$ & $0.733$ real vs $0.729$ scrambled
+  & indistinguishable \\
+Scramble (identifiable subset) & $\gap$ ($\NIR$) & \ci{+0.014}{-0.016}{+0.042}
+  & bounded, $\leq +0.042$ \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item The two $\DEdr$ rows are paired comparisons on one scale, the only use
+\cref{sec:res-metrics} licenses for that metric.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+% PLACEMENT ONLY. This is one of the three survivors the \paragraph orphan patch
+% in preamble.tex section 4 records: the global reservation is
+% 3\baselineskip, which this head cleared with 2.3 lines to spare and then set
+% itself plus exactly two lines at the foot of the page. 5 lines is head plus
+% four, which the page cannot fake.
+\needspace{5\baselineskip}%
+\paragraph{An interval that covers zero earns its keep by what it excludes} Not
+by the word \emph{null}. Two predictions from a byte-identical prompt agree at
+$\tau = 0.198$, so the invariance interval caps any drug-driven divergence at
+roughly a twelfth of that agreement, and the Jaccard version is tighter still,
+\ci{+0.000}{-0.008}{+0.008}. On the identifiable stratum the scramble gap of
+\ci{+0.014}{-0.016}{+0.042} runs against the $0.170$ separating the model's
+$0.768$ from that stratum's $0.938$ reference; at the very top of the interval,
+naming the right drug would buy a quarter of what is there to be bought, and the
+point estimate puts it at $8\%$ of that. Neither figure shows the effect is
+zero, and no experiment here could. Both put it far below the headroom these
+conditions leave.
+
+
+\begin{figure}[htbp]
+  \centering
+  % drawn at 142mm by thesis_v2/figs/difficulty.py; no width= key, so it is placed
+  % at scale 1.0 and its type prints at the point sizes it was set in.
+  \includegraphics{fig-difficulty}
+  \caption[Difficulty structure and the stratum ladder]{\textbf{Conditions are
+  more empirically discriminable at the tested pseudobulk budget where the
+  precision reference is high, and precisely there, a predictor containing no drug
+  information matches the model.} Both panels are $\NIR$ in the expression frame,
+  on one shared axis. (a) The within-well split-half precision reference against
+  cells per condition, for two comparison sets: cross-plate, and within plate. (b)
+  The same reference used to bin conditions, five arms per stratum, $n = 296$
+  unwinnable, $106$ marginal, $204$ identifiable. On the unwinnable stratum the
+  reference itself is $0.287$, below chance, as are the model, control-copy and
+  scramble marks. On the identifiable stratum the model reaches $0.768$ and a
+  control-copy baseline $0.766$, paired contrast \ci{+0.002}{-0.026}{+0.028},
+  clustered over cell lines. Plotting the model alone would suggest it does better
+  on higher-reference drugs. The arm marks are bare: the source carries no
+  interval for a stratum mean, and this document draws only the clustered
+  bootstrap, so nothing is drawn rather than an interval of another kind.}
+  \label{fig:difficulty}
+  \end{figure}
+  \paragraph{Four ways the verdict could be an artefact} Each is a way the result
+  could be about the apparatus rather than about the model, and each is settled by
+  a measurement rather than by argument.
+  
+  \emph{That there is nothing to learn.} A ladder of mean-shift baselines, each
+  predicting the average shift of a progressively narrower group, says
+  otherwise.\seealso{\cref{sec:res-lookup} gives the ladder} On tier 2 the global
+  mean scores $0.056$ and conditioning on cell line raises it about
+  two-and-a-half-fold to $0.142$, so the atlas carries real structure. What it does
+  not carry is structure the drug label reaches: mechanism leaves the global figure
+  untouched at $0.052$, and mechanism together with cell line does no better than
+  cell line alone ($0.120$ against $0.142$). There is something to know, and the
+  variable that knows it is the cellular context.
+  
+  \emph{That the benchmark is too weak to say anything.} Barely half the atlas
+  clears the pre-set identifiability bar (\cref{tab:scale}), so the verdict is
+  re-scored where the wells are demonstrably adequate. It does not survive the
+  move. On that stratum the model appears to beat the linear baseline, $0.768$
+  against $0.531$, and then a control-copy carrying no drug information reaches
+  $0.766$ on the same conditions; the paired contrast is
+  \ci{+0.002}{-0.026}{+0.028} and the leak-immune $\gap$ stays bounded as above.
+  
+  That control-copy carries a second finding, and it is easy to walk past. Across
+  the three strata its score tracks the reference almost step for step
+  (\cref{fig:difficulty}, panel b): $0.310$ against a reference of $0.287$ where
+  the reference is lowest, $0.540$ against $0.689$ on the marginal stratum, $0.766$
+  against $0.938$ on the identifiable one. A predictor that knows nothing about any
+  drug does best exactly where the ranking problem is easiest. So what makes a
+  condition identifiable is largely what makes its untreated cells distinctive
+  among their plate-mates, and the distance from the model to a high reference is
+  not all room that better drug modelling would fill. The reference does rise with
+  aggregation (\cref{fig:difficulty}, panel a: $0.61$ at $10$ cells, $0.76$ at
+  $40$, $0.85$ at $120$); what the strata add is that most of the ranking can be
+  done without the drug at all.
+  
+  \emph{That the encoding discards the drug.} A cell sentence keeps the rank order
+  of genes and throws away expression magnitude, so if the drug lived in the
+  magnitudes the following sections would be attacking the wrong object. This needs
+  no model to test: ask whether true expression discriminates drugs better than
+  rank does. It does not. At single-cell resolution, cosine, Pearson and Spearman
+  similarities on true normalised expression all sit within $0.04$ of chance
+  (\ci{0.529\textrm{--}0.531}{0.515}{0.543}), the same near-chance regime as rank.
+  What recovers the signal is aggregation: at fifteen cells the control-referenced
+  shift cosine reaches \ci{0.793}{0.775}{0.809}. The re-encoding of
+  \cref{sec:res-encoding} will therefore not be a restoration of magnitudes; it
+  keeps rank throughout and changes only what is ranked. The same measurement also
+  bounds what a single cell can deliver, since the single-cell same-drug against
+  different-drug gap is only \ci{+0.006}{+0.003}{+0.008}: these instruments do not
+  resolve drug identity from one observed cell at this sequencing depth and
+  $946$-gene panel.
+  
+  \emph{That the scramble swaps in near-twins.} The swap-distance sweep bounds this
+  rather than settling it. It sits outside the within-plate rule, an earlier run at
+  \texttt{max\_new\_tokens=1200} on the unseen-drug tier of a different evaluation
+  set, with swap partners not plate-restricted and $n = 40$ per bin --- wide enough
+  to exclude a large effect, not to establish a null (\cref{sec:app-sweep}). No
+  distance bin has an interval excluding zero. The far tail reads $-0.019$ across a
+  $2.3\times$ spread in swap distance with a trend correlation of $+0.051$, so a
+  large dissimilarity effect is excluded for the expression-frame model and a small
+  one is left open.
+  
+  \paragraph{What none of the four can see} All four watch the output. They
+  establish that the generated text does not move when the drug does, and that is
+  the strongest behavioural statement available. It is also silent on why. A model
+  that never encodes the drug and a model that encodes it and uses it incorrectly
+  produce the same flat instruments, and no experiment that only reads generations
+  can separate them. The ladder above already hints at where to look, since the
+  asymmetry it finds between cellular context and drug class is one the activations
+  turn out to repeat. \Cref{sec:methods-probe} therefore stops asking what the
+  model emits and starts asking what it holds.
+
+    \paragraph{A fifth reading of the same sweep, with no comparator in it} 
+    The four
+  instruments above each contrast the model against something --- a baseline, a
+  control-copy, a scrambled prompt --- and each is only as good as the thing it is
+  set against. The swap-distance sweep supports one further reading that contrasts
+  nothing. Its partners were drawn to span the distance quantiles, five per
+  condition, so within a single condition the same model answers the same question
+  five times with a differently wrong drug named each time. Write $y_{ik}$ for the
+  $\NIR$ of condition $i$'s $k$th scrambled prompt and $x_{ik}$ for the
+  \emph{negated} Euclidean distance between that condition's truth and the truth of
+  the drug substituted into it --- negated so that $x$ rises with similarity, as
+  the partner cosine does everywhere else in this thesis, and one predicted sign
+  serves every version of the test. Then
+  \begin{equation}
+   y_{ik} \;=\; \alpha_i \;+\; \beta\,x_{ik} \;+\; \varepsilon_{ik},
+   \qquad k = 1,\dots,5,
+  \end{equation}
+  with one intercept $\alpha_i$ per condition. The target-drug prompt is never a
+  point on this line, so nothing is measured against a chosen baseline, and
+  $\beta = 0$ is the null by construction: a model that ignores the name emits the
+  same distribution whichever drug is substituted, putting its five points at one
+  height whatever their similarities happen to be. Prompt sensitivity predicts
+  $\beta > 0$, the score rising as the substituted drug's real response moves
+  closer to the target's.
+
+  Which intercepts are fitted decides the answer. A single pooled intercept draws
+  one line through all $200$ points at once, so conditions are compared with each
+  other as much as with themselves, and fitted that way the slope is $+0.0986$
+  $[+0.0180, +0.1792]$ clustered on drug --- a clear effect, and not a real one. A
+  condition whose drug is unlike anything else on its plate has distant partners
+  \emph{and} an unusual truth that any prompt will struggle to rank, so the line
+  bends without a name having been read. Giving each condition its own intercept
+  removes that comparison and leaves only what varies inside a condition: one
+  model, one target, five differently wrong drugs. Almost the whole effect is in
+  the part that discards --- the between-condition slope is $+0.1563$ against a
+  within-condition slope of $+0.0055$, $[-0.0472, +0.0582]$ clustered on drug and
+  $[-0.0484, +0.0594]$ on cell line, over $200$ prompts across $40$ conditions.
+  The tighter interval excludes the pooled estimate it replaces. Compared with
+  itself, no condition's score moves with how unlike the substituted drug is.
+
+  What this adds is not more of the same evidence. The scramble is a paired
+  intervention --- one condition, one thing changed --- and is confound-free by
+  construction, but it needs a comparator, and \cref{sec:res-generalisation} shows
+  how much of a gap the choice of comparator can carry. This regression needs none.
+  What it gives up in exchange is what it can license: every point in it is a
+  \emph{wrong} prompt, so it can show only whether the model tells wrong answers
+  apart, never whether it produces a right one. A model could pass it and predict
+  nothing. Here that trade costs nothing, because the model does not pass it.
+
+\begin{claim}
+The model is at chance overall ($0.498$ against a $0.576$ within-well split-half
+precision reference), matched on the identifiable stratum by a
+zero-drug-information control-copy ($0.768$ against $0.766$, paired contrast
+\ci{+0.002}{-0.026}{+0.028}), and no more moved by a maximally dissimilar swap
+than by a similar one in the single-cell column of a non-canonical
+\texttt{max\_new\_tokens=1200} sweep outside the within-plate rule
+(\cref{sec:app-sweep}). 
+\end{claim}

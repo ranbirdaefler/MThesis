@@ -1,0 +1,86 @@
+% ===========================================================================
+% fig:two-questions -- condition-referenced vs discriminative.
+% Figure BODY only. \input this inside a figure environment; the caption and
+% \label stay in Sections/02-Background.tex so the surrounding prose owns them.
+% Requires: tikz + calc, and the preamble's colours (accent, ink, quietink,
+% rulegrey, panelbg). No data. Schematic; no axis carries a value.
+%
+% Drawn width 402.9pt against a 404.0pt measure -- it is drawn at size and must
+% NOT be rescaled by \resizebox or a width= key.
+%
+% CHANGED FROM v1 -- exactly one thing:
+%   In the RIGHT panel the $T$ node label sat on the accent segment P--Ta, so
+%   the 0.9pt rule ran under the glyph. The label is displaced 2pt PERPENDICULAR
+%   to that segment, away from it. Nothing else moved.
+%   P = (3.03,2.69), Ta = (2.93,3.13);  d = Ta-P = (-0.10,0.44), |d| = 0.4512205
+%   unit u  = (-0.2216233, 0.9751425)
+%   normal n = ( 0.9751425, 0.2216233)   -- the side the label already sits on
+%              (old offset (0.10,0.03) has n-component +0.10416 > 0), so +n is
+%              "away from the segment".
+%   2pt = 0.07029196 cm  ->  delta = (0.06854, 0.01558)
+%   old offset (0.10000, 0.03000)  ->  new offset (0.16854, 0.04558)
+%   The LEFT panel keeps the original (0.10,0.03): no rule runs under it there.
+%
+% DO NOT touch \cloudpts or split it per panel. Both scopes instantiate the one
+% macro, which is what makes the caption's claim "Point positions are identical
+% in both panels" structurally true rather than merely checked.
+% ===========================================================================
+\begin{tikzpicture}[font=\small, x=1cm, y=1cm]
+  % Five points defined ONCE, instantiated in both panels, so they cannot drift.
+  \newcommand{\cloudpts}{%
+    \coordinate (Ta) at (2.93,3.13);
+    \coordinate (Tb) at (3.90,2.31);
+    \coordinate (Tc) at (2.04,2.08);
+    \coordinate (Td) at (3.26,3.74);
+    \coordinate (P)  at (3.03,2.69);}
+
+  \begin{scope}
+    \node[anchor=south, font=\scriptsize\bfseries\sffamily, text=accent]
+      at (3.0,5.42) {CONDITION-REFERENCED};
+    \node[anchor=north, font=\scriptsize\itshape, text=ink, align=center,
+          text width=5.4cm]
+      at (3.0,5.30) {does the prediction resemble\\ what its own condition
+                     produced?};
+    \fill[panelbg] (3.0,2.75) ellipse (1.42 and 1.20);
+    \cloudpts
+    \foreach \n in {Tb,Tc,Td}{\draw[rulegrey, line width=0.6pt]
+      (\n) circle (2.0pt);}
+    \draw[accent, line width=0.9pt] (P) -- (Ta);
+    \fill[ink] (Ta) circle (2.0pt);
+    \fill[accent] (P) circle (2.2pt);
+    \node[anchor=south west, font=\scriptsize, text=ink]
+      at ($(Ta)+(0.10,0.03)$) {$T$};
+    \node[anchor=north east, font=\scriptsize, text=accent]
+      at ($(P)+(-0.06,-0.04)$) {$P$};
+    \node[anchor=north, font=\scriptsize, text=quietink, align=center,
+          text width=5.4cm]
+      at (3.0,1.14) {consults one truth};
+  \end{scope}
+
+  \draw[rulegrey, line width=0.4pt] (6.20,0.82) -- (6.20,5.20);
+
+  \begin{scope}[xshift=6.4cm]
+    \node[anchor=south, font=\scriptsize\bfseries\sffamily, text=accent]
+      at (3.0,5.42) {DISCRIMINATIVE};
+    \node[anchor=north, font=\scriptsize\itshape, text=ink, align=center,
+          text width=5.4cm]
+      at (3.0,5.30) {does it resemble its own condition\\ more than some other
+                     drug's?};
+    \fill[panelbg] (3.0,2.75) ellipse (1.42 and 1.20);
+    \cloudpts
+    \foreach \n in {Tb,Tc,Td}{%
+      \draw[quietink, densely dashed, line width=0.45pt] (P) -- (\n);}
+    \draw[accent, line width=0.9pt] (P) -- (Ta);
+    \foreach \n in {Tb,Tc,Td}{\fill[ink] (\n) circle (2.0pt);}
+    \fill[ink] (Ta) circle (2.0pt);
+    \fill[accent] (P) circle (2.2pt);
+    % 2pt perpendicular to P--Ta, away from it. See header for the arithmetic.
+    \node[anchor=south west, font=\scriptsize, text=ink]
+      at ($(Ta)+(0.16854,0.04558)$) {$T$};
+    \node[anchor=north east, font=\scriptsize, text=accent]
+      at ($(P)+(-0.06,-0.04)$) {$P$};
+    \node[anchor=north, font=\scriptsize, text=quietink, align=center,
+          text width=5.4cm]
+      at (3.0,1.14) {consults the whole candidate set};
+  \end{scope}
+\end{tikzpicture}
