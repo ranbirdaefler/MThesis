@@ -1,0 +1,56 @@
+{
+  "figure": "fig-nir",
+  "source": "thesis_v2/figs/fig-nir.tex",
+  "input_from": "thesis_v2/Sections/04a-ruler.tex line 150, \\input{figs/fig-nir}",
+  "label": "fig:nir",
+  "number_in_build": "Figure 4.2, page 31 of thesis_v2/main.pdf",
+  "kind": "tikz schematic",
+  "data_dependency": "none",
+  "note": "No value in this figure comes from RESULTS_cluster: nothing here is measured. The numerals below are either counted off the drawing or are properties of the NIR definition in Sections/04a-ruler.tex. This sibling JSON exists because every thesis_v2 figure writes one, so a figure and the prose beside it can be diffed mechanically.",
+  "numbers_drawn": {
+    "conditions_drawn_total": 9,
+    "own_truth_marks": 1,
+    "other_conditions_drawn": 8,
+    "others_ranked_below_own_truth": 6,
+    "NIR_shown": {
+      "as_written": "6/8",
+      "value": 0.75,
+      "provenance": "counted off the drawing: 6 of the 8 hollow circles lie left of the filled dot"
+    },
+    "reading_rule_own_truth_first": {"as_written": "NIR -> 1", "value": 1.0},
+    "reading_rule_own_truth_at_random": {"as_written": "NIR = 0.5", "value": 0.5},
+    "reading_rule_all_similarities_identical": {
+      "as_written": "NIR = 0.5 by the half-tie rule, not 0",
+      "value": 0.5,
+      "value_if_tie_term_dropped": 0.0
+    }
+  },
+  "agreement_with_text": {
+    "checked_against": "thesis_v2/Sections/04a-ruler.tex",
+    "definition_line_138": "NIR = (1/|J|) sum_{j in J} [ 1{sigma(yhat,y_i) > sigma(yhat,y_j)} + (1/2) 1{sigma(yhat,y_i) = sigma(yhat,y_j)} ], with J read at line 142 as the OTHER conditions. The figure draws |J| = 8 with 6 wins, hence 6/8. Consistent.",
+    "chance_line_152": "'Chance sits at 0.50' -- matches the figure's second reading rule.",
+    "tie_term_line_166": "'A strict inequality scores it 0.000 instead of the 0.500 it deserves' -- matches the figure's third reading rule, 0.5 by the half-tie rule and not 0.",
+    "half_tie_dependency": "sec:methods-residual (4.7) needs the all-ties predictor to score 0.5; the in-figure statement of the half-tie rule is kept verbatim.",
+    "banned_term_check": "the retired term does not appear in the figure, its caption or this file.",
+    "disagreements_found": "none"
+  },
+  "geometry": {
+    "text_block_width_mm": 142.0,
+    "text_block_width_pt_TeX": 404.03,
+    "v1_drawn_width_pt_TeX": 302.79,
+    "v1_fraction_of_v2_measure": 0.749,
+    "x_scale_applied_to_v1_coordinates": 1.598,
+    "declared_bounding_box_cm": {"x0": 0.713, "y0": -3.08, "x1": 14.903, "y1": 1.29},
+    "declared_box_width_pt_TeX": 403.75,
+    "measured_ink_width_mm": 141.82,
+    "measured_ink_height_mm": 41.15,
+    "measured_left_margin_clearance_pt": 0.31,
+    "measured_right_margin_clearance_pt": 0.21,
+    "measurement_method": "600 dpi raster of page 31 of main.pdf, non-white pixel extent, compared against the caption line's own left and right edges",
+    "latex_scaling_applied": "none -- no \\resizebox, no scale= key, no width= key",
+    "overfull_hboxes_in_document": 0,
+    "leader_length_cm": 0.35,
+    "leader_colour": "quietink #6B6B6B",
+    "type_sizes_unchanged_from_v1": "annotations \\scriptsize (8pt), NIR = 6/8 \\small (10.95pt)"
+  }
+}

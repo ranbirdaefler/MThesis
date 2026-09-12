@@ -1,0 +1,325 @@
+% ===========================================================================
+% fig-frame.tex -- v2. The residual frame, the encoding fork, and the SCORED
+% object. \input by Sections/04c-reencoding.tex. Compiles against
+% thesis_v2/preamble.tex and nothing else; no external data, no
+% \includegraphics. FULLWIDTH, and MEASURED rather than assumed: the
+% tikzpicture's own bounding box is 491.31pt wide against a fullwidth measure
+% of 495.08pt (\textwidth 404.03pt + \marginparwidth + \marginparsep). The
+% measurement is made by the picture itself, guarded by \fframedebug;
+% figs/_harness_frame.tex switches it on, and it is inert in main.tex.
+%
+% RULE INHERITED FROM preamble.tex section 8: a page carrying a fullwidth float
+% carries NO \marginpar. Every note in this figure is therefore drawn INSIDE
+% the tikzpicture. Nothing here calls \gloss, \seealso or any margin wrapper.
+%
+% EVERY NUMBER IN THIS FIGURE, WITH ITS SOURCE. Nothing is invented.
+%   34.6 / 200  (17%)  full profile, cell-line scope
+%   118.2 / 200 (59%)  residual,     cell-line scope
+%   120.3              residual,     plate scope            -- caption only
+%   0.742 -> 0.743     within-well split-half retrieval reference, full ->
+%                      residual (stored 0.741986901358855 and 0.7432424792)
+%     RESULTS_cluster/target_divergence.json, scopes.cellline.{full,residual}
+%     .divergence_mean and .ceiling_retrieval, and scopes.plate.residual;
+%     and tab:divergence, Sections/04c-reencoding.tex lines 42-44.
+%   100 genes per block, [DOWN], [END_CELL], weight 1/log2(rank+1), cosine,
+%   NIR over other drugs in the same cell line
+%     Sections/04c-reencoding.tex, "How the residual becomes a string, and how
+%     it is scored"; and endcell/analysis/residual_eval.py,
+%     signed_rank_from_sentence / signed_rank_from_vector (k = 100,
+%     v[gi] = sgn / np.log2(r + 1.0)).
+%   946 panel genes -- Sections/04c-reencoding.tex, "a 946-dimensional profile".
+%   the stem weights: 1/log2(r+1) for r = 1..8 =
+%     1.0000, 0.6309, 0.5000, 0.4307, 0.3869, 0.3562, 0.3333, 0.3155.
+%     Every stem in stage 3 is one of these eight numbers; the +1 / -1 ticks
+%     are there so a reader can check them.
+%   "fewer than three other training drugs yields no generic and the condition
+%     is dropped" -- Sections/04c-reencoding.tex, "Second, the scope is the
+%     plate".
+%   [DOWN] registered atomic / unregistered splits into sub-words --
+%     Sections/03-Apparatus.tex line 283, and 00-HowToRead.tex line 209.
+%
+% WHAT IS ILLUSTRATIVE, AND SAYS SO IN THE CAPTION:
+%   * the six gene profiles in stage 1. No axis is drawn; they carry no
+%     measurement. Their ARITHMETIC is exact bar by bar, which is the only
+%     thing a reader may take from them:
+%       treated  {17, 9,14,12, 8, 6,11, 5}
+%       control  {10,10, 8, 8, 7, 7,10, 6}
+%       shift    { 7,-1, 6, 4, 1,-1, 1,-1}  = treated - control
+%       generic  { 3, 2, 3, 2,-2, 2,-2, 2}
+%       residual { 4,-3, 3, 2, 3,-3, 3,-3}  = shift - generic
+%     Chosen so the residual carries the MAJORITY of the shift's squared norm
+%     (74 of 106 here), because fig:residual-energy measures 62.1%
+%     drug-specific and a figure drawing the residual as a sliver would
+%     contradict it. Both figures are UNCENTRED sums of squares, each a
+%     squared L2 norm and NOT a variance: the shift {7,-1,6,4,1,-1,1,-1} has
+%     mean 2, not 0, and 49+1+36+16+1+1+1+1 = 106; the residual gives 74 the
+%     same way. The label fig:residual-energy and the file
+%     figs/04c-residual-energy.tex keep the older spelling because they are a
+%     cross-reference target and an \input target.
+%     v1 drew {1,0,0,1,0,1,0,0}: five of its eight bars had height zero and
+%     rendered as nothing at all, so the one object the thesis is about read
+%     as "missing" or "to be determined". FIXED HERE, and drawn SIGNED,
+%     because the sign is what splits the two blocks in stage 2.
+%   * which gene sits at which coordinate in stage 3, and which two the
+%     prediction puts on the wrong side of the boundary. The STEM HEIGHTS are
+%     not illustrative -- they are the exact weights.
+%   * no cosine VALUE is printed anywhere. The two stem vectors are drawn, not
+%     measured, so a number there would be an invented result.
+%
+% LAYOUT NOTES, all forced by a build:
+%   * three stages, two dividers, one header rule, one brace. The brace spans
+%     all THREE because the retrieval reference is an end-of-pipeline quantity:
+%     it is a retrieval score computed in the scored space of stage 3, so
+%     stopping it at stage 2 would misattribute it.
+%   * stage 2's target string is ONE line. Wrapped over two it read as two
+%     separate sequences and lost the up -> [DOWN] -> down ordering, which is
+%     the only reason [DOWN] is drawn at all. Every chip is a NAMED node
+%     chained off its predecessor's east anchor, so the two braces attach to
+%     real node boundaries rather than to hand-computed x's. That was not
+%     fastidiousness: the hand estimate of the string's width was 6mm short of
+%     the truth, and on the first build [END_CELL] crossed the divider into
+%     stage 3.
+%   * type sizes follow figs/circularity.tex: \footnotesize (10pt, the caption
+%     size) for the sentences a reader must read, \scriptsize (8pt) for symbol
+%     labels, chips, brace labels and subordinate notes. Nothing is \tiny.
+%   * stage 1 labels are centred on profiles 1.85cm apart. At 1.45cm
+%     "generic(c)" and "residual r(d,c)" touch (v1's note, still true). They
+%     are \scriptsize and not \footnotesize for the same reason: at 10pt they
+%     collide even at 1.85cm, which a build showed.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\small,
+  bar/.style={fill=ink!72, draw=none},
+  faintbar/.style={fill=ink!30, draw=none},
+  base/.style={rulegrey, line width=0.25pt},
+  gene/.style={draw=rulegrey, rounded corners=1pt, inner sep=1.6pt,
+               font=\ttfamily\scriptsize, text=ink, anchor=west},
+  shared/.style={gene, fill=rulegrey!12, text=quietink, draw=rulegrey!55},
+  differs/.style={gene, fill=rulegrey!32, draw=ink!75, thick},
+  atomic/.style={rounded corners=1pt, inner sep=1.6pt, fill=ink, draw=ink,
+                 font=\ttfamily\scriptsize, text=white, anchor=west},
+  dots/.style={anchor=west, font=\scriptsize, text=quietink},
+  lbl/.style={font=\scriptsize, text=quietink},
+  strong/.style={font=\scriptsize, text=ink},
+  said/.style={anchor=west, font=\footnotesize, text=ink},
+  op/.style={font=\normalsize, text=quietink},
+  stagehead/.style={anchor=west, font=\sffamily\footnotesize\bfseries,
+                    text=accent},
+  note/.style={anchor=north west, font=\scriptsize, text=quietink,
+               align=flush left, inner sep=0pt},
+]
+
+% ---- one bar profile. #1 x, #2 baseline y, #3 signed heights, #4 style.
+% Heights are in "units"; one unit is 0.052cm. Bars are 0.125cm wide on a
+% 0.160cm pitch, so eight span 1.245cm. The baseline rule is drawn under EVERY
+% profile, because three of the six are signed and a bar below the line has to
+% read as negative rather than as a misprint.
+\newcommand{\fframeprof}[4]{%
+  \foreach \hh [count=\ii from 0] in {#3} {%
+    \pgfmathsetmacro{\bxx}{#1 + \ii*0.160}%
+    \pgfmathsetmacro{\byy}{\hh*0.052}%
+    \fill[#4] (\bxx,#2) rectangle ++(0.125,\byy);%
+  }%
+  \draw[base] (#1,#2) -- ++(1.245,0);%
+}
+
+% ---- one signed-rank stem plot. #1 zero-line y, #2 slot/weight list.
+% Slots sit on a 0.255cm pitch from x = 13.16; a weight of 1 is 0.34cm.
+\newcommand{\fframestems}[2]{%
+  \draw[base] (13.10,#1) -- (17.02,#1);%
+  \foreach \ss/\ww in {#2} {%
+    \pgfmathsetmacro{\sxx}{13.16 + (\ss-1)*0.255}%
+    \pgfmathsetmacro{\syy}{#1 + \ww*0.34}%
+    \draw[ink!72, line width=0.55pt] (\sxx,#1) -- (\sxx,\syy);%
+    \fill[ink!72] (\sxx,\syy) circle (0.5pt);%
+  }%
+  \draw[rulegrey, line width=0.3pt] (12.96,{#1-0.34}) -- (12.96,{#1+0.34});%
+  \draw[rulegrey, line width=0.3pt] (12.92,{#1+0.34}) -- (13.00,{#1+0.34});%
+  \draw[rulegrey, line width=0.3pt] (12.92,{#1-0.34}) -- (13.00,{#1-0.34});%
+  \node[anchor=east, font=\scriptsize, text=quietink]
+       at (12.88,{#1+0.34}) {$+1$};%
+  \node[anchor=east, font=\scriptsize, text=quietink]
+       at (12.88,{#1-0.34}) {$-1$};%
+}
+
+% ================================================== the header band
+\node[stagehead] at (0.05,3.80) {1\,\textperiodcentered\,the residual is built};
+\node[stagehead] at (5.70,3.80) {2\,\textperiodcentered\,it becomes a string};
+\node[stagehead] at (12.60,3.80) {3\,\textperiodcentered\,it becomes a vector};
+\draw[rulegrey, line width=0.4pt] (0.05,3.62) -- (17.30,3.62);
+\draw[rulegrey!70, line width=0.3pt] (5.50,-1.66) -- (5.50,3.54);
+\draw[rulegrey!70, line width=0.3pt] (12.40,-1.66) -- (12.40,3.54);
+
+% ================================================== STAGE 1: two subtractions
+\node[lbl]    at (0.67,3.36) {treated};
+\node[lbl]    at (2.52,3.36) {control};
+\node[strong] at (4.37,3.36) {shift $\shift(d,c)$};
+\fframeprof{0.05}{2.30}{17,9,14,12,8,6,11,5}{bar}
+\node[op] at (1.53,2.58) {$-$};
+\fframeprof{1.90}{2.30}{10,10,8,8,7,7,10,6}{bar}
+\node[op] at (3.38,2.58) {$=$};
+\fframeprof{3.75}{2.30}{7,-1,6,4,1,-1,1,-1}{bar}
+
+\node[strong] at (0.67,1.90) {shift};
+\node[lbl]    at (2.52,1.90) {generic$(c)$};
+\node[strong] at (4.37,1.90) {residual $\resid(d,c)$};
+\fframeprof{0.05}{1.30}{7,-1,6,4,1,-1,1,-1}{bar}
+\node[op] at (1.53,1.42) {$-$};
+\fframeprof{1.90}{1.30}{3,2,3,2,-2,2,-2,2}{faintbar}
+\node[op] at (3.38,1.42) {$=$};
+\fframeprof{3.75}{1.30}{4,-3,3,2,3,-3,3,-3}{bar}
+
+\node[note, text width=5.30cm] (nG) at (0.05,0.88)
+  {generic$(c)$ is the mean over the \emph{other} training drugs in the same
+   plate group; a group with fewer than three of them yields no generic and the
+   condition is dropped. The residual is drawn signed because its sign is what
+   splits the two blocks in stage~2.};
+
+% ================================================== STAGE 2: the encoding fork
+% Every gene label is a real panel gene, so every string drawn could occur in
+% this data. The shared positions carry four of the most abundant panel genes by
+% mean measured expression over the 606 consensus truth profiles
+% (nir_consensus_profiles.npz: GAPDH rank 1, RPS6 2, HSPD1 7, ALDOA 8; GAPDH and
+% RPS6 agree with gene_identity_check.json). They were ACTB, TPT1 and EEF1A1,
+% none of which is in the 946-gene panel. In row (b) DDB2, an in-panel p53
+% target, replaces MDM2, which is not in the panel. CDKN1A and HMOX1 are in the
+% panel and unchanged. Labels only: no position, count or number changed.
+\node[said] at (5.62,3.30) {\textbf{(a)} genes ranked by \emph{expression}};
+\node[shared]  (a1) at (5.62,2.88) {GAPDH};
+\node[shared]  (a2) at ([xshift=3pt]a1.east) {RPS6};
+\node[shared]  (a3) at ([xshift=3pt]a2.east) {HSPD1};
+\node[differs] (a4) at ([xshift=3pt]a3.east) {CDKN1A};
+\node[shared]  (a5) at ([xshift=3pt]a4.east) {ALDOA};
+\node[dots]    (a6) at ([xshift=4pt]a5.east) {$\cdots$};
+\node[shared]  (b1) at (5.62,2.48) {GAPDH};
+\node[shared]  (b2) at ([xshift=3pt]b1.east) {RPS6};
+\node[shared]  (b3) at ([xshift=3pt]b2.east) {HSPD1};
+\node[differs] (b4) at ([xshift=3pt]b3.east) {HMOX1};
+\node[shared]  (b5) at ([xshift=3pt]b4.east) {ALDOA};
+\node[dots]    (b6) at ([xshift=4pt]b5.east) {$\cdots$};
+\node[said] at (5.62,2.06)
+  {only \textbf{34.6 / 200} tokens differ \;(\textbf{17\%})};
+
+\node[said] at (5.62,1.56)
+  {\textbf{(b)} genes ranked by \emph{signed residual}};
+\node[differs] (c1) at (5.62,1.14) {CDKN1A};
+\node[differs] (c2) at ([xshift=3pt]c1.east) {DDB2};
+\node[dots]    (c3) at ([xshift=3pt]c2.east) {$\cdots$};
+\node[atomic]  (c4) at ([xshift=4pt]c3.east) {[DOWN]};
+\node[differs] (c5) at ([xshift=4pt]c4.east) {HMOX1};
+\node[dots]    (c6) at ([xshift=3pt]c5.east) {$\cdots$};
+\node[atomic]  (c7) at ([xshift=4pt]c6.east) {[END\_CELL]};
+\draw[decorate, decoration={brace, mirror, amplitude=3pt}, rulegrey]
+  (c1.south west) ++(0,-0.06) -- ($(c3.south east)+(0,-0.06)$);
+\node[lbl, anchor=north west] at ($(c1.south west)+(0,-0.16)$)
+  {$100$ genes, $\resid > 0$};
+\draw[decorate, decoration={brace, mirror, amplitude=3pt}, rulegrey]
+  (c5.south west) ++(0,-0.06) -- ($(c6.south east)+(0,-0.06)$);
+\node[lbl, anchor=north west] at ($(c5.south west)+(0,-0.16)$)
+  {$100$ genes, $\resid < 0$};
+\node[said] at (5.62,0.20)
+  {\textbf{118.2 / 200} tokens differ \;(\textbf{59\%})};
+
+\node[atomic] (dn) at (5.62,-0.28) {[DOWN]};
+\node[note, text width=5.35cm] (nD) at ($(dn.east)+(0.14,0.11)$)
+  {is \emph{one} registered atomic token. Unregistered it splits into
+   sub-words, and the up\slash down boundary stops being a clean symbol.};
+
+% ================================================== STAGE 3: the scored vector
+\node[note, text width=4.70cm] (nW) at (12.60,3.44)
+  {signed rank weights $w_r = 1/\log_2(r{+}1)$};
+
+% the two coordinates on which the prediction and the truth carry OPPOSITE
+% SIGNS -- the boundary error the [DOWN] token exists to prevent. Drawn FIRST
+% so the stems sit on top of it.
+\fill[rulegrey!18] (14.82,0.70) rectangle (15.33,2.42);
+% The band's label sits in the GAP BETWEEN the two plots, running right from the
+% band's right edge. Above the plots it ran into the second line of the weights
+% note, which is math and taller than a text line; centred on the band it set
+% flush against "true v" and the two read as one phrase. In the gap the nearest
+% ink is the predicted plot's slot-10 stem, which stops at y = 1.72.
+% anchor=EAST at 17.30, not west at 15.42: anchored west, this one 2.07cm label
+% was the widest thing in the picture and pushed the bounding box out to
+% 497.60pt, 1.35pt past the fullwidth measure -- one Overfull \hbox, which
+% tools/build.sh caps at zero.
+\node[lbl, anchor=east] at (17.30,1.46) {opposite signs};
+
+\node[strong, anchor=west] at (13.16,2.50) {predicted $\hat{v}$};
+\fframestems{2.06}{1/0.6309, 2/1.0000, 3/0.5000, 4/0.3869, 5/0.4307,
+                   6/0.3562, 7/0.3155, 8/-0.6309, 9/0.3333, 10/-1.0000,
+                   11/-0.5000, 12/-0.4307, 13/-0.3562, 14/-0.3869,
+                   15/-0.3333, 16/-0.3155}
+
+\node[strong, anchor=west] at (13.16,1.50) {true $v$};
+\fframestems{1.06}{1/1.0000, 2/0.6309, 3/0.5000, 4/0.4307, 5/0.3869,
+                   6/0.3562, 7/0.3333, 8/0.3155, 9/-1.0000, 10/-0.6309,
+                   11/-0.5000, 12/-0.4307, 13/-0.3869, 14/-0.3562,
+                   15/-0.3333, 16/-0.3155}
+
+\node[note, text width=4.70cm] (nA) at (12.60,0.50)
+  {$946$ coordinates, $200$ of them non-zero. $\cos(\hat{v},v)$, ranked
+   against the other drugs in the same cell line, is $\NIR$.};
+
+\node[note, text width=4.70cm] (nB) at (12.60,-0.60)
+  {\DOWN{} has a token position in stage~2 but \emph{no coordinate} here: the
+   sign carries the boundary.};
+
+% ================================================== the invariant
+\draw[decorate, decoration={brace, amplitude=4pt}, quietink, line width=0.5pt]
+  (0.05,-1.80) -- (17.30,-1.80);
+\node[anchor=north, font=\footnotesize, text=ink] (nBR) at (8.67,-1.98)
+  {and the within-well split-half retrieval reference is \textbf{unchanged}:
+   $0.742 \rightarrow 0.743$};
+
+% ---- MEASUREMENT, left in and inert. \fframedebug is undefined in main.tex, so
+% this expands to nothing there; figs/_harness_frame.tex \def's it and the
+% picture then reports its own extent, the right edge of the target string, and
+% the east edge of every node that could plausibly be the widest thing in the
+% drawing. All three mattered: the string crossed a divider on the first build,
+% and the bounding box ran 1.35pt past the fullwidth measure on a later one.
+\ifx\fframedebug\undefined\else
+  \path let \p1=(current bounding box.south west),
+            \p2=(current bounding box.north east),
+            \p3=(c7.east), \p4=(a6.east) in
+    \pgfextra{\typeout{FRAME bbox x \x1 .. \x2 ; y \y1 .. \y2}%
+              \typeout{FRAME target string ends \x3 ; row (a) ends \x4}};
+  \path let \p5=(nW.east), \p6=(nA.east), \p7=(nB.east), \p8=(nBR.east),
+            \p9=(nD.east), \p{10}=(nG.east) in
+    \pgfextra{\typeout{FRAME east nW \x5 nA \x6 nB \x7 nBR \x8 nD \x9 nG \x{10}}};
+\fi
+\end{tikzpicture}
+\caption[The residual, the target string and the scored vector]{\captiontitle{The
+information was always present; the standard target's tokens barely expose it
+--- and the string the model writes is not the vector that scores it.}
+\emph{Stage 1.} The drug-specific residual is built by two subtractions. The
+control removes the cell's own state, leaving the \emph{shift}; the mean over
+the other drugs in the same plate group removes the \emph{generic} programme
+that every drug triggers, leaving what makes this drug different. The six
+gene profiles are illustrative shapes and carry no measurement --- no axis is
+drawn --- but the arithmetic within the figure is exact bar by bar, and the
+residual is drawn signed because its sign is what splits the two blocks in
+stage~2. \emph{Stage 2.} That same measurement, written two ways. Ranking genes
+by expression (a) leads every drug's profile with largely the same abundant
+genes: only $34.6$ of the top $200$ tokens differ between two drugs in the same
+context; ranking by signed residual
+(b) raises that to $118.2$. (Divergence counts quoted at cell-line scope, as in
+Table~\ref{tab:divergence}; plate scope is similar, at $120.3$.) Row (b) is the
+target string itself: a $100$-gene up block, \DOWN, a $100$-gene down block,
+\ENDCELL. \emph{Stage 3.} What $\NIR$ ranks is not that string but a signed
+vector over the $946$ panel genes, top-$k$ up positive and top-$k$ down
+negative. The stem heights are the exact weights $1/\log_2(\textrm{rank}+1)$, so
+the eight drawn per sign are $1.000$, $0.631$, $0.500$, $0.431$, $0.387$,
+$0.356$, $0.333$ and $0.316$; which gene sits at which coordinate is
+illustrative, and no cosine value is printed, because these two vectors are
+drawn rather than measured. Stage~2 and stage~3 are different objects and only
+stage~3 is scored. The bracket is the point of the figure --- the within-well
+split-half retrieval reference is essentially identical under both encodings, so
+no information has been added. What changed is how much of it the token sequence
+exposes to the loss --- a property of the encoding, which is not the same as
+showing the encoding is what binds (Table~\ref{tab:divergence}).}
+\label{fig:frame}
+\end{fullwidth}
+\end{figure}

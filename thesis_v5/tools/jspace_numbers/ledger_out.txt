@@ -1,0 +1,143 @@
+primary-spec ok rows: 3456 | by model: {'expression': 864, 'residual_repaired': 864, 'residual_long': 864, 'pretrained': 864}
+
+== 1. pair-level levels (primary spec) ==
+                                     n  mean_phi  mean_null  mean_phi_adj  median_U  mean_delta  median_rel  mean_rel  phi_over_null
+layer model             pair_kind                                                                                                   
+3     expression        ctrl        96    0.0125     0.0099        0.0027      23.0      1.7112      0.0382    0.0421         1.2695
+                        drug       192    0.0082     0.0079        0.0003      16.0      0.2035      0.0046    0.0050         1.0408
+      pretrained        ctrl        96    0.0099     0.0072        0.0028      17.0      1.9283      0.0409    0.0459         1.3866
+                        drug       192    0.0069     0.0070       -0.0002      16.0      0.2857      0.0064    0.0068         0.9734
+      residual_long     ctrl        96    0.0113     0.0093        0.0020      19.0      1.4866      0.0361    0.0392         1.2199
+                        drug       192    0.0083     0.0083       -0.0000      16.0      0.3566      0.0085    0.0094         0.9956
+      residual_repaired ctrl        96    0.0127     0.0096        0.0031      22.0      1.8580      0.0419    0.0459         1.3274
+                        drug       192    0.0081     0.0079        0.0002      16.0      0.2985      0.0070    0.0074         1.0294
+7     expression        ctrl        96    0.0149     0.0096        0.0053      16.0      1.3698      0.0231    0.0259         1.5473
+                        drug       192    0.0081     0.0070        0.0011      16.0      0.2272      0.0039    0.0043         1.1580
+      pretrained        ctrl        96    0.0104     0.0094        0.0010      23.0      2.0792      0.0342    0.0377         1.1082
+                        drug       192    0.0083     0.0078        0.0005      16.0      0.5139      0.0086    0.0093         1.0674
+      residual_long     ctrl        96    0.0132     0.0086        0.0046      17.0      1.2891      0.0252    0.0269         1.5372
+                        drug       192    0.0087     0.0077        0.0010      16.0      0.7312      0.0146    0.0153         1.1324
+      residual_repaired ctrl        96    0.0127     0.0093        0.0034      18.0      1.8384      0.0315    0.0348         1.3636
+                        drug       192    0.0083     0.0077        0.0006      16.0      0.5258      0.0097    0.0100         1.0785
+11    expression        ctrl        96    0.0178     0.0121        0.0057      21.0      3.0049      0.0544    0.0566         1.4678
+                        drug       192    0.0116     0.0103        0.0013      18.0      1.0412      0.0174    0.0196         1.1281
+      pretrained        ctrl        96    0.0203     0.0134        0.0069      21.0      4.8069      0.0788    0.0824         1.5126
+                        drug       192    0.0148     0.0114        0.0033      19.5      3.2381      0.0537    0.0555         1.2912
+      residual_long     ctrl        96    0.0105     0.0085        0.0020      19.0      2.6036      0.0629    0.0637         1.2410
+                        drug       192    0.0201     0.0118        0.0083      25.0     12.7449      0.3014    0.3114         1.7072
+      residual_repaired ctrl        96    0.0140     0.0105        0.0035      19.0      3.7742      0.0686    0.0699         1.3374
+                        drug       192    0.0138     0.0114        0.0024      20.0      5.0486      0.0866    0.0936         1.2128
+
+== 2. Spearman within drug pairs, layer 11 (block) ==
+expression         n= 192  rho(phi_adj, rel)=-0.006  rho(phi_adj, |U|)=+0.010
+residual_repaired  n= 192  rho(phi_adj, rel)=+0.125  rho(phi_adj, |U|)=+0.365
+residual_long      n= 192  rho(phi_adj, rel)=+0.655  rho(phi_adj, |U|)=+0.645
+pretrained         n= 192  rho(phi_adj, rel)=+0.246  rho(phi_adj, |U|)=+0.093
+
+== 3. matched relative-delta bins, layer 11, all drug+ctrl pairs ==
+                      n                                            mean_phi_adj                                           
+model        expression pretrained residual_long residual_repaired   expression pretrained residual_long residual_repaired
+bin                                                                                                                       
+[0.0, 0.02)       137.0        NaN           NaN               NaN       0.0013        NaN           NaN               NaN
+[0.02, 0.05)       88.0       81.0          15.0               8.0       0.0040     0.0023        0.0022            0.0019
+[0.05, 0.1)        62.0      193.0          79.0             213.0       0.0043     0.0052        0.0020            0.0026
+[0.1, 0.2)          1.0       14.0          12.0              66.0       0.0058     0.0080        0.0028            0.0032
+[0.2, inf)          NaN        NaN         182.0               1.0          NaN        NaN        0.0086            0.0126
+                                            n  mean_phi_adj
+bin          model             pair_kind                   
+[0.0, 0.02)  expression        drug       137        0.0013
+[0.02, 0.05) expression        ctrl        33        0.0083
+                               drug        55        0.0014
+             pretrained        ctrl         2        0.0064
+                               drug        79        0.0022
+             residual_long     ctrl        15        0.0022
+             residual_repaired ctrl         2        0.0043
+                               drug         6        0.0011
+[0.05, 0.1)  expression        ctrl        62        0.0043
+             pretrained        ctrl        81        0.0068
+                               drug       112        0.0040
+             residual_long     ctrl        79        0.0020
+             residual_repaired ctrl        91        0.0035
+                               drug       122        0.0020
+[0.1, 0.2)   expression        ctrl         1        0.0058
+             pretrained        ctrl        13        0.0075
+                               drug         1        0.0152
+             residual_long     ctrl         2        0.0027
+                               drug        10        0.0028
+             residual_repaired ctrl         3        0.0036
+                               drug        63        0.0032
+[0.2, inf)   residual_long     drug       182        0.0086
+             residual_repaired drug         1        0.0126
+
+== 4. lens readout Spearman, D, last_prompt, full lens: pair means ==
+                                   size        mean        median       
+pair_kind                          ctrl drug   ctrl   drug   ctrl   drug
+dictionary layer model                                                  
+D          3     expression          96  192  0.033  0.027  0.030  0.033
+                 pretrained          96  192  0.018  0.009  0.011  0.015
+                 residual_long       96  192  0.003  0.002  0.008  0.005
+                 residual_repaired   96  192  0.014  0.015  0.012  0.015
+           7     expression          96  192  0.073  0.055  0.076  0.056
+                 pretrained          96  192  0.050  0.039  0.055  0.038
+                 residual_long       96  192  0.023  0.019  0.025  0.019
+                 residual_repaired   96  192  0.060  0.060  0.071  0.055
+           11    expression          96  192  0.549  0.431  0.555  0.433
+                 pretrained          96  192  0.500  0.447  0.508  0.457
+                 residual_long       96  192  0.301  0.402  0.307  0.404
+                 residual_repaired   96  192  0.538  0.631  0.532  0.639
+
+== 5. output diff (no lens), last_prompt: pair means ==
+                                         size    mean  median
+position    model             pair_kind                      
+drug_end    expression        drug        192  525.39  516.16
+            pretrained        drug        192  478.62  469.97
+            residual_long     drug        192  714.23  730.64
+            residual_repaired drug        192  478.54  481.53
+last_prompt expression        ctrl         96   73.40   70.11
+                              drug        192   39.51   30.16
+            pretrained        ctrl         96  129.57  127.59
+                              drug        192   98.81   92.61
+            residual_long     ctrl         96  118.57  113.76
+                              drug        192  501.51  500.83
+            residual_repaired ctrl         96   81.42   79.11
+                              drug        192  105.36   97.37
+
+== 6. most frequent atoms in U, layer 11, primary spec ==
+tokenizer: C:\Users\avsd8/.cache/huggingface/hub/models--vandijklab--C2S-Scale-Pythia-1b-pt/snapshots\830e4689d4238bbb5e2ec9a89b76e6a6d48061db\tokenizer.json
+expression         drug n=192: 'ĠGAPDH'(41610) 100%, 'ĠCAP'(21141) 95%, 'ĠAl'(1219) 92%, 'ĠEX'(8021) 88%, 'Ġabnormal'(10969) 83%
+expression         ctrl n= 96: 'ĠGAPDH'(41610) 100%, 'ĠAl'(1219) 99%, 'ĠCAP'(21141) 98%, 'ĠEX'(8021) 93%, 'Ġabnormal'(10969) 88%
+residual_repaired  drug n=192: 'Ġepithelial'(13923) 100%, 'Ċ'(187) 100%, 'ĠCer'(28608) 100%, 'ĠIGF'(23591) 100%, 'Ġunknown'(7202) 99%
+residual_repaired  ctrl n= 96: 'Ġhomeostasis'(25641) 100%, 'ĠCer'(28608) 100%, 'ĠIGF'(23591) 100%, 'Ġepithelial'(13923) 100%, 'Ċ'(187) 100%
+residual_long      drug n=192: 'Ġcommon'(1846) 97%, 'ĠIGF'(23591) 91%, 'Ġsmall'(1355) 91%, 'ĠSic'(34970) 88%, 'ĠT'(308) 84%
+residual_long      ctrl n= 96: 'Ġcommon'(1846) 88%, 'ĠSic'(34970) 79%, 'Ġsmall'(1355) 77%, 'ĠIGF'(23591) 76%, 'ĠT'(308) 72%
+pretrained         drug n=192: 'Ġabnormal'(10969) 100%, 'Ġresponse'(2380) 100%, 'CR'(1311) 100%, 'ĠCell'(11641) 100%, 'ĠâĨĳ'(44723) 100%
+pretrained         ctrl n= 96: 'Ġabnormal'(10969) 100%, 'Ġresponse'(2380) 100%, 'CR'(1311) 100%, 'ĠCell'(11641) 100%, 'ĠâĨĳ'(44723) 100%
+
+== 7. reconstruction R, k=16, last_prompt, full lens: prompt means ==
+                        size    mean     min     max
+dictionary                 D       D       D       D
+layer model                                         
+3     expression          96  0.0496  0.0477  0.0527
+      pretrained          96  0.0487  0.0468  0.0501
+      residual_long       96  0.0576  0.0563  0.0589
+      residual_repaired   96  0.0534  0.0516  0.0554
+7     expression          96  0.0388  0.0381  0.0404
+      pretrained          96  0.0290  0.0276  0.0301
+      residual_long       96  0.0522  0.0511  0.0535
+      residual_repaired   96  0.0361  0.0349  0.0372
+11    expression          96  0.0343  0.0322  0.0361
+      pretrained          96  0.0312  0.0281  0.0350
+      residual_long       96  0.0292  0.0247  0.0339
+      residual_repaired   96  0.0309  0.0286  0.0343
+
+== 8. name-only vs MoA-changed drug pairs, layer 11: pair-mean phi_adj ==
+                             size    mean
+model             name_only              
+expression        False       108  0.0019
+                  True         84  0.0005
+pretrained        False       108  0.0048
+                  True         84  0.0015
+residual_long     False       108  0.0090
+                  True         84  0.0074
+residual_repaired False       108  0.0022
+                  True         84  0.0027

@@ -1,0 +1,320 @@
+{
+  "figure": "fig:timeline",
+  "file": "thesis_v2/figs/timeline.tex",
+  "kind": "tikz, schematic",
+  "data_source": null,
+  "data_source_note": "This figure plots NO measured quantity. It carries no value from RESULTS_cluster and none from the thesis text. The only numbers it prints are ordinals (one..nine) and section pointers, and every pointer is set by \\cref/\\crefrange, so it cannot disagree with the document.",
+  "width": "body (142mm)",
+  "beats": [
+    {
+      "ordinal": 1,
+      "ordinal_word": "one",
+      "box_title": "The ruler was wrong",
+      "cref_targets": [
+        "sec:res-metrics"
+      ],
+      "printed_pointer": "\\S~4.1",
+      "resolved_sections": [
+        "4.1"
+      ],
+      "declared_beat_cell": [
+        1
+      ],
+      "section_headings": [
+        "The metric is the first result"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 2,
+      "ordinal_word": "two",
+      "box_title": "The model is drug-blind",
+      "cref_targets": [
+        "sec:res-blind"
+      ],
+      "printed_pointer": "\\S~4.2",
+      "resolved_sections": [
+        "4.2"
+      ],
+      "declared_beat_cell": [
+        2
+      ],
+      "section_headings": [
+        "The model is drug-blind"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 3,
+      "ordinal_word": "three",
+      "box_title": "Represented, not read",
+      "cref_targets": [
+        "sec:methods-probe",
+        "sec:res-mechanism"
+      ],
+      "printed_pointer": "\\S\\S~4.3 to 4.5",
+      "resolved_sections": [
+        "4.3",
+        "4.5"
+      ],
+      "declared_beat_cell": [
+        3,
+        3
+      ],
+      "section_headings": [
+        "The drug is not missing from the computation",
+        "Identity is read, at very low gain"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 4,
+      "ordinal_word": "four",
+      "box_title": "Content fixes fail",
+      "cref_targets": [
+        "sec:res-epsilon"
+      ],
+      "printed_pointer": "\\S~4.6",
+      "resolved_sections": [
+        "4.6"
+      ],
+      "declared_beat_cell": [
+        4
+      ],
+      "section_headings": [
+        "Denoising the target changes the target, not the decoder"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 5,
+      "ordinal_word": "five",
+      "box_title": "Re-encode the target",
+      "cref_targets": [
+        "sec:methods-residual",
+        "sec:res-encoding"
+      ],
+      "printed_pointer": "\\S\\S~4.7 to 4.9",
+      "resolved_sections": [
+        "4.7",
+        "4.9"
+      ],
+      "declared_beat_cell": [
+        5,
+        5
+      ],
+      "section_headings": [
+        "The standard target hides the drug",
+        "Re-encoding produces prompt sensitivity"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 6,
+      "ordinal_word": "six",
+      "box_title": "Responding to the drug is not predicting it",
+      "cref_targets": [
+        "sec:res-generalisation"
+      ],
+      "printed_pointer": "\\S~4.10",
+      "resolved_sections": [
+        "4.10"
+      ],
+      "declared_beat_cell": [
+        6
+      ],
+      "section_headings": [
+        "Responding to the drug is not predicting it"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 7,
+      "ordinal_word": "seven",
+      "box_title": "A lookup table wins",
+      "cref_targets": [
+        "sec:res-lookup"
+      ],
+      "printed_pointer": "\\S~4.11",
+      "resolved_sections": [
+        "4.11"
+      ],
+      "declared_beat_cell": [
+        7
+      ],
+      "section_headings": [
+        "A lookup table wins"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 8,
+      "ordinal_word": "eight",
+      "box_title": "The unseen-drug regime",
+      "cref_targets": [
+        "sec:res-scope"
+      ],
+      "printed_pointer": "\\S~4.12",
+      "resolved_sections": [
+        "4.12"
+      ],
+      "declared_beat_cell": [
+        8
+      ],
+      "section_headings": [
+        "Same-target retrieval is the strongest observed lead"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    },
+    {
+      "ordinal": 9,
+      "ordinal_word": "nine",
+      "box_title": "Which span is read",
+      "cref_targets": [
+        "sec:res-field"
+      ],
+      "printed_pointer": "\\S~4.13",
+      "resolved_sections": [
+        "4.13"
+      ],
+      "declared_beat_cell": [
+        9
+      ],
+      "section_headings": [
+        "Which part of the prompt is read remains unresolved"
+      ],
+      "ordinal_matches_beat_strip_cell": true
+    }
+  ],
+  "consistency_checks": {
+    "n_beats_drawn": 9,
+    "text_claim": "04-Investigation.tex:74 \"Nine beats produce those six findings; the ninth produces none\"; 00-HowToRead.tex:38 \"maps the nine beats in order\"",
+    "all_ordinals_match_declared_beat_strip_cell": true,
+    "chapter4_sections_and_their_declared_beat": [
+      {
+        "section": "4.1",
+        "label": "sec:res-metrics",
+        "beat": 1
+      },
+      {
+        "section": "4.2",
+        "label": "sec:res-blind",
+        "beat": 2
+      },
+      {
+        "section": "4.3",
+        "label": "sec:methods-probe",
+        "beat": 3
+      },
+      {
+        "section": "4.4",
+        "label": "sec:res-used",
+        "beat": 3
+      },
+      {
+        "section": "4.5",
+        "label": "sec:res-mechanism",
+        "beat": 3
+      },
+      {
+        "section": "4.6",
+        "label": "sec:res-epsilon",
+        "beat": 4
+      },
+      {
+        "section": "4.7",
+        "label": "sec:methods-residual",
+        "beat": 5
+      },
+      {
+        "section": "4.8",
+        "label": "sec:res-transfer",
+        "beat": 5
+      },
+      {
+        "section": "4.9",
+        "label": "sec:res-encoding",
+        "beat": 5
+      },
+      {
+        "section": "4.10",
+        "label": "sec:res-generalisation",
+        "beat": 6
+      },
+      {
+        "section": "4.11",
+        "label": "sec:res-lookup",
+        "beat": 7
+      },
+      {
+        "section": "4.12",
+        "label": "sec:res-scope",
+        "beat": 8
+      },
+      {
+        "section": "4.13",
+        "label": "sec:res-field",
+        "beat": 9
+      },
+      {
+        "section": "4.14",
+        "label": "sec:res-summary",
+        "beat": 0
+      }
+    ],
+    "crefrange_endpoints_drawn": [
+      "4.1",
+      "4.10",
+      "4.11",
+      "4.12",
+      "4.13",
+      "4.2",
+      "4.3",
+      "4.5",
+      "4.6",
+      "4.7",
+      "4.9"
+    ],
+    "sections_excluded_as_not_a_beat": [
+      {
+        "section": "4.14",
+        "label": "sec:res-summary"
+      }
+    ],
+    "apparatus_excluded": {
+      "label": "sec:methods-data",
+      "resolved": "3"
+    }
+  },
+  "box_metrics": {
+    "measured_from": "thesis_v2/main.pdf, page index 33 (printed page 28)",
+    "n_boxes": 9,
+    "box_width_mm": 44.4064,
+    "box_height_mm": 21.5003,
+    "distinct_box_widths_pt": [
+      125.8764
+    ],
+    "distinct_box_heights_pt": [
+      60.9456
+    ],
+    "distinct_row_tops_pt": [
+      105.1673,
+      183.121,
+      261.0747
+    ],
+    "distinct_row_bottoms_pt": [
+      166.1129,
+      244.0666,
+      322.0204
+    ],
+    "column_pitch_mm": 47.7977,
+    "row_pitch_mm": 27.5003,
+    "horizontal_gap_mm": 3.3913,
+    "vertical_gap_mm": 6.0001,
+    "total_box_span_mm": 140.0018,
+    "text_block_mm": 142.0,
+    "natural_picture_width_pt_TeX": 401.73848,
+    "textwidth_pt_TeX": 404.02913,
+    "hyphenated_words": 0
+  }
+}

@@ -1,0 +1,9 @@
+expression: band [0.0343,0.0468] drug n=15 from 10 drugs (max 6 from Dapagliflozin ((2S)-1,2-propanediol, hydrate)), ctrl n=25 from 18 drugs
+   mean rel in band: drug 0.0401 ctrl 0.0436 | pooled gap -0.0060
+   drug-first gap over 7 drugs with both kinds: -0.0025 [-0.0080, +0.0024]
+residual_repaired: band [0.0424,0.1120] drug n=148 from 24 drugs (max 8 from Almonertinib (hydrochloride)), ctrl n=96 from 24 drugs
+   mean rel in band: drug 0.0796 ctrl 0.0699 | pooled gap -0.0016
+   drug-first gap over 24 drugs with both kinds: -0.0018 [-0.0028, -0.0006]
+pretrained: band [0.0469,0.1406] drug n=132 from 24 drugs (max 8 from Dapagliflozin ((2S)-1,2-propanediol, hydrate)), ctrl n=94 from 24 drugs
+   mean rel in band: drug 0.0631 ctrl 0.0811 | pooled gap -0.0030
+   drug-first gap over 24 drugs with both kinds: -0.0027 [-0.0048, -0.0006]

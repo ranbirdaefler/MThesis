@@ -1,0 +1,141 @@
+% ===========================================================================
+% fig-scramble.tex (v2) -- the scramble ablation and why its difference is
+% leak-immune. NO DATA DEPENDENCY: this is a schematic. The two drug names and
+% the two mechanism strings are the illustrative pair already used in v1; the
+% only quantity in the float is the definition
+% \gap = \NIR_real - \NIR_scrambled, which is the definition given in
+% Sections/04a-ruler.tex, not a measurement.
+%
+% CHANGES FROM v1 (thesis/figs/fig-scramble.tex), all layout, none semantic:
+%   (1) the closing sentence is now ONE unbroken line. In v1 it was set as two
+%       centred nodes with a dashed arrow BETWEEN them, so the reader crossed a
+%       rule in the middle of the clause "so control- and batch-derived /
+%       leakage cancels". Measured at \scriptsize the sentence is 360.25pt,
+%       which fits the 404.03pt measure with 43.8pt to spare, so the break was
+%       never forced -- it existed only to make room for the arrow.
+%   (2) the dashed arrow is deleted. It ran left-to-right under the figure and
+%       connected nothing: no node at either end, no quantity implied by its
+%       direction.
+%   (3) the \gap definition is no longer floating in the white between the two
+%       curved connectors. It hangs off the LOWER connector on a short vertical
+%       tick, so the eye reads "these two arms, differenced" rather than
+%       finding a formula parked in open space.
+%
+% WIDTH. v1 measured 289.4pt = 101.7mm inside a 142mm measure and sat visibly
+% short of the block. This version is laid out to 14.2cm = 142.0mm = the v2
+% \textwidth (404.03 TeX pt, preamble.tex:88). It is NOT \resizebox'd and it is
+% NOT [scale=]'d: every type size below is the size that prints. Widening was
+% done by pinning the truth node to the right edge of the block (anchor=east at
+% x=14.2) and widening the prompt cards from their natural 3.70cm to 5.60cm, so
+% the extra 40mm goes into the converging arms, which is the part of the
+% picture that carries the argument, and not into the card interiors.
+%
+% MEASURED (\settowidth, 12pt Pagella, this preamble):
+%   \textwidth                                     404.03pt
+%   closing sentence, \scriptsize                  360.25pt   -> one line, fits
+%   closing sentence, \footnotesize                450.31pt   -> would not fit
+%   prompt tabular, natural                        104.88pt
+%   "scrambled prompt --- only the two ..."        192.22pt = 6.78cm
+%   \gap definition, \small                        137.96pt
+% Those last two set the card width. The cards stop at 5.60cm and the truth
+% node starts at 12.09cm, leaving 6.49cm of gap; the 4.86cm \gap definition
+% hangs in the middle of that gap with 0.83cm clear on its left and 0.68cm on
+% its right, so it touches neither the card nor the truth. A wider card (6.90cm,
+% flush with the 6.78cm label above it) was tried and rejected: it squeezed
+% those clearances to 3pt and 2pt.
+% ===========================================================================
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\small,
+  lbl/.style={font=\scriptsize, text=quietink},
+  strong/.style={font=\scriptsize, text=ink},
+  % text width, not minimum width: minimum width would centre the tabular in
+  % the enlarged box and the prompt would stop looking like a prompt.
+  promptbox/.style={draw=rulegrey, rounded corners=2pt, inner sep=5pt,
+                    fill=rulegrey!8, text width=5.248cm, align=left},
+  truthbox/.style={draw=rulegrey, rounded corners=2pt, inner sep=6pt,
+                   align=center, fill=rulegrey!10},
+  ar/.style={-{Stealth[length=4.5pt]}, quietink},
+  tick/.style={quietink, line width=0.5pt},
+]
+% rulegrey!35 reproduces v1's black!14 span shading against the page's own
+% rule ink rather than pure black.
+\newcommand{\spanhl}[1]{\colorbox{rulegrey!35}{#1}}
+
+% ---- arm 1: the real prompt --------------------------------------------
+\node[lbl, anchor=west] at (0,0) {real prompt};
+\node[promptbox, anchor=north west] (p1) at (0,-0.26) {%
+  \renewcommand{\arraystretch}{0.9}%
+  \begin{tabular}{@{}l@{~~}l@{}}
+  \ttfamily\scriptsize Cell line:    & \ttfamily\scriptsize MCF7 \\
+  \ttfamily\scriptsize Drug:         & \ttfamily\scriptsize \spanhl{Lapatinib} \\
+  \ttfamily\scriptsize Mechanism:    & \ttfamily\scriptsize \spanhl{EGFR inhibitor} \\
+  \ttfamily\scriptsize Control cell: & \ttfamily\scriptsize GAPDH RPS6 \ldots \\
+  \end{tabular}};
+
+% ---- arm 2: the scramble. Positioned OFF p1's measured south edge, never off
+% an estimate of the card height -- the card is ~2.2cm tall once the shaded
+% spans are set, which is more than four lines of \scriptsize looks like it
+% should need.
+\node[lbl, anchor=north west] (l2) at ($(p1.south west)+(0,-0.34)$)
+  {scrambled prompt --- only the two shaded spans differ};
+\node[promptbox, anchor=north west] (p2) at ($(l2.south west)+(0,-0.10)$) {%
+  \renewcommand{\arraystretch}{0.9}%
+  \begin{tabular}{@{}l@{~~}l@{}}
+  \ttfamily\scriptsize Cell line:    & \ttfamily\scriptsize MCF7 \\
+  \ttfamily\scriptsize Drug:         & \ttfamily\scriptsize \spanhl{Vorinostat} \\
+  \ttfamily\scriptsize Mechanism:    & \ttfamily\scriptsize \spanhl{HDAC inhibitor} \\
+  \ttfamily\scriptsize Control cell: & \ttfamily\scriptsize GAPDH RPS6 \ldots \\
+  \end{tabular}};
+
+% ---- the single truth, on the right edge of the measure -----------------
+% anchor=east at x=14.2 pins the picture's right edge to \textwidth exactly.
+\coordinate (mid) at ($(p1.east)!0.5!(p2.east)$);
+\node[truthbox, anchor=east] (truth) at (14.2,0 |- mid)
+  {truth for\\\textbf{Lapatinib}\\{\scriptsize drawn once}};
+
+% Both arms leave horizontally and arrive on the truth from the outside, so
+% the convergence is the shape of the picture.
+\draw[ar] (p1.east)
+  .. controls ($(p1.east)+(2.7,0)$) and ($(truth.north west)+(-1.0,0.30)$)
+  .. (truth.north west);
+\draw[ar] (p2.east)
+  .. controls ($(p2.east)+(2.7,0)$) and ($(truth.south west)+(-1.0,-0.30)$)
+  .. (truth.south west) coordinate[pos=0.42] (hang);
+
+% ---- the definition, hung off the lower connector ----------------------
+\draw[tick] (hang) -- ($(hang)+(0,-0.62)$);
+\node[anchor=north, font=\small, inner sep=1pt] (gapdef) at ($(hang)+(0,-0.62)$)
+  {$\gap = \NIR_{\text{real}} - \NIR_{\text{scrambled}}$};
+
+% ---- the reason the difference is leak-immune, on one line -------------
+\node[strong, anchor=north] at (7.1,-6.00)
+  {the shared control cell enters \emph{both} arms, so control- and
+   batch-derived leakage cancels in the difference};
+
+\end{tikzpicture}
+\caption[The scramble ablation]{\captiontitle{The scramble replaces the drug name and its mechanism and
+nothing else.} Both arms are conditioned on the same control cell and scored against the same truth,
+so any leakage through the control cell or the plate enters both arms in equal measure and cancels in
+the difference $\gap$. This is why $\gap$ is the only difference in the chapter whose leakage cancels
+by construction, while a comparison against a drug-agnostic predictor is not leak-immune --- such a
+baseline inherits whatever plate structure the comparison set carries
+(Table~\ref{tab:plateleak}). Comparisons of that kind are used, and used centrally, with the
+comparison set declared at every score: within plate in the expression frame, where the leakage is
+controlled rather than cancelled, and by cell line in the residual frame, where the plate-scoped
+generic has already subtracted each plate's mean response from truths and predictions alike --- in
+expectation, with however much survives in an individual residual left unmeasured
+(\S\ref{sec:methods-residual}, and \S\ref{sec:limitations} for what that leaves open).
+A refinement matters here: if the swapped-in drug happens to have a
+\emph{similar} true response then an unchanged output is correct rather than blind, so the swap
+partner is chosen from three defined similarity strata by residual cosine. Which stratum can carry
+the canonical magnitude associated with this figure is constrained by the comparator's own score.
+\S\ref{sec:res-generalisation} finds the geometry-defined \texttt{orth} partner empirically near
+chance at $0.501$ in this sample, making it the least contaminated available comparator rather than
+an independently established null. That restriction belongs to this canonical scramble comparison:
+the three-stratum repair comparison differences each model score against its own
+\texttt{near}/\texttt{orth}/\texttt{opposite} partner, while field attribution uses its stated
+span-specific partner and retains the resulting comparator caveat.}
+\label{fig:scramble}
+\end{figure}
