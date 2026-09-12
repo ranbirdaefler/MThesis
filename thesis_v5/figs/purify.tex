@@ -1,0 +1,1695 @@
+% ===========================================================================
+% figs/purify.tex -- fig:purify, how the drug slab is BUILT, and the gate it
+% has to pass before anything may be ablated with it.
+%
+% FIGURE BODY ONLY. No preamble, no document environment, no float, no caption.
+% \input it from inside a figure/fullwidth float in
+% Sections/04b-representation.tex; the ready-to-paste float sits commented at
+% the foot of this file and is also staged in figs/_PENDING_FLOATS.tex.
+% Compiles against thesis_v2/preamble.tex and nothing else: no \includegraphics,
+% no external data, no TikZ library beyond the ones preamble.tex already loads
+% (this file uses arrows.meta and calc only).
+%
+% WHAT THE FIGURE IS
+% ------------------
+% Steps one to three of sec:res-used, drawn as steps. Step one localises the
+% drug: twelve centred class means, ten kept directions. Step two purifies it:
+% the raw slab is orthogonalised off the context it is confounded with. Step
+% three is the falsifiability check: projecting the slab out must destroy most
+% of the decodable drug signal, or every null downstream is a measurement of
+% nothing. fig:hook (a separate float, six paragraphs later) draws step four;
+% the two are deliberately NOT merged -- each is about 100mm tall, the corpus
+% ceiling is slab.tex at 117mm, and the house caption shape carries one bolded
+% finding, not two.
+%
+% EVERY NUMBER DRAWN, AND WHERE IT COMES FROM
+% -------------------------------------------
+% Source for every measured quantity: RESULTS_cluster/workspace_probe.json.
+% Config there: tier tier2_unseen_drugs, n_drugs 12, n_per_drug 40, n_dims 10,
+% layers 2,4,6,8,9,12,16, chance 0.08333333333333333, seed 42.
+% Sibling ledger with the full machine-precision values: figs/purify.json.
+%
+% (a) THE SEVEN PLOTTED DOTS -- the only marks in this figure with a scale.
+%     layers.<L>.frac_signal_removed, layers 2,4,6,8,9,12,16:
+%       0.8846153846153847  0.9253112033195021  0.9383561643835617
+%       0.9461077844311377  0.9491525423728814  0.9440993788819876
+%       0.9444444444444445
+%     layers.<L>.gate_pass is true at all seven; the dots' position above the
+%     0.8 rule is that fact, so no second mark asserts it.
+%
+% (b) THE GATE, 0.8. PROSE ONLY. Sections/04b-representation.tex:185 "the
+%     fraction of above-chance signal removed must exceed $0.8$". There is no
+%     config field for it in workspace_probe.json, so the ledger cites the .tex
+%     line and not a key path. Drawn dashed accent, the house register for a
+%     pre-set threshold a value is tested against (gate.tex:170-174).
+%     SUPERSEDED IN v10 BELOW: it is now black, solid, 0.9pt.
+%
+% (c) THE THREE PRINTED ACCURACIES in the right-hand block of band two.
+%       before  0.41--0.82   layers.2.drug_decode  = 0.4083333333333334
+%                            layers.9.drug_decode  = 0.8208333333333334
+%       after   0.121        layers.<L>.drug_decode_ablated
+%                            = 0.12083333333333332, byte-identical at all seven
+%       chance  0.083        top-level chance = 0.08333333333333333
+%     Thesis 04b:186-188 "Accuracy falls from $0.41$--$0.82$ to a constant
+%     $0.121$ floor, removing $88$--$95\%$ of the above-chance signal".
+%     SUPERSEDED IN v10 BELOW as to PLACEMENT only: the three values are no
+%     longer a right-hand gutter block, they are the figure's foot note. No
+%     value changed.
+%
+% (d) THE IDENTITY, verified numerically before drawing, in python, over all
+%     seven layers, exact float equality (not a tolerance):
+%       (drug_decode - drug_decode_ablated) / (drug_decode - chance)
+%         == frac_signal_removed
+%     Layer 2: (0.4083333333333334 - 0.12083333333333332)
+%              / (0.4083333333333334 - 0.08333333333333333)
+%              = 0.8846153846153847, bit for bit.
+%     WHICH SLAB THE GATE IS MEASURED ON. This identity fixes it, and the
+%     answer is NOT V_pure. workspace_probe.json stores exactly one ablated
+%     series, drug_decode_ablated, and the identity reproduces from the RAW
+%     decode. The section-4.5 arm files prove the pipeline can distinguish the
+%     two cases -- they store drug_decode_ablated AND drug_decode_pure_ablated,
+%     frac_signal_removed AND frac_signal_removed_pure -- and this file stores
+%     only the first of each pair. So the figure, the caption and the ledger all
+%     say "the slab that is projected out" and nowhere claim the gate was run on
+%     V_pure. Stage two's arrow lands on V_pure because that is where the CAUSAL
+%     claims are made (04b:179-180); band two is a separate measurement and the
+%     divider is what keeps the two from being read as one.
+%     SUPERSEDED IN v10 BELOW as to the LAST CLAUSE ONLY: the divider is gone
+%     and the panel letters do that work now. The caveat itself survives, in the
+%     foot note.
+%
+% (e) THE FOUR PRINTED NUMBERS IN STAGE TWO, the only measured quantities above
+%     the divider.
+%       0.90--0.95   layers.<L>.confound_crossdecode.dose, seven layers:
+%                    0.9020833333333333 0.9229166666666666 0.9416666666666667
+%                    0.9395833333333332 0.95 0.8979166666666666
+%                    0.8979166666666668. Thesis 04b:176-178.
+%                    PRINTED AS TEXT AND NOT DRAWN, and there is deliberately NO
+%                    0.90 reference rule anywhere in this figure: the stored
+%                    minimum is 0.8979166666666666 at layers 12 and 16 and
+%                    reaches the thesis's "0.90" only by rounding to two places.
+%                    A rule at 0.90 would put two of seven points below it and
+%                    would read as a failure the thesis does not report.
+%       raw 0.620    layers.9.variance_share.drug      = 0.6201207831136324
+%       purified     layers.9.variance_share.drug_pure = 0.030620247335072275
+%         0.031
+%     The RAW share is quoted in no sentence of the thesis; figs/fig-mechanism.json
+%     already records it as drug_raw_not_drawn. Printing it here is a new reading
+%     of a stored field, flagged as such in purify.json, on the precedent of
+%     figs/slab.json's handling of variance_share.context. Layer 9 is named in
+%     the figure text so the pair cannot be read as a seven-layer summary; it is
+%     the layer at which the raw probe peaks (04b:170-171), which is why the
+%     section uses it as its own reference depth.
+%
+% (f) THE COUNTS in stage one: 480 prompts, twelve drugs, forty cells each,
+%     seven layers, ten kept directions, span at most eleven.
+%     config.n_drugs 12, config.n_per_drug 40, config.n_dims 10,
+%     layers.<L>.pure_drug_dims 10, config.layers "2,4,6,8,9,12,16".
+%     480 = 12 x 40 and the rank-11 bound (twelve centred means span at most
+%     eleven directions) are ARITHMETIC, not stored fields; the ledger says so.
+%     Thesis 04b:164-171.
+%
+% AGREEMENT WITH THE TEXT (checked line by line, not assumed):
+%   04b:164-165  "\num{480} tier-2 prompts (twelve drugs, forty real cells
+%                each) at seven layers"            -> stage one, line 4.     OK
+%   04b:168-170  "Twelve centred class means span at most eleven directions,
+%                so the slab keeps essentially the whole span, noisiest
+%                included, which for a removal claim is conservative"
+%                -> stage one, lines 1-3, verbatim.                          OK
+%   04b:175-178  "The raw drug slab is partly a batch slab. Drugs are
+%                confounded with plate and dose by the atlas's design, and
+%                probing dose from inside the drug subspace recovers it at
+%                $0.90$--$0.95$ at every layer"    -> stage two, lines 1-3.  OK
+%   04b:179-180  "Every causal claim below is made on $V_{\textrm{pure}}$,
+%                never on the raw slab."           -> the V_pure callout.    OK
+%   04b:185-186  "the fraction of above-chance signal removed must exceed
+%                $0.8$; below that the null is unfalsifiable, a measurement
+%                of nothing"                       -> the dashed rule, and
+%                                                     G4's two italic lines,
+%                                                     which are the section's
+%                                                     own words.             OK
+%   04b:186-188  "Accuracy falls from $0.41$--$0.82$ to a constant $0.121$
+%                floor, removing $88$--$95\%$"     -> right-hand block and
+%                                                     the set label.         OK
+%   04b:212-213  tab:workspace caption "All seven layers pass the removal gate
+%                (88--95\% ...); chance is $0.083$"                          OK
+%
+% AVAILABLE, DELIBERATELY NOT DRAWN, recorded here and in purify.json so a
+% reviewer who asks for direct evidence of the batch overlap is answered
+% without a redraw:
+%   * layers.<L>.overlaps.context   0.5215396547181934 -- 0.6323768458353303
+%   * layers.<L>.overlaps.cell_line 0.3043896441494730 -- 0.3534060289850234
+%     These are the per-layer measure of "the raw drug slab is partly a batch
+%     slab" and are quoted nowhere in the thesis. Drawing them would put a
+%     second measured scale into a panel whose whole discipline line says the
+%     geometry has no scale, and would be a new claim rather than a redraw.
+%   * layers.<L>.confound_crossdecode.plate, 0.4541666666666667 --
+%     0.5770833333333333, a materially weaker and entirely undiscussed
+%     confound. Not printed, because the section names dose and not plate.
+%   * layers.<L>.swap.{drug_b_kl, random_inject_kl} in this same JSON is the
+%     RETIRED steering design (07-Appendix.tex, sec:app-identity). Nothing from
+%     it is on this figure. figs/mechanism.py's header records that the v1
+%     figure plotted exactly that pair while its caption described the ablation.
+%
+% DESIGN DECISIONS, each with its reason
+% --------------------------------------
+%  1. TWO BANDS AND A DIVIDER THAT IS A STATEMENT. Above the rule at y=4.72
+%     nothing has a scale; below it everything does. No mark crosses the rule,
+%     no leader connects a schematic object to a plotted one, and the italic
+%     sentence under the rule sets band two up as the answer to the objection
+%     stage two raises -- if purification strips the raw slab from 0.620 to
+%     0.031 of the stream's variance, does anything survive in it? The
+%     alternative, one continuous diagram from cloud to axis, was rejected: it
+%     would invite the reader to measure the ellipse.
+%     SUPERSEDED IN v10 BELOW. The divider and its sentence are deleted; the
+%     schematic/measured distinction is now carried by the MARK (open rulegrey
+%     ring against filled accent disc), which is where it belongs.
+%  2. THE FAIL REGION IS DRAWN, THE PASS REGION IS NOT. The one non-obvious
+%     mark in band two is the rulegrey!18 rectangle from 0 to 0.8. It is the
+%     region of outcomes that would have made every null in this section a
+%     measurement of nothing, and it is empty. A figure that drew only the seven
+%     dots and the rule would be a bar of good news; drawing the region the
+%     dots had to avoid is what makes it a falsifiability picture. Its emptiness
+%     is also where the two italic lines fit, which is not a coincidence and is
+%     the reason they are placed there rather than in the caption.
+%     PARTLY SUPERSEDED IN v10: the region survives, at rulegrey!12, and the two
+%     italic lines inside it do not. The emptiness is the message and text in it
+%     was competing with the marks.
+%  3. NO CONNECTING LINE THROUGH THE SEVEN DOTS. The series is flat to 0.1355cm
+%     on this scale (0.8846 to 0.9492 at 2.10cm per unit of fraction). A line
+%     would assert a trend across a 6-point spread the axis cannot resolve; the
+%     seven marks are named as one ordered set by "all seven layers: 88--95%"
+%     instead, which is comparators.tex's rule for marks too close to leader
+%     individually.
+%  4. NO INTERVALS ANYWHERE. frac_signal_removed is a single ratio of two
+%     accuracies on 480 prompts and carries no stored dispersion of any kind;
+%     the KL series in the same file carry normal-approximation SEs, which are
+%     not this document's interval convention (figs/fig-mechanism.json records
+%     intervals_drawn false with that reason). A bare solid dot with no bar is
+%     how this document says a quantity has no interval (comparators.tex:149-151
+%     changed a hollow ring to a solid dot for exactly this).
+%  5. THE ORTHOGONALISATION IS DRAWN AS AN OPERATION, NOT AS A RESULT, AND THE
+%     OPERATION IS A PROJECTION AND NOT A ROTATION. This is the one mark
+%     figs/slab.tex does not have. There the drug wedge and the
+%     context wedge are simply shown already orthogonal, which states the
+%     outcome and hides the step; here the raw band sits at 38 degrees, visibly
+%     crossing the context band, and the raw slab's tip is carried onto V_pure.
+%     REPAIRED, PASS 9. It used to be carried by an accent ARC from 38 to 76
+%     degrees, i.e. the raw band swung upright. A reviewer read that panel as
+%     "the slab is turned until it is perpendicular to context" and had to go to
+%     the prose to learn that a component is REMOVED, and they were right to:
+%     two bands of equal width (0.32cm) and near-equal length (1.90 against
+%     2.00) differing only in angle say "same slab, rotated, nothing lost",
+%     against measured numbers 1.8cm to the right that say raw 0.620, purified
+%     0.031, a twentyfold shrink. A curved arrow is the universal sign for
+%     rotation. What replaces it is the subtraction itself: a dashed rulegrey
+%     perpendicular from the raw band's tip down to the context band, the
+%     component it lands on drawn as its own named mark, and a STRAIGHT accent
+%     arrow at the tip's own height carrying the tip left by exactly that
+%     component, landing on V_pure. Two further faults the arc had, both from
+%     the render: its head stopped 1.5mm short of the V_pure bar and pointed at
+%     white space, and the grey leader from the word "orthogonalise" stopped 4mm
+%     short of the arc's tail -- the corpus puts the 0.06cm gap at the LABEL
+%     end, never at the mark end, so that stub read as a stray hairline. The
+%     label now sits 0.15cm from the arrow's tail and carries no leader, and the
+%     arrow is 0.6pt: a schematic operation, not a measurement, where 1.0pt is
+%     the corpus's "this IS the claim" register. V_pure was also narrowed from
+%     0.32 to 0.18cm, so the purified band is visibly thinner than the raw one.
+%     slab.tex is left alone and is not
+%     superseded: three of its four panels are the failed identity designs of
+%     sec:app-identity, which are the appendix's argument, and its magnified
+%     interior is sec:res-mechanism's swap geometry. What it draws that belongs
+%     to sec:res-used is one thing, the variance-share disc, and this figure
+%     does not redraw it. The two figures share vocabulary (accent-on-white
+%     bands, rulegrey leaders, one discipline line saying what is to scale) and
+%     no coordinate.
+%     The whole of this decision survives v10 except the arrow's WEIGHT, which
+%     goes 0.6 -> 0.5pt to bring the file inside a four-weight budget; the
+%     perpendicular goes dashed-rulegrey -> densely-dotted-quietink, which is
+%     this document's reserved stroke for a projection line.
+%  6. THE CONFOUND IS A NAMED MARK, NOT THE PRODUCT OF TWO TINTS.
+%     REPAIRED, PASS 9, and this is the repair both reviewers called blocking.
+%     It used to be the lozenge where the raw band's tint multiplied over the
+%     context band's, with the whole claim carried by the caption ("that
+%     darkened region is the confound step two exists to remove"). Three faults:
+%     (a) it was the only element in the panel with no direct label, while every
+%     other mark had one; (b) V_pure ran vertically through its centre and split
+%     it in two -- sampled on the render, a row across it read grey (174,174,174),
+%     then (119,143,164) for the tint product, then a hard cut to opaque accent
+%     (11,82,147) for 24px, then (119,143,164) again -- so it was not a nameable
+%     region at all; (c) it made a CROSSING mean "confounded" on a panel where
+%     another crossing, V_pure through the same band, has to mean "orthogonal".
+%     One glyph cannot carry both. It is now the orthogonal projection of the
+%     raw direction onto context: a segment along the context band from the
+%     shared origin to the foot of the perpendicular dropped from the raw band's
+%     tip, drawn in the raw slab's own tint at a higher opacity with a 0.35pt
+%     accent!70 outline, and directly labelled "the confound". It begins at
+%     V_pure's right edge, so nothing bisects it, and it is exactly the length
+%     of the removal arrow above it, which is the rhyme that makes the arrow
+%     legible. With the tint-multiply claim gone, a crossing means nothing
+%     anywhere in the panel and the right-angle mark is the only assertion of
+%     orthogonality, which is what decision 8 already wanted.
+%     The context band is now panelbg with a rulegrey outline and not ink!35:
+%     see decision 11.
+%  7. NO 0.90 REFERENCE RULE. See (e) above: the stored dose minimum is
+%     0.8979166666666666 and rounds to the thesis's 0.90. Printing the range as
+%     text states exactly what the section states; a rule would show two of
+%     seven points below it and would manufacture a failure.
+%  8. RIGHT ANGLE AS A MARK, NOT AS A WORD. The small square in the
+%     upper-left quadrant at the shared origin is the only assertion that
+%     V_pure and the context subspace share no direction. The word
+%     "orthogonalise" labels the operation; the square labels its result.
+%     PASS 9: ink 0.35pt, up from rulegrey 0.3pt. The caption calls it "the one
+%     geometric fact true by construction" and it was the faintest mark in the
+%     panel.
+%     AMENDED IN v10: the square moves to the LOWER-left quadrant, doubles to
+%     0.40cm arms, and acquires the direct label it never had.
+%     SUPERSEDED IN v11: THIS LINE IS FALSE ABOUT ITS OWN DRAWING AND ALWAYS
+%     WAS. v10 drew the square in the UPPER-left quadrant of the crossing --
+%     (10.01,8.65)-(10.01,9.05)-(10.41,9.05) -- and no build has ever put it
+%     lower-left. The direct label and the enlargement are true. v11 keeps the
+%     upper-left quadrant, which is the only one of the four that is free (the
+%     raw band at 38 degrees crosses lower-left and upper-right, and "the
+%     confound" and its leader own lower-right), and takes the arms 0.40 ->
+%     0.28cm to clear the removal arrow -- see v11 item 2.
+%  9. THE GLOBAL MEAN IS A CROSS, NOT A DOT. The twelve class means are dots;
+%     the thing they are centred on must not be a thirteenth dot. It is also
+%     leadered out of the cloud rather than labelled in place, because at
+%     8pt the label box collided with two of the twelve dots.
+% 10. V_drug IS DRAWN WITH STAGE TWO'S OWN GLYPH, AND ALL TWELVE DISPLACEMENTS
+%     ARE DRAWN. REPAIRED, PASS 9, two findings at once.
+%     (a) V_drug used to be a dashed, accent!10 FILLED ELLIPSE enclosing the
+%     twelve dots, while stage two drew the same name as an unbounded band. A
+%     bounded blob around the class means says "the region where the drugs
+%     live"; a subspace is not a region and has no edge. Read cold, the ellipse
+%     was taken for the data cloud and stage two's band for a new object, so
+%     stage one's output was never connected to stage two's input -- the one
+%     join the figure exists to make, and the join the brief says readers lose.
+%     V_drug is now an accent band at the SAME fill opacity stage two uses,
+%     through the global mean, running past the data on both sides. The ellipse
+%     is deleted rather than kept unlabelled: with the band tall enough to
+%     contain all twelve dots (half-height 0.52 against a maximum |dy| of 0.44)
+%     it had nothing left to say, and a class mean drawn OUTSIDE V_drug would
+%     have been false, since the twelve centred means span it by construction.
+%     (b) ONE displacement was drawn and eleven were not, so "twelve are
+%     stacked" -- the sentence directly under the dots -- was invisible, and the
+%     dots were unlabelled while the prose two lines below names a different
+%     population ("480 prompts: twelve drugs, forty real cells each"), so the
+%     scatter read as prompts and the cross as their grand mean. All twelve
+%     stems are now drawn at 0.3pt quietink, with the one accent arrow on top
+%     and still the only labelled one, and the dots carry the tag "the twelve
+%     per-drug means". The stems make the count a picture and they are what the
+%     "at most eleven directions" line is about.
+%     The twelve offsets are written out in a \foreach list so no build can
+%     randomise them and no reader can be told a different story by a different
+%     compile. Opacity: the band is 0.20, not the 0.34 of stage two's first
+%     draft, and stage two's raw band was brought to 0.20 with it. At 0.34 over
+%     5.10 x 1.04cm the band became the single heaviest area on the page, which
+%     is the thing this figure was already being marked down for; at 0.20 over
+%     4.10 x 1.04 it lays down about the ink of stage two's 1.90 x 0.32 band and
+%     the two are drawn at the SAME opacity, so the glyph rhymes exactly.
+%     AMENDED IN v10: the twelve class means become OPEN RINGS and the one
+%     accent displacement arrow loses its head -- see v10 items 3 and 6.
+% 11. ONE GREY FAMILY, AND THE CONTEXT SUBSPACE IS THE COLOUR slab.tex GIVES IT.
+%     PASS 9. Three greys were in play, derived two different ways: rules at
+%     rulegrey, the context band at ink!35, the gate region at rulegrey!18.
+%     ink!35 is not derived from rulegrey and is LIGHTER than a hairline rule,
+%     so the band read as a heavy solid slab while the rules read as thin, and
+%     it was the darkest region on either page. slab.tex draws this same named
+%     subspace in panelbg (its \slabdisc, slab.tex:83-90), so the figure also
+%     disagreed with the published figure about what colour the object is. The
+%     band is now panelbg with a 0.35pt rulegrey outline; ink!35 no longer
+%     appears in the document, and purify's context band and slab.tex's context
+%     wedge are the same object drawn twice.
+% 12. THE GATE PANEL KEEPS ITS FULL 0-TO-1 AXIS. A reviewer asked for the range
+%     to be cut to 0.75-1.00 so the seven fractions (0.8846 to 0.9492, 0.1355cm
+%     apart on this scale) would resolve, against a fail region 12.4x their
+%     height. OVERRULED, and the reason is the same one that bans bars on a log
+%     axis: the fail region's height is not a drawing choice, it is the share of
+%     the outcome space that would have made every null below unfalsifiable, and
+%     0 is the natural floor of a fraction, not an arbitrary cut. Cutting the
+%     axis at 0.75 would shrink the one region whose SIZE is the argument, to
+%     resolve an ordering the thesis makes no claim about -- tab:workspace is
+%     the authority for the per-layer values and the section quotes only the
+%     range. What was applied instead: the direct label "all seven layers:
+%     88--95%" names the set (decision 3), and the 0.8 numeral was dropped from
+%     the tick set because the accent label already owns that coordinate.
+%     STILL IN FORCE IN v10, and it is the first thing v10 was told to protect.
+%
+% WHAT SIX RENDER-AND-READ PASSES CHANGED, with the measurement that forced it
+% ---------------------------------------------------------------------------
+%  i.   PASS 1, Overfull 88.29pt. The discipline line under stage two ran 146
+%       characters at \footnotesize and measured 20.4cm against a 17.30cm
+%       measure. Cut to 103 characters; the sentence now states only what it
+%       has to, that the geometry has no scale and four numbers do.
+%  ii.  PASS 1. "every causal claim is made here", set anchor=south at y=9.22,
+%       put its box top at 9.63 against the stage-two subtitle's ink bottom of
+%       9.37 and the two overprinted. There is no room above V_pure for a
+%       second line, so the sentence became the fourth line of stage two's
+%       prose block, in the section's own words ("never on the raw slab").
+%  iii. PASS 1. "the global mean" and "$\mu_d-\bar\mu$, one drug's" collided
+%       character to character: both wanted the space up and right of the
+%       cloud, which is where the displacement arrow points. The global mean
+%       was moved BELOW the cloud on a leader. Drawn straight down that leader
+%       read as a dropped axis, so PASS 4 gave it a 0.25cm dogleg; the dogleg
+%       clears the two nearest class means by 0.23cm and 0.25cm.
+%  iv.  PASS 2, Overfull 6.20pt, unchanged from PASS 1 by three edits, which is
+%       what identified it: the culprit was not the widest LINE but the
+%       fraction axis's own tick label. "1.0" is anchor=east on a spine at
+%       x=0.30, and its box ran 0.28cm LEFT of x=0. The bare \path pins a
+%       minimum box, not a maximum, so nothing clipped it. The whole plot was
+%       shifted right (spine 0.30 -> 0.75, layer 2 from 0.60 -> 1.05) rather
+%       than the label being clipped or shrunk. boxes=0 from PASS 4 on.
+%  v.   PASS 2. Band two carried two annotation columns 0.30cm apart at the
+%       same baseline, so "88--95%" and "accuracy before" read as one line. The
+%       plot was widened from 8.60 to 11.00cm of layer axis and the two columns
+%       became one, which also removed 3.4 x 1.9cm of dead white under them.
+%  vi.  PASS 4, at 520dpi. The leader to "orthogonalise" left the arc 0.20cm
+%       from its own arrowhead and read as a grey continuation of the accent
+%       arrow. It now leaves at 50 degrees, 0.42cm clear of the head, and stays
+%       above the raw band's upper edge for its whole length. The right-angle
+%       mark went from 0.16 to 0.20cm, and the global-mean cross from 0.30 to
+%       0.45pt with 2mm arms, because at 0.3pt it was fainter than the leaders.
+%  vii. PASS 5. Stage one left 4.2 x 1.9cm of white to the right of the cloud
+%       while stage two's matching region was full. The ellipse went from
+%       1.75 to 2.05 x-radius and the cloud from 1.45 to 1.72, which both fills
+%       the panel and raises the aspect from 2.34:1 to 2.77:1. The ellipse's
+%       y-radius was NOT raised with it: at 0.98 the ellipse reached y=6.92 and
+%       left the global-mean label 0.06cm from the prose block below.
+%  viii.PASS 5. The panel-three subtitle said "projecting the slab out", which
+%       after stage two's "every causal claim is made on V_pure" invited the
+%       reading that the gate was run on V_pure. It now says "projecting the
+%       drug subspace out", the section's own noun at 04b:184-185, and the
+%       string V_pure does not appear in panel three at all.
+%
+% LAYOUT NOTES, all forced by a build
+% -----------------------------------
+%   * fullwidth = textwidth 142mm + marginparwidth 28mm + marginparsep 4mm
+%     = 174mm. (The "171mm" beside \newenvironment{fullwidth} in preamble.tex
+%     is stale arithmetic.) The bounding box is pinned with a bare \path at
+%     (0,-0.12) rectangle (17.30,10.20) = 173.0 x 103.2mm, inside the 17.35cm
+%     hard edge circularity.tex records and under the corpus height ceiling,
+%     slab.tex at 117mm. The harness reports pages=1, boxes=0. It grew 1.7mm in
+%     pass 9: band two moved down 0.20cm to open a line under stage three's
+%     subtitle for the "which slab" caveat, and the "four ... see fig:hook"
+%     pointer sits on the bottom line. The float got much SHORTER overall in the
+%     same pass, because the caption went from 484 words to about 280.
+%   * x=1cm, y=1cm. Nothing is scaled, nothing is \resizebox'd; 1cm here is
+%     1cm on the page.
+%   * pgfmath: \lx and \fy expand to BRACED groups, so \lx{2}+0.05 is not a
+%     coordinate. Every stand-off is either inside the braces or an xshift on
+%     the node (gate.tex records the same trap).
+%   * the tick rows use the \v/\t value/label pair form, so the fraction axis
+%     prints 0.5 and 1.0 rather than \foreach's raw 0.5 and 1 tokens. The layer
+%     row does not need it: its values are integers and print as themselves.
+%   * no node uses align= or text width=: such a node builds a minipage whose
+%     first-line height follows the AMBIENT \baselineskip, so its ink moves
+%     with whatever prose precedes the float (frames.tex measured 3.7pt of
+%     drift). Every multi-line block here is a stack of single
+%     anchor=base west lines on explicit baselines: 0.28cm apart in band one's
+%     two prose blocks, 0.33cm in band two's right-hand block, where the lines
+%     are read one at a time rather than as a paragraph.
+%   * the fraction axis carries no rotated title. The panel subtitle sits
+%     directly above it and names the quantity, the direction and the frame in
+%     one line, which is what gate.tex's fix 1 asks an axis to do; a second
+%     title would repeat it 0.2cm away.
+%     THIS NOTE IS NOW FALSE AND IS SUPERSEDED BY v10 ITEM 4. It was the
+%     supervisor's first complaint about this arc of figures and it was wrong:
+%     a quantity named in a panel subtitle 30mm from the ticks is not named at
+%     the axis. The fraction axis carries a rotated title from v10 on.
+%   * PASS 9, THE "WHICH SLAB" CAVEAT, three builds to place. The wording went
+%     155 -> 121 -> 92 characters. At 155 the picture was 55.72pt over the
+%     measure and the harness said so; at 121 it ran to x = 15.90 and
+%     overprinted the accent label "all seven layers: 88--95%" at 12.60; at 92
+%     it ends at 12.30. Vertically it was first set at baseline 3.24 and its
+%     ascenders touched the subtitle's descenders with no white between -- the
+%     subtitle is \footnotesize in a node whose TOP is pinned at 3.76, so its
+%     descender line is 3.351 and a \scriptsize line at 3.24 reaches 3.444. It
+%     is now at baseline 3.05 with 0.10cm of clearance above, and INDENTED to
+%     x = 0.90: at x = 0 its descenders at 2.97 met the "1.0" tick numeral,
+%     whose box top is 2.95, and the indent both clears the numeral and breaks
+%     the note away from the subtitle so the two do not read as one paragraph.
+%   * PASS 9, THE DIVIDER BETWEEN STAGES ONE AND TWO now ends at y = 5.28, the
+%     descender line of the last prose row in both columns (baseline 5.38),
+%     instead of at 5.40 where it stopped between two lines of type and read as
+%     a broken rule. It clears the centred italic beneath it by 0.26cm.
+%   * PASS 9, THE DISCIPLINE LINE IS CENTRED on the figure's own centre and is
+%     no longer flush left at the prose column's x. Flush left, at the same
+%     leading as the four-line block directly above it and with no blank
+%     scan-line between, it parsed as that paragraph's fifth line even though it
+%     ran full width past the vertical divider. Centred, it pairs with the
+%     sentence centred under the rule, and the two bracket the divider.
+%   * PASS 9, THE AXIS TITLE moved from x = 6.60 to 7.73. \lx{9} = 6.55, so
+%     centred on 6.60 the word "layer" sat within 0.05cm of the layer-9 numeral,
+%     one line below it, and read as a label of layer 9 rather than of the axis.
+%     7.73 is the midpoint of the widest tick gap (\lx{9} = 6.55 to
+%     \lx{12} = 8.91) and is 0.83cm clear of both.
+%   * PASS 9, THE 0.8 TICK IS GONE. The coordinate was labelled twice at the
+%     same height, once as a quietink numeral on the left spine and once as the
+%     accent label "the gate: 0.8" on the right, so the plot appeared to carry
+%     a left scale and a right scale. 0, 0.5, 1.0 is also a regular tick set.
+%     A 0.9 tick was considered and rejected by measurement: at \fy it would
+%     sit 0.21cm from both neighbours against a 0.203cm numeral height.
+%
+% TYPE. Ambient \small on the picture; \scriptsize (8pt) on every node except
+% the \footnotesize (10pt) italic prose -- the three panel subtitles, the
+% discipline line, the divider sentence and the two lines inside the fail
+% region. Nothing is set at body size.
+% SUPERSEDED IN v10 BELOW: two sizes only, \footnotesize and \scriptsize, and
+% ZERO italic.
+%
+% ===========================================================================
+% v10 -- 2026-08-18. REBUILD AGAINST THE STYLE CONTRACT AND THE SUPERVISOR'S
+% VERDICT. Nine of the twelve design decisions above survive whole; the three
+% that do not are superseded in place, above, rather than deleted, because the
+% thesis is audited against this header.
+%
+% THE VERDICT THIS PASS ANSWERS, quoted: "For the other figures 4.8-12 go back
+% over them and iron them out even more. Make it look more professional, right
+% now it looks a bit sloppy and childish ... and moreover make sure that the
+% figures are CORRECT and display the idea we want to convey in the best way
+% possible." Plus, on 4.7 but binding on the whole arc: "there is no definition
+% on the x axis for what we are measuring".
+%
+% NOT ONE PLOTTED OR PRINTED VALUE CHANGED IN THIS PASS. The seven gate
+% fractions are the same seven floats, unrounded; 0.8, 0.41--0.82, 0.121,
+% 0.083, 0.90--0.95, 0.620, 0.031, 480, twelve, forty, ten, eleven and seven
+% are all unmoved. What changed is the y map (0.75 + f*2.10 -> 1.45 + f*3.95)
+% and the x map (1.05 + (L-2)/14*11.00 -> 1.45 + (L-2)/14*11.75), both recorded
+% in figs/purify.json beside the old ones. A map change is a position change,
+% not a value change, and the ledger carries both maps so the audit can redo it.
+% SUPERSEDED IN v11, AND THESE TWO SENTENCES CARRIED FOUR WRONG COEFFICIENTS.
+% What v10 actually shipped, read off its own code and confirmed by measuring
+% its render's dot centroids, was \fy = 1.45 + f*3.85 (not f*3.95) and
+% \lx = 1.85 + (L-2)/14*12.00 (not 1.45 + (L-2)/14*11.75). figs/purify.json's
+% value_to_position_maps.current_v10 held the correct pair all along, so the
+% header and its own sibling ledger disagreed; under the header's numbers an
+% auditor redoing the drawing would have put layer 16 at 13.20cm against the
+% 13.85cm drawn and the gate at 4.61cm against 4.53cm. The v11 maps are
+% recorded beside the code at the top of the picture, which is the only place
+% they can be checked against what is drawn. No value changed in either pass.
+%
+%  1. THE THREE ALL-CAPS SANS ACCENT BANNERS ARE GONE, replaced by fig:mechanism's
+%     own panel-head form: "(a) localise the slab", "(b) purify it against
+%     context", "(c) the removal gate", \footnotesize roman ink, sentence case,
+%     each left-aligned to its panel's x origin. fig:mechanism (4.11) carries
+%     zero banners and sets "(a) encoded more, used no more" at 10.0pt roman
+%     ink; figs/slab.tex (A.3) carries nine banners, but A.3 is an appendix
+%     reference plate a reader stops at and this is read inside a running
+%     argument, where the caps sans accent face belongs to the margin
+%     apparatus (\marginlabel) and not to the figure. The ordinal now lives in
+%     the panel letter, so the enumeration "one, two, three" that made a reader
+%     hunt for a missing stage four is gone with it, and so is the
+%     "four \quad what the ablation costs: \cref{fig:hook}" pointer that closed
+%     it -- a cross-reference in a drawing renders as ?? in the harness and on
+%     the page competed with the x-tick row it shared a baseline with, where
+%     the word "four" read as a leftmost tick.
+%  2. EVERY ITALIC IS GONE, AND WITH IT EVERY SENTENCE THAT WAS ARGUING RATHER
+%     THAN NAMING. Deleted: the three \footnotesize italic panel subtitles;
+%     the centred divider sentence "an ablation is only a test of the drug if
+%     the slab it removes really holds the drug", which restates the body
+%     paragraph directly above the float; the two lines inside the fail region,
+%     "had any layer landed in here, the null below it / would have been
+%     unfalsifiable --- a measurement of nothing", which restate the caption's
+%     own "the shaded region ... is empty"; and the centred discipline line
+%     "the dots and the bands are schematic and have no scale; only the four
+%     numbers in stage two are measured". Italic went from 31% of the figure's
+%     characters -- the highest in the five-figure set, against 0% in 4.11 --
+%     to nil. All five sentences are staged in figs/_PENDING_CAPTIONS.tex under
+%     \label{fig:purify} for a human to fold into the caption, which is where
+%     this document keeps its argument; none is silently lost.
+%  3. THE SCHEMATIC DISCLAIMER IS NOW CARRIED BY THE GLYPH AND NOT BY A
+%     FOOTNOTE. The panel drew thirteen SCHEMATIC dots at the same radius and
+%     the same fill as panel (c)'s seven MEASURED ones and then apologised for
+%     the collision in an 8pt line. The twelve class means are now OPEN RINGS,
+%     radius 1.4pt, white fill, 0.5pt rulegrey edge -- this document's mark for
+%     a schematic, unscaled object -- and the seven gate fractions stay filled
+%     accent discs at radius 1.4pt, which is its mark for a point estimate.
+%     One look now separates them and the disclaimer line is deleted.
+%  4. THE FRACTION AXIS IS DEFINED AT THE AXIS. This is the supervisor's first
+%     complaint, answered mechanically. It carried bare numerals 1.0 / 0.5 / 0
+%     with the quantity named only in an italic subtitle about 30mm above and
+%     20mm left of the topmost tick, so a reader at the axis could not tell
+%     whether 1.0 meant "all the signal removed" or "accuracy 1.0". It now
+%     carries, rotated 90 degrees reading upward and immediately left of the
+%     tick numerals, exactly fig:mechanism's form: line one \footnotesize roman
+%     ink naming the measured quantity, line two \scriptsize quietink giving its
+%     construction. The layer axis keeps the label "layer" it already had --
+%     one of only two axes in 4.7-4.10 that already met 4.11's standard -- and
+%     is now left-aligned to the axis's own left end rather than centred on the
+%     widest tick gap.
+%     MEASURED, and this is what fixed the wording. A rotated line cannot be
+%     longer than the lane left of the tick column, and that lane is pinned at
+%     both ends by things that may not move: below by the foot note's ascender
+%     line at y = 0.52, above by the descender line of the prose at x = 0, which
+%     after the 1.5mm lift of item 15 sits at y = 6.44. The axis's own midpoint
+%     is 3.375, so the usable half-length is 2.855cm and a line may run 5.71cm.
+%     Measured off this figure's own render, \footnotesize sets at 0.166
+%     cm/character in this class and \scriptsize at 0.119, so the lane holds 34
+%     \footnotesize or 47 \scriptsize characters.
+%     "fraction of above-chance drug signal removed" is 43 characters, needs
+%     7.14cm, and fits no layout under the 105mm height cap. What is set instead
+%     is "fraction of drug signal removed" (31 characters, 5.15cm) over
+%     "(before minus after)/(before minus chance)" (42 characters, 5.00cm). The
+%     second line carries "above chance" in the only form that is auditable
+%     against the JSON anyway, the construction itself: a reader standing at the
+%     axis can now see that 1.0 means all of it, and can recompute the quantity
+%     from the three accuracies in the foot note. The minus signs are spelled as
+%     words and not set as $-$: in math mode CMSY10 came out at 8.3pt, a THIRD
+%     type size above 7pt, which the style contract's first clause forbids.
+%     SUPERSEDED IN v11, AND THIS PARAGRAPH IS THE ERROR v11 EXISTS TO CORRECT.
+%     Three things in it are wrong. (i) THE LANE ARITHMETIC DISAGREES WITH ITS
+%     OWN LEDGER AND WITH THE CODE: this block says lane 5.71cm at 0.166
+%     cm/character with the axis midpoint at 3.375, while the inline comment at
+%     the axis said 5.44cm at 0.173 with midpoint 3.24, and figs/purify.json
+%     said 5.71/0.166/3.48. Remeasured on the v11 render from the PDF's own
+%     text spans, \footnotesize sets at 0.161 cm/character in this class, and
+%     the one figure that matters is now recorded once, beside the axis.
+%     (ii) THE CONCLUSION DOES NOT FOLLOW. That a 43-character STRING does not
+%     fit rules out the string, not the QUANTITY; dropping "above-chance" left
+%     the \footnotesize line naming a quantity the marks are not, and that is a
+%     correctness defect, not a compromise. The name is now set over two rotated
+%     \footnotesize lines and the \scriptsize construction line, which S5 makes
+%     optional, is deleted -- it had become the tallest object in the panel,
+%     rising 6.0pt above the panel head's own top, so the smallest type in the
+%     block outranked the head. The construction moved to the foot note.
+%     (iii) THE $-$ NOTE IS RIGHT AND WAS APPLIED ONE CHARACTER SHORT: the v10
+%     foot note still set "chance $0.083 = 1/12$", whose "=" came out of CMR10
+%     at 8.3pt, a third size above 7pt, exactly the fault the note describes.
+%     v11 sets "chance $0.083$, exactly $1/12$" and the render carries two
+%     sizes above 7pt and no CMR10 at all.
+%  5. THE DISPLAY FRACTION IS OUT OF THE PLOT. A \displaystyle fraction stacked
+%     in a plot's label gutter was the most slide-like object in the five-figure
+%     set. Its content is not lost: it IS the axis's second line now, which is
+%     where a definition of the measured quantity belongs. The three accuracies
+%     it explained (before 0.41--0.82, after 0.121 at every layer, chance 0.083)
+%     move to a two-line \scriptsize foot note, and the six-line right gutter --
+%     which mixed two direct labels with four notes at three different left
+%     edges, 320.7, 402.9 and 428.4pt on the printed page -- is dissolved. What
+%     stays beside the plot is exactly the two DIRECT labels: "all seven
+%     layers: 88--95%" at the height of the dot cloud it names, and "gate, 0.8"
+%     at the right end of the rule it names.
+%  6. THE 0.8 GATE IS BLACK, SOLID, 0.9pt. It was accent 0.6pt dashed. This is
+%     a correctness repair and not a preference: the same pre-registered class
+%     of object -- a threshold a measurement is tested against -- was drawn
+%     three different ways inside nine printed pages (accent dashed here,
+%     accent dashed in fig:materiality, solid black in figs/family.pdf), while
+%     fig:mechanism draws the chance floor solid black 0.9pt and style_v2.py's
+%     chance_line() is hard-coded color='black', lw=0.9, solid, with the
+%     docstring "Thin, solid, black. Never dashed, never omitted". Accent in
+%     this document means the object under test; a threshold is not the object
+%     under test, so a threshold may not be accent. Its label goes with it:
+%     \scriptsize roman black, reading "gate, 0.8".
+%  7. THE FAIL REGION IS LIGHTENED TO rulegrey!12 AND EMPTIED OF TEXT. It was
+%     rulegrey!18 carrying two italic lines, it filled about 80% of the plotting
+%     area, and a cold reader's eye went to it first and read it as the data
+%     while the seven dots sat in a 12% band at the top. rulegrey!12 over white
+%     renders at grey 243, above the 230 threshold the ink budget counts, so
+%     the region now costs nothing against the 6.0% ceiling and still shows. Its
+%     emptiness is the message; nothing is written inside it.
+%  8. THE CONFOUND AND THE RIGHT ANGLE ARE LABELLED AT THE MARK. A cold reader
+%     attached the label "the confound" to the diagonal band rather than to the
+%     intersection patch, and did not see the right-angle glyph at all until
+%     zooming: it was 2mm. The glyph is now 4mm on each arm and it carries the
+%     direct label it never had.
+%     THE LABEL IS ONE WORD, AND THAT WAS FORCED BY A RENDER. "orthogonal by
+%     construction" is 3.6cm at \scriptsize, and panel (b) has no 3.6cm lane at
+%     the glyph's own height that does not cross V_pure, the context band or the
+%     removal arrow. Set anchor=base east at x = 9.71 it ran back to x = 6.20,
+%     i.e. it sat in the gutter BETWEEN the two panels and a cold read could not
+%     tell which panel owned it. Set base west on panel (b)'s x origin and
+%     broken over two lines it ran to x = 10.20 and butted the V_pure label at
+%     10.22, so the two read as one string, "orthogonal byV_pure" -- measured at
+%     500dpi on the pass-4 render. What is drawn is the one word that has to be
+%     AT the mark, set adjacent to the glyph's vertical arm with no leader.
+%     "by construction" is the claim and not the name, so it goes to the
+%     caption, and figs/purify.json records the move.
+%     The confound's label acquires a 0.30pt leader to the patch. The dose
+%     reading joins the two subspace fractions in one measurement strip on panel
+%     (b)'s own x origin, so the four measured numbers of stage two read as one
+%     block and not as four asides scattered round the geometry.
+%  9. THE TWO PROSE BLOCKS ARE CUT TO DEFINITIONAL CONTENT ONLY, AND THEY NOW
+%     OUTRANK THE LABELS. Four \scriptsize grey lines per panel became two
+%     \footnotesize roman ink lines per panel: "Twelve centred class means span
+%     at most eleven / directions; ten are kept." and "Drugs are confounded with
+%     plate and dose by design; / no causal claim is made on the raw slab." The
+%     conservatism argument ("so the slab keeps essentially the whole span,
+%     noisiest included, which for a removal claim is conservative") and the
+%     dose-recoverability sentence are argument, not definition, and are staged
+%     for the caption. figs/slab.tex sets its explanatory prose ABOVE its labels
+%     in size and this file used to invert that -- 7.97pt grey prose under
+%     9.96pt grey italic narration. Prose is now the largest type in the figure
+%     alongside the panel heads and the axis label, which is 4.11's ranking.
+% 10. THE TWO DIVIDERS ARE GONE, the full-measure horizontal one at y = 4.72 and
+%     the vertical one at x = 8.40. The horizontal rule existed to carry the
+%     italic sentence beneath it (item 2) and to say "above this nothing has a
+%     scale", which the open ring now says at every mark; the vertical rule was
+%     furniture the panel heads make redundant. fig:mechanism draws no dividers.
+% 11. ONE GRID, ONE SET OF WEIGHTS, ONE SET OF SIZES.
+%     x origins, one per panel, referenced by every panel-level line:
+%     (a) x = 0.00, (b) x = 8.40, (c) x = 1.60, which is the fraction axis's own
+%     spine. Panel (b) carries a second, deliberate text column at x = 11.95 for
+%     the four labels belonging to marks on its right. The figure's own origin,
+%     x = 0.00, carries the two foot lines. MEASURED on the finished render,
+%     from the PDF's own text spans: panel (a)'s six panel-level lines all start
+%     at 59.38pt, panel (b)'s five at 297.49pt, its right column's four at
+%     398.12pt, panel (c)'s head and its x-axis label both at 104.74pt, and the
+%     two foot lines at 59.38pt. The spread inside every block is 0.00pt.
+%     The upper band's two plot areas used to start 19.5pt apart for no reason;
+%     they now share their head, strip and prose baselines exactly.
+%     FOUR STROKE WEIGHTS, each with one meaning, against eight before:
+%       0.30pt furniture -- ticks, leaders, the twelve displacement stems, the
+%                           context band's outline
+%       0.40pt axis rule -- the two axes of panel (c), and nothing else
+%       0.50pt schematic -- the open rings, the global-mean cross, the dotted
+%                           projection line, the orthogonalisation arrow: every
+%                           unscaled mark in (a) and (b) is drawn at one weight
+%       0.90pt threshold -- the gate rule, and nothing else
+%     No weight is used exactly once. The 0.6pt arrow, the 0.35pt outlines, the
+%     0.45pt cross and the 0.65pt strokes are all folded into these four.
+%     TWO TYPE SIZES: \footnotesize (10.0pt) for panel heads, the axis label's
+%     first line and the definitional prose; \scriptsize (8.0pt) for ticks,
+%     direct labels, the scope line, the axis label's second line and the foot
+%     note. Nothing else, and no italic anywhere.
+%     AMENDED IN v11, SIZES UNCHANGED, ASSIGNMENT CHANGED: the fraction axis's
+%     block is now BOTH of its lines at \footnotesize, because the block is one
+%     wrapped quantity name and not a name over a subordinate note; the
+%     \scriptsize construction line it used to carry is the second foot line.
+% 12. ONE ARROWHEAD IN THE WHOLE FIGURE. A single arrowhead in this document
+%     means an operation acting in a direction, and the orthogonalisation push
+%     is the only operation drawn here. The displacement mu_d - mu_bar in panel
+%     (a) used to carry one too, which made a static object look like an
+%     action; it is now a plain 0.30pt stem like its eleven siblings, named by
+%     a leader instead. Nothing else in the figure has a head.
+% 13. COLOUR, one code, the same one across the five figures of the arc.
+%     accent = the drug-side object under test and its direct labels: V_drug,
+%     V_pure, the confound, the orthogonalisation arrow, the seven gate dots,
+%     "all seven layers: 88--95%".
+%     quietink = the comparator and control side: the context subspace's two
+%     labels, the schematic labels in (a), the axis label's construction line,
+%     the foot note.
+%     AMENDED IN v11: the construction line has left the axis for the foot, and
+%     three things join the quietink list -- panel (c)'s which-slab scope line,
+%     the name of the shaded region ("an untestable null", a counterfactual and
+%     so a comparator), and panel (b)'s measurement strip, which in v10 was ink
+%     while panel (a)'s scope line was quietink at the same size on the same
+%     baseline in the adjacent panel, with nothing on the page decoding the
+%     difference. ink is now heads, definitional prose, the axis labels, the
+%     gate label and the one geometric fact true by construction, and nothing
+%     else.
+%     ink/black = thresholds, axis rules, axis labels, panel heads, definitional
+%     prose, and the one geometric fact true by construction.
+%     rulegrey = furniture only: ticks, leaders, stems, the ring edges, the
+%     context band's outline, the fail region's fill.
+%     The one visible consequence: the twelve class means are no longer ink
+%     dots. They are schematic and they are drawn in the schematic register.
+% 14. WHAT WAS PROTECTED AND IS UNTOUCHED. The three-stage spine and its order.
+%     The seven gate dots, byte-exact, and the identity behind them. The full
+%     0-to-1 gate range, decision 12, which a reviewer asked to crop to
+%     0.75--1.00 and which was overruled and stays overruled. The layer axis
+%     and its map's SHAPE, 1.45 + (L-2)/14*W. The orthogonalisation geometry:
+%     raw band at 38 degrees, context band horizontal, V_pure vertical, the
+%     dotted perpendicular, the named confound, the removal arrow, the right
+%     angle. The refusal to draw a reference rule at 0.90 for the dose
+%     cross-decode, for the reason in (e). The four measured numbers of stage
+%     two and their layer-9 qualifier.
+%
+% 15. PANELS (a) AND (b) ARE LIFTED 1.5mm AS ONE BLOCK, inside a single
+%     \begin{scope}[yshift=1.5mm]. Two things come of it. The ink budget,
+%     measured at 200dpi inside the content bbox, falls from 5.98% to 5.90%
+%     against a 6.00% ceiling, purely by growing the denominator -- drawn height
+%     102.4 -> 103.8mm, still under the 105mm cap. And the gap between the last
+%     prose line of the schematic band and panel (c)'s head goes from 2.8mm to
+%     4.3mm, which is the separation the deleted full-measure divider used to
+%     carry, now made of white instead of a rule. Panel (c) does not move: its
+%     rotated axis label's lane is pinned between the foot note's ascender line
+%     and the prose's descender line, so lifting the prose only lengthens it.
+%
+% WHAT SEVEN RENDER-AND-READ PASSES CHANGED IN v10, each with the measurement
+% that forced it. Every one was found by rendering the figure and LOOKING at
+% the PNG, not by reading the source.
+%   i.   PASS 1. The rotated axis label was one \footnotesize line centred on
+%        the axis and it overhung the axis at both ends, running up into panel
+%        (a)'s prose and down into the tick lane. The plot was at once too tall
+%        (3.95cm of axis, so the empty fail region dominated the page) and too
+%        short for the label. Diagnosis: the LANE, not the axis, is the
+%        constraint. Panel (c) was reproportioned so the axis midpoint sits
+%        exactly at the lane's centre, which is the only arrangement in which
+%        both rotated lines can be centred on the axis and still clear.
+%   ii.  PASS 2, Overfull \hbox 6.00356pt, and it survived a complete rewrite of
+%        the body, which is what identified it. The INK bbox measured 170.4mm,
+%        inside the 174.0mm fullwidth measure, so the render looked clean; the
+%        NODE box did not. "the global mean", set anchor=base east at x = 1.80,
+%        is 2.00cm wide, so its left edge landed at tikz x = -0.32 and widened
+%        the picture to 17.62cm = 501.3pt against \linewidth 495.08pt -- the
+%        latter measured by compiling \the\linewidth inside a real fullwidth
+%        environment, which also settles an old dispute in this header: 174.0mm
+%        is right and the note calling preamble.tex's arithmetic stale is not.
+%        The label moved to anchor=base west on the panel's own x origin.
+%   iii. PASS 3. Ink measured 7.94% against a 6.00% ceiling. Region-by-region
+%        measurement put 1.63 of those points in ONE object, the V_drug band at
+%        fill opacity 0.15: accent!15 over white renders at grey 227, under the
+%        230 threshold the budget counts, over 3.06cm^2. Both accent bands went
+%        to 0.12, which renders at grey 233 and therefore costs nothing at all,
+%        and the fail region went from rulegrey!18 (grey 237) to rulegrey!12
+%        (grey 243). Ink 5.87%, and no measured mark was touched to get there.
+%   iv.  PASS 4, at 500dpi. Three collisions invisible at 200dpi: "orthogonal
+%        by" butting the V_pure label (item 8); the raw slab's leader stopping
+%        0.19cm short of the band and reading as a stray hairline, which is the
+%        exact fault the pass-9 header records against the orthogonalise leader;
+%        and the fraction axis's tick numerals sitting 1.6pt from the rotated
+%        label, so the two read as one column of type.
+%   v.   PASS 5. The raw slab's label then sat 0.05cm under the measurement
+%        strip's first line and the two read as one three-line paragraph. The
+%        label moved above the strip and its leader now lands INSIDE the band
+%        rather than beside its tip.
+%   vi.  PASS 6. The global-mean cross was 2mm arms at 0.5pt with twelve stems
+%        converging on it, and at 500dpi only its vertical arm was visible
+%        through them; it is now 2.8mm. The two schematic outlines in panel (b)
+%        moved 0.30 -> 0.50pt so that 0.30pt means furniture and nothing else.
+%        V_pure acquired its gloss AT THE MARK, which is where this document
+%        requires a symbol that is itself a drawn object to be glossed.
+%   vii. PASS 7. Ink 5.98% against a 6.00% ceiling is not a pass, it is a
+%        rounding error away from a fail. Item 15.
+%
+% HEIGHT AND MEASURE, v10, all MEASURED off the finished render at 200dpi and
+% not computed from the source: bounding box \path (0,-0.10) rectangle
+% (17.30,10.35); content bbox 172.1 x 103.8mm, inside the 170-174mm band a
+% fullwidth figure must fill, under the 105mm cap this pass was given and under
+% the corpus ceiling of 117mm (slab.tex). The data region, x = 1.60 to 14.10,
+% is 12.50cm = 72.6% of the drawn width, over the 60% floor. Ink 5.90% of the
+% content bbox at pixels below grey 230, against a 6.00% ceiling. Text density
+% 4.26 characters per 100mm^2 against 5.00. Type: two sizes above 7pt, 9.96 and
+% 7.97, against fig:mechanism's 10.0 and 9.0; one face, TeXGyrePagella; three
+% italic characters in 864 and all three are the math-italic V of a symbol;
+% zero sans, zero bold, zero all-caps runs of two or more words. Four stroke
+% weights, 0.30 / 0.40 / 0.50 / 0.90pt, none used exactly once. Exactly one
+% black solid 0.90pt rule and it is the gate -- byte-for-byte the register
+% figs/family.pdf gives the other pre-registered threshold of this chapter, a
+% 0.9pt rule at colour (0,0,0), checked by reading family.pdf's drawing list.
+% SUPERSEDED IN v11 as to the MEASUREMENTS ONLY, all of which were remeasured
+% and several of which were wrong or unreproducible: see "HEIGHT AND MEASURE,
+% v11" at the foot of the v11 block below. The claims about type, faces,
+% weights and the single black rule survive, with one correction (the CMR10
+% "=" at 8.3pt, item (iii) of the superseding note under v10 item 4).
+%
+% ===========================================================================
+% v11 -- 2026-08-19. ADVERSARIAL REPAIR PASS. Three refuters read the v10
+% render and returned 33 findings. What follows is what was applied, what was
+% overruled, and why. Nothing below changes a plotted or printed VALUE: the
+% seven gate fractions are the same seven floats, unrounded, and 0.8,
+% 0.41--0.82, 0.121, 0.083, 0.90--0.95, 0.620, 0.031, 480, twelve, forty, ten,
+% eleven and seven are all unmoved. What moved is positions, wording that
+% NAMES, and the audit record.
+%
+% APPLIED, in order of severity.
+%
+%  1. THE FRACTION AXIS NAMED THE WRONG QUANTITY. This is the one correctness
+%     defect in the drawing and it was in the very line v10 was built to add.
+%     The plotted series is layers.<L>.frac_signal_removed, which is the
+%     fraction of ABOVE-CHANCE signal removed; v10's axis read "fraction of
+%     drug signal removed". The unqualified quantity, (before - after)/before,
+%     computes from the same file to 0.7041 at layer 2 and 0.8528 at layer 9 --
+%     4.2 to 18.0 points BELOW the marks drawn -- and read at the drawn name the
+%     top mark, 0.949, implies a residual accuracy of 0.041, under the chance
+%     0.083 the figure prints two lines away. The pre-registration itself
+%     (04b-representation.tex:218) says "the fraction of above-chance signal
+%     removed must exceed $0.8$". The axis now reads, over two rotated
+%     \footnotesize lines, "fraction of above-chance / drug signal removed".
+%     v10's stated reason for the omission is superseded in place above.
+%
+%  2. THE RIGHT ANGLE AND THE REMOVAL ARROW WERE ONE PRIMITIVE. Measured on the
+%     v10 render: the glyph's horizontal arm at y = 9.05 and the arrow's shaft
+%     at y = 9.0349, 0.0151cm = 0.13mm apart, on opposite sides of an opaque
+%     0.18cm bar, so a static assertion (perpendicularity) and a directed
+%     operation (the projection) read as one horizontal line running from the
+%     word "orthogonal", through V_pure, out to the dotted drop line. Arms
+%     0.40 -> 0.28cm, arm to y = 8.93, 1.05mm of white under the arrow. The
+%     quadrant is and always was UPPER-left; v10 item 8's "lower-left" is
+%     superseded in place above.
+%
+%  3. PANEL (b)'s HEAD AND THE V_pure GLOSS WERE 0.36pt APART. 0.13mm, against
+%     2.8mm under panel (a)'s head: two panels of equal rank with head
+%     clearances differing by a factor of twenty-two. Fixed by a restack whose
+%     every step is set by measured ink boxes -- see the note at the V_pure bar.
+%     Head-to-gloss is now 6.4pt (2.3mm) and the gloss sits 7.6pt clear of the
+%     right column's first baseline, where the first v11 build had put it level
+%     with that baseline and the two read as one line.
+%
+%  4. WHICH SLAB THE GATE IS MEASURED ON IS BACK ON THE DRAWING. v10 cut it for
+%     text density and left panel (c) with no slab named anywhere in its head,
+%     axis, ticks, labels or foot, sitting directly under panel (b)'s closing
+%     line "so causal claims use the purified slab, not the raw". The inference
+%     that the gate was run on V_pure was then unavoidable, and it is not
+%     supported: workspace_probe.json stores one ablated series and no purified
+%     counterpart. The scope line sits under the panel head, in axis-label rank.
+%     NOTE ON THE LEDGER'S OLD REASONING, corrected in figs/purify.json: the
+%     identity in (d) above fixes only the BEFORE term as the raw probe
+%     accuracy; it says nothing about which subspace was projected out. The
+%     honest statement, and the one now drawn and recorded, is that the file
+%     does not record it. (For scale: probe_arm_residual.json, the one instrument
+%     that stores both, has layers.12 frac_signal_removed 0.3634 against
+%     frac_signal_removed_pure 0.3241, i.e. the purified-slab gate is the LOWER
+%     of the two there -- which is why this may not be assumed either way.)
+%
+%  5. THE FOOT NOTE HAD NO NOUN. v10 printed "Before 0.41--0.82, after 0.121 at
+%     every layer, chance 0.083" and the words "accuracy", "probe" and "1/12"
+%     appeared nowhere in the figure, so nothing on the page said what
+%     instrument panel (c) reads. It now names the quantity by its registry
+%     name, "probe accuracy", gives chance as "$0.083$, exactly $1/12$" (the
+%     stored float IS 1/12 in IEEE double), and carries the construction the
+%     deleted rotated line used to hold.
+%
+%  6. THE SHADED FAIL REGION IS SMALLER, LIGHTER AND NAMED. It was 21.6% of the
+%     content box, the largest object on the page, unnamed, and v10 had nearly
+%     doubled its absolute area as a side effect of stretching the axis to house
+%     an over-long label. The full 0-to-1 range is untouched -- decision 12
+%     stands and is the first thing this pass was told to protect -- and so is
+%     the region's exact 80% share of the axis. What changed is the SPAN, which
+%     is a free choice: 3.85 -> 3.00cm, so the region falls to 16.8% of the
+%     content box. It is drawn at rulegrey!8 (grey 246) and not rulegrey!12
+%     (grey 243), which was within one level of the panelbg tint that means
+%     "a schematic subspace" 3cm above it -- one grey, two meanings. And it
+%     carries a NAME, "an untestable null", set OUTSIDE its right edge in
+%     quietink: nothing is written inside it (the spec forbids it and the
+%     emptiness is the message), but the largest mark on the page may not be the
+%     one mark a reader cannot name, and without the name the third clause of
+%     this figure's acceptance test is unanswerable from the drawing.
+%
+%  7. "layer" READ AS "layer 2". v10 set it \footnotesize at x = 1.60 with the
+%     layer-2 numeral 0.63mm directly above it, one size smaller -- the exact
+%     fault the pass-9 note above records against the old placement under the
+%     layer-9 numeral, reintroduced at layer 2. The repair is VERTICAL, not
+%     horizontal, so S5's left-alignment survives: the fraction origin rose
+%     1.45 -> 1.75, which buys 2.8mm of white and a 0.53cm baseline separation
+%     against the 0.40cm leading this figure uses inside one sentence.
+%
+%  8. THE GLOBAL-MEAN CROSS WAS STILL INVISIBLE AND ITS LEADER READ AS A
+%     THIRTEENTH STEM. figs/purify.json certified a pass-6 legibility repair
+%     (arms 2.0 -> 2.8mm) that the render never showed. Length was never the
+%     fault: three of the twelve stems leave the vertex within 10 degrees of
+%     horizontal, so the horizontal arm is buried at every radius. A 0.20cm disc
+%     of the band's own tint now separates them. See the note at the mark.
+%
+%  9. FOUR LEADERS AND ONE PATCH. "the confound" pointed 0.03cm BELOW its patch,
+%     into the context band -- the misreading the pass-9 rebuild of that mark
+%     exists to kill. "orthogonalise" died in white 0.105cm short of the arrow's
+%     tail while carrying only a 0.05cm standoff at the label end, the inversion
+%     of the corpus rule this header states twice. "the global mean" grew out of
+%     the final "n" of its own label at 0.03cm. "all seven layers: 88--95%" sat
+%     3.6mm from the layer-16 dot with nothing between, over the corpus's 3mm
+%     leader threshold. All four are fixed at the mark end. And "$V_{drug}$,
+%     raw" rose to y = 8.352 and sat on the context band's 8.25 top edge; it
+%     drops to baseline 7.98.
+%
+% 10. THE TINT-MULTIPLY PARALLELOGRAM WAS STILL BEING DRAWN. Pass 9 deleted the
+%     CLAIM that the darkened crossing is the confound but not the overprint
+%     that produced one: the raw band was drawn after the opaque context
+%     rectangle, so an unlabelled darker parallelogram appeared inside the band
+%     beside the patch that actually carries the name. The two \fill blocks are
+%     simply reordered. No coordinate and no colour changed.
+%
+% 11. COLOUR. Panel (b)'s measured-number strip was ink and panel (a)'s scope
+%     line quietink, at the same size on the same baseline in adjacent panels,
+%     with nothing on the page decoding the difference. Both are scope; both are
+%     quietink. ink is now heads, definitional prose, the axis labels, the gate
+%     label and the one geometric fact true by construction, and nothing else.
+%
+% 12. ONE OBJECT, ONE NAME. "subspace fraction" in panel (b) becomes
+%     fig:mechanism's own name for the quantity, "descriptive subspace
+%     fraction".
+%
+% 13. V_drug's BAND IN PANEL (a) IS SYMMETRIC ABOUT ITS CLOUD. It overhung the
+%     data 0.13cm left against 0.30cm right, so the leftmost ring read as
+%     sitting on the band's edge -- the bounded-region reading the deleted
+%     ellipse was removed to prevent. Left edge 0.55 -> 0.38; both 0.30cm.
+%
+% OVERRULED, with the reason, because a refuter who is wrong about this
+% document's conventions must be answered and not quietly followed.
+%
+%  A. "BRING PANEL (c)'s TWO DIRECT LABELS INSIDE THE AXIS." Overruled. It would
+%     take the drawn width to 169.7mm, under the 170mm floor the SAME clause
+%     sets for a fullwidth figure, and it would put "all seven layers: 88--95%"
+%     4mm from the marks it names with no room for the leader the corpus
+%     requires. The two clauses cannot both hold in this geometry. What is drawn
+%     instead: the labels stay at their marks, "all seven layers" acquires its
+%     0.30pt accent leader, and the figure's right edge is set by a direct label
+%     0.48cm past the widest panel element (panel (b)'s prose at 16.78cm). That
+%     is the trade recorded, not an oversight.
+%
+%  B. "DELETE THE TWELVE DISPLACEMENT STEMS." Overruled. They are the picture of
+%     the word "centred" in the panel's own prose -- each mean is drawn as a
+%     displacement from the global mean -- and they are what makes the count
+%     twelve a picture rather than an assertion. Their whole ink is 0.77% of the
+%     figure's, so deleting them buys almost nothing, and the three faults the
+%     refuter traced to them (an invisible cross, a leader that reads as a
+%     thirteenth spoke) are fixed by item 8 without losing the picture.
+%
+%  C. "MAKE V_pure AND THE RAW BAND THE SAME WIDTH, so no width carries a
+%     value." Overruled. The drawn width ratio is not read as the measured one
+%     -- nothing in panels (a) and (b) has a scale, the open-ring glyph says so
+%     at every mark and the caption says the rest -- while "visibly thinner" is
+%     the one cue that ties the drawing to the 0.620 -> 0.031 printed beneath
+%     it. Equalising the widths would re-open the pass-9 misreading the header
+%     records at length: two bands of equal width differing only in angle say
+%     "same slab, rotated, nothing lost".
+%
+%  D. "REDRAW V_drug IN PANEL (a) AS A THIN STRIP AND LET THE OUTLYING RINGS
+%     FALL OUTSIDE IT, so the two panels' glyphs rhyme." Overruled on the
+%     file's own recorded ground, which is correct: the twelve centred class
+%     means span V_drug BY CONSTRUCTION, so a class mean drawn outside it would
+%     be false. Decision 10(a) already settled this and nothing has changed.
+%
+%  E. "WIDEN PANEL (a) AND MOVE PANEL (b)'s ORIGIN LEFT to close the 3.5cm void
+%     between the two geometries." Overruled as disproportionate. The void is
+%     confined to the geometry band; at the prose rows the two panels fill the
+%     measure with a 0.93cm gutter, and moving panel (b)'s origin would move
+%     fifteen coordinates and break the one-x-origin-per-panel grid the v10
+%     render was measured against for no measurable gain.
+%
+%  F. "'the confound' IS 17pt OFF THE RIGHT COLUMN's LEFT EDGE." Overruled: it
+%     is a DIRECT LABEL AT ITS MARK, which the corpus requires to sit at the
+%     mark, and direct labels are exempt from the panel-origin rule -- as are
+%     "$V_{drug}$, raw", "orthogonal" and the V_pure gloss in the same panel.
+%
+%  G. "PRINT THE SEVEN-LAYER RANGE OF THE RAW SUBSPACE FRACTION ON THE DRAWING."
+%     The finding is RIGHT and is acted on, but not there: layer 9 is indeed the
+%     MAXIMUM of variance_share.drug (the seven-layer range is 0.2767 at layer
+%     16 to 0.6201 here), and the drawing does not say so. There is no lane for
+%     it -- the strip line already runs to 16.38cm -- so the disclosure goes to
+%     figs/purify.json and to the staged caption, which is where this document
+%     keeps what will not fit. The layer-9 qualifier stays on the drawing, so
+%     the pair cannot be read as a seven-layer summary.
+%
+%  H. NOT DONE, AND OWED. figs/_PENDING_CAPTIONS.tex still carries no
+%     \label{fig:purify} block, so the eight sentences v10 cut and the whole
+%     replacement caption live only in the comment at the foot of this file.
+%     Two refuters are right that this is a contract breach. It is not repaired
+%     here because this pass's writable set is figs/purify.tex and
+%     figs/purify.json only; the block is staged verbatim below for whoever
+%     holds the pen on that file, and figs/purify.json records the debt under
+%     pending_captions_block_owed.
+%
+% WHAT SIX RENDER-AND-READ PASSES CHANGED IN v11, each with the measurement.
+%   i.   PASS 1. The two rotated \footnotesize lines were set in the wrong
+%        order. Rotated 90 degrees the line-advance direction is -x, so the
+%        first line is the LEFTMOST; set the other way round the block printed
+%        "drug signal removed / fraction of above-chance".
+%   ii.  PASS 2. Dropping the V_pure gloss for head clearance landed it on the
+%        right column's own first baseline with 0.15cm of horizontal air, and
+%        the two read as one line. Hence the restack of item 3.
+%   iii. PASS 3. Text density 5.01 characters per 100mm^2 against a 5.00
+%        ceiling -- a rounding error away from a fail, which is not a pass.
+%        Two wordings were tightened (the scope line, the interval line) with
+%        no content lost; 4.96 now.
+%   iv.  PASS 3. The render carried THREE type sizes above 7pt: 9.96, 7.97 and
+%        an 8.3pt CMR10 "=", two characters, from "$0.083 = 1/12$". Reset as
+%        "$0.083$, exactly $1/12$"; two sizes now and no CMR10 in the file.
+%   v.   PASS 4. Panel (c)'s head and its new scope line had 3px of white
+%        between their ink at 200dpi -- 0.38mm. The fraction span came 3.15 ->
+%        3.00cm and the head rose 0.04cm; 15px, 1.9mm, now.
+%   vi.  PASS 5. Read at 6x, the whole of panel (b) and the whole of panel (a).
+%        Every leader in item 9 was found this way and not in the source.
+%
+% HEIGHT AND MEASURE, v11, MEASURED off the finished render and not computed.
+%   bounding box \path (0,-0.10) rectangle (17.30,10.35), unchanged.
+%   content bbox 172.09 x 103.76mm, inside the 170--174mm band and under the
+%     105mm cap and the corpus ceiling of 117mm (slab.tex).
+%   data region x = 1.60 to 14.10 = 12.50cm = 72.6% of the drawn width, over
+%     the 60% floor.
+%   text density 4.96 characters per 100mm^2 (spaces excluded, which is the
+%     count that reproduces the contract's own reading of fig:mechanism, 2.49
+%     against its stated 2.5) against a 5.00 ceiling.
+%   ink. THE CONTRACT'S 6.0% CEILING IS PIPELINE-DEPENDENT AND THIS FILE NOW
+%     SAYS SO RATHER THAN QUOTING A NUMBER THAT CANNOT BE REPRODUCED. Rasterised
+%     with PyMuPDF and thresholded at grey 230 inside the content bbox, this
+%     figure reads 6.54% at 200dpi, 5.56% at 400dpi and 5.21% at 600dpi; the
+%     SAME pipeline on fig:mechanism as it prints on page 51 of main.pdf reads
+%     5.99 / 5.26 / 5.04. The contract's own measurement of fig:mechanism is
+%     5.3, which its pipeline reproduces at 400dpi and not at 200. At 400dpi,
+%     the resolution at which the reference figure reproduces, this figure is
+%     5.56% against the 6.00% ceiling. At any of the three resolutions it sits
+%     between 1.03x and 1.09x fig:mechanism, where the ceiling is 1.13x it.
+%     v10's "5.90%" was a 200dpi number quoted against a 400dpi ceiling.
+%   type: two sizes above 7pt, 9.96 and 7.97, plus 5.98 for subscripts, which
+%     the contract exempts; largest size is only ever a panel head, an axis
+%     label or definitional prose. One face, TeXGyrePagella, with 58 characters
+%     of URWPalladioL-Roma inside math \textrm and 5 of URWPalladioL-Ital, all
+%     five the math-italic V of a symbol -- 0.5% italic against a 5% ceiling.
+%     Zero sans, zero bold, zero all-caps runs of two or more words.
+%   strokes, read out of the PDF's own drawing list: four weights,
+%     0.30 / 0.40 / 0.50 / 0.90pt. 0.30 is furniture (27 rulegrey) plus the one
+%     accent leader the corpus requires; 0.40 is the two axis rules and nothing
+%     else; 0.50 is every unscaled mark; 0.90 appears exactly once and it is the
+%     gate, in black, which is the one place this document allows a singleton.
+%   the harness: ok, pages=1, boxes=0.
+% ===========================================================================
+%
+% ===========================================================================
+% v-BLOCK, 2026-08-19: WHOLE-SLATE PASS (fig:comparators, fig:licensing,
+% fig:purify, fig:hook, fig:materiality reconciled against one another and
+% against fig:mechanism, which is the document's reference standard and was
+% NOT rebuilt). Nothing above this line is deleted; where an earlier claim is
+% now false it is superseded EXPLICITLY below.
+%
+% WHY. The five figures were rebuilt independently and drifted. This pass owns
+% only the differences BETWEEN them. No value changed in any of the five; the
+% sibling .json ledgers carry the value-to-position maps, old and new.
+%
+% THE SLATE RULES THAT NOW HOLD ACROSS ALL FIVE (each stated once here, in
+% every file, so any future single-figure edit can see what it would break):
+%
+%  R1 TICK NUMERALS are quietink, \scriptsize, inner sep 0, anchored north on
+%     the tick and set 0.16cm below the axis rule, over a 0.10cm rulegrey
+%     0.30pt tick. Before: comparators/licensing/purify quietink, hook and
+%     materiality ink; ticks 0.10 / 0.12 / 0.14cm; three different gaps.
+%  R2 A THRESHOLD'S OWN LABEL IS BLACK, matching the black solid 0.90pt rule
+%     it names (S6). Before: comparators black, purify's "gate, 0.8" and
+%     materiality's two margin labels ink.
+%  R3 ONE NAME PER OBJECT (S19). The pre-registered 10% rule is "10%
+%     materiality margin" in fig:comparators row (c), fig:materiality (a) and
+%     (b), and in figs/family.py, which is where the name comes from.
+%     fig:comparators' "pre-registered margin" is superseded; "pre-registered"
+%     is now the caption's word, not the drawing's. Zero, where it is the null
+%     a bar is read against, is "zero: no identity effect" in BOTH
+%     fig:comparators row (c) and fig:materiality (b) -- one quantity, one
+%     wording. V_pure is spelt with \textrm everywhere, as figs/slab.tex does.
+%  R4 COLOUR KEY, one key for five figures (S8). accent = the drug-side object
+%     under test. quietink = every comparator, null, control, replication or
+%     discounted arm, AND its label, AND its leader. ink/black = thresholds,
+%     axis rules, axis labels, panel heads, definitional prose. rulegrey =
+%     furniture only. Within quietink the GLYPH separates two kinds: an OPEN
+%     disc is a construction built to carry no signal (a null, a control, a
+%     raw/before series); a FILLED disc is a real measurement that is not the
+%     headline. fig:hook (d) drew both its null and its cell-line control in
+%     ink and is corrected.
+%  R5 PROJECTION AND ZERO RULES are quietink 0.50pt densely dotted (S7).
+%     fig:hook's two panel-(c) projection lines were rulegrey 0.30pt densely
+%     dashed and are corrected.
+%  R6 DEFINITIONAL PROSE is \footnotesize ink and OUTRANKS every label (S4);
+%     at most one block per figure, on the panel's own x origin. fig:hook's
+%     one prose line was \scriptsize and is raised. fig:purify's panel-(b)
+%     block carried an argument clause ("so causal claims use the purified
+%     slab, not the raw") that its caption already carries, and is now
+%     definitional only.
+%  R7 ONE INTERVAL DECLARATION per figure, \scriptsize quietink, at the foot,
+%     on the figure's x origin, opening with the word "Intervals:" and naming
+%     EVERY panel including the ones with no measured mark (S17).
+%     fig:comparators already did this and is the model; the other four now
+%     match its form.
+%  R8 THE FIVE-FIELD PROMPT STRIP is ONE object drawn in two figures, and the
+%     two drawings are now congruent: cell boundaries 0 / 1.12 / 1.90 / 2.64 /
+%     4.23 / 6.90 cm and cell height 0.42cm in both fig:licensing (a) and
+%     fig:hook (a) and (b), labels centred in their cells, the drug cell
+%     accent-bordered at 0.40pt on accent!12 and its label NOT bold. Before:
+%     licensing 6.90cm wide with 0.62cm cells and a bold label, hook 7.44cm
+%     wide with 0.42cm cells and a plain label -- the same five fields at two
+%     sizes, four pages apart, with each caption pointing at the other.
+%  R9 MEASURE. Every fullwidth figure draws 172.0-174.0mm; the one textwidth
+%     figure draws 140.3mm. Ink at 200dpi inside the content bbox, counted as
+%     greyscale luminance below 230 (the contract's own method), is now
+%     5.63-5.99% on all five, under the 6.0% body ceiling, where before this
+%     pass it ran 5.36-6.54%.
+%
+% WHAT THIS PASS DELIBERATELY DID NOT UNIFY, so that a later reader does not
+% think it was missed:
+%  * PANEL-HEAD CASE. fig:comparators sets "(a) Is it there?" and the other
+%    four set "(a) where the drug name enters". comparators' heads are
+%    interrogative SENTENCES and sentence case is correct for a sentence; the
+%    v4 header argued this and the argument stands. fig:mechanism's lowercase
+%    heads are noun phrases, not questions. One capital letter, four times.
+%  * PANEL-HEAD POSITION. fig:comparators puts its heads in a right-aligned
+%    left stub, the other four above the panel at its x origin. Moving them
+%    above the rules costs about 20mm of height against a 118mm cap that the
+%    figure already meets at 117.60mm. Not available.
+%  * TWO-COLUMN GUTTER. purify and hook split at x = 8.40cm, licensing at
+%    7.75cm. licensing cannot move right: "(d) what a negative would buy" is
+%    4.85cm wide and its origin is already at 12.40 of a 17.30cm measure, with
+%    1.5pt of slack. Moving purify and hook LEFT to 7.75 would be arbitrary.
+% ===========================================================================
+%
+% CHANGED IN THIS FILE. (i) The line "Gate measured on the subspace projected
+% out; no separate gate is stored for V_pure" is DELETED from the drawing. It
+% was the slate's one scope line not sitting under an axis label (S5), and its
+% content is already in the caption verbatim as "Two limits. The gate is
+% measured on the subspace that is projected out, and this file stores no
+% separate gate for V_pure" -- an S18 duplication. Panel (c)'s head drops from
+% y 5.50 to 5.20 to take up the space. (ii) Panel (b)'s prose becomes
+% definitional: "so causal claims use the purified slab, not the raw" is an
+% argument and is the caption's ("Panel (b) is why the raw subspace may not be
+% used"); what is drawn now DEFINES the object the panel draws -- "V_pure is
+% the part of the raw slab that is orthogonal to the context subspace."
+% (iii) "gate, 0.8" is set black, matching the black solid 0.90pt rule it
+% names (R2); it was ink, and this was the only threshold on the slate whose
+% label and rule were in different colours. (iv) Tick geometry: the y ticks go
+% 0.12 -> 0.10cm and the x ticks 0.14 -> 0.10cm (they differed from each other
+% INSIDE this panel), numerals inner sep 0 at a 0.06cm gap (R1). (v) The foot
+% block takes the slate's declaration form (R7).
+% SUPERSEDED: pass 10's claim that the figure clears the ink ceiling at 5.90%
+% was measured on the red channel of an RGB rasterisation, which counts the
+% accent!12 bands as ink; measured as greyscale luminance, which is what S15
+% specifies, pass 10 was at 6.541%. The deletions above bring it to 5.992%.
+% RE-MEASURED: 172.09 x 103.76mm (cap 105); ink 5.992%; 910 characters, 5.10
+% per 100mm^2; two type sizes above 7pt, 9.96 and 7.97, plus 5.98/7.57pt
+% subscripts inside V_drug and V_pure.
+% One page, zero Overfull, zero Underfull.
+% ===========================================================================
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+                    every node/.style={inner sep=1.6pt}]
+  \tikzset{
+    % --- TWO SIZES, ONE FACE, NO ITALIC. -----------------------------------
+    % \footnotesize (10.0pt): panel heads, BOTH lines of the fraction axis's
+    % label (v11 -- the block is one wrapped quantity name, not a name over a
+    % subordinate note), the x-axis label, and the definitional prose.
+    % \scriptsize (8.0pt): everything else -- ticks, direct labels, the two
+    % scope lines, the region's name and the two foot lines. Nothing in this
+    % picture is set in sans, in small caps, in bold or in italic, and nothing
+    % is set in math mode that brings a third size with it: "$0.083 = 1/12$"
+    % put an 8.3pt CMR10 "=" in the v10 render and is now "$0.083$, exactly
+    % $1/12$".
+    head/.style={text=ink,      font=\footnotesize, anchor=base west},
+    def/.style ={text=ink,      font=\footnotesize, anchor=base west},
+    lab/.style ={text=ink,      font=\scriptsize,   anchor=base west},
+    qlab/.style={text=quietink, font=\scriptsize,   anchor=base west},
+    alab/.style={text=accent,   font=\scriptsize,   anchor=base west},
+    % --- FOUR STROKE WEIGHTS, each with exactly one meaning. ---------------
+    furn/.style ={draw=rulegrey, line width=0.3pt},   % ticks, leaders, stems
+    axisr/.style={draw=ink,      line width=0.4pt},   % an axis rule
+    schem/.style={draw=rulegrey, line width=0.5pt},   % an unscaled mark
+    gate/.style ={draw=ink,    line width=0.9pt}}   % a threshold
+
+  % ---- value-to-position maps for panel (c). Both bodies are braced groups.
+  % THESE TWO LINES ARE THE AUDIT RECORD OF THE MAPS AND THEY ARE THE CODE, so
+  % read them and not the prose in the v10 header, which quoted four wrong
+  % coefficients and is superseded item by item in the v11 block below.
+  %   v9   \lx = 1.05 + (L-2)/14*11.00   \fy = 0.75 + f*2.10
+  %   v10  \lx = 1.85 + (L-2)/14*12.00   \fy = 1.45 + f*3.85
+  %   v11  \lx = 1.85 + (L-2)/14*12.00   \fy = 1.75 + f*3.00   (x map unchanged)
+  % The fraction origin rose 1.45 -> 1.75 to put 2.8mm of white between the
+  % layer numerals and the word "layer" (v11 item 3), and the span fell
+  % 3.85 -> 3.00 to take 0.68cm out of the empty fail region and give it to the
+  % gap between the schematic band and panel (c) (v11 items 5 and 6). Layer 2
+  % is inset 0.25 from the spine so its dot does not straddle the axis rule,
+  % which is fig:mechanism's own treatment of the same first layer.
+  % No map change is a value change: the ledger records all three maps.
+  \def\lx#1{{1.85+((#1)-2)/14*12.00}}  % layer  2 -> 1.85,  16 -> 13.85
+  \def\fy#1{{1.75+(#1)*3.00}}          % 0 -> 1.75, 0.8 -> 4.15,  1.0 -> 4.75
+
+  % one gate mark: a filled accent disc at 1.4pt, this document's point
+  % estimate. The 2.1pt white halo of earlier passes is dropped -- nothing
+  % underlies these dots now, and a second radius would blunt the ring/disc
+  % distinction that replaced the schematic disclaimer line.
+  \newcommand{\gdot}[2]{\fill[accent] (\lx{#1},\fy{#2}) circle (1.4pt);}
+
+  % one schematic mark: an open ring, white fill, 0.5pt rulegrey edge.
+  \newcommand{\sring}[2]{\filldraw[fill=white, schem] (#1,#2) circle (1.4pt);}
+
+% ###########################################################################
+% # PANEL (a) -- localise.  x origin 0.00.  Nothing here has a scale.
+% # Panels (a) and (b) are lifted 1.5mm as one block -- see the v10 header.
+% ###########################################################################
+\begin{scope}[yshift=1.5mm]
+  \node[head] at (0.00,9.90) {(a) localise the slab};
+
+  % V_drug: an accent band through the global mean, running past the data on
+  % both sides because a subspace has no boundary. Opacity 0.15, down from
+  % 0.20: at 0.20 over 3.40 x 0.90cm this was still the heaviest area in the
+  % figure and it is not the figure's subject.
+  % v11: the left edge comes 0.55 -> 0.38. The twelve offsets run -1.57 to
+  % +1.40, so the cloud sits at 0.68 to 3.65 and the band overhung it by 0.13cm
+  % on the left against 0.30cm on the right; at 0.13cm the leftmost ring read as
+  % sitting ON the band's edge, which reintroduces the bounded-region reading
+  % the deleted ellipse was removed to prevent. Both overhangs are 0.30cm now.
+  \fill[accent, fill opacity=0.12] (0.38,8.05) rectangle (3.95,8.95);
+  \node[alab, anchor=west] at (4.08,8.50) {$V_{\textrm{drug}}$};
+
+  % the twelve per-drug mean activation vectors. Positions are literal, so no
+  % build can randomise them and no reader can be told a different story by a
+  % different compile. Twelve 0.30pt stems make the count a picture; the rings
+  % are OPEN, which is how this document draws a schematic, unscaled mark.
+  \foreach \dx/\dy in {-1.57/-0.085, -1.25/0.238, -1.02/-0.289, -0.62/0.102,
+                       -0.36/-0.374, -0.07/0.306, 0.21/-0.153, 0.55/0.357,
+                       0.74/-0.306, 1.12/0.119, 1.40/-0.238, 1.21/0.298}{
+    \draw[furn] (2.25,8.50) -- ({2.25+\dx},{8.50+\dy});}
+  \foreach \dx/\dy in {-1.57/-0.085, -1.25/0.238, -1.02/-0.289, -0.62/0.102,
+                       -0.36/-0.374, -0.07/0.306, 0.21/-0.153, 0.55/0.357,
+                       0.74/-0.306, 1.12/0.119, 1.40/-0.238, 1.21/0.298}{
+    \sring{2.25+\dx}{8.50+\dy}}
+
+  \draw[furn] (1.20,9.06) -- (1.05,8.79);
+  \node[qlab] at (0.00,9.32) {the twelve per-drug means};
+
+  % THE GLOBAL MEAN: a cross and not a thirteenth mark, and leadered out of the
+  % band because in place the label box collided with two of the twelve rings.
+  % v11 REPAIRS A LEGIBILITY CLAIM THE LEDGER MADE AND THE RENDER NEVER
+  % SUPPORTED. Pass 6 enlarged the arms 2.0 -> 2.8mm "because at 2mm only its
+  % vertical arm was visible through the stems"; at 2.8mm only its vertical arm
+  % was still visible, because the fault is not length. Several of the twelve
+  % stems leave the vertex within 0.02cm of horizontal -- (-1.57,-0.085) at 3.1
+  % degrees, (1.12,0.119) at 6.1, (1.40,-0.238) at -9.7 -- so the horizontal arm
+  % is buried in a near-collinear bundle at EVERY radius and no arm length
+  % separates it. What separates it is white: a 0.20cm disc of the band's own
+  % tint (white, then accent at 0.12 -- byte-identical to the band, so the disc
+  % has no visible edge) is laid over the stems, and the cross is drawn in it.
+  % The same disc fixes a second finding: the label's leader used to be the
+  % thirteenth grey line converging on a vertex the prose says twelve lines
+  % reach. It is now the ONLY line that enters the clear disc, so it reads as a
+  % leader and not as a spoke, and it is drawn after the disc for that reason.
+  % Its label-end standoff also goes 0.03 -> 0.12cm: at 0.03 it grew out of the
+  % final "n" of "mean" and read as a stray hairline off the type.
+  \fill[white] (2.25,8.50) circle (0.20);
+  \fill[accent, fill opacity=0.12] (2.25,8.50) circle (0.20);
+  % Anchored base WEST on the panel's own x origin. Anchored base east at
+  % x = 1.80 this label ran 0.32cm LEFT of x = 0, which widened the
+  % picture's box past the fullwidth measure and put an Overfull hbox of
+  % 6.00pt in the log: the INK bbox was inside the measure and the NODE
+  % box was not, which is why the render looked clean and the log did not.
+  \draw[furn] (2.14,7.88) -- (2.31,8.32);
+  \draw[schem] (2.08,8.50) -- (2.42,8.50);
+  \draw[schem] (2.25,8.33) -- (2.25,8.67);
+  \node[qlab] at (0.00,7.80) {the global mean};
+
+  % the instrument's sample, as a scope line and not as a sentence. Its
+  % baseline is shared with panel (b)'s second measurement line, and both drop
+  % 0.10cm in v11 behind the panel-(b) restack, so the two panels keep one grid.
+  \node[qlab] at (0.00,7.20)
+    {480 prompts: twelve drugs, forty real cells, seven layers};
+
+  % definitional prose: \footnotesize roman ink, two lines, on the panel's own
+  % x origin. It is the largest type in the panel, with the head and the axis
+  % label, which is fig:mechanism's ranking.
+  \node[def] at (0.00,6.62) {Twelve centred class means span at most eleven};
+  \node[def] at (0.00,6.22) {directions; ten are kept.};
+
+% ###########################################################################
+% # PANEL (b) -- purify.  x origin 8.40.  Nothing here has a scale either.
+% ###########################################################################
+  \node[head] at (8.40,9.90) {(b) purify it against context};
+
+  % ORDER MATTERS, AND v11 REVERSES IT. The raw band is drawn FIRST and the
+  % opaque context rectangle over it. In v10 the pale diagonal was drawn last,
+  % so where it crossed the opaque panelbg rectangle the two tints multiplied
+  % and an UNLABELLED darker parallelogram appeared inside the context band --
+  % exactly the region a cold reader takes for "where the drug slab and the
+  % context subspace overlap", i.e. for the confound, sitting beside the patch
+  % that actually carries that name. Pass 9 deleted the tint-multiply lozenge
+  % as a claim; it did not delete the overprint that drew one. Now the only
+  % tinted region inside the context subspace is the one that is labelled.
+  % No coordinate and no colour changed to get this.
+  \begin{scope}[shift={(10.50,8.45)}, rotate=38]
+    \fill[accent, fill opacity=0.12] (-0.95,-0.16) rectangle (0.95,0.16);
+  \end{scope}
+  % v11: the label drops 8.14 -> 7.98. At 8.14 the word "raw" rose to y = 8.352
+  % and sat ON the context band's 8.25 top edge and its outline.
+  \draw[furn] (9.68,8.06) -- (9.98,7.95);
+  \node[alab, anchor=base east] at (9.62,7.98) {$V_{\textrm{drug}}$, raw};
+
+  % the context subspace: cell line, plate, dose. panelbg with a rulegrey
+  % outline, which is the colour figs/slab.tex gives this same named object.
+  % v11: both label lines drop 0.14cm -- see the restack note at V_pure.
+  \filldraw[fill=panelbg, schem] (8.60,8.25) rectangle (11.80,8.65);
+  \node[qlab] at (11.95,8.46) {context subspace:};
+  \node[qlab] at (11.95,8.16) {cell line, plate, dose};
+
+  % V_pure, at 90 degrees: what the raw slab becomes, and visibly thinner than
+  % the raw band, against a measured 0.620 -> 0.031 printed below it.
+  % v11 RESTACK, and it is one move with four dependents. The gloss sat 0.36pt
+  % under the panel head's descenders -- 0.13mm, against 2.8mm of air under
+  % panel (a)'s head -- so two panels of equal rank were set with head
+  % clearances differing by a factor of twenty-two. Dropping the gloss 0.21cm
+  % gives it 3.0mm, but it then landed on the right column's own first baseline
+  % (9.32) with 0.15cm of horizontal air beside it, and the two read as one
+  % line: "V_pure, the purified slab orthogonalise: remove the part". So the
+  % right column drops 0.22cm, the context-subspace pair 0.14cm behind it, "the
+  % confound" 0.18cm behind that, and the measurement strip and the two prose
+  % blocks of BOTH panels 0.10cm behind that -- each step set by the measured
+  % ink boxes, not by eye, at a uniform 0.066cm of white between blocks. The
+  % bar's top comes to 9.15, still 0.115cm above the removal arrow's height,
+  % which is all it has to do.
+  \fill[accent] (10.41,7.95) rectangle (10.59,9.15);
+  \node[alab, anchor=south] at (10.50,9.20) {$V_{\textrm{pure}}$, the purified slab};
+
+  % THE CONFOUND: the orthogonal projection of the raw direction onto context,
+  % from V_pure's right edge to the foot of the perpendicular dropped from the
+  % raw band's tip, so nothing bisects it and it is exactly the length of the
+  % removal arrow above it. Directly labelled, with a leader, because a cold
+  % reader attached the name to the diagonal band instead of to this patch.
+  % v11: the leader's tip now lands INSIDE the patch. In v10 it stopped at
+  % (11.05,8.31), 0.03cm below the patch's lower edge and inside the context
+  % band, so it pointed at the band -- which is precisely the misreading the
+  % pass-9 rebuild of this mark exists to kill.
+  \filldraw[fill=accent, fill opacity=0.40, draw=accent, line width=0.5pt]
+    (10.59,8.33) rectangle (11.2486,8.57);
+  \draw[furn] (11.30,7.88) -- (11.02,8.42);
+  \node[alab] at (11.35,7.82) {the confound};
+
+  % the projection line that defines it. Densely dotted quietink at 0.5pt is
+  % this document's reserved stroke for a projection line, a magnification
+  % leader or a zero rule -- a coordinate that decides nothing.
+  \draw[quietink, line width=0.5pt, densely dotted]
+    (11.2486,9.0349) -- (11.2486,8.57);
+
+  % THE OPERATION, drawn as the projection it is and not as a rotation: a
+  % straight arrow at the tip's own height, carrying the tip leftwards by
+  % exactly the confound's length, landing on V_pure. It is the ONLY arrowhead
+  % in the figure, and an arrowhead here means an operation acting in a
+  % direction.
+  \draw[accent, line width=0.5pt, -{Latex[length=3.4pt,width=2.8pt]}]
+    (11.2486,9.0349) -- (10.61,9.0349);
+  % v11: the leader now TOUCHES the arrow's tail. In v10 its lowest ink stopped
+  % 0.105cm short of the tail and died in white, while the standoff at the
+  % LABEL end was only 0.05cm -- the inversion of the corpus rule this file's
+  % own header states twice (the 0.06cm gap goes at the label end, never at the
+  % mark end, or the stub reads as a stray hairline).
+  \draw[furn] (11.89,8.95) -- (11.2486,9.0349);
+  \node[alab] at (11.95,9.10) {orthogonalise: remove the part};
+  \node[alab] at (11.95,8.80) {of the raw slab lying in context};
+
+  % ORTHOGONALITY AS A MARK, NOT AS A WORD, and v11 moves it out of the
+  % removal arrow's line. In v10 the glyph's horizontal arm sat at y = 9.05 and
+  % the arrow's shaft at y = 9.0349 -- 0.13mm apart, on opposite sides of an
+  % opaque 0.18cm bar -- so a static assertion (perpendicularity) and a directed
+  % operation (the projection) read as ONE horizontal primitive running from the
+  % word "orthogonal", through V_pure, out to the dotted drop line. That is the
+  % glyph collision S11 exists to forbid, and it was the only one left in the
+  % figure. The arms come 0.40 -> 0.28cm and the arm drops to y = 8.93, which
+  % puts 1.05mm of white under the arrow; 2.8mm is still 40% larger than the
+  % 2mm a cold reader did not see until zooming, and the quadrant is unchanged.
+  % THE QUADRANT IS UPPER-LEFT and always has been: v10 item 8 says "lower-left"
+  % and is false about its own drawing. The other three quadrants are ruled out
+  % by measurement -- lower-left and upper-right are crossed by the raw band at
+  % 38 degrees, and lower-right is where "the confound" and its leader sit.
+  \draw[ink, line width=0.5pt] (10.13,8.65) -- (10.13,8.93) -- (10.41,8.93);
+  \node[lab, anchor=base east] at (9.99,8.73) {orthogonal};
+
+  % the four measured numbers of stage two, as one strip on the panel's own x
+  % origin. These are the only quantities above panel (c) with a source.
+  % v11, two repairs. (i) COLOUR: the strip was ink and panel (a)'s scope line
+  % is quietink, on the SAME baseline in adjacent panels at the same size, with
+  % nothing on the page decoding the difference; both are scope, so both are
+  % quietink now and ink is left to heads, definitional prose, the axis label
+  % and the gate. (ii) NAME: "subspace fraction" becomes fig:mechanism's own
+  % name for the quantity, "descriptive subspace fraction" (one object, one
+  % name). The layer-9 qualifier stays and is load-bearing: layer 9 is also the
+  % MAXIMUM of variance_share.drug over the seven depths (the range is 0.277 at
+  % layer 16 to 0.620 here), which the drawing has no lane to state and which
+  % the caption and figs/purify.json now carry.
+  \node[qlab] at (8.40,7.48)
+    {Dose decodes from inside the raw slab at $0.90$--$0.95$;};
+  \node[qlab] at (8.40,7.20)
+    {descriptive subspace fraction at layer 9: raw $0.620$, purified $0.031$.};
+
+  \node[def] at (8.40,6.62) {$V_{\textrm{pure}}$ is the part of the raw slab that is};
+  \node[def] at (8.40,6.22) {orthogonal to the context subspace.};
+
+\end{scope}
+
+% ###########################################################################
+% # PANEL (c) -- the removal gate.  x origin 1.60, the fraction axis's spine.
+% # The only measured marks in the figure.
+% ###########################################################################
+  \node[head] at (1.60,5.20) {(c) the removal gate};
+
+  % WHICH SLAB THE GATE IS MEASURED ON, restored to the drawing in v11 and set
+  % in axis-label rank rather than at the foot. Without it the last line a
+  % reader crosses before entering panel (c) is panel (b)'s "so causal claims
+  % use the purified slab, not the raw", and the inference that the gate was
+  % run on V_pure is unavoidable. workspace_probe.json does not record which
+  % subspace was projected out; it stores one ablated series and no purified
+  % counterpart, so the line states only what the file supports.
+
+  % the region of outcomes that would have made every null in this section a
+  % measurement of nothing. Drawn FIRST so every rule and dot sits on top of
+  % it, at rulegrey!8 (grey 247) and not rulegrey!12 (grey 243): at 12 it was
+  % within one grey level of panelbg, the tint that means "a schematic
+  % subspace" 3cm above it in panel (b), so one tint carried two meanings.
+  % Nothing is written inside it: its emptiness is the whole point, and the
+  % two italic lines that used to sit in it competed with the marks. It is
+  % NAMED instead, outside its own right edge and under the rule that bounds
+  % it, because the largest mark on the page may not be the one mark a reader
+  % cannot name (and because the name makes the third clause of this figure's
+  % acceptance test answerable from the drawing).
+  \fill[rulegrey!8] (1.60,1.75) rectangle (14.10,\fy{0.8});
+
+  % ---- fraction axis, DEFINED AT THE AXIS ---------------------------------
+  % Rotated 90 degrees reading upward, immediately left of the tick numerals,
+  % which is fig:mechanism's form and the answer to the supervisor's first
+  % complaint. Nothing else is in this block: no result, no interval note, no
+  % cross-reference.
+  % v11, AND THIS IS A CORRECTNESS REPAIR AND NOT A TYPOGRAPHIC ONE. v10 set
+  % one \footnotesize line reading "fraction of drug signal removed" over one
+  % \scriptsize construction line. Two faults, both fatal.
+  %   (a) THE NAME WAS FALSE. The plotted series is frac_signal_removed, which
+  %       is ABOVE-CHANCE signal: (before - after)/(before - chance). The
+  %       unqualified quantity (before - after)/before is 0.7041 at layer 2 and
+  %       0.8528 at layer 9, four to eighteen points BELOW the marks drawn. Read
+  %       at the drawn name the top mark, 0.949, implies a residual accuracy of
+  %       0.041, under the chance 0.083 this figure prints in its own foot note.
+  %       The thesis's pre-registration (04b:218) says "the fraction of
+  %       above-chance signal removed must exceed $0.8$". v10's stated reason for
+  %       the omission -- that the 43-character form needs 7.14cm against a
+  %       5.71cm lane -- ruled out one STRING, not the correct QUANTITY, and is
+  %       superseded: the name is broken over two rotated \footnotesize lines.
+  %   (b) THE SUBORDINATE LINE WAS THE TALLEST OBJECT IN THE PANEL. Measured on
+  %       the v10 render, the \scriptsize construction line ran 5.52cm against a
+  %       3.85cm axis (143%) and its top sat 6.0pt ABOVE the panel head's, so the
+  %       smallest type in the block outranked the head. S5 makes that line
+  %       optional; it is deleted, and the construction it carried moves to the
+  %       foot note, where the three accuracies it is built from already sit and
+  %       where the missing noun ("probe accuracy") costs nothing.
+  % LANE, remeasured on the v11 render and reconciled with figs/purify.json,
+  % which the v10 header disagreed with: \footnotesize sets at 0.158 cm per
+  % character in this class, so "fraction of above-chance" (24 characters) runs
+  % 3.86cm against a 3.00cm axis and "drug signal removed" (19) runs 3.03cm.
+  % The block is centred on the axis midpoint, y = 3.25.
+  \draw[axisr] (1.60,1.75) -- (1.60,4.75);
+  \foreach \v/\t in {0/0, 0.5/0.5, 1/1.0}{
+    \draw[furn] (1.60,\fy{\v}) -- (1.50,\fy{\v});
+    \node[qlab, anchor=east, inner sep=0pt] at (1.44,\fy{\v}) {\t};}
+  % LINE ORDER. Rotated 90 degrees the line-advance direction is -x, so the
+  % FIRST line is the leftmost and the LAST line is the one against the tick
+  % numerals, which is also matplotlib's own stacking for a two-line ylabel.
+  % Set the other way round the block reads "drug signal removed / fraction of
+  % above-chance", which is what the first v11 build printed.
+  \node[text=ink, font=\footnotesize, rotate=90, anchor=center]
+    at (0.36,3.25) {fraction of above-chance};
+  \node[text=ink, font=\footnotesize, rotate=90, anchor=center]
+    at (0.80,3.25) {drug signal removed};
+
+  % ---- layer axis ---------------------------------------------------------
+  % "layer" is left-aligned to the axis's own left end, per the contract, and
+  % v11 puts 2.8mm of white under the tick numerals instead of v10's 0.63mm.
+  % At 0.63mm the word sat directly under the numeral 2, one size LARGER than
+  % it, and the pair read as "layer 2" -- the identical fault the pass-9 note
+  % above records against the old placement under the layer-9 numeral. The
+  % repair is vertical, not horizontal: the fraction origin rose 1.45 -> 1.75,
+  % which is where the 2.8mm came from. Baseline to baseline the numerals and
+  % the word are now 0.53cm apart, against the 0.40cm leading this figure uses
+  % between two lines of one sentence, so they can no longer read as one block.
+  \draw[axisr] (1.60,1.75) -- (14.10,1.75);
+  \foreach \l in {2,4,6,8,9,12,16}{
+    \draw[furn] (\lx{\l},1.75) -- (\lx{\l},1.65);
+    \node[qlab, anchor=north, inner sep=0pt] at (\lx{\l},1.59) {\l};}
+  \node[def] at (1.60,0.85) {layer};
+
+  % ---- the gate: a pre-set threshold, so BLACK, SOLID, 0.9pt --------------
+  % It was accent 0.6pt dashed. Accent in this document means the object under
+  % test, and a threshold is not the object under test.
+  \draw[gate] (1.60,\fy{0.8}) -- (14.10,\fy{0.8});
+  \node[lab, anchor=west, text=ink] at (14.25,\fy{0.8}) {gate, $0.8$};
+  % the name of the shaded region, set outside it and directly under the rule
+  % that bounds it. Quietink, because the region is a counterfactual and not
+  % the object under test.
+  \node[qlab, anchor=west] at (14.25,2.95) {an untestable null};
+
+  % ---- the seven measured fractions. No connecting line: the series is flat.
+  \gdot{2}{0.8846153846153847}
+  \gdot{4}{0.9253112033195021}
+  \gdot{6}{0.9383561643835617}
+  \gdot{8}{0.9461077844311377}
+  \gdot{9}{0.9491525423728814}
+  \gdot{12}{0.9440993788819876}
+  \gdot{16}{0.9444444444444445}
+  % direct label for the set, on the last mark's own baseline, with the 0.30pt
+  % leader the corpus requires beyond 3mm: the gap from the layer-16 dot to the
+  % label's ink is 3.6mm, and in v10 that gap was open with nothing in it.
+  \draw[accent, line width=0.3pt] (14.19,\fy{0.9444444444444445})
+                              -- (13.95,\fy{0.9444444444444445});
+  \node[alab, anchor=west] at (14.25,\fy{0.9444444444444445})
+    {all seven layers: $88$--$95\%$};
+
+% ###########################################################################
+% # the figure's foot: one two-line \scriptsize block on the figure's own x
+% # origin. Line one names the instrument and the three accuracies the axis is
+% # built from; line two gives the construction and this figure's single
+% # interval declaration.
+% # v11: the noun was missing. v10 printed "Before 0.41--0.82, after 0.121 ...,
+% # chance 0.083" with no quantity attached to any of the three, and the words
+% # "accuracy", "probe" and "1/12" appeared nowhere in the figure, so panel (c)
+% # never said what instrument it was reading. The registry name is "probe
+% # accuracy" and chance is "0.083 = 1/12", which is the stored float exactly
+% # (workspace_probe.json :: chance == 1/12 in IEEE double).
+% ###########################################################################
+  \node[qlab] at (0.00,0.32)
+    {Probe accuracy before $0.41$--$0.82$, after $0.121$ at every layer,
+     chance $0.083$, exactly $1/12$.};
+  \node[qlab] at (0.00,0.02)
+    {The fraction is (before minus after)$/$(before minus chance). Intervals:
+     none returned in (c); (a) and (b) carry no measured mark.};
+
+  % the bounding box IS the fullwidth measure; nothing may stick out of it
+  \path (0,-0.10) rectangle (17.30,10.35);
+\end{tikzpicture}
+%
+% ---------------------------------------------------------------------------
+% READY TO PASTE into Sections/04b-representation.tex, at sec:res-used,
+% immediately after the paragraph "Step three, the removal gate"
+% (04b-representation.tex:182-190) and BEFORE tab:workspace. The same block is
+% staged in figs/_PENDING_FLOATS.tex for a human to integrate.
+%
+% Do NOT merge this float with fig:hook. The two are read six paragraphs apart;
+% each is about 100mm tall against a corpus ceiling of 117mm, so stacked they
+% spill the page; and the house caption shape carries one bolded finding, not
+% two.
+%
+% CAPTION, v10 AND v11. The drawing lost eight sentences in v10 and one more in
+% v11, and every one is folded into the caption below, because in this document
+% the argument lives in the caption and the drawing names objects.
+% What was cut from the drawing, in the order it used to read:
+%   1. the three \footnotesize italic panel subtitles -- "where the twelve drugs
+%      differ, at one layer", "the raw slab is partly a batch slab", and "the
+%      fraction of above-chance drug signal that projecting the drug subspace
+%      out destroys". The third is now the axis label, which is where it always
+%      belonged; the other two are caption clauses.
+%   2. the centred divider sentence, "an ablation is only a test of the drug if
+%      the slab it removes really holds the drug", which restated the body
+%      paragraph directly above the float.
+%   3. the two lines inside the fail region, "had any layer landed in here, the
+%      null below it / would have been unfalsifiable --- a measurement of
+%      nothing", which restated the caption's own "the shaded region ... is
+%      empty" and sat inside the data area competing with the marks. v11 gives
+%      the region the NAME "an untestable null", set outside its right edge;
+%      the argument stays in the caption.
+%   4. the centred discipline line, "the dots and the bands are schematic and
+%      have no scale; only the four numbers in stage two are measured". Its job
+%      is done by the GLYPH now -- open ring against filled disc -- and the
+%      caption says the rest.
+%   5. the conservatism argument, "so the slab keeps essentially the whole span,
+%      noisiest included, which for a removal claim is conservative", cut from
+%      panel (a)'s prose, which is now definitional only.
+%   6. "by construction", cut from the right angle's label for want of a lane
+%      3.6cm wide at the glyph's own height (v10 item 8).
+%   7. "measured on the slab that is projected out; the stored file has no
+%      separate purified-slab gate", cut from the foot note in v10 for text
+%      density. RESTORED TO THE DRAWING IN v11, reworded, under panel (c)'s
+%      head, because without it panel (c) named no slab at all and sat directly
+%      under panel (b)'s "so causal claims use the purified slab, not the raw".
+%      The caption's own statement of the same limit is reworded below so that
+%      no clause of five or more words appears in both places.
+%   8. "four \quad what the ablation costs: \cref{fig:hook}", the forward
+%      pointer that used to sit on the x-tick baseline where the word "four"
+%      read as a leftmost tick.
+%   9. NEW IN v11: the axis's \scriptsize construction line, "(before minus
+%      after)/(before minus chance)". It did not vanish -- it is the second foot
+%      line now -- but it left the axis block, which S5 allows and which the
+%      render forced: at 5.52cm against a 3.85cm axis it was the tallest object
+%      in the panel and rose above the panel head's own top.
+%
+% CLAUSES OF THE PRINTED CAPTION THAT ARE NOW FALSE AGAINST THE DRAWING, with
+% their lines in Sections/04b-representation.tex. Nobody may edit that file from
+% this pass, so they are listed here and in figs/purify.json, and the
+% replacement for each is in the caption below.
+%   04b:234  "\emph{Above the rule, nothing has a scale.}" -- there is no rule.
+%            The full-measure divider at y = 4.72 was deleted in v10 and the
+%            panel letters carry the scoping now.
+%   04b:234  "The dots, the bands, the arrow and the right angle are schematic"
+%            -- v10 turned panel (a)'s twelve schematic marks into OPEN RINGS,
+%            so the only dots in the figure are panel (c)'s seven MEASURED
+%            discs, and the sentence as printed now calls the measurements
+%            schematic. Replacement: "open rings and untitled bands".
+%   04b:236  "the four numbers printed in stage two" -- there is no stage two;
+%            the panel is lettered (b) and the word "stage" went with the
+%            banners.
+%   04b:243  "\emph{Below the rule, everything has a scale.}" -- same rule.
+%   04b:250  "Two limits, both stated on the drawing" -- only one of the two is
+%            on the drawing (the which-slab limit, restored in v11); the
+%            twelve-class against twenty-four-class limit is caption-only and
+%            always was.
+%   04b:250-252  the which-slab limit as printed shares a clause of more than
+%            five words with the drawing's new scope line, and it asserts more
+%            than the file supports; it is reworded below.
+% AND ONE THING THE CAPTION OWES THE READER AND HAS NEVER SAID: the printed
+% pair "raw $0.620$, purified $0.031$" is at layer 9, and layer 9 is the
+% MAXIMUM of layers.<L>.variance_share.drug over the seven depths. The stored
+% range is 0.2766847391691891 at layer 16 to 0.6201207831136324 here, so the
+% drawn pair is the largest raw-to-purified contrast the file holds. The raw
+% series is drawn in no other figure and quoted in no sentence of the thesis
+% (figs/fig-mechanism.json records it as drug_raw_not_drawn), so the caption is
+% the reader's only chance to learn the spread. It is added below.
+% The dose qualifier the v10 proposal added is kept: "$0.90$--$0.95$" is true
+% only to two places, the stored minimum being 0.8979166666666666 at layers 12
+% and 16, which is also why no reference rule is drawn at $0.90$.
+%
+% NOTHING IN THE CAPTION RESTATES A CLAUSE OF FIVE OR MORE WORDS FROM THE
+% DRAWING. Checked string by string against the v11 render's own text spans: the
+% drawing names objects and prints numbers, the caption argues. The drawing says
+% "the subspace projected out"; the caption says "whichever subspace the
+% ablation removed", and the longest run shared with any drawn string is four
+% words.
+%
+% Two caption details, checked against a build of the whole float (returncode 0,
+% one page, zero Overfull/Underfull boxes; the \cref targets resolve in the
+% document and show as ?? only in an isolated harness):
+%   * the two numerals in the bold lead are set in TEXT and not as $88$/$95$.
+%     In math mode they come out upright and unbolded inside \textbf, so a
+%     bolded finding would have had two unbolded numbers in the middle of it.
+%   * the FIGURE BODY carries no \cref. The "four ... fig:hook" pointer was
+%     deleted in v10, so the caption is the only place the sibling float is
+%     named.
+%
+% \begin{figure}[htbp]
+% \begin{fullwidth}
+% \centering
+% \input{figs/purify}
+% \caption[The drug slab and its removal gate]{\captiontitle{The slab is built, not
+% found --- ten directions fitted to twelve centred class means, then
+% orthogonalised against the batch structure they are confounded with --- and it
+% earns the right to be ablated only because projecting it out destroys 88 to 95
+% per cent of the decodable drug signal at every depth.} An ablation tests the
+% drug only if the subspace it removes really carries the drug, which is what
+% panel (c) settles before \cref{fig:hook} spends it.
+% \emph{Panels (a) and (b) have no scale.} Their marks are open rings and
+% untitled bands for that reason: nothing in them is a measurement, and the only
+% quantities there with a source are the four numbers printed beneath panel (b),
+% all from \texttt{workspace\_probe.json}. Panel (a) is where the twelve drug
+% classes differ at one depth: ten directions are kept out of the eleven such a
+% set can span, so the noisiest are kept too, which for a removal claim errs the
+% safe way. Panel (b) is why the raw subspace may not be used --- it is partly a
+% batch subspace --- and the darker patch on the horizontal band is the
+% component projected away, the arrow carrying the raw tip left by exactly that
+% much. The right angle is not measured; it is true by construction. Both
+% printed readings there are quoted at their least flattering: the dose range
+% $0.90$--$0.95$ is rounded to two places, the stored minimum being $0.8979$ at
+% layers $12$ and $16$, which is why no reference rule is drawn at $0.90$; and
+% layer $9$ is the depth at which the raw subspace fraction is largest, the
+% seven-layer range running $0.277$ to $0.620$, so the shrink to $0.031$ printed
+% there is the widest the file holds and not a typical one.
+% \emph{Panel (c) has a scale, and it is the only one that does.} Each mark is
+% one depth's share of above-chance drug-label accuracy destroyed when the
+% subspace is projected out, over twelve drug classes at chance $1/12$. The
+% shaded region under the rule is the set of outcomes that would have left this
+% section's nulls with nothing to measure, and it is empty at all seven depths.
+% \textbf{Why no interval is drawn:} the quantity is a single ratio of two
+% accuracies over \num{480} prompts and the instrument stores no dispersion of
+% any kind for it. Two limits. \texttt{workspace\_probe.json} does not record
+% whichever subspace the ablation removed --- it holds one ablated series and no
+% purified counterpart --- so neither the drawing nor this caption attributes
+% the gate to $V_{\textrm{pure}}$; where both are stored, in
+% \cref{sec:res-mechanism}'s residual arm, the purified figure is the smaller of
+% the two. And these twelve-class accuracies may not be read against the
+% twenty-four-class sweep over the five arms of \cref{sec:res-mechanism}, whose
+% chance is $1/24$ on a different label set. Step four is \cref{fig:hook}.}
+% \label{fig:purify}
+% \end{fullwidth}
+% \end{figure}
+% ---------------------------------------------------------------------------

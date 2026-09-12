@@ -1,0 +1,1286 @@
+% ===========================================================================
+% 04b-representation.tex -- beats 3-4. The expression frame, read in the weights.
+% Source: thesis/Sections/Investigation-v4.tex 1052-1545.
+% Every number, interval, n and conclusion is verbatim from v1.
+%
+% Consistency pass: the section now opens by naming the third question of
+% \cref{sec:intro-map} and stating its answer -- identity written into the
+% activations, barely consulted by generation -- before the instruments, so a
+% reader arriving from the introduction finds what was promised. The stratum
+% paragraph and its \scopelimit are adjacent again, since the scope limit is
+% about that stratum's reference. "Step three, the removal gate" was a \defn
+% box between three \paragraph steps; it is now the paragraph it always was,
+% merged with the gate result that followed it. Vocabulary: "output" as a noun
+% for the prediction, "compound", and bare "signature" are gone; "shift" is
+% reserved for treated minus control, so the logsumexp constant is an offset.
+% "Energy" is gone as well, and it went two ways because it named two different
+% things. The $\approx 99.5\%$ that a full-stream control puts outside the slab
+% is a projection share of a squared Euclidean norm, $1 - 10/2048$ for ten
+% intervention directions in $2048$, so it now reads "squared norm", in the
+% sense fixed by the norm entry in the symbols list of 00-HowToRead.tex. It is
+% not the residual/generic decomposition of shared/inference.py, whose
+% docstring calls itself a variance decomposition and is wrong to: nothing is
+% centred there either. The "strong-programme energy" of the paragraph on where
+% ablation stops named no computed quantity at all, since that sentence carries
+% no numeral and cites no stored result, so it now reads "structure", which
+% claims only what a hypothetical ("could carry") can support.
+% ===========================================================================
+
+% ===========================================================================
+\beatsection{E}{3}{The drug is not missing from the computation}{sec:methods-probe}
+
+\begin{question}[3]
+A model that ignores a drug it was told about can fail in two ways. Either the
+drug never enters its computation, an activation-side encoding failure that
+architectural fixes might reach, or it enters and nothing reads it, a
+decoder failure only an objective-side fix could reach. Behaviour cannot tell
+them apart, since both predict the same scores. The weights can. A linear decode
+probe, read as a floor test and not as evidence of use, settles the first half.
+\end{question}
+
+\noindent
+\Cref{sec:intro-map} left three explanations open for why generation ignored the
+drug: it is absent from the data, absent from the model's representation, or
+present there and simply not consulted when the model generates. The first
+closes here. \Cref{sec:res-blind} measured a substantial stratum, selected by a
+bar set on the data alone, where the true separation between drugs is real and
+large --- the identifiable stratum.\gloss{identifiable stratum}{conditions whose
+own within-well split-half reference clears the pre-set bar} On exactly that
+stratum the model does no better than a baseline copying the untreated cell,
+$0.768$ against $0.766$.\framecue{\Eframe}{scores here are full-profile,
+\cref{sec:res-metrics}} What is missing there is not signal to find; it is the
+model's use of it. That is the failure the question above already split in two:
+does the drug never reach the model's computation, or does it reach it and go
+unread? No behavioural score, however this benchmark is sliced, can tell those
+two apart.
+
+The three sections that follow can, and they answer in one direction. Drug
+identity is written into the activations and stays written, more legibly with
+depth once batch structure is projected out: the failure is not on the
+activation side. Generation then consults that identity too weakly to account
+for the drug-blindness already measured. Both halves of that answer carry a
+discount, and not the same one. Presence is close to guaranteed by construction
+--- a category named verbatim in the prompt is not hard for a linear probe to
+find, which is why this section's own instrument is built to be read as a floor
+test and nothing more. The low-gain reading is the opposite case. Twenty-six tests were run across
+training arms and depths, and after correcting for testing that many at once,
+exactly one stays significant. Even that one is small, a shift of one to two per
+cent in the model's existing preference, against a $10\%$ margin pre-registered
+as the threshold for calling an effect material. It is the weakest fundamental
+measurement in the chapter, and it is carried below with that weakness attached, in three steps. This section asks only whether the drug is in
+the computation at all. \Cref{sec:res-used} asks whether generation is causally
+sensitive to that region, and at what weight beside cell line. \Cref{sec:res-mechanism}
+asks whether it is the drug's identity that gets read there, or merely the
+region's presence.
+
+
+% ===========================================================================
+\paragraph{The probe, and why its positive is nearly free} The prompt names the
+drug in plain text (\cref{sec:methods-data}), so recovering it from the
+activations establishes only that the model did not discard what it was handed.
+The informative outcome would have been a negative, and what the probe buys is
+the depth at which one would appear.\gloss{decode probe}{a classifier trained to
+name the drug from the residual stream at one layer}
+
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+\scalebox{0.96}{\input{figs/licensing}}
+\caption[Reading the drug out of a layer]{\captiontitle{The prompt names the drug in
+plain text, so a positive here establishes only that the layer did not discard
+what it was handed.} \emph{(a)} The residual stream is tapped at the last
+prompt position, independently at seven depths. \emph{(b)} At each depth a
+fresh logistic regression --- no weights shared across layers --- is fit to
+name the drug from that layer's activation alone, evaluated by five-fold
+cross-validation stratified on the drug label. Layer 9 reaches $0.821$ against
+a chance floor of $1/12 \approx 0.083$. What this number can and cannot support
+is discussed in the text. \emph{(c)} The same measurement repeated at every
+layer, $0$ to $16$ --- accent marks the seven depths tapped in \emph{(a)} and
+\emph{(b)}. Accuracy holds up almost to the output, $0.821$ to $0.758$. A
+second quantity, the ratio of between-drug to within-drug variance in the same
+activations, collapses over the same span, $0.112$ to $0.034$; what that
+divergence means is in the text.}
+\label{fig:licensing}
+\end{fullwidth}
+\end{figure}
+
+\paragraph{How the probe is built, and what "robust" is checked against} No text
+is generated for this instrument; every reading is a single forward pass over a
+real prompt. Tier-2 (unseen-drug) evaluation prompts are pooled by drug, and
+twelve drugs are drawn at random from those with at least forty scored cells;
+the eligible cells are pooled without regard to which well or plate they came
+from, and forty are drawn per drug, giving $480$ prompts in total. For each
+prompt the residual-stream activation is read at the last prompt position, the
+point at which generation would begin, and this is done independently at each of
+seven depths ($2,4,6,8,9,12,16$).
+
+At each depth a separate multinomial logistic-regression classifier is fit on
+that depth's activations alone and asked to name which of the twelve drugs the
+prompt carried, its features standardised first. Accuracy is cross-validated:
+the $480$ prompts are split into five folds, each preserving the twelve-way
+class balance, the classifier is refit on four folds and scored on the held-out
+fifth, and the five scores are averaged. Twelve balanced classes put chance at
+$1/12 \approx 8\%$ exactly, an analytic floor and not an empirical one; the same
+count of forty cells per drug is what bounds the drug subspace at rank $11$ in
+\cref{sec:res-used}.
+
+The folds are stratified on the drug label only, not grouped by well, which is
+the design's one unrepaired limitation: a classifier trained and tested with no
+regard for well identity could in principle be reading which well a prompt came
+from rather than which drug it named. The instrument attempts the obvious check
+--- the identical probe, on the same activations, relabelled by cell line ---
+and it returns no value, because the pooled sample leaves at least one cell
+line with too few prompts for the fold split to run. The check is therefore
+unavailable rather than passed, and the confound stays open here. What closes
+it is not this probe but the purification of \cref{sec:res-used}, which
+subtracts the cell-line, plate and dose directions explicitly and makes every
+causal claim on what survives.
+
+\paragraph{The negative never arrives} The probe reads $82\%$ at layer $9$ and
+$76\%$ at layer $16$, the deepest measured, against the $\approx 8\%$ floor.
+Read alone, that is a probe that barely fades. A second quantity, computed over
+the same $480$ prompts but at every layer rather than only the seven tapped
+above, reads differently. For each layer, group the activations by drug and
+take, over all $2048$ dimensions at once, two sums of squares: how far each
+drug's own cluster mean sits from the grand mean, weighted by cluster size,
+against how far individual activations sit from their own drug's mean. The
+first is large exactly when the twelve drug clusters sit far apart; the second
+is large exactly when each cluster is loosely spread rather than tight. Their
+ratio is the between/within variance ratio, and it is answering a different
+question from accuracy: not whether a classifier can still tell the clusters
+apart, but how much of the layer's total spread that separation actually
+accounts for. It peaks at $0.112$ around layer $9$, where accuracy also peaks,
+and collapses to $0.034$ by layer $16$ --- about threefold --- over the same
+span in which accuracy falls only from $82\%$ to $76\%$. Accuracy staying high
+while the ratio falls sharply is only possible one way: the between-cluster
+part of the sum is shrinking faster than the within-cluster part, so the
+distance that separates one drug's cluster from another's is still there, and
+a probe can still use it, but it has become a small fraction of everything
+else moving in that layer rather than a dominant one. We could say that it is being
+``geometrically de-emphasised'': not lost and not blended into
+noise, but shrunk into a narrow corner of a much larger space. That de-emphasis
+is in the raw geometry; once cell line, plate and dose are projected out, the
+series rises with depth instead, to $0.883$ ($88\%$) at the deepest layer. The
+survival carries the weight, not the peak, and that is the end of what a probe
+can say.
+
+
+
+% ===========================================================================
+\beatsection{E}{3}{The drug region is used, well below cell line}{sec:res-used}
+
+\begin{question}[3]
+Knowing the drug is written somewhere says nothing about whether the network
+reads it. Intervening on the region requires localising it, purifying it of the
+batch structure it is confounded with, and proving it really holds the drug
+before any null about it can be believed.
+\end{question}
+
+\noindent
+The instrument is an ablation. A subspace of the residual stream carrying drug
+identity is located, cleaned of the batch structure it is confounded with, and
+then deleted mid-forward-pass, and the question is how much the model's own
+output moves when it goes. Deleting something the model does not consult
+changes nothing, so the measurement only means anything if two things are
+established first: that the subspace really holds the drug, and that a
+comparable deletion does move the output. Both are built in, the first as a
+gate that must pass before any null is reported, the second as a cell-line
+subspace ablated the same way.
+
+The answer is that the region is read, and read weakly. Removing it costs
+between $3.6$ and $18.6$ times what removing a matched-random subspace of the
+same dimension costs, so the model is not indifferent to it. Against the
+cell-line control the same removal costs $9$ to $37\%$, so whatever generation
+takes from the drug it takes at a fraction of the weight it gives to which
+cell line it was handed. Neither number is the interesting part on its own;
+the pair is, because a result that clears its null and still falls this far
+short of its positive control is the shape of a signal that is present,
+consulted, and not doing much work.
+
+\paragraph{Step one, where the drug lives} Write $x_i \in \mathbb{R}^{d}$ for
+the residual-stream activation of prompt $i$, read at the last prompt position
+at one layer, with $d$ the model width; these are the rows of
+$X \in \mathbb{R}^{n \times d}$ over $n = \num{480}$ tier-2 prompts (twelve
+drugs, forty real cells each). Let $\ell_i$ be the drug of prompt $i$,
+$\mathcal{C}$ the set of twelve drugs, $\mu_c$ the mean activation of drug $c$,
+and $\bar{x}$ the global mean,
+\begin{equation}
+  \mu_c \;=\; \frac{1}{|\{i : \ell_i = c\}|} \sum_{i \,:\, \ell_i = c} x_i ,
+  \qquad
+  \bar{x} \;=\; \frac{1}{n} \sum_{i=1}^{n} x_i .
+\end{equation}
+Stack the centred class means as \emph{rows},
+\begin{equation}
+  M \;=\;
+  \begin{bmatrix}
+    (\mu_{c_1} - \bar{x})^{\top} \\[2pt] \vdots \\[2pt]
+    (\mu_{c_{12}} - \bar{x})^{\top}
+  \end{bmatrix}
+  \;\in\; \mathbb{R}^{12 \times d},
+\end{equation}
+so that the row space of $M$ is exactly the set of directions along which the
+twelve drugs' mean activations differ from one another. Take the singular value
+decomposition $M = U \Sigma V^{\top}$ and keep the leading right-singular
+vectors, which are the columns of $V$,
+\begin{equation}
+  V_{\textrm{drug}} \;=\; \big[\, v_1 \;\cdots\; v_k \,\big]
+  \;\in\; \mathbb{R}^{d \times k},
+  \qquad
+  k \;=\; \min\!\big( 10,\; |\mathcal{C}| - 1,\;
+          \#\{ j : \sigma_j > 0.05\,\sigma_1 \} \big).
+\end{equation}
+The three terms of that minimum are three separate refusals to overclaim. Ten is
+the dimension budget. Twelve centred class means span at most eleven directions,
+so the second term is what the data can support at all. The third is a
+\emph{relative} spectral cutoff, and it is the one that matters: were the rank
+fixed at ten regardless, any direction the labels do not actually vary along
+would be filled with estimation noise --- and a noise direction is not
+orthogonal to the context subspace of step two, so it would carry batch leakage
+into the very slab that step is meant to purify. In practice the budget binds
+and the slab keeps essentially the whole span, noisiest surviving direction
+included, which for a removal claim errs the conservative way. The layer grid is
+even ($2, 4, 6, 8, 12, 16$) plus layer $9$, added after the raw probe peaked
+there.
+
+\paragraph{The positive control is the same construction on a different label}
+$V_{\textrm{cell}}$ is built by the identical procedure --- same activations
+$X$, same layer, same rank rule --- with $\ell_i$ read as prompt $i$'s cell line
+rather than its drug, so the two subspaces differ in nothing except which
+partition of the same $\num{480}$ rows defines the class means. That is what
+makes the comparison in step four legible: when removing $V_{\textrm{drug}}$
+moves generation less than removing $V_{\textrm{cell}}$ does, the difference
+cannot be an artefact of how either subspace was fitted. Cell line is the right
+control to hold that role because \cref{sec:res-blind} already established, from
+the data alone and with no model involved, that cellular context is the
+conditioning variable this atlas actually carries.\seealso{the grouping ladder
+in \cref{sec:res-blind} is what makes cell line usable as a positive control}
+\begin{figure}[htbp]
+  \begin{fullwidth}
+  \raggedright
+  \includegraphics{fig-mechanism}
+  \caption[Decodable with depth, at limited functional weight]{\captiontitle{Drug-label
+  information becomes more decodable with depth while interventions on the
+  purified slab have limited effect.} Layer is a true numeric axis in both panels.
+  \emph{(a) Top:} probe accuracy over twelve drug classes, chance $1/12$. The raw
+  series and the context-removed series \emph{cross} between layers $9$ and $12$,
+  which no other figure shows; the flat grey line is the same probe after the drug
+  slab is projected out. \emph{Bottom:} subspace fraction of the purified slab
+  against the cell-line control, on its own scale --- an activation-space summary,
+  not a decomposition of biological variance. \emph{(b)} Mean KL in nats when the
+  slab is ablated, against a matched-dimension random slab, $n = 60$ per entry.
+  Log axis, so the vertical gap between a pair is their ratio. No intervals are
+  drawn in either panel. These accuracies are twelve-class and must not be read
+  against the twenty-four-class sweep of \cref{sec:res-mechanism}.}
+  \label{fig:mechanism}
+  \end{fullwidth}
+  \end{figure}
+  
+  
+
+\paragraph{Step two, purification} The subspace step one returns is partly a
+batch subspace. Drug, plate and dose are confounded by the atlas's design, so
+directions fitted to separate the twelve drugs will also separate whatever
+those drugs were plated and dosed alongside. That this has happened is not
+assumed but measured: projecting the activations onto the slab and fitting the
+same cross-validated logistic probe to the projected coordinates
+$X V_{\textrm{drug}} \in \mathbb{R}^{n \times k}$ --- ten numbers per prompt,
+nothing else --- recovers each prompt's \emph{dose} at $0.90$ to $0.95$ at
+every layer. A subspace built only to carry drug identity should not be able to
+do that, and a null obtained by removing it would not distinguish deleting the
+drug from deleting the batch it arrived in.
+
+The remedy is to subtract that shared structure. A context subspace
+$V_{\textrm{conf}}$ is built exactly as $V_{\textrm{drug}}$ was, but from three
+labels at once rather than one. Cell line, plate and dose are each categorical
+labels carried by every prompt, and each cuts the same $\num{480}$ rows a
+different way: by which cell line the cell came from, by which physical plate
+it was assayed on, by which concentration it received. Write
+$\mathcal{L} = \{\textrm{cell line}, \textrm{plate}, \textrm{dose}\}$, and for
+each $L \in \mathcal{L}$ let $\mathcal{C}_L$ be the distinct values that label
+takes in this sample --- the individual cell lines that appear, the individual
+plates, the individual dose levels --- so that a single $c \in \mathcal{C}_L$
+picks out one cell line, or one plate, or one dose. For each such $c$ write
+$n^{L}_{c} = |\{ i : L(x_i) = c \}|$ for how many of the $\num{480}$ prompts
+carry it, and
+\begin{equation}
+  \mu^{L}_{c} \;=\; \frac{1}{n^{L}_{c}} \sum_{i \,:\, L(x_i) = c} x_i
+\end{equation}
+for their mean activation, computed over the same rows and centred on the same
+global mean $\bar{x}$ as in step one. Collect one row per qualifying value,
+across all three labels:
+\begin{equation}
+  M_{\textrm{conf}} \;\in\; \mathbb{R}^{m \times d},
+  \qquad
+  \textrm{rows} \;=\; \big\{ (\mu^{L}_{c} - \bar{x})^{\top} \;:\;
+    L \in \mathcal{L},\; c \in \mathcal{C}_L,\; n^{L}_{c} \geq 5 \big\},
+\end{equation}
+\begin{equation}
+  m \;=\; \sum_{L \in \mathcal{L}}
+          \big| \{\, c \in \mathcal{C}_L : n^{L}_{c} \geq 5 \,\} \big| ,
+\end{equation}
+so $m$ counts every cell line, plate and dose level with at least five prompts
+behind it, summed across the three labels --- of order tens of rows against the
+drug slab's twelve, and each of length $d$. Its singular value decomposition is
+truncated by the same relative spectral rule as step one,
+\begin{equation}
+  V_{\textrm{conf}} \;=\; \big[\, w_1 \;\cdots\; w_{k'} \,\big]
+  \;\in\; \mathbb{R}^{d \times k'},
+  \qquad
+  k' \;=\; \min\!\big( 3k_{\max},\;
+           \#\{ j : \sigma_j > 0.05\,\sigma_1 \} \big),
+\end{equation}
+with $k_{\max} = 10$ the drug slab's dimension budget. Stacking the three label
+sets together rather than fitting them separately matters: cell line, plate and
+dose are themselves correlated in this atlas, and three independently fitted
+subspaces would subtract their shared directions three times over. One matrix
+spans their union once. The budget is three times the drug slab's for the
+opposite reason --- context genuinely needs more directions than drug does,
+since it is carrying three partitions rather than one, and a budget that bound
+here would leave real batch structure unsubtracted and inside
+$V_{\textrm{pure}}$.
+The drug slab is then projected off it and re-orthonormalised. First subtract
+the component lying inside the context subspace,
+\begin{equation}
+  \widetilde{V} \;=\; V_{\textrm{drug}} \;-\;
+    V_{\textrm{conf}} V_{\textrm{conf}}^{\top} V_{\textrm{drug}}
+  \;\in\; \mathbb{R}^{d \times k},
+\end{equation}
+whose columns are no longer orthonormal, and in general no longer of unit
+length, since each has lost whatever part of itself the context could account
+for. Recover an orthonormal basis by QR decomposition,
+\begin{equation}
+  \widetilde{V} \;=\; QR ,
+  \qquad
+  Q \in \mathbb{R}^{d \times k} \ \textrm{orthonormal},
+  \qquad
+  R \in \mathbb{R}^{k \times k} \ \textrm{upper triangular},
+\end{equation}
+and keep only the columns whose surviving component was substantial,
+\begin{equation}
+  V_{\textrm{pure}} \;=\; \big[\, q_j \;:\; |R_{jj}| > 0.2 \,\big].
+\end{equation}
+The diagonal of $R$ is what makes that threshold meaningful. Because
+$V_{\textrm{drug}}$'s columns are unit norm to begin with, $|R_{jj}|$ is
+literally the fraction of column $j$ left standing after the projection: a
+value near one means the direction was almost entirely orthogonal to context
+already, and a value near zero means it was almost entirely context. Keeping
+only those above $0.2$ is what stops a direction that barely survived from
+being retained and then renormalised back to unit length by $Q$, which would
+amplify context and estimation noise rather than remove it. Two screens guard the same step from the other side. A
+candidate context label is dropped before it can enter $V_{\textrm{conf}}$ if
+it is more than $90\%$ pure as a proxy for the drug, since orthogonalising
+against a relabelled copy of the drug would delete the drug axis by
+construction and manufacture any null that followed; and classes with fewer
+than five members are skipped, so that a near-continuous field like dose cannot
+degenerate the context subspace into a generic top-variance basis.
+
+What remains, $V_{\textrm{pure}}$, is the part of the drug slab that no context
+label can account for, and it is what every causal claim below is made on ---
+never the raw slab. \Cref{fig:purify} draws the construction.
+
+% ===========================================================================
+\begin{table}[htbp]
+% MARGINALIA: full-width pattern (caption above at the text width, notes below
+% in the sans). The table itself is natural width; the caption is too long for
+% the margin. One rule; the spanner row replaces the \cmidrule. The long
+% sub-head is stacked so its column shrinks to the numbers.
+    \caption{\captiontitle{Drug-label information becomes more decodable with depth while
+    the same slab carries little functional weight.} All seven layers pass the
+    removal gate; chance is $0.083$. Columns under \emph{Decode} and
+    \emph{Ablation} are labelled by which subspace was projected out of the
+    residual stream before measuring: the two decode columns are the same
+    twelve-class probe on the same activations, once with nothing removed and once
+    with the context subspace $V_{\textrm{conf}}$ --- cell line, plate and dose ---
+    projected out, and neither is restricted to the drug slab. The random null
+    matches $V_{\textrm{pure}}$'s rank, not the variance it removes --- the slab's
+    subspace fraction is roughly six times the null's --- so that ratio mixes drug
+    content with the difference.}
+    \label{tab:workspace}
+  \begin{fullwidth}
+  \begin{threeparttable}
+    \begin{tabular}{@{}r rr rrr rr@{}}
+      & \multicolumn{2}{l}{\thead{Decode accuracy}}
+      & \multicolumn{3}{l}{\thead{Ablation cost (KL, nats)}}
+      & \multicolumn{2}{l}{\thead{$V_{\textrm{pure}}$ against}} \\
+    \addlinespace[2pt]
+    \thead{Layer} & \thead{Original}
+      & \shortstack[r]{\thead{$V_{\textrm{conf}}$}\\\thead{projected out}}
+      & \thead{$V_{\textrm{pure}}$} & \thead{random} & \thead{$V_{\textrm{cell}}$}
+      & \thead{random} & \thead{$V_{\textrm{cell}}$} \\
+    \midrule
+    2  & 0.408 & 0.354 & 0.155 & 0.012 & 1.115 & $12.7\times$ & $14\%$ \\
+    4  & 0.585 & 0.429 & 1.563 & 0.084 & 4.180 & $18.6\times$ & $37\%$ \\
+    6  & 0.692 & 0.529 & 1.435 & 0.251 & 4.307 & $5.7\times$  & $33\%$ \\
+    8  & 0.779 & 0.569 & 0.596 & 0.042 & 5.419 & $14.1\times$ & $11\%$ \\
+    9  & 0.821 & 0.602 & 0.418 & 0.100 & 4.689 & $4.2\times$ & $9\%$ \\
+    12 & 0.754 & 0.873 & 0.133 & 0.035 & 0.135 & $3.8\times$  & $98\%$ \\
+    16 & 0.758 & \key{0.883} & 0.015 & 0.004 & 0.059 & $3.6\times$ & $25\%$ \\
+    \end{tabular}
+    % no [flushleft]: that option redefines \TPTnoteSettings and would override
+    % the preamble's sans-8pt quietink note setting (already flush left).
+    \begin{tablenotes}
+    \item The two decode columns answer different questions and are not two
+    estimates of one quantity: the first includes whatever cell line, plate and
+    dose contribute, the second is the same probe once those directions are gone.
+    \item Every ablation cost collapses at layers $12$ and $16$, the positive
+    control most of all --- $V_{\textrm{cell}}$ falls from $4.689$ nats at layer
+    $9$ to $0.135$ at layer $12$. Layer $12$'s $98\%$ is therefore a small
+    numerator over a smaller denominator, not a depth at which the drug slab
+    matters more.
+    \end{tablenotes}
+  \end{threeparttable}
+  \end{fullwidth}
+  \end{table}
+\paragraph{Step three, the removal gate} A null from an ablation is only
+evidence if the thing removed was really there. Delete a subspace the model
+never encoded the drug into, and generation will of course not move --- and
+that outcome is indistinguishable, from the output alone, from a subspace that
+carried the drug and simply went unread. The gate settles which of the two is
+happening, before any null is reported.
+
+The test reuses the probe of \cref{sec:methods-probe} and runs it twice at each
+depth. First on the activations as they are, giving accuracy $a$; then on the
+activations with the drug subspace projected out, $X \leftarrow X - (X
+V_{\textrm{drug}})V_{\textrm{drug}}^{\top}$, giving $a_{\textrm{abl}}$. What the
+gate scores is not the drop itself but the \emph{fraction of above-chance
+signal} it accounts for, measured against the twelve-class floor $\pi = 1/12$
+rather than against zero,
+\begin{equation}
+  f \;=\; \frac{a - a_{\textrm{abl}}}{a - \pi} ,
+\end{equation}
+and $f$ must exceed $0.8$ for the depth to pass. Measuring against $\pi$ is what
+makes $f$ interpretable: a probe cannot fall below chance in expectation, so
+$a - \pi$ is the whole of what the subspace could possibly have been carrying,
+and $f$ asks how much of that the projection actually took.
+
+The gate passes at all seven depths. It is the raw accuracy $a$ that varies
+across depth, from $0.41$ at layer $2$ to $0.82$ at layer $9$; the ablated
+accuracy $a_{\textrm{abl}}$ does not vary at all, sitting at $0.121$ wherever
+the projection is applied, a floor just above the $1/12$ the label set puts
+chance at. Projecting the subspace out therefore does not merely degrade the
+probe, it returns it to the same near-chance state at every depth, whatever it
+was reading before.
+
+Because $a_{\textrm{abl}}$ is fixed, the whole spread in the removed fraction
+comes from $a$. Where the raw probe is strongest the subspace accounts for
+almost everything it was reading --- $0.949$ at layer $9$ --- and where it is
+weakest the fraction is smallest, $0.885$ at layer $2$, giving the $88$ to
+$95\%$ band. The ordering matters more than the range: the gate is hardest to
+clear exactly where the probe has least signal to begin with, since a fixed
+floor leaves proportionally more of a small gap standing, and it clears there
+too. \Cref{fig:purify}, panel (c), draws all seven; the shaded region below the
+rule is the set of outcomes that would have left every null in this section
+untestable, and it is empty. The nulls reported below are therefore properties
+of the model rather than of a hook that missed.
+
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\centering
+\input{figs/purify}
+\caption[The drug slab and its removal gate]{\captiontitle{The slab is built, not
+found --- ten directions fitted to twelve centred class means, then
+orthogonalised against the batch structure they are confounded with --- and it
+earns the right to be ablated only because projecting it out destroys $88$ to
+$95$ per cent of the decodable drug signal at every depth.} \emph{(a)} Where the
+twelve drug classes differ at one depth, giving $V_{\textrm{drug}}$.
+\emph{(b)} Why the raw slab may not be used: it is partly a batch subspace, and
+the darker patch on the band is the component projected away to leave
+$V_{\textrm{pure}}$, on which every causal claim in this chapter is made.
+Neither panel has a scale --- nothing in them is a measurement, and the four
+printed numbers are the only sourced quantities there. \emph{(c)} The removal
+gate, and the only panel with a scale: each mark is one depth's share of
+above-chance drug-label accuracy destroyed when the subspace is projected out,
+over twelve classes at chance $1/12$. The shaded region below the rule is the
+set of outcomes that would have left every null in this section untestable, and
+it is empty at all seven depths. No interval is drawn: the quantity is a single
+ratio of two accuracies over \num{480} prompts, with no stored dispersion. These
+twelve-class accuracies must not be read against the twenty-four-class sweep of
+\cref{sec:res-mechanism}, whose chance is $1/24$.}
+\label{fig:purify}
+\end{fullwidth}
+\end{figure}
+
+\paragraph{Step four, the causal measurement, and the dissociation it shows}
+The first three steps built a subspace and earned the right to delete it. This
+one deletes it and measures what the model's own output does in response. Let
+$y = (y_1, \ldots, y_T)$ be a condition's true target sentence and $p$ its
+prompt. The sentence is teacher-forced --- scored token by token, never
+generated --- so that the same $T$ positions are read in both passes and
+nothing is left to sampling.\gloss{teacher forcing}{the true sentence is scored
+token by token, never generated} Write $P_t$ for the model's next-token
+distribution at position $t$ on the clean forward pass. A forward hook then
+projects a subspace $V$ out of the residual stream at \emph{every} position,
+prompt and target alike,
+\begin{equation}
+  h \;\leftarrow\; h - (hV)V^{\top},
+\end{equation}
+and the same positions are read again, giving $P^{V}_{t}$. The measure is the
+mean divergence between the two readings over the target tokens,
+\begin{equation}
+  \mathrm{KL}(V) \;=\; \frac{1}{T} \sum_{t=1}^{T}
+    D_{\mathrm{KL}}\!\big( P_t \,\big\|\, P^{V}_{t} \big),
+\end{equation}
+averaged over $60$ prompts. It is a distance between two distributions over the
+same tokens, not between two generated sentences, which is what makes a null
+here interpretable. 
+
+Three subspaces are ablated at each depth, and the comparison between them is
+the result. $V_{\textrm{pure}}$ is the headline. A matched-dimension random
+subspace is the null, fixing what deleting $k$ arbitrary directions costs. The
+cell-line slab $V_{\textrm{cell}}$ of step one is the positive control, fixing
+what deleting something the model demonstrably uses costs. \Cref{fig:hook} draws
+the construction and the three readings.
+
+The model is sensitive to the drug subspace, and the sensitivity is small.
+Against the null, removing $V_{\textrm{pure}}$ costs $3.6$ to $18.6$ times what
+removing a matched-dimension random subspace costs, so the slab is not an
+arbitrary set of directions and generation is not indifferent to it. Against the
+positive control, the same removal costs $9$ to $37\%$ of what removing cell
+line costs at layers $2$ to $9$ --- layer $12$ the single exception at $98\%$,
+before layer $16$ falls back to $25\%$. Read the other way, the cell-line
+control is $1.0$ to $11.2$ times the drug's.
+
+The same three subspaces can also be compared descriptively, by how much of the
+activations they occupy at all. Let $X_c = X - \mathbf{1}\bar{x}^{\top}$ be the
+activations of step one with the global mean removed, and for any orthonormal
+$V$ define
+\begin{equation}
+  s(V) \;=\;
+    \frac{\lVert X_c V \rVert_F^{2}}{\lVert X_c \rVert_F^{2}}
+  \;=\; \frac{\sum_{i=1}^{n} \lVert V^{\top}(x_i - \bar{x}) \rVert^{2}}
+             {\sum_{i=1}^{n} \lVert x_i - \bar{x} \rVert^{2}} ,
+\end{equation}
+the fraction of the total squared deviation from the mean that lies inside
+$V$'s span. Because the projection is orthogonal, $s(V) \in [0,1]$, and a
+$k$-dimensional subspace drawn at random from a $d$-dimensional stream has
+$\mathbb{E}[s] = k/d$ --- here $10/2048 \approx 0.005$, which is what the
+matched-dimension null in fact measures. $s$ is a summary of activation
+geometry and nothing more: it says how much of the stream's variation a
+direction set accounts for, not how much of the drug response it explains, and
+it must not be read as a decomposition of biological variance.
+
+Measured this way the purified drug slab is negligible and stays negligible.
+It holds $s \approx 0.03$ at every depth --- $0.030$ to $0.036$ across all seven
+--- barely six times the random null's $0.005$, while cell line holds
+$\approx 0.6$, or $15$ to $22$ times the drug slab's footprint. Yet over those
+same depths the drug's decodability from the same activations, once context is
+projected out, climbs from $0.354$ at layer $2$ to $0.883$ at layer $16$. That
+is the dissociation: the drug becomes steadily \emph{more} legible with depth
+while the region carrying it remains a fixed and tiny fraction of what the
+stream is doing, and deleting that region moves generation a fraction of what
+deleting cell line moves. \Cref{fig:mechanism} draws it whole.
+
+
+
+% ===========================================================================
+\begin{figure}[htbp]
+  \begin{fullwidth}
+  \centering
+  \input{figs/hook}
+  \caption[The causal measurement]{\captiontitle{One true sentence, scored twice by the
+same weights with the purified drug slab projected out in between --- removing
+it costs $18.6\times$ what removing a matched-dimension random slab costs, and
+still only $37\%$ of what removing cell line costs.} \emph{(a)} and \emph{(b)}
+are the same teacher-forced sentence, box for box; the only difference is the
+hook, whose rule spans prompt and target alike because $h \leftarrow h -
+(hV)V^{\top}$ is applied at every position. The braces mark the target tokens
+the mean KL is read over. \emph{(c)} draws the decomposition and is not to
+scale. \emph{(d)} is logarithmic, so the gap between two marks is their ratio:
+purified slab $1.563$, random null $0.084$, cell-line control $4.180$ nats,
+$n = 60$ prompts each, at layer $4$ of the seven in \cref{tab:workspace}. No
+intervals are drawn --- the stored dispersion is not this document's
+convention, so these are sign-and-magnitude readings.}
+  \label{fig:hook}
+  \end{fullwidth}
+  \end{figure}
+  
+
+% The direct-arm fold sits after fig:mechanism and before "Where ablation stops",
+% so that paragraph's last sentence still hands off directly to sec:res-mechanism.
+% The pre-registered joint reading rule is not cleared: rel_B is below the 0.40
+% gate, so the "only ever a label" reading is withheld and the arm is reported as
+% a bound on a fitted map. "leave-one-drug-out" is avoided; the glossary reserves
+% it for the generic construction. Frame changes to residual here, marked with
+% \framecue on the precedent of 04a line 465, not by changing \beatsection{E}.
+% The drafted phrase "at one dose" is dropped: the roster's doses are not uniform
+% across drugs (biology/dose_frame/per_drug), and this arm partials nothing out,
+% so naming a dose would assert a control the measurement does not carry.
+% The drafted \gloss{dual form} is demoted into the sentence: as a margin note it
+% collided in this float-dense stretch and cost a "Marginpar on page 48 moved".
+% \framecue is the one margin note here, and it stays.
+%
+% REPAIR PASS, after three refuters read the draft.
+% (1) X is the K-averaged residual stream at one prompt position and is never
+% projected onto V_pure, so the slab does not enter this measurement at all.
+% The body now says "residual stream", the verdict says "this model's
+% activations", and the roster fence is paired with a stream/slab fence. The
+% draft verdict read "what a fitted map recovers from the slab is bounded below
+% the name string", which asserted the slab, generalised one ridge to fitted
+% maps at large, and used "bounded below" for its opposite. It is gone.
+% (2) The cell-line positive control was run with the RSA statistic against a
+% 2000-draw null and never with this ridge: no positive_control cell in either
+% file carries a direct_arm block. So the joint rule's control half is met only
+% by borrowing, and the draft's flat "the control is positive" contradicted the
+% concession three paragraphs above it.
+% (3) Layer attribution. The activations median and every permutation figure
+% are layer 12. The layer-16 median is 0.999916, and there the null's q95
+% exceeds its own observed value, so neither travels.
+% (4) alphas_chosen_median sits at the grid floor, but alphas_chosen_max is 100
+% at layer 12 and 1e5, the grid ceiling, at layer 16. The floor claim is the
+% median fold's, and it is the stated premise for "interpolates".
+% (5) The mean-r increment is negative at all 24 grid cells in each stratum,
+% but the two prompt variants are byte-identical at the drug-name position, so
+% 24 cells are 20 distinct measurements. The count is dropped; "every setting"
+% carries the breadth without asserting 24 independent confirmations.
+% (6) Correlations are printed to five places so that the printed increment is
+% the difference of the printed operands. At four places 0.9767 - 0.9323 reads
+% 0.0444 against a stated -0.0445, and a reader who subtracts gets a third
+% number.
+
+
+
+\paragraph{Where ablation stops} It cannot show that the slab's drug-specific
+content is what is read. The purified directions could carry generic
+strong-programme structure that merely co-varies with drug across the twelve.
+That needs a test which replaces what the slab says.
+
+
+% ===========================================================================
+\beatsection{E}{3}{Identity is read, at very low gain}{sec:res-mechanism}
+% \claimlede must follow \beatsection: \beatsection clears the stored lede.
+\claimlede{The generation decoder is sensitive to the drug-label activation
+signal at very low gain, in one training arm and at one rung of the displacement
+ladder.}
+
+\begin{question}[3]
+Removal cannot distinguish a region whose \emph{content} is read from one whose
+mere presence matters. The last question needs an instrument that replaces what
+the region says. Push the activations from the drug the prompt names towards
+another drug, and ask whether the model moves its preference towards that other
+drug's own held-out sentence. It moves, by a sliver, in one arm at one depth. 
+\end{question}
+
+\noindent
+The verdict first. On the single-cell arm --- the model trained to predict the
+treated cell's own sentence, and the arm every measurement in this chapter has
+been made on --- this instrument finds nothing. Across the six depths where it
+could be run it returns a median displacement effect of $-0.0012$: the wrong
+sign, and two orders of magnitude beneath the $10\%$ of the model's own
+preference gap pre-registered for calling an effect material. Nothing about
+which drug the region names reaches what the decoder emits.
+
+That null carries more than the two before it, because this instrument asks a
+harder question than either. Removal, in \cref{sec:res-used}, establishes that a
+region matters without establishing \emph{what about it} matters: a model whose
+output shifts when a subspace is deleted might be reading the drug's identity
+out of it, or might simply require the region to be occupied by something at
+all. The two are indistinguishable by deletion, and only one of them is
+knowledge of the drug. Separating them means not removing what the region says
+but \emph{replacing} it --- pushing the activations from the drug the prompt
+names towards a different drug, and asking whether the model's preference
+follows towards that other drug's own held-out sentence, against an identically
+constructed push naming a third drug.
+
+
+\begin{scopelimit}[carried into \cref{sec:res-epsilon} and \cref{sec:limitations}]
+This is the weakest fundamental measurement in the chapter and it is carried as
+such. No argument downstream rests on it alone, and a reader who discards it
+entirely loses nothing that the drug-blindness result depends on. What the
+following section tests is a prediction of the \emph{interpretation} of this
+result, not the result itself, and the inference there is written to run one way
+only for that reason.
+\end{scopelimit}
+
+% ===========================================================================
+\begin{figure}[htbp]
+% MARGINALIA (06-figures.md): wider than the 124mm text column, so it
+% sits in fullwidth; the caption below spans the text column only.
+\begin{fullwidth}\raggedright
+\input{figs/materiality}
+\caption[The effect and its gap]{\captiontitle{The model does move its preference
+towards the other drug's own held-out sentence, but by one fiftieth of the
+preference it already has and one fifth of the margin set in advance.}
+Residual arm, layer $12$, $\alpha = 0.5$, from
+\texttt{probe\_arm\_residual.json}; normalised, the same estimate is the
+\ci{+0.0197}{+0.0063}{+0.0335} of \cref{tab:identity} and
+\cref{fig:comparators} row~(c). \emph{(a)} The model's clean preference gap
+between the two sentences compared, measured with no intervention, drawn end to
+end, so that the axis's full width is the denominator every effect in this
+section is divided by; the effect is the accent disc near the origin, dotted
+down onto the rule and named above it, and the bracket beneath the axis label
+marks the eighth of it that~(b) opens out. \emph{(b)} That first eighth at
+exactly $8\times$ --- exactly, because the lower scale is the upper one divided
+by eight and not by a rounded number, which is why the two tick lanes fall on
+the same four positions --- in the same units, where the \texttt{swap} arm, the
+\texttt{permuted} control and their difference separate. The black rule in both
+panels is the $10\%$ materiality margin pre-registered for calling an effect
+material, drawn in the same weight and colour as in \cref{fig:family} and
+\cref{fig:comparators} row~(c). \textbf{Which bootstrap draw this is.} The bar
+is \texttt{layers.12.swap.ci\_perm}, the top-level draw, $p = 0.001$ over a
+$4000$-resample cluster bootstrap on $60$ rows in $58$ pair clusters over $24$
+anchor drugs. The arm's file stores a second draw of the same point estimate
+inside the $\alpha = 0.5$ rung of the ladder, at $p = 0.004$, and
+\cref{fig:family}'s lower strip draws that one; the two lie either side of the
+$0.05/26$ admitted at rank one, so the choice decides whether anything in the
+family survives multiplicity correction. This figure quotes the top-level draw
+because \cref{tab:identity}, \cref{fig:comparators} row~(c) and the correction
+itself all rest on it. \textbf{What the interval shows, and what it does not.}
+It excludes zero \emph{and} lies wholly inside the margin: under textbook TOST
+that configuration is returned as equivalence and read as a null, whereas this
+chapter's rule returns a directional effect smaller than the margin --- one
+fiftieth of the gap, one fifth of the margin. \textbf{No interval is drawn on
+the two arms or in~(a).} None is stored for \texttt{effect\_swap} or
+\texttt{effect\_perm} alone, so their marks are bare; the one stored interval
+is on the difference and is drawn at the scale where it is legible, which
+is~(b), and nowhere else. What may not be read across: this is one arm at one
+depth at one rung of the displacement ladder, and because the five arms emit
+different target formats their clean gaps run from this arm's $0.064$ nats to
+$0.314$ in the consensus arm, nearly fivefold, so a raw-nats axis is legitimate
+here and nowhere across arms --- \cref{fig:family}'s lower strip is a
+single-arm object for the same reason.}
+\label{fig:materiality}
+\end{fullwidth}
+\end{figure}
+
+\paragraph{The contrast score} Let $g_A$ and $g_B$ be \emph{measured} cell
+sentences --- real transcriptomes of held-out cells treated with drugs $A$ and
+$B$, taken from the evaluation data and not produced by the model --- and let
+$\textrm{prompt}_A$ be the prompt naming drug $A$.
+
+Scoring a sentence means asking how probable the model finds it, and nothing is
+generated to find out. Write $g = (t_1, \ldots, t_T)$ for its tokens. The prompt
+and the sentence are concatenated into a single sequence and one forward pass is
+run over it. At each position the model emits a distribution over the whole
+vocabulary for the next token, and what is recorded is the mass it placed on the
+token that actually appears there, given the true tokens before it:
+\begin{equation}
+  \log P\!\left(g \mid \textrm{prompt}\right) \;=\;
+  \frac{1}{T} \sum_{i=1}^{T}
+  \log P\!\left(t_i \;\middle|\; \textrm{prompt},\, t_1, \ldots, t_{i-1}\right).
+\end{equation}
+The conditioning is on the true prefix at every step, never on what the model
+would itself have written, so a wrong prediction early does not corrupt the
+positions after it; and the model is never required to produce $g$, only to
+score it. The result is a per-token mean, comparable across sentences of
+different lengths.
+
+The quantity the test scores is the difference between two such readings under
+the same prompt,
+\begin{equation}
+  \Delta \;=\;
+  \log P\!\left(g_B \mid \textrm{prompt}_A\right) \;-\;
+  \log P\!\left(g_A \mid \textrm{prompt}_A\right),
+\end{equation}
+that is, how much the model prefers the wrong drug's real response to the right
+drug's, under a prompt naming the right one. Any offset uniform across positions
+cancels exactly in the subtraction, an inflated normaliser included. What does
+not cancel is its state-dependent part, since once $g_A$ and $g_B$ diverge the
+two sequences visit different states, and that residue is what the second
+injection controls.
+
+\paragraph{Two injections sharing an anchor, scored out of sample} Write $\Pi$
+for the orthogonal projector onto the purified slab $V_{\textrm{pure}}$, and
+$\mu_c$ for drug $c$'s class mean of \cref{sec:res-used}. The treatment adds
+\begin{equation}
+  \alpha \, \Pi\!\left(\mu_B - \mu_A\right)
+\end{equation}
+to the residual stream, displacing the activations from the drug the prompt
+names towards the drug whose sentence is being scored. Its control adds
+$\alpha\,\Pi(\mu_C - \mu_A)$ for a third drug $C$: same construction, same
+anchor at $\mu_A$, matched norm, and a displacement pointing at a drug that has
+nothing to do with either sentence in the contrast. The two differ in nothing
+but which drug they point at, so the difference between them isolates the
+model's preference for $B$'s response attributable to being pushed
+\emph{towards $B$} rather than to being pushed at all. The subtraction
+$\mu_B - \mu_A$ cancels the global mean exactly, and nothing is ablated, so no
+removed term enters either.
+
+Three disjoint slices of cells keep the test out of sample: one fits the
+subspaces, one supplies the class means, and a third supplies $g_B$, which
+therefore never comes from the rows defining $\mu_B$. Were it otherwise, the
+injected vector and the scored sentence would share cells and the test would be
+partly circular. Because the training arms emit different target formats, every
+effect is reported as a fraction of that model's own clean preference gap,
+measured with no displacement applied.
+
+\paragraph{Four guards carry the inference} Each guard exists because one
+specific way of being wrong is live here, and each is fixed before the test is
+run rather than chosen after seeing it.
+
+\emph{The uncertainty model.} The natural unit to resample is the row, but rows
+are not independent here: every row is an ordered pair $(A,B)$, and two rows
+sharing a pair share both the injected vector and the scored sentence, so
+treating them as separate observations would count the same evidence twice and
+narrow the interval accordingly. The bootstrap therefore resamples whole pairs,
+not rows.\gloss{cluster bootstrap}{resamples whole $(A,B)$ pairs, so two rows
+sharing a pair count once} At the anchor seed's layer $12$ this is $60$ rows in
+$58$ pair clusters over $24$ anchor drugs --- close to a row bootstrap, because
+few pairs repeat --- and it guards only against sharing within a pair, not
+across pairs that happen to share an anchor drug or a target drug.
+
+\emph{The equivalence criterion.} A small interval that contains zero can mean
+two different things, and they must not be conflated: the effect is genuinely
+absent, or the instrument was too blunt to see it. Two one-sided tests, the
+standard remedy, declares equivalence whenever the whole interval falls inside a
+margin of practical irrelevance.\gloss{TOST}{two one-sided tests: declares
+equivalence when the whole interval lies inside a pre-set margin} That is too
+generous here, because an interval can lie inside the margin while sitting
+entirely above zero --- a real directional effect, merely a small one, which
+TOST would return as a null. This section therefore requires both conditions:
+the interval must lie inside a margin pre-registered at $10\%$ of the model's
+own clean preference gap, \emph{and} it must contain zero. The conjunction runs
+one way only. It can withhold a verdict of equivalence that TOST would grant; it
+can never manufacture one.
+
+\emph{The headroom gate.} An intervention that produces no effect proves nothing
+if the measurement could not have registered one, which is the same
+falsifiability problem the removal gate of \cref{sec:res-used} answers for
+ablation. Here it is answered per layer: any depth where the cell-line positive
+control shows less than $5\times$ dynamic range is excluded outright, because at
+that depth the instrument is saturated and can support neither a positive
+verdict nor a null.
+
+\emph{The magnitude ladder.} A single displacement gives a single number, and a
+single number cannot distinguish a real effect from a coincidence of scale. If
+what the injection moves is genuinely the drug's identity, then displacing
+further should move the output further --- the effect should grow with $\alpha$.
+The test is therefore repeated at $\alpha \in \{0.5, 1, 2, 5, 10\}$ times the
+natural displacement, and a monotone dose--response across those rungs is
+pre-registered as what a real effect would look like. This is the guard that
+bites.
+
+\paragraph{The result of the experiment}
+Assembled, the instrument runs as follows. At a given depth, take an evaluation prompt
+naming drug $A$; retrieve the measured cell sentences $g_A$ and $g_B$ from the
+held-out slice; score, using $\delta$ as defined above, both under $\textrm{prompt}_A$ with the residual stream
+displaced by $\alpha\,\Pi(\mu_B - \mu_A)$, and again with it displaced by the
+control $\alpha\,\Pi(\mu_C - \mu_A)$; take the difference of the two contrast
+scores; repeat over ordered $(A,B)$ pairs; express the result as a fraction of
+that model's clean preference gap; put an interval on it by resampling whole
+pairs; and admit the depth only if the cell-line control had the headroom to
+register an effect there. Then repeat the whole of it at each rung of the
+magnitude ladder(that is for varying values of $\alpha$).
+
+Run that way on the single-cell arm --- the model trained to predict the treated
+cell's own sentence, and the arm this chapter has measured throughout --- it
+returns nothing at any depth where it could be run. The median effect across the
+six admitted depths is $-0.0012$: the wrong sign, and two orders of magnitude
+beneath the margin. Displacing the activations towards another drug does not
+move what the model emits towards that drug.
+
+The sweep that produced this section's verdict was run on the single-cell arm
+alone. After the fact, with all five training arms of \cref{tab:trainconfig} in
+hand, the identical intervention was re-run across every one of them at up to
+seven depths each --- twenty-six measured tests in all, drawn in
+\cref{fig:family}. That wider sweep was not part of the pre-registered design,
+and it is reported here because it fails in a more instructive way than a second
+null would have: it fails at each guard in turn. One test survives
+Benjamini--Hochberg correction at the $\alpha = 0.5$ rung, the residual arm at
+layer $12$. \emph{It does not survive its own uncertainty model}: the $q$
+admitting it rests on a bootstrap $p$ that the probe file records two draws of
+for the same effect, $p = 0.001$ and $p = 0.004$, falling either side of the
+$0.05/26$ admitted at rank one, so on the second draw nothing survives anywhere.
+\emph{It does not survive the ladder}: applying the identical correction one rung
+up, at $\alpha = 1$, leaves nothing surviving; applying it at $\alpha = 2$
+promotes a different arm at a different depth and demotes this one. The two arms
+that trade places are the same residual target construction at two training-set
+sizes, the second withholding $738$ conditions on a (drug, cell line) split, so
+the ladder relocates the survivor within one recipe rather than between two, and
+the family of twenty-six is correspondingly less varied than five arms suggests.
+A pre-registered monotone dose--response was what a real identity effect was
+supposed to look like, and what the ladder produces instead is a different winner
+at each rung.
+
+Taken together, the rung decides not merely whether a survivor exists but which
+one, and beneath that the bootstrap draw decides whether one exists at all. That
+is the signature of a family dominated by noise rather than one containing a
+single robust effect, and it is the reading this section takes: the wider sweep
+does not overturn the single-cell verdict, and the one candidate it raises does
+not hold up. At the level of the mechanism --- with the drug's own representation
+localised, purified, and displaced directly towards another drug --- the model's
+output does not follow. Behaviour said the drug was not being used; the weights
+now say the same thing under intervention. What that leaves open, and what it
+does not, is the subject of \cref{sec:res-epsilon}.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}
+\raggedright
+\includegraphics{family}
+\caption[The single survivor moves with the rung]{\captiontitle{The one test that
+survives multiplicity correction changes arm and depth with the rung of the
+displacement ladder, and at one rung there is no survivor at all.} Each panel is
+one slice of the ladder: the five training arms of \cref{tab:trainconfig} (rows)
+by the seven probed depths (columns), $n = 26$ measured tests per slice, on one
+diverging scale shared across the three panels. Colour is the \texttt{swap}
+minus \texttt{permuted} effect as a fraction of that arm's own clean preference
+gap. The layer axis is ordinal, drawn at equal spacing, and is not proportional
+to depth. Nine of the $35$ grid positions were never measured and are drawn as
+empty dotted outlines, not as zeros. Benjamini--Hochberg is pooled across arms
+within a slice, as the text applies it and not as the pipeline stores it; $q$ is
+printed in the three cells that fall below $0.10$ and ringed where $q < 0.05$.
+That criterion admits the residual arm at layer $12$ at $\alpha = 0.5$
+($q = 0.026$, on the stored bootstrap draw the text discusses), nothing at
+$\alpha = 1$, and \texttt{residual\_holdout} at layer $4$ at $\alpha = 2$, which
+demotes layer $12$ to $q = 0.058$; it is the only survivor among this chapter's
+twenty-six headline tests. Beneath, the same residual arm at layer $12$ in raw
+nats across all five rungs, with the $10\%$ pre-registered materiality margin as
+the vertical rule. Intervals throughout are $95\%$ cluster bootstraps over
+ordered (A,B) pairs, $4000$ resamples, which at this layer is $60$ rows in $58$
+pair clusters over $24$ anchor drugs. }
+\label{fig:family}
+\end{fullwidth}
+\end{figure}
+
+
+% ===========================================================================
+% NOTE TO SELF, removed from the printed title 2026-09-10: (REMEMBER TO CITE MERT KAAN THESIS)
+\beatsection{E}{4}{Denoising the target changes the target, not the decoder}{sec:res-epsilon}
+
+\begin{question}[4]
+If the defect is a decoder that barely consults the drug region whatever is
+written there, then improving what sits in that region should not help, and
+improving the training target is exactly that kind of intervention. Three
+target constructions, one scoring, one stratum. None separates from a prompt
+naming the wrong drug.
+\end{question}
+
+\noindent
+If the defect
+is a decoder that barely consults the drug region whatever is written there, the
+repair a reader reaches for first is to write something better there: give the
+model a training target that carries the drug more legibly, and the region may
+start earning the attention it currently does not get. That is a target-side
+intervention, and it is the cheapest one available. The inference runs one way
+only. A positive here would tell against the low-gain reading; a negative is
+evidence about target-side fixes, not confirmation of the mechanism. Because one
+failed construction proves nothing, two more were built and compared with it.
+
+\paragraph{The original target, and what it starves} The single-cell arm trains
+on a measurement and nothing else. A prompt names one control cell together with
+the drug, its dose and its mechanism annotation; the response is the cell
+sentence of a real treated cell drawn from that same condition. Nothing is
+averaged, imputed or reconstructed, so the target is exactly something that was
+observed. That is also the hypothesised defect. A single treated cell's rank
+order is dominated by the same abundant genes whichever drug was applied, and the
+drug displaces that cell by less than sampling noise does, so under next-token
+cross-entropy the genes that distinguish one drug from another contribute almost
+nothing to the gradient. On this reading the drug is not absent from the target;
+it is present and outweighed.
+
+\paragraph{Consensus, because aggregation is where the data separates drugs at
+all} The motivation is measured rather than assumed. \Cref{sec:res-metrics}'s
+spike-in forced choice separates two real drug populations essentially perfectly
+once their cells are aggregated into a pseudobulk ($\paneltau = 1.000$,
+$\DEdr = 0.995$, top-$n$ $\tau = 0.987$, plate held constant), and the within-well
+precision reference climbs monotonically with the number of cells standing behind
+a condition, $0.61$ at ten cells, $0.76$ at forty, $0.85$ at $120$
+(\cref{fig:difficulty}, panel a). Whatever in this data distinguishes one drug
+from another is a property of the averaged profile, not of any individual cell.
+Consensus writes that average into the target directly. Cells are grouped by
+(drug, cell line, dose), dose kept separate because most drugs are run at several,
+each group averaged into a single pseudobulk profile, its genes ranked by mean
+expression, truncated to the group's median cell length and closed with
+\texttt{[END\_CELL]}. Every original prompt is retained and only the response is
+swapped, so the example count is preserved exactly and the target is the sole
+variable. The cost is structural: the map from prompt to target becomes
+many-to-one, every control cell in a condition receiving the identical sentence,
+so the heterogeneity is discarded along with the noise and there is nothing
+per-cell left to learn. That objection is what the third construction answers.
+
+\paragraph{Optimal transport, the middle the first two leave empty} The
+measurement destroys the pairing it would be most useful to have. A condition
+yields a cloud of control cells and a cloud of treated cells, and no cell appears
+in both, so which control cell became which treated cell is not observed and
+cannot be looked up. Optimal transport supplies the cheapest pairing consistent
+with both clouds under an explicit cost, which gives a target that is denoised
+like consensus and control-specific like the single-cell arm.
+
+Conditions are keyed on the full tuple carried by the source, (cell line, plate,
+drug, dose/treatment well), and each is solved separately, its treated cells
+coupled only to the shared DMSO controls from that condition's own (cell line,
+plate). Treatment conditions are never pooled, so batch identity cannot drive a
+coupling. The coupling $\pi$ minimises $\sum_{ij}\pi_{ij}\lVert x_i - y_j\rVert^2$
+under balanced uniform marginals, which impose mass conservation between the
+empirical control and treated measures --- a modelling assumption, not an observed
+biological constraint. Sinkhorn iteration~\cite{cuturi} solves it by alternately
+rescaling rows and columns of the kernel $\Gamma = \exp(-C/\varepsilon)$, $250$
+iterations, with $C$ the pairwise squared-distance matrix. The coupling becomes a
+prediction through the barycentric projection
+$T(x_i) = \sum_j \pi_{ij} y_j \big/ \sum_j \pi_{ij}$, a soft transport map
+answering where \emph{this} control cell lands after treatment.
+
+\paragraph{Where the coupling lives, and why the decoder is never called}
+Optimal transport's sample complexity degrades badly in high dimensions, so the
+coupling is not computed on raw expression. It is computed in the released Tahoe
+scVI latent~\cite{scvi} ($n_{\textrm{latent}} = 10$). scVI is a variational
+autoencoder for single-cell counts: an encoder maps a cell's counts to a
+low-dimensional coordinate meant to capture its state, and a decoder maps such a
+coordinate back to a distribution over gene counts. Tahoe's authors trained one
+on the full corpus and distribute its output with the data --- the minified
+\texttt{AnnData} object carries, in \texttt{obsm['X\_latent\_qzm']}, the posterior
+mean of the latent for each of its $95.6$ million cells. The encoder has therefore
+already been run once, by them, over every cell this work uses, and its result is
+a stored per-cell $10$-vector rather than something to be recomputed. No scVI
+model is instantiated anywhere in this pipeline. Each cell in the cache carries a
+\texttt{BARCODE\_SUB\_LIB\_ID}, which is also the key indexing the shipped object's
+rows, so attaching the latent is a lookup on that key: the $95.6$-million-row index
+is streamed in chunks, the rows whose barcode appears in the cache are retained,
+and their stored vectors are copied into cache order. All $620{,}564$ cells were
+found.
+
+The alternative --- running scVI locally over our own cells --- was tried first, and
+it is worth recording because it failed without raising anything. Re-encoding
+produced a latent in which a linear probe recovered the cell line at $0.11$
+against $0.975$ for the shipped one: a latent that had lost the single strongest
+structure in the data while remaining a perfectly well-formed array of the
+expected shape. The cause is a schema trap rather than a modelling one. Tahoe's
+per-cell \texttt{genes} field holds identifiers into the model's gene vocabulary,
+not positional indices into the gene metadata table, and its values run past that
+table's $62{,}710$ rows, so reading them positionally permutes gene identities
+across the entire matrix. Nothing about the resulting expression looks wrong ---
+the sparsity, the library sizes and the value distribution all survive --- and every
+downstream quantity would have been computed on scrambled genes.
+
+The mapping is therefore made explicit rather than assumed, and then tested. An
+array indexed by vocabulary identifier is assembled from the gene metadata's own
+\texttt{token\_id} and \texttt{gene\_symbol} columns and composed with the symbol
+list of the $946$-gene L1000 panel the targets are built in; all $946$ panel genes
+resolve. The test is the same probe that exposed the failure, run this time on the
+panel rather than on a latent: principal components are fitted to $\log(1+x)$ of
+the panel expression, $50$ components estimated on a random subsample of $60{,}000$
+cells and used to project the remainder, and a multinomial logistic regression on
+those coordinates is asked to name the cell line, three-fold cross-validated across
+the $50$ lines holding at least ten cells. It reaches $0.864$ against a chance rate
+of $0.02$. Permuted gene identities could not support that, so the panel is
+correctly un-scrambled. The same components double as the coupling space held in
+reserve, computed in parallel with the scVI latent so that the choice of embedding
+is a setting rather than an assumption.
+
+The latent's role ends with the cost matrix. It supplies the geometry in which one
+control cell is judged near or far from one treated cell, and once $\pi$ has been
+solved it is not used again: the coupling weights are applied to the condition's
+observed treated expression vectors in the $946$-gene panel, library-normalised to
+CP10K. The alternative would have been to average latent coordinates and map the
+average back to counts, which is the one operation that would have required the
+decoder, and it is declined on the grounds that a generative model fitted with no
+knowledge of the drug is a poor thing to pass a subtle drug effect through --- it
+would return whatever it holds a cell of that state to look like, which is a
+prediction about the target rather than a measurement of it. Applying the weights
+to observed cells instead makes every target a convex combination of real measured
+cells: it lies inside the convex hull of that condition's treated cloud, though not
+necessarily on the data manifold. Each is ranked descending and truncated to the
+top $K$, where $K$ is the median number of expressed panel genes among that
+condition's treated cells, and closed with \texttt{[END\_CELL]}; the prompt is the
+same control cell in the same trainer format, so the examples are drop-in
+compatible with the other arms. Applied at $\varepsilon = 0.5$ to the $3{,}856$
+conditions holding at least sixty treated and sixty control cells, this yields
+$381{,}485$ training examples. Two properties were checked before any training ran:
+the targets vary across control cells within a condition, which is the property
+consensus lacks, and they reproduce the treated cloud they were built from, their
+pseudobulk sitting $0.006$ from the real treated pseudobulk.
+
+\paragraph{Three points on one knob, not a sweep} Set out this way the three
+constructions turn out not to be three ideas but one, at three settings. The
+regularisation parameter of the middle arm interpolates between the other two: as
+$\varepsilon\rightarrow\infty$ the coupling becomes uniform, every control cell is
+matched equally to every treated cell, and the barycentric target collapses to the
+treated mean, which is consensus; as $\varepsilon\rightarrow 0$ the coupling
+sharpens towards an unregularised sparse transport solution, close to handing each
+control cell one state-matched treated cell, which is the single-cell regime,
+though the limit is not literally a map onto an observed cell. That the family
+lines up this way was not the order in which it was built --- the single-cell target
+came first because it is what the corpus supplies, consensus second for the
+aggregation reason above, and optimal transport last, to occupy the middle they
+leave empty --- but it is how the three should be read.
+
+The reading buys something and it is worth being exact about how much. Three
+unrelated failed constructions would be three anecdotes, and a fourth could always
+be proposed; endpoints and midpoint of a single one-parameter family are harder to
+dismiss as an unlucky choice of target, because the thing being varied is the one
+quantity that distinguishes them. What it does not buy is coverage. Three
+hand-picked settings were trained and scored, so nothing here is a sweep: no
+intermediate $\varepsilon$ was run, the three points cannot interpolate the
+interior, and a construction outside this family --- a target built on a different
+cost, a different embedding, or no transport at all --- is untouched by the result
+either way.
+
+\paragraph{One scoring, named before the result} The three arms differ in their
+training target and in almost nothing else about how they were trained: each is
+cold-started from the same base checkpoint under the identical hyperparameter set
+(\cref{tab:trainconfig}), and each is scored on the same held-out-drug conditions
+through one instrument fixed before any arm was read. The exception is length.
+Single cell and optimal transport each complete their epoch; consensus was
+scheduled for one and stopped by the wall-clock at $61.5\%$ of it
+(\cref{fig:training}), so its null carries an under-training confound the other
+two do not. Holding the evaluation
+fixed is what leaves the target as the variable of interest, so it is worth being
+explicit that none of the three is scored on its own target. All are scored against a pseudobulk of real treated cells from the drug's own well — a tier-2 condition throughout, as in \cref{sec:res-blind} — split in two: one half the scoring truth, the other the within-well split-half precision reference
+
+What the two new targets were supposed to buy follows from where the drug signal
+lives. \Cref{sec:res-metrics} found it emerges only under aggregation: at
+single-cell resolution two drugs are indistinguishable, and it is the pseudobulk
+that separates them. The single-cell arm is trained on individual treated cells
+and then graded on aggregates, so it is asked to learn in the resolution where
+the drug is invisible and perform in the one where it is not. Consensus and
+optimal transport close that gap from the training side --- a group mean and a
+state-matched barycentric combination respectively, both aggregates, both in the
+space the evaluation reads. If drug-specific structure only becomes legible after
+averaging, a target that is already averaged should be the one that teaches it.
+
+That every arm is graded against the same object — a pseudobulk of half the condition's real treated cells — rather than against the aggregate each was trained to emit looks like it should penalise exactly those two, and at the resolution this instrument works in, it does not. Write $Y$ for a condition's $n_t$ treated cells and $\pi$ for
+the entropic coupling described above, whose uniform marginals give
+$\sum_j \pi_{ij} = 1/n_c$ and $\sum_i \pi_{ij} = 1/n_t$. The optimal-transport
+target for control cell $i$ is $\hat{y}_i = (\pi Y)_i \big/ \sum_j \pi_{ij}$, and
+averaging it over the condition's control cells gives
+\begin{equation}
+ \frac{1}{n_c}\sum_{i} \hat{y}_i
+ \;=\; \sum_{i}\sum_{j} \pi_{ij}\, y_j
+ \;=\; \sum_{j} y_j \sum_{i} \pi_{ij}
+ \;=\; \frac{1}{n_t}\sum_{j} y_j ,
+\end{equation}
+the condition's treated mean exactly. The consensus target is a group mean of
+treated cells by construction, and the truth used here is a half-split estimate
+of the same quantity. At pseudobulk resolution the three native targets and the
+scoring truth are one object, so scoring every arm on real cells is not a
+compromise imposed on two of them --- it is their own target, read at the
+resolution the metric works in. What the scoring discards is each arm's
+\emph{per-cell} specificity, not the identity of its target.
+
+The instrument is read twice, and the two readings ask different questions. The
+first asks whether naming a different drug changes the prediction at all: one
+number per arm, with the substituted drug drawn at random, taken on the
+identifiable stratum of \cref{sec:res-blind} --- the $\num{204}$ of $\num{606}$
+held-out-drug conditions whose own within-well reference clears the pre-set
+$0.80$ bar, where the ranking is known to be winnable. The gap is
+\ci{+0.014}{-0.016}{+0.042} for single cell, \ci{-0.001}{-0.018}{+0.016} for
+optimal transport and \ci{-0.010}{-0.022}{+0.003} for consensus; none separates.
+
+A randomly drawn partner, though, sits at an arbitrary distance from the real
+drugm sometimes a near-twin whose response is almost the right answer anyway,
+sometimes an opposite. Each of those three numbers averages over that whole
+range, and the near-twins pull it toward zero, so an arm that responded to the
+drug only when the substitute was very unlike it would still read null.
+
+The second reading separates those cases instead of averaging them. Every partner
+was recorded when the scramble was built, so each condition carries a measured
+distance between its own truth and its partner's, and its gap can be read against
+that distance rather than pooled across it; an arm that uses the drug should show
+a gap that grows with it. Binning by distance needs more conditions than a single
+number does, so this reading runs over all $\num{454}$ tier-2 conditions whose
+substituted partner also has a truth profile, not the $\num{204}$ identifiable
+ones. \Cref{fig:sweep-arms} draws the two new constructions only: the single-cell
+arm's sweep was run directly, with partners chosen to span the distance range
+rather than reconstructed from random draws, and is \cref{fig:sweepbins}.
+
+One limit travels with every number here. The identifiable stratum is exactly
+where a zero-drug-information control-copy already matches the model, so the
+scope limit of \cref{sec:methods-probe} applies throughout: a null is a null
+about drug use, not a statement that the arms predict nothing.
+
+% ===========================================================================
+% ---------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{fullwidth}
+  \raggedright
+  \includegraphics{fig-sweep-arms}
+  \caption[Neither new target orders its gap by swap distance]{\captiontitle{Optimal
+  transport separates from its scramble only at the most dissimilar partners, and
+  consensus not at all; neither produces the ordering across the range that drug
+  sensitivity would give.} Each point is a quintile of conditions binned on swap
+  distance, the Euclidean distance $\lVert\textrm{truth}_A -
+  \textrm{truth}_B\rVert$ between the real drug's half-A pseudobulk and the
+  substituted drug's, computed within one (cell line, plate) group so the control
+  cancels --- the same distance \cref{fig:sweepbins} uses, over a comparable range.
+  The single-cell arm is not drawn: its sweep was run directly, with partners
+  chosen to span the distance quantiles rather than reconstructed from random
+  draws, and is reported in \cref{fig:sweepbins}. An ordered effect would climb
+  across all five bins. Consensus is flat and negative throughout, never crossing
+  zero. Optimal transport changes sign twice across the first four bins and then
+  reaches \ci{+0.036}{+0.003}{+0.074} in the farthest --- one of two intervals
+  among the ten drawn here that exclude zero, and the only one to do so from
+  above; the other is consensus's second bin, \ci{-0.016}{-0.034}{-0.0005}. The per-condition correlation between
+  distance and gap, which no choice of binning affects, is $+0.074$ for optimal
+  transport and $+0.045$ for consensus. The scramble partner was drawn
+  independently \emph{per cell}, a median of six distinct partners per condition,
+  so each condition's score already averages over a mixture of distances and is
+  placed at its mean partner distance; the design cannot isolate a single sharpest
+  partner the way \cref{sec:res-encoding}'s ladder does. $n = \num{454}$ of the
+  $\num{606}$ tier-2 conditions, those whose substituted partner also has a truth
+  profile in the same group; intervals are $95\%$ cell-line-clustered bootstraps,
+  $\num{2000}$ resamples.}
+  \label{fig:sweep-arms}
+\end{fullwidth}
+\end{figure}
+% ===========================================================================
+% ---------------------------------------------------------------------------
+\paragraph{Optimal transport reaches the far end and nothing before it} Read
+against how dissimilar the substituted drug was, the two aggregated targets do
+not behave identically, and the difference is worth stating precisely rather than
+collapsing into a shared null. Consensus is flat and negative at every distance,
+drifting from $-0.011$ to $-0.006$ without once crossing zero: on this evidence
+it never distinguishes the drug it was named from any other, however unlike them
+it is --- though it is also the arm that stopped short of its epoch, so its flat
+line is the one reading here with two explanations rather than one. Optimal transport does something, but only at one end. It changes sign twice
+across the first four bins and then reaches
+\ci{+0.036}{+0.003}{+0.074} against the most dissimilar partners --- so when the
+substituted drug's true response is as far from the real one as this atlas
+allows, the model's output does register the difference.
+
+That is a real if narrow finding, and it is also not what drug sensitivity looks
+like. A model reading the drug should separate a little from a near-twin and more
+from an opposite, with the gap growing across the range; what optimal transport
+gives is nothing across four bins and a single excursion in the fifth. The
+per-condition correlation, which no choice of binning affects, is $+0.074$ ---
+indistinguishable from no relationship. One endpoint clearing zero out of ten
+unadjusted intervals is the weakest form the evidence could take while still
+being non-zero.
+
+The same regression settles the ordering question for this arm directly. A
+purpose-built sweep exists for it, with partners chosen to span the distance
+quantiles rather than drawn at random, five per condition --- which is what the
+reading of \cref{sec:res-blind} needs. For condition $i$ and its $k$th scrambled
+prompt, regress that prompt's $\NIR$ on the negated Euclidean distance between the
+condition's own truth and the truth of the drug substituted into it,
+\begin{equation}
+ y_{ik} \;=\; \alpha_i \;+\; \beta\,x_{ik} \;+\; \varepsilon_{ik},
+ \qquad k = 1,\dots,5,
+\end{equation}
+with one intercept per condition, the target-drug prompt excluded so that no
+comparator enters, and $x$ negated so that it rises with similarity. A model that
+never reads the name puts its five points at one height, so $\beta = 0$ is the null
+by construction and $\beta > 0$ is what sensitivity would look like.
+
+The arm returns the null. Pooled across conditions the slope is $+0.0485$
+$[-0.0287, +0.1256]$ clustered on drug, already covering zero; fitted within
+condition it is $-0.0008$, $[-0.0305, +0.0290]$ clustered on drug and
+$[-0.0247, +0.0232]$ on cell line, over $200$ prompts across $40$ conditions.
+Almost all of the pooled figure was the between-condition comparison that the
+intercepts remove, $+0.0790$ of it. The within-condition interval is narrow enough
+to exclude any effect a tenth the size of the pooled one, so this is a measured
+null and not an absence of power: whatever aggregating the target bought, it was
+not sensitivity to the drug the prompt names. One scope limit travels with it.
+The sweep was scored at $1200$ tokens, and the separate reading that this arm is
+inert has been withdrawn on exactly that ground.
+What the regression establishes survives that withdrawal, because it is narrower:
+no graded response to how unlike the substituted drug is.
+
+That leaves a genuine question about what the training did accomplish, since it
+was plainly not inert. The consensus model stops echoing the control: on the
+identifiable stratum it scores $0.653$ against a zero-drug-information
+control-copy at $0.766$, where the single-cell model sits on the control at
+$0.768$. Its predictions are not mode-collapsed either; there is real
+between-condition variation. But that variation is uncorrelated with real drug
+identity --- the Mantel correlation between the model's between-drug distance
+structure and the true one averages $+0.03$ over cell-line and plate groups. The
+failure this literature names first for a perturbation model that underperforms
+on well-calibrated metrics is mode collapse, where the prediction ignores the
+input and reverts to a mean, and the repair is to restore diversity in what the
+model emits~\cite{mejia}. This arm is not that. It moved off the control, kept
+the variation, and spent it on the wrong axis. Producing no structure and
+producing structure that does not track the drug are different failures with
+different repairs.

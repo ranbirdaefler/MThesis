@@ -1,0 +1,122 @@
+{
+  "figure": "power.tex",
+  "label": "fig:power",
+  "kind": "tikz",
+  "width_mm_measured": 139.07,
+  "height_mm_measured": 60.83,
+  "measure_mm": 142.0,
+  "input_by": "Sections/05-Limitations.tex, paragraph 'It is underpowered by construction'",
+  "axis": {
+    "quantity": "difference in NIR",
+    "reference": 0.0,
+    "reference_label": "0 = no difference",
+    "domain": [-0.12, 0.12],
+    "ticks": [-0.10, -0.05, 0.0, 0.05, 0.10],
+    "mm_per_unit": 383.0,
+    "note": "This is a DIFFERENCE axis, so the chance value 0.500 is folded into each quantity's definition and is not drawn. No absolute NIR appears anywhere in the drawing."
+  },
+  "marks": [
+    {
+      "id": "detection_floor",
+      "role": "vertical dashed accent rule + label",
+      "value": 0.07897560995161473,
+      "printed_as": "0.079",
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "detection_limit.detectable_at_80pc_power",
+      "also_in": "RESULTS_cluster/re_v3.json is the upstream eval; CANONICAL_NUMBERS.detection_limit carries split=unseen_drug, n=199, observed=0.45889838436740604, half_width=0.05528292696613031",
+      "thesis_text": "Sections/05-Limitations.tex:310-311 'the smallest effect detectable at $80\\%$ power is $\\approx 0.079$'",
+      "agrees": true
+    },
+    {
+      "id": "largest_mechanism_channel_effect",
+      "role": "horizontal bar from 0",
+      "value": 0.05201514916327314,
+      "printed_as": "0.052",
+      "derivation": "0.5520151491632731 - 0.500",
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "means_all.moa_lookup = 0.5520151491632731",
+      "source_crosscheck": "RESULTS_cluster/re_v3.json means.moa_lookup = 0.5520151491632731 (identical)",
+      "chance": 0.5,
+      "chance_status": "definition, not a measurement: both frames are two-alternative retrievals (Sections/03-Apparatus.tex, Sections/04a-ruler.tex:530)",
+      "thesis_text": "Sections/05-Limitations.tex:311-314 'the distance from chance to \\texttt{moa\\_lookup}, which scores $0.552$ pooled across splits against a chance value of $0.500$, so $\\approx 0.052$'",
+      "agrees": true,
+      "drawn_shortfall_mm": 10.33,
+      "shortfall_value_not_printed": "0.079 - 0.052 = 0.027 is NOT printed anywhere; the thesis states the two endpoints and not their difference, so the gap is drawn (dotted arrow) and left unnumbered."
+    },
+    {
+      "id": "observed_unseen_drug_gap",
+      "role": "filled point marker",
+      "value": -0.03148175705606285,
+      "printed_as": "-0.0315",
+      "estimand": "model NIR minus the geometry-defined 'orth' scramble comparator NIR, on the unseen_drug split",
+      "comparator": "scramble_orth",
+      "n": 199,
+      "n_cell_lines": 40,
+      "n_drugs": 10,
+      "n_wells": 28,
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "splits.unseen_drug.gap (n from splits.unseen_drug.n)",
+      "source_crosscheck": "RESULTS_cluster/re_v3.json means.generalization.unseen_drug.gap = -0.03148175705606285, .n = 199, .comparator = 'scramble_orth'",
+      "thesis_text": "Sections/05-Limitations.tex:322 \\ci{-0.0315}{-0.1049}{+0.0419}; Sections/04c-reencoding.tex tab:generalisation unseen_drug row prints -0.0315 in both interval columns",
+      "agrees": true
+    },
+    {
+      "id": "half_width_two_way_cellline_well",
+      "role": "inner (thick, short) span",
+      "interval": [-0.08358077892636565, 0.020617264814239943],
+      "half_width": 0.052099021870302796,
+      "printed_as": "+-0.052",
+      "cluster_key": "two-way on cell line and well",
+      "df": 27,
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "splits.unseen_drug.gap_ci_line (df from splits.unseen_drug.df_line)",
+      "thesis_text": "Sections/05-Limitations.tex:308-310 '$\\pm 0.052$ clustered two-way on cell line and well'; interval also printed at Sections/04c-reencoding.tex tab:generalisation",
+      "agrees": true,
+      "symmetry_check": "midpoint = -0.031481757056062853 = the point estimate to 16 s.f.; the interval is exactly estimate +- half-width, not a symmetrisation"
+    },
+    {
+      "id": "half_width_drug",
+      "role": "outer (thin, long) span",
+      "interval": [-0.10487258422550776, 0.04190907011338206],
+      "half_width": 0.07339082716944491,
+      "printed_as": "+-0.073",
+      "cluster_key": "drug",
+      "df": 9,
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "splits.unseen_drug.gap_ci_drug (df from splits.unseen_drug.df_drug)",
+      "thesis_text": "Sections/05-Limitations.tex:309-310 '$\\pm 0.073$ clustered on the drug' and :322 \\ci{-0.0315}{-0.1049}{+0.0419}",
+      "agrees": true,
+      "symmetry_check": "midpoint = -0.03148175705606285 = the point estimate to 16 s.f."
+    }
+  ],
+  "printed_in_caption_only": {
+    "moa_lookup_nir": 0.5520151491632731,
+    "chance": 0.5,
+    "why": "These are absolute NIR values. The brief excludes absolute NIR from the drawing because the axis carries differences; the derivation of the 0.052 bar is nevertheless auditable, so it is stated in the caption where the thesis states it too."
+  },
+  "not_shown": [
+    "any absolute NIR value inside the tikzpicture (0.4589 unseen_drug model NIR, 0.552 moa_lookup, 0.500 chance, 0.8365 within-well reference)",
+    "detection_limit.half_width = 0.05528292696613031 -- this is the half-width on the ABSOLUTE NIR, a different quantity from the two gap half-widths, and drawing it on a difference axis would be a category error",
+    "any other split (train, unseen_combo)",
+    "any p-value",
+    "any legend, gridline or second colour"
+  ],
+  "banned_term_check": {
+    "term": "noise ceiling",
+    "present_in_figure_or_caption": false
+  },
+  "colour": {
+    "accent_0B5394": ["the bar", "the detection-floor rule"],
+    "ink_1A1A1A": ["the observed estimate, both spans and the marker", "every numeral"],
+    "quietink_6B6B6B": ["all descriptive text"],
+    "rulegrey_9A9A9A": ["axis", "ticks", "zero rule"],
+    "greyscale_safe": true,
+    "note": "The two nested spans are told apart by line weight and by extent, never by hue."
+  },
+  "build": {
+    "harness": "thesis_v2/figs/_harness_power.tex",
+    "command": "cd thesis_v2 && pdflatex -interaction=nonstopmode -output-directory=figs figs/_harness_power",
+    "overfull_hbox_from_this_file": 0,
+    "full_thesis_build": "thesis_v2/main.tex builds; the figure resolves as Figure 5.2, and the only Overfull \\hbox in main.log is the pre-existing 1.35pt one in figs/fig-frame.tex"
+  }
+}

@@ -1,0 +1,34 @@
+# Build with:  latexmk -pdf -jobname=_v -interaction=nonstopmode main.tex
+# If a PDF viewer holds the output open, pdflatex cannot write it and the build
+# dies with "I can't write on file". Build to another jobname instead.
+
+# LaTeX build artifacts, all regenerated.
+*.aux
+*.log
+*.bcf
+*.blg
+*.fls
+*.fdb_latexmk
+*.out
+*.run.xml
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.bbl
+*-SAVE-ERROR
+
+# Every PDF is a build product EXCEPT the one committed copy and the figures.
+# Stated as an allowlist so no new jobname or draft can leak into the history.
+*.pdf
+!thesis_v5.pdf
+!figs/*.pdf
+
+# Harnesses, per-figure compile scaffolding, superseded drafts and the design-phase
+# specimens. Kept on disk because several figures are compiled in isolation through
+# them, but they are working files and do not belong in the history.
+_scratch/
+_*.tex
+_*.py
+
+_RESUME.md
