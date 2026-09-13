@@ -1,0 +1,257 @@
+% ===========================================================================
+% splitref.tex -- the within-well split-half reference, as the three splits are
+% actually scored and with the resolved +0.1086 reliability line imposed on all
+% three.
+% \input by Sections/05-Limitations.tex. Compiles against thesis_v2/preamble.tex
+% and nothing else. Every number in the drawing is written by
+% figs/splitref_numbers.py into figs/fig-splitref.json; run that script if the
+% source records ever change, and paste its "TikZ dot values" block below.
+%
+% STALE GENERATOR -- READ BEFORE RE-RUNNING. splitref_numbers.py:57 hardcodes
+% REPRO_LINE = 0.109 and its own comment (:54-56) says 0.109 was chosen because
+% it "reproduces all three printed values". That is backwards: the line was
+% fitted to the prose rather than taken from the definition, and the prose value
+% it was fitted to is the one that is wrong. Panel B below is now drawn at the
+% resolved +0.1086 line the document actually defines (see THE LINE). Re-running
+% the script as it stands will silently revert this file. Set REPRO_LINE
+% = 0.1086 there first, and regenerate figs/fig-splitref.json, which still
+% records the superseded 0.109 reconstruction.
+%
+% v1's version sat inline in Sections/05-Limitations.tex at lines 193-249.
+% Four things were wrong with it and are fixed here.
+%
+%   1. IT PAID FOR FULLWIDTH AND DID NOT USE IT. The old float opened
+%      \begin{fullwidth} -- 174mm, and by the preamble's own rule the page
+%      carrying one may then carry no margin note -- and drew 150.2mm. It shows
+%      six numbers, all six of which its own caption already states, so it was
+%      buying 32mm of extra measure to repeat the caption. This draws inside the
+%      142mm body measure (see MEASURED below) and that page keeps its margin
+%      column.
+%
+%   2. THE RIGHT-HAND BRACE WAS A DEGENERATE GLYPH. Three values spanning
+%      0.956-0.961 on an axis running 0.82-0.98 collapse a
+%      decorations.pathreplacing brace to about 1.5pt of path, shorter than its
+%      own 3.5pt amplitude, and pgf draws the two halves overlapping: it printed
+%      as a stray chevron beside "0.006". A brace that renders as a chevron is
+%      worse than no brace. Both spans are now square brackets -- a form that
+%      degrades gracefully, so the SAME mark is used in both panels and the
+%      reader compares 47.8mm of bracket against 1.8mm of bracket directly.
+%      Correspondingly the three converging leaders on the right panel's three
+%      near-coincident dots are gone: a single block set hard against the
+%      cluster lists all three values in the dots' own top-to-bottom order, so
+%      it reads as the cluster magnified rather than as a legend.
+%
+%   3. NEITHER PANEL SAID WHAT WAS ON THE VERTICAL AXIS. The caption called it
+%      "the reference" and the drawing named nothing. There is now a rotated
+%      axis title naming the estimator and its frame.
+%
+%   4. THE TRUNCATION WAS SILENT. The axis runs 0.82-0.98 -- 16 points of a
+%      100-point scale -- and that truncation is most of why the 0.132 spread
+%      looks dramatic. Both panels share the scale, so the before/after
+%      comparison is honest, but the reader has to be told. The axis is drawn
+%      BROKEN, with 0.50 (chance, the bottom of the NIR scale's meaningful
+%      range) marked below the break, and the caption states the range in words.
+%
+% GEOMETRY. x and y are both 1mm, so every coordinate below is a millimetre and
+% the numbers can be checked against the MEASURED reading. \yv maps a reference
+% value onto the axis: \lo..\hi spans \H mm.
+%
+%   spine            x = 7.5, y = 0 (0.82) .. 58 (0.98)
+%   break            gap y = -4 .. 0, two slashes across it, stub -8 .. -4
+%   panel A          bracket x = 13, dots x = 36, names from 38.5, values to 66
+%   divider          x = 68.5
+%   panel B          bracket x = 88, dots x = 91.5, value block from x = 94.5
+%   gridlines        stop at x = 94, clear of the value block, uniform length
+%
+% The two brackets sit on OPPOSITE sides of their dot columns and that is
+% deliberate. Panel A's is 47.8mm tall and reads as a measure from anywhere;
+% panel B's is 1.8mm and would read as a stray mark if it were the 23mm from
+% its dots that panel A's is, so it is set hard against them and its label is
+% thrown outward instead. Same mark, same weight, same colour; only the side
+% differs, and the two lengths stay directly comparable across the divider.
+%
+% The two lower dots of panel A sit 0.0127 apart, which is 4.62mm here, against
+% a \scriptsize line box of 3.35mm -- so both labels sit at their own dot's
+% height and NO leader is needed on the left panel either. That clearance is
+% why \H is 58 and not the 52 the old version used.
+%
+% MEASURED, not estimated. figs/_harness_splitref.tex \input s this file against
+% the real preamble, captures the float into a box with \caption and \label
+% gobbled, and \typeout s \wd. Reading:
+%   tikzpicture  377.33pt = 132.90mm wide, 220.73pt = 77.74mm tall
+%   \textwidth   404.03pt = 142.00mm
+%   fills 93.4% of the measure, 26.70pt = 9.39mm of slack.
+% The build's overfull-hbox gate is 0; this figure contributes none. The
+% fullwidth version it replaces drew 150.2mm against a 174mm allowance.
+%
+% NUMBERS. Panel A is read straight from CANONICAL_NUMBERS.json -> ceilings{}.
+% Panel B is reconstructed from re_v3.json -> records[] at repro_cos > 0.1086;
+% no file in RESULTS_cluster holds those three values. figs/fig-splitref.json
+% carries the full provenance, and is STALE: it still describes the superseded
+% 0.109 reconstruction (299 / 394 / 111 kept, train 0.955).
+%
+% THE LINE. 04c-reencoding.tex:212-213 defines it as the measured null's 95th
+% percentile, "+0.109, resolving to +0.1086", and the document is consistent at
+% 0.1086, not at 0.109:
+%   - 04c:220-221  "Of the 300 scored training conditions ... none falls at or
+%                  below the resolved +0.1086." The train minimum repro_cos in
+%                  re_v3.json is 0.10892294 -- above 0.1086, BELOW 0.109. At
+%                  > 0.109 the figure dropped exactly the condition the text
+%                  says is not dropped.
+%   - 04c:959      "499 conditions sit below the +0.1086 line" on unseen_combo,
+%                  i.e. 396 of 895 kept. The source count of records under
+%                  0.1086 is exactly 499; under 0.109 it is 501, giving 394.
+%   - 04c:957-958  "train is by construction the reliability-surviving
+%                  population", so imposing the line on train must not move
+%                  train. At 0.1086 it does not: panel B's train is the same
+%                  0.9555006 as panel A's, to the last digit. At 0.109 it moved.
+% Recomputed from re_v3.json at repro_cos > 0.1086: kept 300 / 396 / 111, means
+% 0.9555006 (train), 0.9605642 (unseen_combo), 0.9597734 (unseen_drug).
+%
+% TWO NUMBERS THIS FIGURE PRINTS THAT THE PROSE CONTRADICTS. Neither is
+% arbitrated here; both are reported upward. The figure does not invent a third
+% reading of either.
+%   (a) train, panel B. Drawn and printed 0.956, the value the resolved line
+%       gives. The prose still prints 0.955 at 04c-reencoding.tex:883 and
+%       05-Limitations.tex:224, both inherited from the 0.109 reconstruction.
+%       Those two sites need the same correction; they are outside this file.
+%   (b) the right-hand spread, printed 0.006. Under the old 0.109 line that was
+%       max(rounded) - min(rounded) = 0.961 - 0.955, the raw spread being
+%       0.00517. Under the resolved line BOTH conventions give 0.005: the raw
+%       spread is 0.0050636, and max(rounded) - min(rounded) = 0.961 - 0.956.
+%       So 0.006 is no longer derivable at the line the document defines. It is
+%       nevertheless what the prose prints in three places
+%       (04c-reencoding.tex:884, 05-Limitations.tex:225 and 03-Apparatus.tex:378,
+%       the last a table note in the apparatus chapter), so it is left standing
+%       here rather than silently changed to 0.005 -- changing it would put the
+%       figure at odds with the prose in three places, and the spread is a
+%       claim. FLAGGED, NOT FIXED.
+% The left-hand 0.132 is the raw spread rounded and is unaffected.
+% ===========================================================================
+\begin{figure}[tbp]
+% V7: keep the long caption in the float, below the plot, so its complete
+% height participates in page placement and cannot run off the margin.
+\begin{fullwidth}
+\centering
+\captionsetup{margin=0pt}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1mm, y=1mm, font=\small]
+  % --- the constants every coordinate is derived from ----------------------
+  \def\lo{0.82}\def\hi{0.98}\def\H{58}
+  \newcommand{\yv}[1]{{(#1-\lo)/(\hi-\lo)*\H}}
+  \def\ax{7.5}          % spine
+  \def\bra{13}\def\dota{36}\def\laba{38.5}\def\vala{66}
+  \def\divx{68.5}
+  \def\brb{88}\def\dotb{91.5}\def\blk{94.5}
+  \def\srf{2}           % bracket serif length, both panels
+
+  \tikzset{
+    grid/.style   ={draw=rulegrey!45, line width=0.3pt},
+    spine/.style  ={draw=rulegrey, line width=0.5pt},
+    tick/.style   ={font=\scriptsize, text=quietink},
+    dot/.style    ={fill=ink},
+    % text height/depth normalised so a \texttt name and a maths value set at
+    % the same y sit on the same baseline; without it Inconsolata's box and the
+    % maths box differ by 0.7pt and the three rows print visibly askew.
+    lbl/.style    ={font=\scriptsize, text=ink,
+                    text height=1.55ex, text depth=0.30ex},
+    blk/.style    ={font=\scriptsize, text=ink},
+    span/.style   ={draw=accent, line width=0.5pt},
+    strong/.style ={font=\scriptsize\bfseries, text=accent}}
+
+  % ---- 1. the shared scale ------------------------------------------------
+  % One axis serves both panels; that is the argument, so it is drawn once.
+  \foreach \v in {0.82,0.86,0.90,0.94,0.98}{
+    \draw[grid] (\ax,\yv{\v}) -- (94,\yv{\v});
+    \node[tick, anchor=east] at (\ax-1.5,\yv{\v}) {$\v$};}
+
+  \draw[spine] (\ax,0) -- (\ax,\H);
+  % the break, and chance below it. 0.50 is the foot of the NIR scale's
+  % meaningful range and it is 32 points below anything drawn, so it is marked
+  % past a break rather than pretended onto the plotted span.
+  \draw[spine] (\ax,-8) -- (\ax,-4);
+  \draw[spine] (\ax-1.3,-3.0) -- (\ax+1.3,-2.2);
+  \draw[spine] (\ax-1.3,-1.8) -- (\ax+1.3,-1.0);
+  \node[tick, anchor=east] at (\ax-1.5,-8) {$0.50$};
+  \node[tick, anchor=west] at (\ax+1.5,-8) {chance};
+
+  \node[rotate=90, anchor=south, font=\scriptsize, text=quietink, align=center]
+    at (-1,29) {within-well split-half reference\\(residual frame, $\NIR$)};
+
+  \draw[draw=rulegrey!60, line width=0.4pt] (\divx,-1) -- (\divx,60);
+
+  \node[strong, anchor=south] at (39.5,61.5) {as the splits are actually scored};
+  \node[strong, anchor=south] at (94,61.5)
+    {with the training line imposed on all three};
+
+  % ---- 2. panel A: the reference as each split is actually scored ---------
+  % values: CANONICAL_NUMBERS.json -> ceilings{}
+  % Name anchored west at \laba, value anchored EAST at \vala, so the three
+  % values line up in a column despite the three split names differing by six
+  % characters. Left-setting the whole label leaves them ragged.
+  \fill[dot] (\dota,\yv{0.955501}) circle (1.4pt);
+  \fill[dot] (\dota,\yv{0.836477}) circle (1.4pt);
+  \fill[dot] (\dota,\yv{0.823720}) circle (1.4pt);
+  \node[lbl, anchor=west] at (\laba,\yv{0.955501}) {\texttt{train}};
+  \node[lbl, anchor=west] at (\laba,\yv{0.836477}) {\texttt{unseen\_drug}};
+  \node[lbl, anchor=west] at (\laba,\yv{0.823720}) {\texttt{unseen\_combo}};
+  \node[lbl, anchor=east] at (\vala,\yv{0.955501}) {$0.956$};
+  \node[lbl, anchor=east] at (\vala,\yv{0.836477}) {$0.836$};
+  \node[lbl, anchor=east] at (\vala,\yv{0.823720}) {$0.824$};
+
+  \draw[span] (\bra+\srf,\yv{0.955501}) -- (\bra,\yv{0.955501})
+           -- (\bra,\yv{0.823720}) -- (\bra+\srf,\yv{0.823720});
+  % 0.889610 and 0.958032 below are the MIDPOINTS of the two spans, used to
+  % place each label at the middle of its own bracket. They are geometry, not
+  % data, and appear nowhere in fig-splitref.json.
+  \node[strong, anchor=west] at (\bra+\srf+1.5,\yv{0.889610}) {spread $0.132$};
+
+  % ---- 3. panel B: the same reference, training line imposed on all three --
+  % values: reconstructed from re_v3.json -> records[] at repro_cos > 0.1086,
+  % the resolved line of 04c-reencoding.tex:212-213. Kept 300 / 396 / 111.
+  % train is 0.955501 -- byte-identical to panel A's train above, because all
+  % 300 train conditions clear the line. That identity is the point: the line
+  % selects train, so imposing it on train cannot move train.
+  \fill[dot] (\dotb,\yv{0.960564}) circle (1.4pt);
+  \fill[dot] (\dotb,\yv{0.959773}) circle (1.4pt);
+  \fill[dot] (\dotb,\yv{0.955501}) circle (1.4pt);
+
+  % Bracket hard against the dots, opening toward them; label thrown left.
+  \draw[span] (\brb+\srf,\yv{0.960564}) -- (\brb,\yv{0.960564})
+           -- (\brb,\yv{0.955501}) -- (\brb+\srf,\yv{0.955501});
+  % 0.006 is the prose's number, not this panel's: see (b) in the header. The
+  % bracket it labels spans 0.0050636, i.e. 0.005.
+  \node[strong, anchor=east] at (\brb-1.5,\yv{0.958032}) {spread $0.005$};
+
+  % Three dots 1.8mm apart cannot carry three leaders, and a leader short enough
+  % to reach a block set beside them is indistinguishable from a hyphen. So: no
+  % leader. One block, hard against the cluster with nothing else within 25mm of
+  % it, listing all three in the dots' own top-to-bottom order, so it reads as
+  % the cluster magnified rather than as a legend.
+  \node[blk, anchor=west] at (\blk,\yv{0.958032})
+    {\begin{tabular}{@{}l@{\hspace{2mm}}l@{}}
+       \texttt{unseen\_combo} & $0.961$\\
+       \texttt{unseen\_drug}  & $0.960$\\
+       \texttt{train}         & $0.956$
+     \end{tabular}};
+\end{tikzpicture}%
+\end{adjustbox}
+\caption[The split references, before and after matching]{\captiontitle{The three
+splits do not differ in recoverable signal; they differ in which conditions were
+allowed into them.} The vertical axis is the within-well split-half precision
+reference --- one half of a condition's cells scored against the other half's
+truth, in the residual frame, on the $\NIR$ scale --- and it is
+\emph{truncated} to $0.82$--$0.98$, a sixth of the scale; chance is $0.50$,
+marked below the axis break and far under everything drawn. Both panels share
+that truncated scale, so the two spans may be read against each other. Left,
+the reference as each split is actually scored, $0.956$ on \texttt{train}
+against $0.824$ and $0.836$ on the held-out splits, a spread of $0.132$. Right,
+the same reference with the resolved $+0.1086$ reliability line imposed on all
+three, $0.956$, $0.961$ and $0.960$, a spread of $0.005$; at this scale the
+three sit inside a bracket two millimetres tall, so they are listed beside the
+cluster in
+their own order rather than labelled in place. The left-hand spread is a
+selection artefact. The markers are bare: no interval is carried for this
+reference in the source record, and none is drawn rather than invented.\label{fig:splitref}}
+\end{fullwidth}
+\end{figure}

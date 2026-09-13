@@ -1,0 +1,1844 @@
+% ===========================================================================
+% materiality.tex -- fig:materiality. The one surviving identity effect drawn
+% twice on one nats ruler: once against the whole preference gap it is divided
+% by, where it is a 3.6mm smudge on a 133mm axis, and once at exactly eight
+% times, where the swap arm, the permuted control and their difference separate.
+%
+% FIGURE BODY ONLY. No preamble, no document environment, no float, no caption.
+% \input it from inside a figure float in Sections/04b-representation.tex at
+% sec:res-mechanism. The float wrapper and caption sit at the foot of this file,
+% commented out, ready to paste -- the staging convention of figs/two-scales.tex.
+% Compiles against thesis_v2/preamble.tex and nothing else: no \includegraphics,
+% no external data at draw time, no TikZ library beyond the ones preamble.tex
+% already loads (this file uses decorations.pathreplacing and arrows.meta only).
+%
+% WHY THIS FIGURE EXISTS. Section 4.5 reports every effect "as a fraction of
+% that model's own clean preference gap" (04b:396-398) and NO figure anywhere in
+% the document shows that gap. fig:family draws the numerator on a diverging
+% colour scale; fig:comparators row C draws it as a fraction. The denominator is
+% never drawn, and neither is the subtraction that produces the numerator. This
+% figure's subject is the denominator, and the subtraction.
+%
+% EVERY NUMBER DRAWN, AND WHERE IT COMES FROM
+% -------------------------------------------
+% ONE arm, ONE layer, ONE rung: the residual arm, layer 12, alpha = 0.5. Source
+% for every coordinate: RESULTS_cluster/probe_arm_residual.json, all under the
+% key path layers.12.swap. Sibling ledger of the exact values drawn, at full
+% machine precision, with key paths: thesis_v2/figs/materiality.json.
+%
+%   quantity                key path              value drawn (full precision)
+%   clean preference gap    .clean_ab_gap         0.06420005919957501
+%   10% materiality margin  .equiv_margin         0.006420005919957502
+%   permuted arm            .effect_perm          0.0006409306049362111
+%   swap arm                .effect_swap          0.0019027651015006252
+%   swap - permuted         .diff_perm            0.0012618344965644142
+%   its 95% interval        .ci_perm     [0.0004024989353392094,
+%                                         0.002150955667015771]
+%
+% One further quantity is COMPUTED, and is declared as computed in the ledger:
+%   one eighth of the gap   .clean_ab_gap / 8     0.008025007399946877
+% It is band two's full scale and band one's magnifier bracket, and it is the
+% only reason the word "eighth" appears anywhere on the figure.
+%
+% VERIFIED ON BUILD, not assumed:
+%   * .equiv_margin / .clean_ab_gap = 0.1 exactly (config.equiv_frac = 0.1), so
+%     the two dashed rules stand at one tenth of band one's full scale.
+%   * .effect_swap - .effect_perm = 0.001261834496564414 against .diff_perm
+%     = 0.0012618344965644142. They agree to fifteen significant figures and
+%     differ in the last bit only, from summation order; the stored .diff_perm
+%     is what is drawn. The subtraction the figure draws is therefore the
+%     subtraction the pipeline performed, and this was checked, not asserted.
+%   * .diff_perm / .clean_ab_gap = 0.019654724813287512 and
+%     .ci_perm / .clean_ab_gap = [0.0062694480403512436, 0.03350395145788292],
+%     reproducing .diff_perm_norm and .ci_perm_norm to sixteen digits. That is
+%     the cross-check that this figure's nats and the thesis's fractions are the
+%     same measurement; the normalised triple is printed in the caption and is
+%     NOT drawn.
+%   * 0.06420005919957501 / 0.0012618344965644142 = 50.87835161772162 and
+%     0.006420005919957502 / 0.0012618344965644142 = 5.087835161772163. Both
+%     COMPUTED, declared as computed in the ledger; they are the "one fiftieth"
+%     and "one fifth" of the closing line.
+%
+% THE ci_perm TRAP, and why the header names both draws
+% -----------------------------------------------------
+% The interval drawn is layers.12.swap.ci_perm, the TOP-LEVEL key:
+%   [0.0004024989353392094, 0.002150955667015771], p_perm = 0.001,
+%   normalising to the thesis's [+0.0063, +0.0335].
+% layers.12.swap.ladder[alpha = 0.5].ci_perm stores a SECOND bootstrap draw of
+% the same effect,
+%   [0.0003982749538768512, 0.002137823621073976], p_perm = 0.004,
+% with the point estimate identical to sixteen digits. It normalises to
+% [+0.0062, +0.0333] and would print one digit off tab:identity while silently
+% swapping the surviving p for the non-surviving one -- 0.001 and 0.004 lie
+% either side of the 0.05/26 admitted at rank one (04b:526-531). A builder who
+% reads the interval from the ladder because that is where the alphas live makes
+% exactly this error. The ladder draw is recorded in materiality.json under
+% not_drawn_second_bootstrap_draw and is not drawn here.
+%
+% AGREEMENT WITH THE TEXT (checked line by line, not assumed):
+%   04b:340-341  "\ci{+0.0197}{+0.0063}{+0.0335} of the preference gap the model
+%                already has. One to two per cent, against a $10\%$ margin
+%                pre-registered for calling an effect material."
+%                -> the drawn nats normalise to exactly that triple; the margin
+%                   is drawn twice, once per band.                          OK
+%   04b:443      "In raw nats the rungs read $+0.0013$" (first rung = the
+%                headline) -> row three's label prints $+0.0013$.           OK
+%   04b:500-502  "60 rows in 58 pair clusters over 24 anchor drugs"
+%                -> row three's second label line prints 58 pair clusters;
+%                   60 and 24 are in the caption.                           OK
+%   04b:507-513  "The interval must lie inside a pre-registered margin ... and
+%                contain zero. ... Under textbook TOST the headline ... would be
+%                returned as equivalent, read as a null; this rule returns a
+%                directional effect smaller than the margin."
+%                -> the two closing ink lines track this sentence, which is the
+%                   section's subtlest point and is drawn nowhere else.     OK
+%   04b:568      "a fifth or less of the $10\%$ margin"
+%                -> the closing accent line prints "one fifth of the margin".OK
+%
+% DESIGN DECISIONS, each with its reason
+% --------------------------------------
+%  1. TEXTWIDTH, NOT FULLWIDTH. sec:res-mechanism already carries two fullwidth
+%     objects, fig:family and tab:identity, and a fullwidth float forbids a
+%     margin note on its page (preamble.tex:522-523). Dropping fullwidth buys
+%     this page's margin notes back -- the trade ladder.tex and two-scales.tex
+%     both made deliberately. Drawn to 141.9mm against the 142mm measure; the
+%     observed band in the corpus is 139.6-141.9mm.
+%  2. A RAW-NATS AXIS, WHICH IS LEGITIMATE HERE AND NOWHERE ACROSS ARMS. The
+%     five arms emit different target formats and their clean gaps span nearly
+%     fivefold, so a single nats rule laid across arms would be one
+%     arm's ruler drawn over five arms' data. RECOMPUTED, because the figure
+%     brief quoted "4.4x" for this and 4.4 is not the span: over the five
+%     probe_arm_*.json files clean_ab_gap runs 0.06420005919957501 (this arm,
+%     this layer) to 0.3138025708635225 (consensus, layer 4), a ratio of
+%     4.887886, and 4.410308 is the narrower consensus-layer-2 to
+%     residual-layer-12 ratio. The caption prints the two endpoint values and
+%     the word "nearly fivefold" so a reader can check it. Everything on this
+%     figure is one
+%     arm at one depth at one rung, so the raw scale is the arm's own and the
+%     10% margin is a single rule with a single meaning. fig:family's lower
+%     strip is a single-arm object for the same reason.
+%  3. THE SAME QUANTITY DRAWN TWICE, NOT TWO QUANTITIES, AND THE MAGNIFICATION
+%     IS EXACTLY EIGHT. Band two's full scale is .clean_ab_gap / 8, so the panel
+%     is exactly the first eighth of the axis above it and the factor printed on
+%     its axis is exactly 8 and not a rounded number. This was arrived at by
+%     correction, and the arithmetic is worth recording. The first draft ran
+%     band two to 0.0075 nats and called the panel "the first twelfth" at
+%     "8.56x": 0.0075 / 0.06420006 = 0.11682, which is one 8.56th and not one
+%     twelfth, so the panel's own title was false by a factor of 1.4 and the
+%     magnification was a number no reader could check. A true twelfth cannot be
+%     drawn at all -- .clean_ab_gap / 12 = 0.005350 nats is SMALLER than the
+%     0.006420 margin, so the margin would fall off the right-hand end of the
+%     panel and the figure would lose its subject. One eighth is the nearest
+%     nameable fraction that still contains the margin, and at that scale the
+%     margin sits at 80% of the panel's width, which is where it does the most
+%     work. Nothing else changed: every drawn quantity is the same number.
+%  4. BAND ONE IS SPARE, BUT ITS MEASUREMENT IS NOW NAMED. Four tick numerals,
+%     not seven: the band's job is one impression -- 3.6mm of ink 0.8mm from the
+%     origin on a 133mm axis -- and a crowded band invites reading rather than
+%     seeing. Every other label lives in band two.
+%     REPAIRED, PASS 8, and both reviewers called the old state blocking. The
+%     measurement carried NO label at all, on the theory that the magnifier
+%     would carry it; its only pointer was the italic "the effect and its
+%     interval, magnified below" set 11cm to its right at the far end of a
+%     nearly horizontal grey leader, against the document's own rule that a
+%     label more than ~0.3cm from its mark gets a leader. One reviewer could not
+%     tell whether the mark was a mark, a tick or a printing artefact; the other
+%     read it as a stray em-dash. It now carries an accent label, "the effect",
+%     centred on the estimate dot 0.22cm above it, and a 0.25pt stem from the
+%     dot down to the spine so the mark is anchored to a coordinate rather than
+%     floating. The label is two words and not "the effect, +0.0013 nats"
+%     because the measure between the axis origin at 0.55 and the margin rule at
+%     1.88 holds 1.33cm at \scriptsize while the longer form is 2.55cm and would
+%     have crossed the rule; row three of band two prints the value in full,
+%     3.5cm below. The italic pointer is deleted with the leader it rode on.
+%  5. THE MEASUREMENT SITS 0.22cm ABOVE BAND ONE'S SPINE, not on it. On the
+%     spine, a 3.6mm accent bar 0.8mm from the origin reads as a thickening of
+%     the axis or as a printing defect. Lifted clear, with its dot over a 2.1pt
+%     white halo, it reads as a mark. Checked in the 200dpi render and again in
+%     a 550dpi crop: the bar, the dot and the spine are three separable things.
+%  6. THE MAGNIFIER'S SOURCE IS A NAMED SPAN, NOT TWO BARE COORDINATES.
+%     REPAIRED, PASS 8, reported independently by both reviewers. It used to be
+%     a vertical drop at x = 0.55, a second vertical at x = 2.2125, and a line
+%     from (2.2125,7.20) to (13.85,6.75) -- 11.6cm horizontal over 0.45cm
+%     vertical, about 2 degrees. Read cold, the vertical was a drop from the
+%     axis origin and the long line was a rule under band one, and the italic
+%     that rode on it annotated band one's axis rather than announcing a
+%     magnification. slab.tex's version works because both its leaders leave the
+%     magnified REGION at a visible angle, and the fix is to make the region an
+%     object first. A rulegrey brace, the corpus's own idiom, now spans exactly
+%     the magnified eighth on band one -- \ga{0} = 0.55 to
+%     \ga{clean_ab_gap/8} = 2.2125 -- and both leaders leave its two ends, one
+%     at 66 degrees and one shallow. THE SHALLOW ONE CANNOT BE FIXED and should
+%     not be pretended away: a 1.66cm span is being opened into a 13.90cm panel,
+%     so one of the two leaders must run nearly flat whatever is done. What
+%     changed is that it now leaves a bracket rather than a bare coordinate, so
+%     the assembly reads as source-and-enlargement rather than as a crooked
+%     rule. The leaders now land on the panel's own top corners (0.25 and
+%     14.15) rather than on band two's data extremes: with the brace naming the
+%     source, the leaders' job is to point at the PANEL, and corner-to-corner is
+%     what a magnifier looks like. The bracket contains both the effect AND the
+%     margin rule, which is itself the point: the whole of section 4.5's
+%     argument happens inside the first eighth of the gap.
+%  7. THREE ROWS IN THE ORDER PERMUTED, SWAP, DIFFERENCE. Control first,
+%     treatment second, measurement third, so the subtraction reads downward in
+%     the order the sentence "swap minus permuted" is spoken.
+%  8. AN INTERVAL IS DRAWN ON ROW THREE AND ONLY THERE. No interval is stored
+%     for either arm alone -- .ci_perm is an interval on the DIFFERENCE -- so
+%     rows one and two are bare solid dots. In this document a bare solid dot
+%     with no bar is how the absence of an interval is said (comparators.tex
+%     changed exactly that mark from a hollow ring to a solid fill, because the
+%     absent bar is what carries the meaning). Row three's bar is the document's
+%     own convention: a 95% cluster bootstrap over ordered (A,B) pairs.
+%  9. THE SIX-MARK TRANSLATION DEVICE IS DELETED, AND THE ROWS CARRY THE
+%     CORPUS'S ROW APPARATUS INSTEAD.
+%     PASS 8, and the spec pre-authorised this deletion. The device was a
+%     hairline from each of the two dots down to the ends of a brace, that
+%     brace, a leftward arrow sliding it to the origin, a second brace of equal
+%     length from the origin, and a hairline dropping onto row three's dot: five
+%     grey structural marks against three measured ones, carrying the identity
+%     swap - permuted = the interval's point estimate. It is arithmetically
+%     exact -- \gb{effect_swap} - \gb{effect_perm} = \gb{diff_perm} - 0.55 =
+%     2.09126 -- and it did not read. Neither brace was labelled with a value,
+%     so 0.00190 - 0.00064 = 0.00126 was not recoverable from the marks; the
+%     arrow's head landed in white space with no mark at it; and the one
+%     sentence that explained the chain, "the same span, measured from zero",
+%     sat about 4cm to the right of the arrow it named, at a height between the
+%     two braces, attached to nothing. Both reviewers reported having to
+%     magnify 3x and reverse-engineer the arithmetic, and one noted that nothing
+%     in the construction was accent, so the eye never entered it. Row three's
+%     own label already STATES the identity in words -- "swap - permuted" -- so
+%     the deletion costs nothing and removes five hairlines. The house rule it
+%     follows: an identity must be readable from the marks or not drawn.
+%     What replaces it is what fig:comparators gives every row: a rulegrey!55
+%     0.3pt divider under each of the three rows, spanning the panel's inner
+%     width. Before, the three quantities sat at three heights with no dividers,
+%     no stubs and no alignment cues, so the vertical read as a second dimension
+%     when it is only a stacking order -- and the higher dot happens to be the
+%     SMALLER value, which invites a reader to look for an ordering that does
+%     not exist. Rows moved from 5.52/4.94/3.66 to 5.40/4.72/4.04 and the
+%     margin brace from 3.10 to 3.30 to take up the slack the deletion left.
+% 10. THE MARGIN IS DRAWN TWICE AND BRACED ONCE. On band one it stands 1.33cm
+%     from the origin; on band two, 10.64cm from it, and the 7.08cm of clear
+%     space between the interval's upper end and the margin rule is the figure's
+%     answer to "is it material". The brace under band two names what the margin
+%     is a tenth OF -- 0.00642 nats out of 0.0642 -- which no existing figure
+%     does.
+% 11. THE FRAME IS NAMED ON THE DRAWING and not only in the caption: a quietink
+%     line at the foot says which arm, which layer and which rung. This document
+%     runs five arms whose clean preference gaps differ by 4.89x, so a raw-nats
+%     axis that does not say whose nats they are is under-labelled in exactly
+%     the way gate.tex's fifth fix names. \ttfamily on \texttt{residual} because
+%     that is how the results files name the arm (ladder.tex's register key).
+% 12. WHAT IS NOT DRAWN. The isotropic arm (.effect_iso = 0.0010863731109609438)
+%     is stored at this cell and is omitted: 04b:377-380 keeps it "only as a
+%     damage diagnostic", it is not the control the headline is measured
+%     against, and a third bare dot between rows one and two would read as a
+%     second comparison. The alpha ladder is omitted because fig:family's lower
+%     strip already draws it and this figure is one rung. p, q, n and the
+%     normalised triple are in the caption, not on the drawing.
+% 13. REJECTED ALTERNATIVE: a broken axis. Drawing the whole gap and the first
+%     eighth on one axis with a break would have saved 3.5cm of height, and it
+%     would have destroyed the one thing the figure is for -- the reader has to
+%     see the unbroken 133mm and the 3.6mm on it in the same glance before the
+%     magnification means anything. two-scales.tex breaks an axis and says in
+%     its own header that the break is admissible only because the off-scale
+%     value is named in words; here the off-scale value IS the subject.
+% 14. REJECTED ALTERNATIVE: bars from zero for the two arm effects. A bar length
+%     would have made effect_swap look three times effect_perm, which is true of
+%     the numbers and is not the measurement: the measurement is their
+%     difference with an interval, and neither arm alone is quoted anywhere in
+%     the thesis. Dots keep the arms as positions and the difference as the only
+%     thing given a bar.
+% 15. REJECTED ALTERNATIVE: naming the 0.0642 axis "chance" or drawing a 0.50
+%     rule. There is no chance value on this figure. The reference here is the
+%     model's own clean preference gap, an arm-specific measured quantity, so it
+%     is drawn as the axis itself and named at the axis's right end rather than
+%     as a rule inside it. Noted because the document's two conflicting habits
+%     for a chance rule -- solid black in style_v2.chance_line(), 0.5pt densely
+%     dotted ink in ladder.tex -- do not apply here, and their absence should be
+%     deliberate rather than accidental.
+%
+% LAYOUT NOTES, all forced by a build
+% -----------------------------------
+%   * TWO MAPS, both braced pgfmath groups. A shim may not be added outside the
+%     braces -- \gb{v}+0.05 is not a coordinate -- so every label offset here is
+%     an explicit literal or an xshift on the node (the gate.tex trap). Both
+%     maps are used directly as coordinate components, (\gb{v},y), which is
+%     comparators.tex's idiom and keeps every data x exact rather than rounded
+%     into the source.
+%       \ga{0.06420005919957501}  = 13.850005   (band one, the whole gap)
+%       \gb{0.008025007399946877} = 13.850005   (band two, one eighth of it)
+%     The two right-hand ends coincide to 5 decimal places by construction:
+%     1657.32 = 8 x 207.1650 exactly.
+%   * Tick numerals use the \foreach \v/\t value/label pair form. \foreach \v
+%     alone prints the raw token, so 0.020 would set as 0.02 in one place and
+%     0.0 in another; the pair form pins the printed string.
+%   * inner sep = 1pt ON THE WHOLE PICTURE, as gate.tex sets it. The default
+%     0.3333em is 3.65pt at the ambient \small, and at pass 2 that invisible
+%     padding -- not the ink -- was what collided: the band-one word tag's box
+%     and the margin label's box overlapped while their glyphs were 1.2mm
+%     apart. With inner sep pinned, every clearance below is box arithmetic
+%     rather than judgement. The consequence is that a label placed at
+%     mark + 0.30 would sit 0.10cm closer to its mark than comparators.tex's,
+%     so every row label here is placed at mark + 0.40, which puts the glyph
+%     0.39cm clear of the marker edge -- comparators' measured value.
+%   * TICK NUMERALS CARRY fill=white AND ARE DRAWN LAST IN THEIR BAND. Pass 1
+%     ran the magnifier's left leader straight through band one's "0", because
+%     band one's origin and the magnifier's left edge are the same x = 0.55.
+%     The white box interrupts the rule across the numeral instead --
+%     comparators.tex's idiom for its zero rule, done with a box rather than by
+%     hand because the numerals are drawn in a \foreach. Drawing order matters:
+%     spine, then magnifier, then numerals.
+%   * THE PANEL IS 3mm WIDER THAN ITS DATA ON EACH SIDE, (0.25,1.50) to
+%     (14.15,6.75) around data running 0.55 to 13.85. At pass 2 the panel ran
+%     exactly 0.55 to 13.85 and its left dashed border was drawn at the same x
+%     as band two's dotted zero rule; the two were indistinguishable in the
+%     600dpi crop, so the figure's zero coordinate was reading as the frame of
+%     its own panel. Widening the frame separates them by 3mm. PASS 8 re-aimed
+%     the magnifier's leaders at the panel's own top corners (0.25 and 14.15),
+%     which is the opposite of what pass 2 did and is right for the same reason
+%     the brace is right: with the brace naming the SOURCE span exactly, the
+%     leaders' job is to point at the PANEL, and corner-to-corner is what a
+%     magnifier looks like.
+%   * BAND TWO'S WORD TAG AND ITS MARGIN LABEL SIT INSIDE THE PANEL, on one
+%     baseline at y = 6.44, and the axis title sits inside it too. At pass 2 the
+%     tag, the margin label, "no movement" and the axis title all straddled the
+%     dashed border. Anything that names something inside the panel is now
+%     inside the panel.
+%   * The band-two tag is anchored at x = 0.75 and not at x = 0.00, because the
+%     magnifier's left leader is a vertical at x = 0.55.
+%   * PASS 8: the translation device and its label are deleted (decision 9),
+%     which took five hairlines and one floating sentence out of the panel.
+%     Rows moved up to take the slack -- 5.52/4.94/3.66 became 5.40/4.72/4.04,
+%     and the margin brace 3.10 became 3.30 -- and each row gained a rulegrey!55
+%     0.3pt divider under it, spanning 0.35 to 14.05, which is 0.10cm inside the
+%     panel's dashed frame at both ends.
+%   * PASS 8, THE MARGIN LABEL STAYS ON THE 8.44 ROW. The build that moved it up
+%     to the tag's row put it at x = 1.96 and "THE WHOLE GAP" measures 1.95cm of
+%     \sffamily\scriptsize\bfseries from x = 0, so the two ran together as
+%     "THE WHOLE GAP0% materiality margin" in the render. Both labels sit on the
+%     8.44 row instead and the dashed margin rule at x = 1.88 separates them:
+%     "the effect" is centred on the estimate dot and ends at 1.29, the rule is
+%     at 1.88, the margin label starts at 1.98. The rule stops at 8.56, which is
+%     0.09cm under the tag's descender line and is why it may not be carried
+%     higher to meet a label on the tag's row.
+%   * BAND ONE'S RIGHT END is a terminal tick RISING from the spine, 0.30cm
+%     tall against the 0.10cm hanging axis ticks, with its two label lines
+%     right-aligned on the same x = 13.85 so the tick reads as their anchor. At
+%     pass 3 that rule ran from the spine up to the second label's baseline and
+%     read as a bracket enclosing the label block.
+%   * The closing prose was three lines at pass 2 and is two at pass 3; the
+%     28pt that bought went into the clearances above.
+%   * Every prose node is a single \scriptsize line anchored base west. No
+%     `align=` and no `text width=` anywhere: those build a minipage whose first
+%     line follows the AMBIENT \baselineskip, so the node's ink moves with the
+%     prose before the float (frames.tex measured a 3.7pt drift).
+%   * The bounding box is pinned with a bare \path so the measure is exact and
+%     nothing is clipped: (0.0000,0.30) to (14.1900,8.98) = 141.9 x 86.8mm.
+%
+% TYPE. Ambient \small on the picture; every node sets \scriptsize = 8pt, which
+% is 0.67 of the 12pt body and below the 11pt caption. \ttfamily on the two arm
+% names and on the arm named at the foot, because that is how the results files
+% name them. Nothing is scaled: 1cm here is 1cm on the page.
+% ===========================================================================
+%
+% ===========================================================================
+% PASS 9 -- 2026-08-18. REBUILD AGAINST THE STYLE CONTRACT AND THE SUPERVISOR'S
+% VERDICT ("no definition on the x axis for what we are measuring"; "make it
+% look more professional, right now it looks a bit sloppy and childish").
+% NOTHING ABOVE IS DELETED. The design rationale of passes 1-8 is the audit
+% trail and stays; what follows supersedes, EXPLICITLY AND BY NAME, each clause
+% of it that this pass made false. The reference standard adopted is fig 4.11
+% (figs/fig-mechanism.pdf, printed page 51) and, for the threshold, fig 4.13
+% (figs/family.pdf), both of which were rendered and read side by side with this
+% figure during the build.
+%
+% NO NUMERIC VALUE CHANGED IN THIS PASS. Every quantity drawn or printed is the
+% same float from the same key path as in pass 8: clean_ab_gap 0.06420005919957501,
+% equiv_margin 0.006420005919957502, effect_perm 0.0006409306049362111,
+% effect_swap 0.0019027651015006252, diff_perm 0.0012618344965644142,
+% ci_perm [0.0004024989353392094, 0.002150955667015771], n_pair_clusters 58.
+% The one printed numeral that left the drawing is "one fiftieth / one fifth"
+% (a ratio in words), and it went to the caption, where it already was.
+%
+% W1. SUPERSEDES LAYOUT NOTE "TWO MAPS" AND THE MAP CONSTANTS RECORDED THERE.
+%     Both maps lose their 0.55cm left inset and gain a longer barrel:
+%         old   \ga#1 = {0.55+(#1)*207.1650}   \gb#1 = {0.55+(#1)*1657.3200}
+%         new   \ga#1 = {(#1)*215.7500}        \gb#1 = {(#1)*1726.0000}
+%     Two things are preserved exactly and were recomputed on the build rather
+%     than assumed: 1726.0000 = 8 x 215.7500 EXACTLY, so the magnification is
+%     still exactly eight and not a rounded number (this is the correction made
+%     at pass 4 and it survives untouched); and both bands' right-hand ends
+%     still coincide, now at \ga{0.06420005919957501} = \gb{0.008025007399946877}
+%     = 13.851162772308308cm. Every data x is still computed inside pgfmath from
+%     the full-precision float, so no value is rounded into the source.
+%     WHY: (i) S13, one x origin per panel. With the old map the axis began at
+%     0.55 while every text block began at 0.00, so the panel had two left edges
+%     0.55cm apart and the left column measured three (58.0, 63.9, 70.4pt).
+%     Now the axis's left end, the panel titles, both axis-label blocks, the
+%     span bracket and the foot line all sit on x = 0.0000. (ii) S5 puts the
+%     axis-label line under the tick numerals and LEFT-ALIGNED TO THE AXIS'S
+%     LEFT END; that is only the same thing as the panel origin if the two
+%     coincide. (iii) S14, measure. Deleting the dashed enclosure (W4) took away
+%     the object that used to set the width, and a 133.0mm barrel inside a
+%     textwidth figure measures about 134mm of content, under the 138mm floor.
+%     215.75 puts the barrel at 138.51mm and the content bbox at 139.6mm, inside
+%     138-142, with the widest object the axis itself and the data region 100%
+%     of the drawn width.
+%     The old map is kept in materiality.json beside the new one, per S25.
+%
+% W2. AXIS DEFINITION, WHICH IS THE SUPERVISOR'S FIRST COMPLAINT AND THE REASON
+%     THIS PASS EXISTS. Pass 8 named neither axis. Band one carried bare 0 /
+%     0.02 / 0.04 / 0.06 with no quantity and no unit anywhere on it -- the unit
+%     reached the reader only through the terminal label -- and band two carried
+%     "nats, magnified 8x from the axis above", which names a unit and a
+%     transformation but no quantity. 4.11 sets "probe accuracy", "descriptive
+%     subspace fraction", "KL from the clean forward pass" and "layer" in
+%     axis-label position five times over. Each band now carries, directly under
+%     its tick numerals and left-aligned to its axis's left end:
+%         line 1, \footnotesize roman ink:  Preference shift, nats
+%         line 2, \scriptsize quietink:     (a) residual arm, layer 12, alpha =
+%                                               0.5; the full width of this rule
+%                                               is the model's clean preference
+%                                               gap
+%                                           (b) the first eighth of the axis
+%                                               above, magnified 8x
+%     The quantity is repeated deliberately: two scales, each self-describing.
+%     "Preference shift" is the section-4.5 registry name (S19), so the axis, the
+%     caption and fig:family's lower strip now use one string for one quantity.
+%
+% W3. THE THRESHOLD. SUPERSEDES DESIGN DECISION 10 AND THE marginrule STYLE.
+%     The 10% pre-registered materiality margin was accent 0.60pt dashed here,
+%     ink 0.50pt densely dotted in fig:comparators row C, and solid black 0.90pt
+%     in fig:family's lower strip: one pre-registered threshold, three renderings
+%     inside nine pages. It is now BLACK, SOLID, 0.90pt in both bands, labelled
+%     \scriptsize roman black, which is style_v2.chance_line()'s own hard-coded
+%     register and fig:family's. This is the highest-priority change in the set
+%     and it is a correctness repair, not a preference: accent means the object
+%     under test (S8), and a pre-registered bound is not under test.
+%     Design decision 15's note -- that the document's two habits for a chance
+%     rule "do not apply here" -- is now false as written and is superseded:
+%     there is still no chance value on this figure, but the black-solid-0.9pt
+%     register does apply, to the margin.
+%
+% W4. DELETED: THE DASHED ROUNDED ENCLOSURE round band two (390 x 149pt), with
+%     the layout note that sized it 3mm wider than its data on each side. S12
+%     forbids a dashed rectangle drawn round a panel outright, and it was this
+%     figure's only rectangle. Band two now sits directly under band one in
+%     4.13's idiom -- the magnified axis under the full axis, with the
+%     magnification named in axis-label position -- which is also what fixes
+%     band two's axis under W2. Two consequences recorded so they are not read
+%     as accidents: the layout note about the panel's left border colliding with
+%     band two's zero rule is moot, since there is no border; and the note that
+%     band two's tag and margin label "sit inside the panel" is moot for the same
+%     reason.
+%
+% W5. DELETED: THE FOUR PALE ROW SEPARATORS AND THE MARGIN BRACE. SUPERSEDES
+%     DESIGN DECISION 9's replacement clause and the pass-8 note that added them.
+%     Five near-identical thin horizontals stood inside 30mm of vertical space --
+%     three rulegrey!55 row dividers, one rulegrey brace carrying "10% of the gap
+%     = 0.00642 nats", plus the axis rule -- and the one that carried meaning was
+%     indistinguishable from the ones that did not. The dividers go because the
+%     rows no longer need them: with the enclosure gone and one x origin, the
+%     three rows read as a stack. The brace goes because the same fact is now
+%     carried without any stroke at all, by printing the margin's value in band
+%     one's threshold label ("10% materiality margin, 0.00642 nats") beside band
+%     one's terminal label ("the clean preference gap, 0.0642 nats"): the tenth
+%     is then a division a reader performs on two printed numbers 8cm apart
+%     rather than a brace they must trace.
+%
+% W6. THE INTERVAL IS DRAWN ONCE. SUPERSEDES DESIGN DECISION 4 and the pass-8
+%     repair that labelled band one's bar. Pass 8 drew the same estimate as a
+%     3.6mm bar-with-dot in band one AND as a 30mm bar-with-dot in band two,
+%     while the caption said "it is the one bar on the figure"; a naive reader
+%     counted two and spent time working out which two quantities they were.
+%     Rule applied: an interval is drawn at the scale where it is legible and
+%     nowhere else. Band one keeps a single filled accent disc for the estimate,
+%     with no bar; band two carries the bar. Band one's dot keeps its label and
+%     its leader, and the label is now the SAME STRING as band two's row three,
+%     "swap - permuted", because S19 forbids two names for one JSON key and pass
+%     8 had "the effect" here and "swap - permuted" there.
+%
+% W7. DELETED: THE TWO BANNERS, replaced by 4.11's panel heads. "THE WHOLE GAP"
+%     and "THE FIRST EIGHTH, MAGNIFIED" were \sffamily\scriptsize\bfseries accent
+%     caps -- the preamble's margin-apparatus face, which belongs to the margin
+%     and not to a body figure (S2). They are now "(a) the whole preference gap"
+%     and "(b) the first eighth, magnified 8x", \footnotesize roman ink,
+%     lowercase, left-aligned on the panel origin, no colon and no bold. The
+%     tag/.style is deleted rather than left unused.
+%
+% W8. DELETED: THE ITALIC "no movement". It sat unattached above the permuted
+%     row and a naive reader took it for an assertion about that arm rather than
+%     a name for the zero rule. The zero rule survives -- densely dotted quietink
+%     0.5pt, which is exactly S7's reserved register for a coordinate that
+%     decides nothing -- and carries no label, because its foot is the axis's own
+%     "0" numeral. With it goes the last italic on the drawing: italic share is
+%     now 0%, against 10% at pass 8 and 0% in 4.11.
+%
+% W9. DELETED: THE CLOSING PROSE BLOCK AND THE ACCENT APHORISM. The two ink lines
+%     ("The interval excludes zero and lies inside the margin. Textbook TOST
+%     returns that as equivalence and reads it as a null; this rule returns a
+%     directional effect smaller than the margin.") and the accent italic ("one
+%     fiftieth of the gap; one fifth of the margin.") are argument, and in this
+%     document the argument lives in the caption (S3, S4, S18). At print the
+%     reader met an 8pt caption, a blank, then the real 10.9pt caption -- two
+%     captions, the smaller one first. Both lines are written into
+%     figs/_PENDING_CAPTIONS.tex, keyed by \label, for a human to integrate;
+%     the aphorism is already the caption's lede. The TOST asymmetry is the
+%     section's subtlest point and it is NOT lost: it is caption material, and
+%     the configuration it describes -- an interval that excludes zero and lies
+%     wholly inside the margin -- is still visible in band two, which is the only
+%     part of that sentence a drawing can carry.
+%     SUPERSEDES the text_agreement_check on 04b:507-513 in the ledger, which
+%     asserted the drawing restates that sentence. It no longer does.
+%
+% W10. THE MAGNIFIER. SUPERSEDES DESIGN DECISION 6 AND THE PASS-8 BRACE-AND-TWO-
+%     LEADERS CONSTRUCTION. What is kept: the source span is a NAMED OBJECT and
+%     not two bare coordinates. What is deleted: both leaders, including the
+%     shallow one that pass 8's own header admitted "CANNOT BE FIXED" and that
+%     the naive reader read as a trend line before reading it as a leader.
+%     The reasoning, recorded because a later builder will be tempted to put them
+%     back. A leader pair from the ends of band one's [0, gap/8] segment to the
+%     ends of band two's rule is geometrically forced to be asymmetric -- a
+%     17.3mm span opening into a 138.5mm rule -- so the right-hand leader runs at
+%     under 4 degrees whatever is done, and 4 degrees of accent-free hairline
+%     running the full measure is a trend line to every eye that meets it first.
+%     Worse, it cannot be routed: S5 now requires band one's two-line axis-label
+%     block directly under band one's tick numerals, which puts full-width text
+%     in the only lane the leaders could cross. The magnification is instead
+%     carried by two objects that cannot be misread: a 0.30pt rulegrey bracket on
+%     band one spanning exactly \ga{0} = 0.0000 to \ga{clean_ab_gap/8} = 1.731395,
+%     labelled at its own end ("the eighth magnified below"), and band two's
+%     axis-label line 2, which names the magnification in axis-label position
+%     where S5 puts it. The bracket's two ends stand at the same x as band two's
+%     rule origin, so the vertical alignment does the joining that a hairline was
+%     doing badly.
+%
+% W11. MARK VOCABULARY (S9, CF5). SUPERSEDES DESIGN DECISION 8's claim that a
+%     bare SOLID dot is how this document says "no interval". It is not the only
+%     thing a dot has to say. The permuted arm is the CONTROL, and 4.11's own
+%     encoding for a comparator or a null is an open disc, white fill, 0.8pt edge
+%     in its colour (mfc='white' on the raw probe and on the random null). Row one
+%     is therefore an open quietink disc; rows two and three and band one's
+%     estimate are filled accent discs, all at radius 1.4pt, one radius on the
+%     figure. The absence of an interval is now said where the contract puts it,
+%     in the single \scriptsize interval declaration at the foot (S17), which
+%     names the bootstrap construction for the panel that has a bar and says in
+%     as many words that the two arms and band one carry none. The 0.8pt disc
+%     edge is a MARK edge, not a rule weight; the figure's rules use exactly five
+%     weights, 0.30 / 0.40 / 0.50 / 0.90 / 1.00pt.
+%     TWO SINGLETONS ARE DECLARED HERE RATHER THAN REMOVED, as S10 permits. The
+%     0.50pt densely dotted stroke is used once, for band two's zero rule, and is
+%     a distinct kind of object -- S7 reserves that stroke for a coordinate that
+%     decides nothing, and this figure has exactly one such coordinate. The
+%     1.00pt stroke is used once, for the interval bar, and is a distinct kind of
+%     object for the same reason: this figure stores exactly one interval.
+%
+% W12. TYPE (S1, S16). Two sizes above 7pt and one face: \footnotesize (10.0pt)
+%     for the two panel heads, both axis-label line ones, and nothing else;
+%     \scriptsize (8.0pt) for tick numerals, direct labels, scope lines, the
+%     threshold labels and the interval declaration. No \sffamily, no \bfseries,
+%     no \itshape anywhere. \ttfamily survives on the four arm tokens
+%     (residual, permuted, swap) because that is how the results files name them
+%     and S1 exempts the \texttt token name. Pass 8 printed four sizes and set
+%     its largest type on a grey italic epigram; the largest type now belongs to
+%     a panel head or an axis label, which is the whole of CF6.
+%
+% W13. TICK LANES MADE CONGRUENT (S13). Band one ticks at 0 / 0.02 / 0.04 / 0.06
+%     land on x = 0.0000 / 4.3150 / 8.6300 / 12.9450. Band two's ticks were
+%     chosen so that they land on THE SAME FOUR x: 0 / 0.0025 / 0.005 / 0.0075,
+%     which is possible only because band two is exactly one eighth of band one
+%     and is a visible consequence of the exact 8. Both rules share both
+%     endpoints (0.0000 and 13.851163) and both first ticks sit on the left
+%     endpoint. Band one alone carries a terminal tick at the right endpoint,
+%     rising 0.20cm from the spine, because that endpoint is the clean preference
+%     gap and is the figure's denominator; band two's right endpoint is one
+%     eighth of it and is named by band two's axis label rather than by a mark,
+%     so it takes no tick and no numeral -- no unlabelled mark is left on the
+%     drawing (S20).
+%
+% W14. MEASURE AND HEIGHT, MEASURED ON THE FINAL BUILD, not estimated: content
+%     bbox 140.34 x 83.82mm, ink 5.14% of pixels below 230 grey at 200dpi, 4.88
+%     characters of figure text per 100mm^2, one page, zero Overfull and zero
+%     Underfull boxes. Against pass 8's 141.2 x 85.9mm at 7.03% ink and against
+%     the contract's 138-142mm measure, 85mm height cap, 6.0% ink ceiling and
+%     5.0 characters/100mm^2 ceiling. Every millimetre of the height and every
+%     point of the ink came from W4, W5, W8, W9 and W10 -- deletions -- and
+%     nothing measured was removed to get them.
+%
+% W15. STALE CLAIMS ELSEWHERE IN THIS HEADER, SUPERSEDED BY NAME so that an
+%     auditor reading top to bottom is not misled.
+%     (i) The opening paragraph's "where it is a 3.6mm smudge on a 133mm axis"
+%         is now false twice over: the axis is 139.96mm, and band (a) no longer
+%         draws the interval at all, so what stands 2.75mm from the origin is a
+%         single 1.4pt disc and not a 3.6mm bar (W6).
+%     (ii) The file-header line "this file uses decorations.pathreplacing and
+%         arrows.meta only" is now false in the harmless direction: this figure
+%         uses NEITHER. The braces went with W5 and W10 and there was never an
+%         arrowhead. It still loads no library preamble.tex does not.
+%     (iii) DESIGN DECISION 1's "Drawn to 141.9mm against the 142mm measure" is
+%         superseded by W14's 140.34mm. The decision itself -- textwidth and not
+%         fullwidth, to buy the page's margin notes back -- stands unchanged.
+%     (iv) DESIGN DECISION 3's arithmetic is intact and was recomputed on this
+%         build; only the cm-per-nat constants moved (W1). The first draft's
+%         "first twelfth at 8.56x" correction, and the reason a true twelfth
+%         cannot be drawn at all, remain exactly as recorded.
+%     (v) The AGREEMENT WITH THE TEXT entry for 04b:507-513 ("the two closing
+%         ink lines track this sentence") is superseded by W9: those lines are
+%         deleted from the drawing and staged for the caption. The entry for
+%         04b:568 ("the closing accent line prints one fifth of the margin") is
+%         superseded for the same reason. Both sentences remain TRUE of the
+%         figure's subject; they are no longer drawn on it.
+%
+% W16. TWO DEVIATIONS FROM THE SPEC'S LITERAL AXIS-LABEL STRINGS, both forced by
+%     other clauses of the same contract, both recorded rather than quietly
+%     taken.
+%     (i) Band (a)'s scope line is set as "residual arm, layer 12, alpha = 0.5"
+%         and NOT as "residual arm, layer 12, alpha = 0.5; the full width of
+%         this rule is the model's clean preference gap". The deleted clause
+%         restates, in twelve words, the terminal label "the clean preference
+%         gap, 0.0642 nats" that the spec's own keep-list requires at the axis's
+%         right end, and S18 forbids a drawing from carrying one clause twice.
+%         It also costs 70 characters, and at 70 more characters the figure
+%         needs 89.8mm of height to stay under the 5.0 characters/100mm^2
+%         ceiling, which is past the 85mm cap. The quantity and its unit are on
+%         line one, which is what S5 actually requires; what came off is a
+%         second statement of what the axis's right end already says.
+%     (ii) Band (b)'s scope line is set verbatim as the spec gives it, "the
+%         first eighth of the axis above, magnified 8x", and the 14 characters
+%         that costs were bought by opening 3mm more air between the bands
+%         rather than by cutting anything else.
+%     Line one of both blocks is verbatim: "Preference shift, nats". Recorded
+%     because 4.11 and 4.13 both set their axis labels entirely lowercase and
+%     4.10 sets its capitalised, so the slate is split on case and the spec's
+%     capitalisation was followed rather than guessed at.
+% ===========================================================================
+% ===========================================================================
+% PASS 10 -- 2026-08-18. REPAIR PASS on the pass-9 rebuild. Three adversarial
+% readers went over the built figure independently and returned thirty-three
+% findings. NOTHING ABOVE IS DELETED: passes 1-9 are the audit trail and stay
+% as written. Every clause of pass 9 that this pass made false, and every
+% number pass 9 recorded that this file has never drawn, is superseded here BY
+% NAME (S25). The findings that were OVERRULED are recorded under X16 with the
+% reason, so that a later builder does not re-apply them blind.
+%
+% NO NUMERIC VALUE CHANGED IN THIS PASS EITHER. Every quantity drawn or printed
+% is the same float from the same key path as at passes 8 and 9:
+% clean_ab_gap 0.06420005919957501, equiv_margin 0.006420005919957502,
+% effect_perm 0.0006409306049362111, effect_swap 0.0019027651015006252,
+% diff_perm 0.0012618344965644142, ci_perm [0.0004024989353392094,
+% 0.002150955667015771], n_pair_clusters 58, and the exact magnification 8.
+% Both maps are untouched: \ga = (#1)*218.0000 and \gb = (#1)*1744.0000, with
+% 1744.0000 = 8 x 218.0000 exactly. What moved is where labels sit, where two
+% rules start, how long two others are, and what four sentences say.
+%
+% X1. STALE CONSTANTS IN THE PASS-9 BLOCK, CORRECTED BY NAME. W1, W10, W13 and
+%     W14 record a map, a shared endpoint, a bracket end, four tick positions
+%     and a measure that this file has never drawn. materiality.json has always
+%     recorded the drawn ones correctly, and the drawing is not affected --
+%     every data x is computed inside pgfmath from the full-precision float --
+%     but S25 makes the header an audited artefact, so an auditor recomputing a
+%     position from W1 must not be handed a figure that does not exist. The
+%     corrections, each superseding the clause named:
+%       W1  "new \ga#1 = {(#1)*215.7500}  \gb#1 = {(#1)*1726.0000}"
+%           -> the drawn map is \ga#1 = {(#1)*218.0000} and
+%              \gb#1 = {(#1)*1744.0000}. Both properties W1 claims survive and
+%              were rechecked on this build: 1744.0000 = 8 x 218.0000 exactly
+%              (8*218.0 == 1744.0 is True in IEEE double), and both bands' right
+%              ends coincide.
+%       W1  "= 13.851162772308308cm" for the shared right end
+%           -> 13.995612905507352cm = 0.06420005919957501 x 218, which is what
+%              is hard-coded at the spine, at the two end caps and at the
+%              terminal label, and what materiality.json records.
+%       W1  "215.75 puts the barrel at 138.51mm and the content bbox at 139.6mm"
+%           -> the barrel is 139.956mm and the content bbox 139.96mm, measured
+%              on this build. Both are inside S14's 138-142mm.
+%       W10 "\ga{clean_ab_gap/8} = 1.731395" for the bracket's right end
+%           -> 1.749451613188419cm = 0.008025007399946877 x 218.
+%       W13 "land on x = 0.0000 / 4.3150 / 8.6300 / 12.9450"
+%           -> 0.0000 / 4.3600 / 8.7200 / 13.0800, for both bands, which is
+%              what makes the two tick lanes congruent.
+%       W13 "Both rules share both endpoints (0.0000 and 13.851163)"
+%           -> (0.0000 and 13.995613).
+%       W14 "content bbox 140.34 x 83.82mm, ink 5.14%, 4.88 characters per
+%           100mm^2" -> superseded by X17's measurement of THIS build.
+%     No 215.75 build was ever produced; the pass-9 numbers are a draft's, not
+%     a superseded state of the drawing, and they are recorded here as wrong
+%     rather than as an earlier truth.
+%
+% X2. THE ONE INTERVAL DECLARATION SAID SOMETHING FALSE ABOUT THE INSTRUMENT,
+%     AND SAID IT ABOUT THE ONE MARK THAT HAS AN INTERVAL. SUPERSEDES W11's
+%     description of the declaration and the ledger's intervals.declaration_on_
+%     the_drawing. Pass 9's second line read "No interval is returned for
+%     permuted, for swap, or for (a)." Band (a)'s single disc IS diff_perm, and
+%     layers.12.swap.ci_perm is an interval on diff_perm; it is the very
+%     interval drawn 8x larger in (b). "Returned" is this document's word for
+%     what the instrument stores (S17), so the sentence asserted that the
+%     band-(a) estimate has no uncertainty available and implied that (a) and
+%     (b) draw different quantities. The declaration now separates
+%     non-existence from non-drawing:
+%       "95% bootstrap over 58 ordered pair clusters, on the difference; drawn
+%        once, in (b)."
+%       "No interval is stored for permuted or for swap alone."
+%     Both lines are true of the file, they still fit S17's one block of at
+%     most two lines, and the reason band (a) carries no bar is now the same
+%     reason the ledger has always given -- legibility -- rather than a claim
+%     about the instrument.
+%
+% X3. THE THRESHOLD IN (a) STANDS ON ITS SPINE. SUPERSEDES the pass-9 y extent
+%     8.38 .. 9.04. Drawn from 8.38 it crossed the axis rule and hung 0.16cm
+%     below it, past the ends of the hanging ticks and into the tick-numeral
+%     lane, so the heaviest stroke in the panel doubled as an outsized
+%     unnumbered tick standing between the numerals "0" and "0.02" -- exactly
+%     the "the threshold merges with the tick furniture" defect S7 indicts in
+%     fig:comparators row (a). It now runs 8.54 .. 9.04, from the spine upward,
+%     which is what (b)'s half of the same threshold has always done. One
+%     pre-registered threshold, one stroke AND one geometry, in both bands.
+%
+% X4. BAND (a)'s ONE MARK IS NOW LABELLED AT ITSELF. SUPERSEDES W6's placement.
+%     Pass 9 anchored "swap - permuted" base west on x = 0.00, the panel
+%     origin, while the leader fell from \ga{diff_perm} = 0.2751 -- so the
+%     leader descended from inside the word "swap", and the mark it landed on
+%     read as the swap arm, whose value is 0.0019 and not the 0.0013 drawn.
+%     That is the only mark in band (a). The label now begins on the mark's own
+%     x and the leader falls from its first character.
+%
+% X5. THE LEADER AND THE PROJECTION TOUCH WHAT THEY POINT AT. The accent leader
+%     stopped at 9.12 against a disc whose top edge is 8.9493 -- 4.84pt of
+%     white -- so at print it was a detached accent tick under the label, of
+%     the same length, weight and orientation as an axis tick. The dotted
+%     projection was detached at both ends, 2.0pt below the disc and 0.57pt
+%     above the spine. Leader 9.46 -> 8.95 lands on the disc; projection
+%     8.85 -> 8.54 leaves the disc's lower edge and reaches the rule.
+%
+% X6. THREE LABELS THAT READ AS ONE BLOCK ARE SEPARATED, and no label sits on a
+%     panel head's baseline any more. SUPERSEDES the pass-9 placements.
+%     (i) Band (a)'s accent label moved 9.44 -> 9.56. At 9.44 it stood 7.94pt
+%         above the threshold label -- set solid for 7.97pt type -- and the two
+%         overlap horizontally by 0.6cm, so they read as one ragged two-line
+%         paragraph headed by an accent line. The gap is now 11.3pt.
+%     (ii) Band (a)'s terminal label moved off the 9.16 baseline onto 8.86,
+%         0.10cm above the end cap it names. At 9.16 it shared a baseline AND
+%         the "<name>, <value> nats" construction with the threshold label 8cm
+%         to its left, so "the clean preference gap, 0.0642 nats" read as the
+%         label of a RULE and a reader looked for a rule at 0.0642 and found a
+%         0.22cm cap. It is now unmistakably the label of the axis's own end.
+%     (iii) Band (b)'s threshold label moved 5.70 -> 5.44, off the panel head's
+%         exact baseline, and its rule's top came down 5.56 -> 5.32 to meet it.
+%         On the pass-9 build, scanning the two panel heads read "(b) the first
+%         eighth, magnified 8x  ...  10% materiality margin" as one title line.
+%         Both threshold labels now stand 0.12cm above their own rule's top.
+%
+% X7. THE DENOMINATOR IS DELIMITED AT BOTH ENDS. The gap -- the span whose full
+%     width is the quantity every effect in section 4.5 is divided by -- was
+%     capped at the right by a rising 0.40pt ink stub and at the left by
+%     nothing but the same rulegrey hanging tick that 0.02, 0.04 and 0.06 carry,
+%     so it did not read as a bounded span at all. A matching ink stub now
+%     rises at x = 0. No new weight, no new colour, no height.
+%
+% X8. THE MAGNIFIER BRACKET: RAISED, AND ITS LABEL NAMES THE OBJECT. It moved
+%     7.14 -> 7.22 (rail), tight under the scope line at the clearance the
+%     scope line's descenders allow, and its label became "the eighth magnified
+%     in (b)" from "magnified in (b)", so the mark is named as well as pointed
+%     (S20). TWO HALVES OF WHAT WAS ASKED WERE OVERRULED; see X16 (b) and (c).
+%
+% X9. BAND (b)'s ZERO RULE NO LONGER READS AS A PANEL EDGE. SUPERSEDES the
+%     pass-9 extent 3.58 .. 5.56. Drawn from the spine it was collinear and
+%     continuous with the axis's left terminus, that terminus's hanging tick
+%     and the panel's x origin, ran the full height of the data region, and
+%     matched the threshold rule on the right for length to the point -- so all
+%     three readers took the pair for the two sides of a frame round the rows,
+%     which is the object S12 exists to forbid, and one noted that band (a)
+%     draws no such rule at its own zero. It now runs 3.86 .. 5.28: it spans
+%     the three rows only, stands 0.28cm clear of the spine and 0.42cm clear of
+%     the panel head, and reads as the coordinate the interval bar's left end
+%     clears by 0.70cm. It is still S7's register and still unlabelled, because
+%     the axis's own "0" numeral stands at its foot.
+%
+% X10. ONE DASH, ONE MEANING. Rows one and two glossed their arm with an em
+%     dash in the same position after the token where row three and band (a)
+%     set a math minus, so one glyph class carried "namely" twice and
+%     "subtract" once on a figure whose entire subject is a subtraction. The
+%     two glosses now take a comma. The minus in "swap - permuted" is the only
+%     dash inside any label on the drawing.
+%
+% X11. THE FOOT BLOCK'S LEADING. The two lines were set 0.24cm apart, which is
+%     6.81pt of leading for 7.97pt type -- tighter than solid, tighter than
+%     every other stacked pair in this figure, and tight enough that the
+%     descender of "bootstrap" met the dot of the "i" below it. They are now
+%     0.28cm apart, the figure's own value everywhere else, and the pinned
+%     bounding box floor went 1.76 -> 1.72 so descenders stay inside it.
+%
+% X12. ONE X ORIGIN, MEASURED RATHER THAN ASSERTED. SUPERSEDES the layout note
+%     "inner sep = 1pt ON THE WHOLE PICTURE" in its horizontal half only. With
+%     inner sep = 1pt every left-anchored text box stood 1.19pt (0.42mm) inside
+%     the axis's left end, so both rules and both left end ticks protruded to
+%     the left of the entire text column and S5's "left-aligned to the axis's
+%     left end" was met to 0.42mm rather than exactly. inner ysep stays 1pt, so
+%     every vertical clearance recorded above is still box arithmetic; inner
+%     xsep is 0pt. Measured on this build, the ten panel-level text lines now
+%     share ONE ink x0, 59.81pt, against an axis rule beginning at 59.615pt --
+%     the residue is the first glyph's own side bearing and nothing else.
+%     Band (b)'s three row labels are now placed with an xshift on the MARK's
+%     own coordinate rather than at a literal x, so each is tied to the thing
+%     it names: 5pt right of the disc in rows one and two, 5pt right of the
+%     interval's upper end in row three, which is that row's rightmost ink.
+%
+% X13. THE AXIS LABELS ARE SET LOWERCASE. SUPERSEDES W16's closing paragraph and
+%     repair_pass_9's not_applied entry, both of which recorded that the spec's
+%     capitalised string "Preference shift, nats" was followed deliberately
+%     because the slate is split on case. It is now "preference shift, nats" in
+%     both bands. The reason for changing a spec-verbatim string, recorded so a
+%     human can put it back in one edit if the slate is unified the other way:
+%     the contract's own ruling is "between 4.11 and A.3: take 4.11", 4.11 sets
+%     all four of its axis labels lowercase and 4.13 sets both of its, S19's
+%     registry gives the quantity's name lowercase ("preference shift"), and
+%     this figure's own panel heads are lowercase after S2 -- so capitalising
+%     the axis label alone left one string in the figure with a case of its own.
+%     Only the case changed; the quantity and the unit are the spec's words.
+%
+% X14. THE MAGNIFICATION IS NOW STATED TWICE, NOT THREE TIMES. SUPERSEDES
+%     W16(ii), which recorded band (b)'s scope line as set verbatim from the
+%     spec. It read "the first eighth of the axis above, magnified 8x" and sat
+%     3.2cm below a panel head reading "(b) the first eighth, magnified 8x".
+%     The head keeps the factor; the axis-label line keeps the relation to the
+%     axis above, which is the fact the head does not carry and the fact an
+%     axis-label scope line is for. The exactness of the eight is caption
+%     material and the caption states it. Band (a)'s bracket label is the third
+%     appearance and it stays: it is the only one that is geometric, it names
+%     the bracket, and it is 4cm from the other two.
+%
+% X15. figs/_PENDING_CAPTIONS.tex NOW EXISTS. SUPERSEDES W9's assertion, and
+%     the four assertions in materiality.json, that the sentences cut from the
+%     drawing had been written into it: at pass 9 the file did not exist, so
+%     the two deleted sentences and the whole proposed caption survived only in
+%     the commented block at the foot of this file, which no build reads and no
+%     integrator was pointed at. The file is created at this pass, keyed by
+%     \label{fig:materiality}, and carries the proposed caption in full, the
+%     two sentences deleted under W9 verbatim, and a list of the clauses of the
+%     PRINTED caption (Sections/04b-representation.tex:597-620) that the
+%     rebuild made false. No builder on this pass may edit Sections/.
+%
+% X16. FINDINGS OVERRULED, WITH THE REASON, so they are not re-applied blind.
+%     (a) "Drop a quietink dotted projection from each of band (b)'s three
+%         marks to the spine, as band (a) does for its one mark." OVERRULED.
+%         Two of the three would cross the interval bar: the permuted mark
+%         stands at x = 1.118 and the swap mark at x = 3.318, and the bar runs
+%         0.702 to 3.751 on the row beneath them, so the projections would
+%         strike it at two interior points and read as endpoints of something.
+%         Band (a)'s projection is not a convention this figure owes band (b);
+%         it is a rescue for a single disc standing 2.75mm from the origin on a
+%         139.96mm rule with no tick within 4cm. In (b) every mark is on a row,
+%         direct-labelled at itself, 4.8 to 15.6mm above a rule whose ticks
+%         stand every 4.36cm, and the two arm values the projections would help
+%         a reader read off are now PRINTED, in the caption, which is where the
+%         same reviewer asked for them.
+%     (b) "Raise the bracket into the lane immediately under the tick numerals."
+%         OVERRULED. S5 puts the axis-label block directly under the tick
+%         numerals; the bracket carries a \scriptsize label of its own, so
+%         moving it there interposes a second text block between the numerals
+%         and the line that names the quantity, which is the supervisor's first
+%         complaint reintroduced by the back door. It was raised as far as the
+%         scope line's descenders allow instead (X8).
+%     (c) "Reverse the bracket's stubs so they turn UP toward the rule."
+%         OVERRULED. With the bracket necessarily BELOW the two-line axis-label
+%         block, up-turned stubs bracket the scope line's text -- "residual
+%         arm, layer 12, alpha = 0.5" runs 0 to 3.66cm and the bracket spans 0
+%         to 1.749cm, so they would enclose its first half. Down-turned stubs
+%         agree with the label's own pointer, "the eighth magnified in (b)",
+%         and point at the panel that opens the span. This was pass 9's stated
+%         intent and it survives the pass.
+%     (d) "Drop \texttt on the arm names, or scale the mono, because Inconsolata
+%         sets at 6.85pt inside 7.97pt roman." OVERRULED. 6.85pt is the
+%         preamble's own scaling of the mono face to Pagella, not a second type
+%         size chosen here, and S1 exempts the \texttt token name from the size
+%         count for exactly this reason. The tokens are JSON key names --
+%         swap, permuted, residual -- and setting them roman would turn
+%         "swap, points at the drug scored" into a sentence about an English
+%         verb. The register is the corpus's (ladder.tex, comparators.tex).
+%     (e) "The threshold carries two label strings, '10% materiality margin,
+%         0.00642 nats' in (a) and '10% materiality margin' in (b), which fails
+%         S19's mechanical check." OVERRULED on the ledger's own standing
+%         principle, applied to diff_perm at W6: the NAME is "10% materiality
+%         margin" in both bands, and (a) additionally prints the VALUE. A value
+%         is not a second name. It is printed in (a) and not in (b) because (a)
+%         is the band that also prints the quantity it is a tenth of, so the
+%         tenth is a division a reader performs on two printed numbers 8cm
+%         apart -- which is what W5 traded the deleted brace for.
+%     (f) "Restore the spec's clause 'the full width of this rule is the
+%         model's clean preference gap' to band (a)'s scope line." OVERRULED
+%         again, for W16(i)'s reason and one more: with the terminal label now
+%         standing on its own end cap (X6 ii) and both ends of the span capped
+%         in ink (X7), the drawing says geometrically what that clause says in
+%         twelve words, and the panel head says it in five.
+%
+% X17. MEASURED ON THE PASS-10 BUILD, not estimated. figs/_preview.py --width
+%     text materiality reports ok, pages = 1, Overfull 0, Underfull 0. Content
+%     bounding box 139.96 x 84.12mm (S14's 138-142mm; the 85mm height cap).
+%     Ink 5.07% of pixels below 230 grey at 200dpi inside that box (ceiling
+%     6.0%). 572 characters of figure text, 4.86 per 100mm^2 (ceiling 5.0).
+%     Rule weights, counted off the PDF: 0.30pt x10 (nine rulegrey furniture
+%     strokes and one accent leader), 0.40pt x4 (the two spines and the two end
+%     caps), 0.50pt densely dotted x2, 0.90pt x2, 1.00pt x1 -- five weights,
+%     each with more than one instance or declared as a distinct kind of object
+%     at W11 -- plus the 0.80pt open-disc edge, which is a mark edge and not a
+%     rule. Type: 7.97pt (400 characters) and 9.96pt (105) in TeXGyrePagella,
+%     which are \scriptsize and \footnotesize; 6.85pt (58) in Inconsolata,
+%     which S1 exempts; and 8.30pt (8) and 10.38pt (1) in the math companions,
+%     which are the SAME two nominal sizes set from the math families -- the
+%     minus in "swap - permuted" and the \times in "magnified 8x". Italic: the
+%     render carries exactly one span in an italic-named face, PazoMath-Italic
+%     at 7.97pt, and it is the mathematical $\alpha$ of "alpha = 0.5" -- 2 of
+%     572 characters, 0.35%, which is a symbol's own face and not an italic
+%     voice, the use S16 allows. There is no \itshape anywhere in the source.
+%     PASS 9's W12 and the ledger's S16 line both said "0%"; the figure of
+%     record is 0.35%, and it is the alpha. Sans: 0%. Bold: 0%. Rectangles: 0.
+%     Arrowheads: 0.
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+% PASS 11 -- 2026-08-19. REPAIR PASS on the pass-10 repair. Three adversarial
+% readers went over the built figure independently and returned twenty-three
+% findings. NOTHING ABOVE IS DELETED: passes 1-10 are the audit trail and stay
+% as written. Every clause of passes 1-10 that this pass made false, and every
+% clause those passes left false, is superseded here BY NAME (S25). The
+% findings that were OVERRULED are recorded under Y15 with the reason, so that
+% a later builder does not re-apply them blind.
+%
+% NO NUMERIC VALUE CHANGED IN THIS PASS EITHER. Every quantity drawn or
+% printed is the same float from the same key path as at passes 8, 9 and 10:
+% clean_ab_gap 0.06420005919957501, equiv_margin 0.006420005919957502,
+% effect_perm 0.0006409306049362111, effect_swap 0.0019027651015006252,
+% diff_perm 0.0012618344965644142, ci_perm [0.0004024989353392094,
+% 0.002150955667015771], n_pair_clusters 58, and the exact magnification 8.
+% Both maps are untouched: \ga = (#1)*218.0000 and \gb = (#1)*1744.0000, with
+% 1744.0000 = 8 x 218.0000 exactly (rechecked on this build: 8*218.0 == 1744.0
+% is True in IEEE double, and 0.06420005919957501*218.0 ==
+% 0.008025007399946877*1744.0 is True, both ends coinciding at
+% 13.995612905507352cm). ONE PRINTED STRING changed its number of decimal
+% places without changing its value -- band (b)'s middle tick numeral, 0.005
+% -> 0.0050 (Y11) -- and one value that was printed on a row of (b) is now
+% printed in (a) instead (Y2, Y8). Nothing was rounded differently, and nothing
+% new was computed.
+%
+% WHAT MOVED, IN ONE LINE EACH. The changes are commented at the point of edit
+% as Y1..Y13 and summarised here.
+%   Y1  band (a)'s panel head names the object by the registry string.
+%   Y2  band (a)'s one label prints the estimate and drops 0.06cm.
+%   Y3  the axis's right end is computed by \ga, not transcribed.
+%   Y4  band (a)'s scope line drops 0.12cm and says "layer 12 of seven".
+%   Y5  the magnifier bracket's stubs are visible and it stands clear.
+%   Y6  band (b)'s zero rule is named "zero".
+%   Y7  the mark-to-label gap in all three rows of (b) goes 5pt -> 9pt.
+%   Y8  the estimate's value comes off (b)'s row-three baseline label.
+%   Y9  0.06cm more air under row two.
+%   Y10 band (b)'s rule is capped at its right end, in (a)'s cap.
+%   Y11 band (b)'s middle tick numeral prints 0.0050.
+%   Y12 the foot block's leading and its stand-off both open.
+%   Y13 the pinned bounding box floor goes 1.72 -> 1.68.
+%
+% Y14. CLAUSES OF PASSES 1-10 THAT WERE ALREADY FALSE OF THE BUILT FIGURE AND
+%     WERE SUPERSEDED NOWHERE. W15 and X1 each did this job for the pass they
+%     followed; neither went back over the pass-1 to pass-8 LAYOUT NOTES and
+%     DESIGN DECISIONS, so an auditor reading this header top to bottom was
+%     handed five descriptions of a figure that does not exist -- the exact
+%     hazard X1 was written to prevent. Each is named and given its drawn value.
+%     (i) DESIGN DECISION 5, "THE MEASUREMENT SITS 0.22cm ABOVE BAND ONE'S
+%         SPINE ... with its dot over a 2.1pt white halo ... the bar, the dot
+%         and the spine are three separable things."
+%         -> The disc is drawn at y = 8.90 against a spine at 8.54, which is
+%            0.36cm and not 0.22cm. There is NO white halo under it: the only
+%            \fill[white] in the file is band (b) row one's open control disc.
+%            And there is no bar in (a) at all, since W6 drew the interval once
+%            and gave (a) a single filled disc. The decision's REASON -- that a
+%            mark on the spine reads as a thickening of the axis, so it is
+%            lifted clear -- survives; its three measurements do not.
+%     (ii) LAYOUT NOTE "TICK NUMERALS CARRY fill=white AND ARE DRAWN LAST IN
+%         THEIR BAND."
+%         -> num/.style and numL/.style carry no fill. The white box existed to
+%            interrupt the magnifier's left leader where it crossed band one's
+%            "0"; W10 deleted that leader, so nothing crosses the numerals and
+%            drawing order no longer matters.
+%     (iii) LAYOUT NOTE "The band-two tag is anchored at x = 0.75 and not at
+%         x = 0.00, because the magnifier's left leader is a vertical at
+%         x = 0.55."
+%         -> Neither object exists: the tag went at W7 (replaced by 4.11's
+%            panel head) and the leader at W10.
+%     (iv) LAYOUT NOTE "BAND ONE'S RIGHT END is a terminal tick RISING from the
+%         spine, 0.30cm tall against the 0.10cm hanging axis ticks, with its
+%         two label lines right-aligned on the same x = 13.85."
+%         -> It rises 0.22cm, from 8.54 to 8.76, at x =
+%            \ga{0.06420005919957501} = 13.995612905507352, and it carries ONE
+%            label line, not two. Band (b)'s right end now carries the same cap
+%            at the same x (Y10).
+%     (v) LAYOUT NOTE "The bounding box is pinned with a bare \path so the
+%         measure is exact and nothing is clipped: (0.0000,0.30) to
+%         (14.1900,8.98) = 141.9 x 86.8mm."
+%         -> It is pinned (0.00,1.68) to (13.9957,10.18) after Y13, and the
+%            measured content box is at Y16. The 141.9 x 86.8mm figure is a
+%            pass-2 measurement and is over both the 142mm measure and the 85mm
+%            height cap.
+%     (vi) W11's "The 0.50pt densely dotted stroke is used once, for band two's
+%         zero rule, and is a distinct kind of object."
+%         -> It has two instances in this build and had two in pass 10, as
+%            X17's own weight count records: band (a)'s projection from the disc
+%            to the spine, and band (b)'s zero rule. It is not a singleton and
+%            needs no singleton declaration under S10. The 1.00pt interval bar
+%            IS a singleton and its declaration stands.
+%
+% Y15. FINDINGS OVERRULED, WITH THE REASON, so they are not re-applied blind.
+%     (a) "Take the open control disc's edge to ink rather than quietink, as
+%         fig 4.11(b) does for its matched-dimension random slab." OVERRULED.
+%         S8 gives quietink to a comparator, a null or a control and S9 says
+%         the open disc's 0.8pt edge is drawn "in its colour"; ink is the rank
+%         S8 reserves for thresholds, axes, axis labels, titles and definitional
+%         prose, so an ink ring would put the control in the apparatus rank and
+%         make the comparator heavier than the accent mark under test. 4.11(b)
+%         can draw its null black because its palette has no quietink rank at
+%         all; this figure has four ranks and the control's is quietink. The
+%         defect the finding reports is real and blocking and is fixed by the
+%         gap alone (Y7): 7.2pt of white against the mono face's own 3.43pt
+%         character advance, where 3.28pt was letter-spacing.
+%         The companion finding, "quietink carries two ranks -- the one
+%         measured comparator's label and all four apparatus lines", is
+%         OVERRULED for the same reason from the other side: S5 mandates
+%         quietink for both scope lines and S17 for the foot block, so the
+%         collision cannot be broken by recolouring either party. It is broken
+%         by position, which is how this figure has always broken it: the
+%         control's label is anchored on a mark, on a row, inside the data
+%         field; every apparatus line is panel-level text on the figure's one
+%         x origin, under an axis.
+%     (b) "Drop band (b)'s two arm dots. Their values are quoted in no sentence
+%         of the thesis and the proposed caption already prints them, and the
+%         one interval bar horizontally contains both of them." OVERRULED.
+%         The spec's keep-list makes the three-row structure -- permuted, swap,
+%         and their difference -- load-bearing, and CF14 fails a rebuild that
+%         loses a load-bearing piece even if it passes every typographic check.
+%         Without the two arms the difference is a bare number with a bar and
+%         the figure stops drawing the subtraction that is its subject; design
+%         decisions 7 and 14 record that reasoning and it stands.
+%         THE DIAGNOSIS IS ACCEPTED AND IS REAL, and it is answered at Y9
+%         rather than by deletion. The arithmetic is an accident worth stating
+%         plainly: the bar runs \gb{0.0004024989353392094} = 0.702cm to
+%         \gb{0.002150955667015771} = 3.751cm, the control stands at 1.118 and
+%         the arm at 3.318, so the interval on the DIFFERENCE brackets both of
+%         its own operands, and \gb{diff_perm} = 2.201 falls within 0.02cm of
+%         their midpoint. What is done about it: the row pitch is no longer
+%         flat (0.58 / 0.64 rather than 0.54 / 0.54), so the derived row sits
+%         off the pair it is derived from; the row's name states the derivation
+%         at the bar's own end; and rows one and two name their arms
+%         individually immediately above, so "swap $-$ permuted" is read after
+%         "permuted" and "swap" and not before them.
+%         The finding's own fallback -- "move rows one and two onto their own
+%         short strip with their own zero" -- is also OVERRULED: a second rule
+%         for one quantity at one scale inside one panel is a second axis a
+%         reader has to reconcile with the first, against S13's one grid, and
+%         it would put two zeros 5mm apart on a figure whose subject is a
+%         distance from zero.
+%     (c) "Move the magnifier bracket into band (a)'s tick lane, rail at the
+%         hanging ticks' depth with its stubs turned UP to the spine; or, if
+%         that lane cannot be had, delete the bracket and tint the magnified
+%         span in (a) and the whole of (b)'s data field instead." OVERRULED,
+%         both halves. X16 (b) and (c) already overruled the first and the
+%         reason holds: a bracket in the tick lane needs its label in the
+%         tick-numeral lane, which is the defect S24 indicts in fig:purify,
+%         where the word "four" sets on the x-tick baseline and reads as a
+%         leftmost tick. The tint is worse, not better: S12 permits a filled
+%         rectangle only where the rectangle IS an object in the argument and
+%         forbids outright a rectangle drawn round a panel, and a tint over the
+%         whole of (b)'s data field is that rectangle by another means -- the
+%         object W4 deleted. The finding's real complaint, that the assembly did
+%         not read as a bracket at all, is accepted and fixed at Y5.
+%     (d) "Raise the bracket's rail onto its label's own baseline, so the rail
+%         and the label read as one object rather than the rail reading as a
+%         strike-through beside the words." OVERRULED as already true. The rail
+%         at 7.02 stands 0.06cm above a label baseline at 6.96, which is that
+%         label's own x-height centre, so rail and label are optically on one
+%         line. What made it read as a rule was the 0.51mm stubs and the scope
+%         line overhanging both its ends; both are fixed at Y5.
+%     (e) "Label band (b)'s right cap 'one eighth of it, 0.008025 nats', so
+%         that the exact eight becomes a division a reader can perform on two
+%         printed numbers." OVERRULED on geometry, not on principle. Band (b)'s
+%         threshold rule stands at \gb{0.006420005919957502} = 11.196cm and
+%         runs the full height of the data field; a label right-aligned on the
+%         axis's end at 13.996cm measures 3.4 to 4.7cm at \scriptsize and
+%         crosses it, and the only string short enough to clear the rule is a
+%         bare numeral with no name, which S20 forbids. There is no lane above
+%         the rule either: (b)'s threshold label already occupies it, ending at
+%         11.10cm. The magnification is stated by (b)'s panel head, by (b)'s
+%         axis-label scope line and by (a)'s bracket label, and its EXACTNESS
+%         is caption material (X14, and the caption states it). The cap added
+%         at Y10 is axis furniture -- the rule's own end -- and not a mark, so
+%         it needs no name under S20; its end is named by (b)'s axis label,
+%         which is W13's reasoning and survives.
+%     (f) "Restore the spec's clause 'the full width of this rule is the
+%         model's clean preference gap' to band (a)'s scope line: line one
+%         reads 'preference shift, nats', but band (a)'s full width is
+%         clean_ab_gap, the model's contrast score with NO intervention -- a
+%         level, not a shift -- so a reader who takes the axis label at face
+%         value reads the right terminus as a preference shift of 0.0642 nats."
+%         OVERRULED a third time. The REASON RECORDED AT W16(i) AND X16(f) IS
+%         WITHDRAWN AND REPLACED, because it was wrong: both cited S18, and
+%         S18 forbids a drawing from restating a clause of ITS OWN CAPTION or
+%         of the paragraph that introduces the float. It says nothing about a
+%         drawing carrying two related statements of its own. The clause is
+%         refused on S5 and S15 instead. S5 caps the axis-label block at two
+%         lines and gives line two to scope or a scale note; a thirty-character
+%         clause about what the axis's other end IS is neither. And the fact is
+%         already stated at the two places a reader looks for it: the panel head
+%         reads "(a) the whole clean preference gap" after Y1, and the terminal
+%         label at the axis's own right end reads "the clean preference gap,
+%         0.0642 nats". THE FINDING'S UNDERLYING OBSERVATION IS RIGHT AND IS
+%         RECORDED HERE so that no later reader has to rediscover it: this
+%         axis's quantity name is the quantity its MARKS carry, and its right
+%         terminus is a level of that same contrast score measured with no
+%         intervention, named as such at the terminus. Laying the two on one
+%         rule is the figure's whole construction and the thesis's own -- 04b:
+%         663 divides every effect by "that model's own clean preference gap,
+%         measured with no intervention".
+%     (g) "Scale the mono up so that \texttt sets at the roman's x-height:
+%         6.85 x (3.96/3.24) = 8.37pt." OVERRULED again, as at X16(d), and for
+%         a reason that finding does not meet. 6.85pt is preamble.tex's global
+%         scaling of Inconsolata to Pagella and it applies to every \texttt in
+%         the thesis. Overriding it inside one figure would make this figure's
+%         JSON key names set differently from comparators.tex's, ladder.tex's
+%         and the body text's, which is a worse inconsistency than an x-height
+%         step inside a label; and S1 exempts the \texttt token name from the
+%         size count precisely so that the document's global scaling can stand
+%         without a figure having to fight it.
+%     (h) "In band (a) the two black labels that share the '<name>, <value>
+%         nats' construction are the CLOSER pair (0.30cm) while the accent
+%         label, which differs from both in face, colour and construction, is
+%         the further (0.40cm); drop the terminal label 8.86 -> 8.80 and lift
+%         the threshold label 9.16 -> 9.22." OVERRULED as proposed, accepted in
+%         substance. The two black labels are 34mm apart horizontally, sit on
+%         different baselines, and one is right-aligned onto the axis's own end
+%         cap while the other is left-set beside a rule 8cm away; X6(ii)
+%         separated them for the stronger reason that they had SHARED a
+%         baseline, and the proposed 8.80 would set a 7.97pt baseline 1.1pt
+%         above the 0.22cm cap it labels, re-creating the collision X6(ii)
+%         removed. After Y2 the stack reads 0.40 / 0.34 / 0.30 from the head
+%         down -- monotone, so nothing alternates and no pair is singled out by
+%         its spacing.
+%
+% Y16. MEASURED ON THE PASS-11 BUILD, not estimated, and SUPERSEDING X17's
+%     bounding box by name. figs/_preview.py --width text materiality reports
+%     ok, pages = 1, Overfull 0, Underfull 0.
+%       content bounding box   140.34 x 84.33mm   (S14's 138-142mm; 85mm cap)
+%       ink                    5.36% of pixels below 230 grey at 200dpi (6.0%)
+%       figure text            587 characters, 4.96 per 100mm^2   (ceiling 5.0)
+%     X17 recorded 139.96 x 84.12mm for the pass-10 build; re-measured with the
+%     contract's own threshold (pixels below 230 grey at 200dpi, clipped to the
+%     content box) that build is 140.21 x 83.82mm. The +0.25mm and -0.30mm are
+%     a method difference and not a drawing change, and they are recorded here
+%     rather than left as an unexplained discrepancy: X17's number came from a
+%     box measured before the antialiased edge columns of the axis caps were
+%     counted. Both builds are inside every limit; this one is 0.67mm under the
+%     height cap and 0.04 characters per 100mm^2 under the density ceiling,
+%     which is why six characters came out of the foot block when "of seven",
+%     "clean" and "zero" went in.
+%     Rule weights, counted off the PDF: 0.30pt x10 (nine rulegrey furniture
+%     strokes -- eight ticks and the bracket polyline -- plus one accent
+%     leader), 0.40pt x5 (two spines and three end caps), 0.50pt densely dotted
+%     x2, 0.90pt x2, 1.00pt x1. Five weights, no singleton except the interval
+%     bar, which W11 declares as a distinct kind of object. Plus the 0.80pt
+%     open-disc edge, which is a mark edge and not a rule.
+%     Type: 7.97pt (417 characters) and 9.96pt (111) in TeXGyrePagella, which
+%     are \scriptsize and \footnotesize; 6.85pt (58) in Inconsolata, which S1
+%     exempts; 8.30pt (8) and 10.38pt (1) in the math companions, which are the
+%     same two nominal sizes set from the math families. Italic: one span,
+%     PazoMath-Italic at 7.97pt, the mathematical $\alpha$ -- 2 of 587
+%     characters, 0.34%, a symbol's own face and not an italic voice (S16).
+%     Sans 0%. Bold 0%. Rectangles 0. Arrowheads 0.
+%
+% Y17. THE CAPTION. figs/_PENDING_CAPTIONS.tex is updated in the same pass and
+%     three of its clauses changed with the drawing: band (a)'s mark now prints
+%     its value, band (b)'s row three no longer does, and (b)'s rule is capped
+%     at both -- at its right -- end. ONE ITEM IN THAT FILE IS BLOCKING and is
+%     flagged there as such: the printed caption (04b:617-618) says only "this
+%     is one arm at one depth at one rung", which is a scope statement, while
+%     layer 12 is the argmax of the anchor seed's seven-depth sweep and the
+%     only one of the seven whose interval excludes zero. The drawing now says
+%     "layer 12 of seven" (Y4), which discloses that the depth was chosen from
+%     a set but not that it was the favourable one; only the caption can carry
+%     that, and no builder on this pass may edit Sections/.
+% ===========================================================================
+%
+% ===========================================================================
+% v-BLOCK, 2026-08-19: WHOLE-SLATE PASS (fig:comparators, fig:licensing,
+% fig:purify, fig:hook, fig:materiality reconciled against one another and
+% against fig:mechanism, which is the document's reference standard and was
+% NOT rebuilt). Nothing above this line is deleted; where an earlier claim is
+% now false it is superseded EXPLICITLY below.
+%
+% WHY. The five figures were rebuilt independently and drifted. This pass owns
+% only the differences BETWEEN them. No value changed in any of the five; the
+% sibling .json ledgers carry the value-to-position maps, old and new.
+%
+% THE SLATE RULES THAT NOW HOLD ACROSS ALL FIVE (each stated once here, in
+% every file, so any future single-figure edit can see what it would break):
+%
+%  R1 TICK NUMERALS are quietink, \scriptsize, inner sep 0, anchored north on
+%     the tick and set 0.16cm below the axis rule, over a 0.10cm rulegrey
+%     0.30pt tick. Before: comparators/licensing/purify quietink, hook and
+%     materiality ink; ticks 0.10 / 0.12 / 0.14cm; three different gaps.
+%  R2 A THRESHOLD'S OWN LABEL IS BLACK, matching the black solid 0.90pt rule
+%     it names (S6). Before: comparators black, purify's "gate, 0.8" and
+%     materiality's two margin labels ink.
+%  R3 ONE NAME PER OBJECT (S19). The pre-registered 10% rule is "10%
+%     materiality margin" in fig:comparators row (c), fig:materiality (a) and
+%     (b), and in figs/family.py, which is where the name comes from.
+%     fig:comparators' "pre-registered margin" is superseded; "pre-registered"
+%     is now the caption's word, not the drawing's. Zero, where it is the null
+%     a bar is read against, is "zero: no identity effect" in BOTH
+%     fig:comparators row (c) and fig:materiality (b) -- one quantity, one
+%     wording. V_pure is spelt with \textrm everywhere, as figs/slab.tex does.
+%  R4 COLOUR KEY, one key for five figures (S8). accent = the drug-side object
+%     under test. quietink = every comparator, null, control, replication or
+%     discounted arm, AND its label, AND its leader. ink/black = thresholds,
+%     axis rules, axis labels, panel heads, definitional prose. rulegrey =
+%     furniture only. Within quietink the GLYPH separates two kinds: an OPEN
+%     disc is a construction built to carry no signal (a null, a control, a
+%     raw/before series); a FILLED disc is a real measurement that is not the
+%     headline. fig:hook (d) drew both its null and its cell-line control in
+%     ink and is corrected.
+%  R5 PROJECTION AND ZERO RULES are quietink 0.50pt densely dotted (S7).
+%     fig:hook's two panel-(c) projection lines were rulegrey 0.30pt densely
+%     dashed and are corrected.
+%  R6 DEFINITIONAL PROSE is \footnotesize ink and OUTRANKS every label (S4);
+%     at most one block per figure, on the panel's own x origin. fig:hook's
+%     one prose line was \scriptsize and is raised. fig:purify's panel-(b)
+%     block carried an argument clause ("so causal claims use the purified
+%     slab, not the raw") that its caption already carries, and is now
+%     definitional only.
+%  R7 ONE INTERVAL DECLARATION per figure, \scriptsize quietink, at the foot,
+%     on the figure's x origin, opening with the word "Intervals:" and naming
+%     EVERY panel including the ones with no measured mark (S17).
+%     fig:comparators already did this and is the model; the other four now
+%     match its form.
+%  R8 THE FIVE-FIELD PROMPT STRIP is ONE object drawn in two figures, and the
+%     two drawings are now congruent: cell boundaries 0 / 1.12 / 1.90 / 2.64 /
+%     4.23 / 6.90 cm and cell height 0.42cm in both fig:licensing (a) and
+%     fig:hook (a) and (b), labels centred in their cells, the drug cell
+%     accent-bordered at 0.40pt on accent!12 and its label NOT bold. Before:
+%     licensing 6.90cm wide with 0.62cm cells and a bold label, hook 7.44cm
+%     wide with 0.42cm cells and a plain label -- the same five fields at two
+%     sizes, four pages apart, with each caption pointing at the other.
+%  R9 MEASURE. Every fullwidth figure draws 172.0-174.0mm; the one textwidth
+%     figure draws 140.3mm. Ink at 200dpi inside the content bbox, counted as
+%     greyscale luminance below 230 (the contract's own method), is now
+%     5.63-5.99% on all five, under the 6.0% body ceiling, where before this
+%     pass it ran 5.36-6.54%.
+%
+% WHAT THIS PASS DELIBERATELY DID NOT UNIFY, so that a later reader does not
+% think it was missed:
+%  * PANEL-HEAD CASE. fig:comparators sets "(a) Is it there?" and the other
+%    four set "(a) where the drug name enters". comparators' heads are
+%    interrogative SENTENCES and sentence case is correct for a sentence; the
+%    v4 header argued this and the argument stands. fig:mechanism's lowercase
+%    heads are noun phrases, not questions. One capital letter, four times.
+%  * PANEL-HEAD POSITION. fig:comparators puts its heads in a right-aligned
+%    left stub, the other four above the panel at its x origin. Moving them
+%    above the rules costs about 20mm of height against a 118mm cap that the
+%    figure already meets at 117.60mm. Not available.
+%  * TWO-COLUMN GUTTER. purify and hook split at x = 8.40cm, licensing at
+%    7.75cm. licensing cannot move right: "(d) what a negative would buy" is
+%    4.85cm wide and its origin is already at 12.40 of a 17.30cm measure, with
+%    1.5pt of slack. Moving purify and hook LEFT to 7.75 would be arbitrary.
+% ===========================================================================
+%
+% CHANGED IN THIS FILE. (i) No math sign is set from a CM font any more. The
+% panel-(b) head's 8x (CMSY10 at 10.38pt, the largest glyph on the figure and
+% a THIRD type size above 7pt) is now 8\texttimes{}; the two minus signs of
+% "swap - permuted" are \textminus{}; +0.0013, 10%, 0.00642, 0.0642, 12, 58
+% and 95% lose their math mode, and $\alpha = 0.5$ becomes $\alpha$ = 0.5,
+% which is fig:comparators' idiom. The figure now prints exactly 9.96 and
+% 7.97pt in one face, plus the \texttt arm names. (ii) Tick numerals go ink ->
+% quietink with inner sep 0, set 0.16cm below their rule (R1). (iii) Both
+% "10% materiality margin" labels go black, matching the black solid 0.90pt
+% rule they name (R2). (iv) Band (b)'s zero label "zero" -> "zero: no identity
+% effect", which is fig:comparators row (c)'s wording for the same null under
+% the same quantity (R3), and goes ink -> quietink so that the label matches
+% the dotted quietink rule it names. (v) \texttt{residual} -> residual in the
+% scope line: fig:comparators names the same arm "residual seeds at layer 12"
+% in plain roman, and an arm name in prose is not a code token. \texttt{swap}
+% and \texttt{permuted} stay, because they are the two stored conditions and
+% tab:identity sets them so. (vi) The foot block takes the slate's declaration
+% form (R7).
+% NOT CHANGED, and still declared: the 1.00pt interval bar is a singleton
+% weight because this figure stores exactly one interval (S10's permission);
+% the 0.80pt open-disc edge is a MARK edge, not a rule.
+% RE-MEASURED: 140.34 x 84.45mm (cap 85, textwidth band 138-142); ink 5.630%;
+% 620 characters, 5.23 per 100mm^2. One page, zero Overfull, zero Underfull.
+% ===========================================================================
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small, inner ysep=1pt, inner xsep=0pt,
+  %% TYPE. Two sizes above 7pt and one face (S1, W12). \footnotesize = 10.0pt
+  %% carries the two panel heads and the two axis-label line ones and nothing
+  %% else; \scriptsize = 8.0pt carries ticks, direct labels, scope lines, the
+  %% threshold labels and the interval declaration. No sans, no bold, no italic.
+  %% INNER SEP, PASS 10 (X12). It was inner sep = 1pt on the whole picture; the
+  %% vertical half is unchanged, so every clearance below is still box
+  %% arithmetic, but the horizontal half is now 0pt. With xsep = 1pt every
+  %% left-anchored text box stood 1.19pt (0.42mm) inside the axis's left end,
+  %% so both rules protruded to the left of the entire text column and S5's
+  %% "left-aligned to the axis's left end" was met to 0.42mm and not exactly.
+  head/.style  ={font=\footnotesize, text=ink,      anchor=base west},
+  axlab/.style ={font=\footnotesize, text=ink,      anchor=base west},
+  scope/.style ={font=\scriptsize,   text=quietink, anchor=base west},
+  qlabz/.style ={font=\scriptsize,   text=quietink, anchor=base west},
+  lab/.style   ={font=\scriptsize,   text=ink,      anchor=base west},
+  labR/.style  ={font=\scriptsize,   text=ink,      anchor=base east},
+  acc/.style   ={font=\scriptsize,   text=accent,   anchor=base west},
+  rowq/.style  ={font=\scriptsize,   text=quietink, anchor=west},
+  rowa/.style  ={font=\scriptsize,   text=accent,   anchor=west},
+  %% Tick numerals are INK, not quietink: they are part of the axis, and S8
+  %% gives ink to axes and axis labels while quietink means a comparator or a
+  %% control. 4.11 and 4.13 both set their tick numerals dark for this reason.
+  num/.style   ={font=\scriptsize,   text=quietink, anchor=north,
+                 inner sep=0pt},
+  numL/.style  ={font=\scriptsize,   text=quietink, anchor=north west,
+                 inner sep=0pt},
+  blab/.style  ={font=\scriptsize,   text=black,    anchor=base west},
+  blabR/.style ={font=\scriptsize,   text=black,    anchor=base east},
+  %% FIVE STROKE WEIGHTS, each with one meaning (S10, W11).
+  tick/.style  ={rulegrey, line width=0.3pt},                  % furniture
+  lead/.style  ={rulegrey, line width=0.3pt},                  % furniture
+  accled/.style={accent,   line width=0.3pt},                  % furniture, in the mark's colour (S22)
+  spine/.style ={ink,      line width=0.4pt},                  % axis rule and its two end caps
+  proj/.style  ={quietink, line width=0.5pt, densely dotted},  % zero rule / projection (S7)
+  thresh/.style={black,    line width=0.9pt},                  % the one threshold (S6, W3)
+  bar/.style   ={accent,   line width=1.0pt},                  % interval
+  ctrl/.style  ={quietink, line width=0.8pt}]                  % open-disc edge: a MARK edge, not a rule (S9, W11)
+
+  %% ==== THE TWO MAPS ====================================================
+  %% Superseded constants, kept in materiality.json: 0.55+(#1)*207.1650 and
+  %% 0.55+(#1)*1657.3200. The 0.55cm inset is gone so that the axis's left end
+  %% and the panel's x origin are one coordinate (S13, W1).
+  %% 1744.0000 = 8 x 218.0000 EXACTLY, so the magnification is exactly eight,
+  %% and \ga{clean_ab_gap} = \gb{clean_ab_gap/8} = 13.995613cm exactly.
+  %% PASS 10, X1: the pass-9 header block records these two constants as
+  %% 215.7500 and 1726.0000 and the shared right end as 13.851163cm. Those
+  %% numbers were never drawn by this file. The two lines below are the map,
+  %% and materiality.json has always recorded them correctly.
+  \def\ga#1{{(#1)*218.0000}}   % band (a): 0 .. 0.06420005919957501 nats
+  \def\gb#1{{(#1)*1744.0000}}  % band (b): 0 .. 0.008025007399946877 nats
+
+  %% ==================== BAND (a) -- THE WHOLE GAP ========================
+  %% PASS 11, Y1: the head names the object by the registry string. It read
+  %% "(a) the whole preference gap" while the terminal label 8cm to its right
+  %% read "the clean preference gap", so one JSON key (clean_ab_gap) carried
+  %% two names inside one panel, which is what S19's mechanical check forbids.
+  %% "whole" is kept because it is the contrast with (b)'s "first eighth".
+  \node[head] at (0.00,9.90) {(a) the whole clean preference gap};
+
+  % The estimate, drawn once and without a bar (W6). At true scale it stands
+  % 2.75mm from the origin on a 139.96mm rule, which is the panel's whole point.
+  % Its name is band (b) row three's name, because one JSON key takes one name.
+  % PASS 10, X4: THE LABEL IS ANCHORED AT THE MARK, not at the panel origin.
+  % Pass 9 set it base west on x = 0.00 while its leader fell from
+  % \ga{diff_perm} = 0.2751, so the leader descended from inside the word
+  % "swap" and the mark read as the SWAP arm -- whose value is 0.0019, not the
+  % 0.0013 drawn. That is the one mark in band (a); mis-naming it loses the
+  % panel. The label now begins on the mark's own x, and the leader falls from
+  % its first character.
+  % PASS 11, Y2: THE LABEL PRINTS THE VALUE, AND IT DROPPED 0.06cm.
+  % Two defects, one edit. (i) At 9.56 the label stood 0.34cm under the panel
+  % head, near-left-aligned with it (7.8pt of indent), so head and label read
+  % as a two-line title and the panel's single mark lost its name; the head's
+  % descenders cleared the label's ascenders by 2.6pt. At 9.50 that clearance
+  % is 4.3pt and the gap to the threshold label below is 0.34cm = 9.7pt, which
+  % is still wider than the 7.94pt X6(i) condemned. (ii) Without a value the
+  % math minus between two mono tokens parses as easily as a gloss dash --
+  % "swap, that is, permuted" -- so the one mark in (a) could be read as the
+  % SWAP arm, whose value is 0.0019 and not the 0.0013 drawn. The value now
+  % settles it, and it also makes (a) self-sufficient for the figure's
+  % question: 0.0013 against the 0.0642 printed at the axis's right end, and
+  % against the 0.00642 printed at the threshold.
+  % WHY A VALUE MAY BE PRINTED HERE AND NOT ON A ROW OF (b). This label sits
+  % 0.96cm above the spine and is leadered to its disc; positions in that lane
+  % are not read as values, which is why (a)'s threshold label already prints
+  % 0.00642 three centimetres right of the rule it names and its terminal
+  % label prints 0.0642 four centimetres left of the cap it names. A label set
+  % on a data row's OWN baseline is read positionally, which is why the value
+  % came off (b)'s row three (Y8).
+  \node[acc] at (\ga{0.0012618344965644142},9.50)
+    {\texttt{swap} \textminus{} \texttt{permuted}, +0.0013 nats};
+  % The label's leader is accent 0.30pt, the mark's own colour (S22). PASS 10,
+  % X5: it now LANDS ON THE DISC. It used to stop at 9.12 against a disc whose
+  % top edge is 8.9493, leaving 4.84pt of white, so the leader read as a stray
+  % accent tick under the label and the label read as unattached.
+  \draw[accled] (\ga{0.0012618344965644142},9.40)
+             -- (\ga{0.0012618344965644142},8.95);
+  % The stem down onto the spine anchors the mark to a coordinate rather than
+  % leaving it floating above the rule; pass 8 added it after both reviewers
+  % reported they could not tell whether the mark was a mark, a tick or a
+  % printing artefact, and it survives the rebuild. It is drawn in the PROJECTION
+  % register -- quietink 0.5pt densely dotted, which is what S7 reserves that
+  % stroke for -- and not in the leader's accent, because on the build that drew
+  % leader and stem at one weight and one colour the assembly read as a VERTICAL
+  % interval bar with a dot on it, which is the one thing this figure must not
+  % appear to draw. PASS 10, X5: it now touches the disc's lower edge (8.85
+  % against the disc's 8.8507) and the spine (8.54), instead of floating 2.0pt
+  % clear of the one and 0.57pt clear of the other.
+  \draw[proj] (\ga{0.0012618344965644142},8.85)
+           -- (\ga{0.0012618344965644142},8.54);
+  \fill[accent] (\ga{0.0012618344965644142},8.90) circle (1.4pt);
+
+  % The one threshold, black and solid, in both bands (S6, CF2, W3). Its value
+  % is printed here and the quantity it is a tenth of is printed at the axis's
+  % right end, so the tenth is a division on two printed numbers and needs no
+  % brace (W5).
+  % PASS 10, X3: IT STANDS ON THE SPINE AND NO LONGER CROSSES IT. Pass 9 drew
+  % it from 8.38, which is 0.06cm BELOW the hanging ticks' ends and 0.02cm above
+  % the tick numerals, so the heaviest stroke in the panel doubled as an
+  % outsized unnumbered tick sitting between the numerals "0" and "0.02" -- the
+  % same "the threshold merges with the tick furniture" defect S7 indicts in
+  % fig:comparators row (a). Band (b) already drew its half of the same
+  % threshold from its own spine upward; the two now agree.
+  \draw[thresh] (\ga{0.006420005919957502},8.54)
+             -- (\ga{0.006420005919957502},9.04);
+  \node[blab] at (1.50,9.16) {10\% materiality margin, 0.00642 nats};
+
+  % The axis. PASS 10, X7: BOTH ENDS NOW CARRY THE SAME CAP. The right end is
+  % the clean preference gap and has always carried a rising 0.22cm ink stub;
+  % the left end carried only the same rulegrey hanging tick as 0.02, 0.04 and
+  % 0.06, so the span whose full width IS the figure's denominator was
+  % delimited at one end by an ink stub and at the other by an ordinary tick,
+  % and did not read as a bounded span at all. Two matching caps, no new weight
+  % and no new colour.
+  % PASS 11, Y3: THE AXIS'S RIGHT END IS COMPUTED, NOT TRANSCRIBED. It was
+  % hard-coded 13.995613 here, at the end cap and at the terminal label, while
+  % W1 and the layout note both assert that "every data x is still computed
+  % inside pgfmath from the full-precision float, so no value is rounded into
+  % the source". \ga{0.06420005919957501} = 13.995612905507352, so the literal
+  % was short by 3.5e-7cm -- invisible, but it is the ONE coordinate this
+  % figure exists to draw, and the claim about it was false. Only the pinned
+  % bounding box below still carries a rounded literal, and it carries no
+  % value: it is a box corner, declared as such at Y13.
+  \draw[spine] (0.00,8.54) -- (\ga{0.06420005919957501},8.54);
+  \draw[spine] (0.00,8.54) -- (0.00,8.76);
+  \draw[spine] (\ga{0.06420005919957501},8.54) -- (\ga{0.06420005919957501},8.76);
+  % PASS 10, X6: the terminal label sits ON ITS OWN CAP, at y = 8.86, and no
+  % longer shares the 9.16 baseline and the "<name>, <value> nats" construction
+  % with the threshold label 8cm to its left. Read cold on the pass-9 build the
+  % two were one row of two labels in one style, so "the clean preference gap,
+  % 0.0642 nats" read as the label of a RULE and a reader looked for a rule at
+  % 0.0642 and found a 0.22cm end cap. It is now 0.10cm above that cap.
+  \node[labR] at (\ga{0.06420005919957501},8.86)
+    {the clean preference gap, 0.0642 nats};
+  \foreach \v/\t in {0.02/0.02, 0.04/0.04, 0.06/0.06}{
+    \draw[tick] (\ga{\v},8.54) -- (\ga{\v},8.44);
+    \node[num] at (\ga{\v},8.38) {\t};}
+  % Zero is both the axis's left end and the panel's x origin, so its numeral is
+  % set flush with that origin rather than centred on it: a centred "0" is the
+  % only object that would break the figure's single left edge (S13).
+  \draw[tick]  (0.00,8.54) -- (0.00,8.44);
+  \node[numL] at (0.00,8.38) {0};
+
+  % AXIS LABEL, in axis-label position: directly under the tick numerals, left
+  % edge on the axis's left end, quantity and unit on line one (S5, W2).
+  % PASS 10, X13: set lowercase, as 4.11 and 4.13 set every axis label of
+  % theirs and as S19's registry gives the name.
+  % PASS 11, Y4: THE SCOPE LINE DROPS 0.12cm AND DISCLOSES THE SELECTION.
+  % (i) LEADING. It was set 0.28cm under a 9.96pt line, which is 7.94pt of
+  % baseline-to-baseline for type 2pt larger than the lead -- negative leading,
+  % and the tightest of the four stacked pairs in this figure. Four such pairs
+  % were set at or under solid and it is the single thing that made the figure
+  % look crowded beside 4.11. Both axis-label blocks and the foot block now
+  % open to 0.38cm (10.8pt), and the whole of the added height was paid for out
+  % of the white between the two bands, which fell 1.14cm -> 0.77cm.
+  % (ii) SELECTION. "layer 12" alone is a scope statement. Layer 12 is the
+  % argmax of the anchor seed's seven-depth sweep and the only one of the seven
+  % whose interval excludes zero (diff_perm_norm with p_perm: +0.0022 p 0.583,
+  % -0.0050 p 0.139, -0.0025 p 0.4495, +0.0041 p 0.3955, -0.0019 p 0.635,
+  % +0.0197 p 0.001, +0.0059 p 0.4885 at layers 2/4/6/8/9/12/16). "of seven"
+  % is nine characters and it tells a reader on the drawing that the depth was
+  % one of a set; WHICH one, and why that matters, is caption material and the
+  % proposed caption in figs/_PENDING_CAPTIONS.tex carries it. Until a human
+  % integrates that caption the printed one (04b:617-618) says only "one arm at
+  % one depth at one rung", which is scope and not selection.
+  \node[axlab] at (0.00,7.78) {preference shift, nats};
+  \node[scope] at (0.00,7.40)
+    {residual arm, layer 12 of seven, $\alpha$ = 0.5};
+
+  % The magnified span, named as an object and not traced by a leader (W10).
+  % Its two stubs turn DOWN, towards the panel that opens the span, so the
+  % bracket points at (b) instead of back at an axis it already stands under.
+  % PASS 10, X8: raised 0.16cm, tight under the scope line, and its label now
+  % NAMES the object as well as pointing at (b). Two reviewers asked for it to
+  % be moved into the lane immediately under the tick numerals with its stubs
+  % reversed; both halves of that were overruled, and the reason is recorded in
+  % the pass-10 block under X8.
+  % PASS 11, Y5: THE STUBS ARE LONG ENOUGH TO SEE, AND THE BRACKET STANDS
+  % CLEAR OF THE AXIS-LABEL BLOCK. Measured on the pass-10 render, each stub
+  % was 4 pixels at 200dpi -- 1.44pt, 0.51mm -- of 0.30pt rulegrey, which does
+  % not survive print, so the assembly was a bare grey horizontal sitting
+  % 0.34cm under a scope line that runs past both of its ends: it read as an
+  % underline of "residual arm, layer 12," or as an editorial divider, and not
+  % as a bracket. Two changes, no new weight and no new colour: the stubs go
+  % 0.06cm -> 0.16cm, and the gap from the scope line goes 0.34cm -> 0.44cm,
+  % which is larger than the 0.38cm internal leading of the axis-label block
+  % above it, so the bracket stops reading as that block's third line.
+  % Two harder proposals were overruled and the reasons are at Y15 (c) and (d).
+  \draw[lead] (0.00,6.86) -- (0.00,7.02)
+           -- (\ga{0.008025007399946877},7.02)
+           -- (\ga{0.008025007399946877},6.86);
+  \node[scope] at (1.85,6.96) {the eighth magnified in (b)};
+
+  %% ============= BAND (b) -- THE FIRST EIGHTH, MAGNIFIED =================
+  %% PASS 11: the whole of band (b) is raised 0.14cm and its axis lowered
+  %% 0.10cm, which is where the leading opened at Y4 and Y11 was paid from.
+  \node[head] at (0.00,5.84) {(b) the first eighth, magnified 8\texttimes{}};
+  % The threshold label sits against the rule it names and takes the LEFT of it
+  % here and the RIGHT of it in (a): in each band the label goes on the side
+  % where the rule has room, which in (a) -- where the rule stands at a tenth of
+  % the measure -- is the right, and in (b) -- where it stands at four fifths --
+  % is the left. Set right of the rule here it measures 2.98cm from 11.30 and
+  % crosses the right end of the axis at 13.996 (checked on a build, which
+  % reported Overfull \hbox 2.84pt).
+  % PASS 10, X6: it has come off the panel head's baseline (5.70) and down onto
+  % its own, 0.12cm above the rule's top, in the same relation to its rule as
+  % (a)'s label is to (a)'s. On the pass-9 build it sat at exactly the head's
+  % baseline, so scanning the two panel heads read "(b) the first eighth,
+  % magnified 8x ... 10% materiality margin" as one title line.
+  \node[blabR] at (11.10,5.46) {10\% materiality margin};
+  \draw[thresh] (\gb{0.006420005919957502},3.68)
+             -- (\gb{0.006420005919957502},5.34);
+
+  % Zero. Densely dotted quietink 0.5pt is this document's stroke for a
+  % coordinate that decides nothing (S7).
+  % PASS 11, Y6: IT IS NAMED, ON THE SAME BASELINE AS THE THRESHOLD LABEL AND
+  % AT THE SAME 0.12cm ABOVE ITS OWN RULE'S TOP. SUPERSEDES W8's closing
+  % clause, that the rule "carries no label, because its foot is the axis's own
+  % 0 numeral". The equivalence criterion of 04b:507-513 is a CONJUNCTION --
+  % the interval must lie inside the margin AND contain zero -- and this
+  % figure's result is that it does the first and not the second. Pass 10 drew
+  % the margin conjunct as the heaviest stroke on the page and the zero
+  % conjunct as an unlabelled 0.5pt dotted rule standing on the panel's own x
+  % origin, where it has no figure/ground of its own; at a 4x squint it
+  % disappeared entirely. Naming it is what the figure's spec authorises ("if
+  % the zero rule needs a name it takes 'zero' in \scriptsize roman ink at the
+  % rule") and it is the whole of the fix: the rule is NOT promoted to the
+  % threshold register, because S6 reserves black solid 0.90pt for a threshold
+  % and S7 reserves this stroke for a coordinate that decides nothing -- which
+  % zero, as a coordinate, is. What decides is whether the bar clears it, and
+  % the bar clears it by 0.70cm.
+  % The label is placed with an xshift on the rule's own x, as the row labels
+  % are placed on their marks', so it is tied to the thing it names; the two
+  % vertical rules of (b) now carry one \scriptsize label each, on one
+  % baseline, one at each rule's top (S22).
+  % PASS 10, X9: it no longer starts on the spine. Drawn 3.58 to 5.56 it was
+  % collinear and continuous with the axis's left terminus, its hanging tick and
+  % the panel's x origin, ran the full height of the data region, and matched
+  % the threshold rule on the right for length -- so all three reviewers read
+  % the pair as the two sides of a frame round the rows, which is the object
+  % S12 exists to forbid. It now spans the three rows only, 0.28cm clear of the
+  % spine and 0.42cm clear of the panel head, and reads as what it is: the
+  % coordinate the interval bar's left end clears by 0.70cm.
+  \draw[proj] (0.00,3.94) -- (0.00,5.34);
+  \node[qlabz, xshift=3pt] at (0.00,5.46) {zero: no identity effect};
+
+  % ROW ONE, the control: an open disc, white fill, 0.8pt quietink edge, which
+  % is 4.11's own encoding for a comparator or a null (S9, CF5, W11).
+  % PASS 10, X10: the gloss separator is a comma. It was an em dash, in the same
+  % position after the token as row three's math minus, so one glyph class
+  % carried "namely" in two rows and "subtract" in the third on a figure whose
+  % whole subject is a subtraction. The minus in row three and in band (a) is
+  % now the only dash inside a label anywhere on the drawing.
+  % X12: the three row labels are placed with an xshift on the mark's own
+  % coordinate rather than at a literal x, so each label is tied to its mark.
+  % PASS 11, Y7: THE MARK-TO-LABEL GAP GOES 5pt -> 9pt IN ALL THREE ROWS.
+  % SUPERSEDES X12's closing clause, which set it at 5pt. At 5pt the open
+  % control disc stood 3.28pt from the first glyph of \texttt{permuted}, which
+  % is LESS than Inconsolata's own character advance at this size (3.43pt),
+  % while its outer diameter (3.6pt) is 11% larger than that face's x-height
+  % (3.24pt measured at 200dpi) and its 0.80pt edge is of comparable weight to
+  % the stems beside it. The one comparator mark on the drawing therefore set
+  % as a lowercase letter o prefixing the word: at 12x it reads "o permuted".
+  % Row two escaped only because its disc is filled and accent. At 9pt the gap
+  % is 7.2pt, twice the mono advance, and the ring is a mark again.
+  % A second fix was proposed for the same defect -- take the ring's edge to
+  % ink, as 4.11(b) does -- and it is overruled at Y15 (a).
+  \fill[white]  (\gb{0.0006409306049362111},5.24) circle (1.4pt);
+  \draw[ctrl]   (\gb{0.0006409306049362111},5.24) circle (1.4pt);
+  \node[rowq, xshift=9pt] at (\gb{0.0006409306049362111},5.24)
+    {\texttt{permuted}, same construction, wrong drug};
+
+  % ROW TWO, the arm under test.
+  \fill[accent] (\gb{0.0019027651015006252},4.66) circle (1.4pt);
+  \node[rowa, xshift=9pt] at (\gb{0.0019027651015006252},4.66)
+    {\texttt{swap}, points at the drug scored};
+
+  % ROW THREE, the measurement, and the only interval on the figure. The label
+  % is anchored on the interval's upper end, which is the rightmost ink in the
+  % row, so it clears the bar by the same 9pt the other two clear their discs.
+  % PASS 11, Y8: THE VALUE COMES OFF THIS LABEL. It printed "$+0.0013$ nats"
+  % 48.9pt (17.2mm) to the right of the disc whose value it is, ON THE ROW'S
+  % OWN BASELINE, where position is value: the numeral stood at x = 0.00339 on
+  % (b)'s axis, 2.7 times the number it printed and past the 0.0025 tick, on
+  % the one panel whose job is to let a reader place the estimate between zero
+  % and the 0.00642 margin. Rows one and two anchor at their marks and this
+  % row anchored at its bar's end, so one panel carried two anchoring rules and
+  % the one that misplaced its label was the one that printed a number. The
+  % label is now the row's NAME only, which is the same string band (a) uses
+  % for the same JSON key (S19), and the value is printed once, in (a), at a
+  % label lifted off the data lane and leadered to its disc (Y2). After this
+  % edit no numeral anywhere on the drawing stands on a data row's baseline.
+  % PASS 11, Y9: 0.06cm MORE AIR UNDER ROW TWO. The bar on this row spans
+  % 0.702 to 3.751cm and the two arm marks stand at 1.118 and 3.318, so the
+  % interval on the DIFFERENCE horizontally contains both of its own operands
+  % and the difference disc falls within 0.02cm of their midpoint by
+  % arithmetic accident. A reader can be offered "a 95% interval that brackets
+  % both arms", which is the opposite of what the row says. The row pitch is
+  % now 0.58 / 0.64 rather than a flat 0.54, so the derived row sits off the
+  % pair it is derived from; the label states the derivation; and the proposal
+  % to delete the two arm marks outright is overruled at Y15 (b).
+  \draw[bar] (\gb{0.0004024989353392094},4.02)
+          -- (\gb{0.002150955667015771},4.02);
+  \fill[accent] (\gb{0.0012618344965644142},4.02) circle (1.4pt);
+  \node[rowa, xshift=9pt] at (\gb{0.002150955667015771},4.02)
+    {\texttt{swap} \textminus{} \texttt{permuted}};
+
+  % The magnified axis, its ticks landing on the same four x as band (a)'s so
+  % that the two rules read as one rule at two scales (W13).
+  % PASS 11, Y10: BAND (b) IS CAPPED AT ITS RIGHT END, AND ITS END IS COMPUTED.
+  % SUPERSEDES W13's closing clause ("band two's right endpoint ... takes no
+  % tick and no numeral"). W13 declined a terminal MARK on the ground that
+  % (b)'s right end is named by (b)'s axis label rather than by a mark, and
+  % that reasoning stands -- but what it left was 26.01pt (9.17mm) of bare
+  % rule running past the last drawn tick to an end with nothing on it, which
+  % is the same rule-end-to-last-tick defect S13 measures at 8.1mm in
+  % fig:comparators row (c). Band (a) has the identical overhang and closes it
+  % with a 0.22cm ink cap; band (b) now closes it with the same cap, at the
+  % same x, in the same weight and colour, so the two rules terminate
+  % identically at the end where the overhang is and read as one rule at two
+  % scales. The cap is axis furniture -- the rule's own end -- and not a data
+  % mark, so S20 is untouched; the proposal to hang a value on it is overruled
+  % at Y15 (e). NO LEFT cap is added in (b): a 0.22cm ink stub rising from the
+  % spine at x = 0 would stand 0.14cm under the dotted zero rule and collinear
+  % with it, which is exactly the frame-edge reading X9 removed.
+  \draw[spine] (0.00,3.68) -- (\gb{0.008025007399946877},3.68);
+  \draw[spine] (\gb{0.008025007399946877},3.68)
+            -- (\gb{0.008025007399946877},3.90);
+  % PASS 11, Y11: the middle numeral prints 0.0050 and not 0.005. Band (a)'s
+  % three numerals carry two decimals each and band (b)'s carry four, and the
+  % one visible proof that (b) is (a) divided by eight is that the two lanes
+  % put congruent numerals on the same four x. A dropped place broke the
+  % column of trailing digits that carries it. The VALUE is unchanged; this is
+  % a print string, which is why the \foreach takes the value/label pair form.
+  \foreach \v/\t in {0.0025/0.0025, 0.005/0.0050, 0.0075/0.0075}{
+    \draw[tick] (\gb{\v},3.68) -- (\gb{\v},3.58);
+    \node[num] at (\gb{\v},3.52) {\t};}
+  \draw[tick]  (0.00,3.68) -- (0.00,3.58);
+  \node[numL] at (0.00,3.52) {0};
+
+  \node[axlab] at (0.00,2.92) {preference shift, nats};
+  % PASS 10, X14: "magnified 8x" comes off this line. The panel head 3.2cm
+  % above already carries it, and the exactness of the eight is caption
+  % material; what the axis-label line has to carry is the relation to the axis
+  % above, which is what is left.
+  \node[scope] at (0.00,2.54) {the first eighth of the axis above};
+
+  %% ==== THE ONE INTERVAL DECLARATION, at the foot (S17, CF8) =============
+  %% PASS 10, X2. The pass-9 second line read "No interval is returned for
+  %% permuted, for swap, or for (a)." That was false, and false about the one
+  %% mark on the figure that does have an interval: band (a)'s disc IS
+  %% diff_perm, and layers.12.swap.ci_perm is an interval on diff_perm. In this
+  %% document "returned" is what the instrument does, so the sentence told a
+  %% reader that band (a)'s estimate has no uncertainty available and, by
+  %% implication, that (a) and (b) draw different quantities. The declaration
+  %% now separates non-existence from non-drawing: the arms have no stored
+  %% interval, the difference has one, and it is drawn once.
+  %% Leading is 0.28cm here, as everywhere else in this figure. At pass 9 the
+  %% two lines were set 0.24cm apart, tighter than solid for 8pt type, and the
+  %% descender of "bootstrap" met the dot of the "i" below it.
+  %% PASS 11, Y12: 0.28cm -> 0.30cm between the two lines, and 0.46cm from the
+  %% axis-label block above rather than 0.42cm. 0.28cm is exactly solid for
+  %% 7.97pt type and the two lines' boxes met; the block also has to stand off
+  %% the axis-label block by more than that block's own 0.38cm internal
+  %% leading, or the four lines read as one four-line paragraph.
+  %% PASS 11: six characters come out of these two lines, and nothing else, to
+  %% keep the figure under S15's 5.0 characters per 100mm^2 after "of seven",
+  %% "clean" and "zero" went in. Both sentences say exactly what they said.
+  \node[scope] at (0.00,2.08) {Intervals: (b) 95\% bootstrap over 58 ordered pair clusters, on the difference, drawn once.};
+  \node[scope] at (0.00,1.78) {None is stored for \texttt{permuted} or \texttt{swap} alone, and (a) carries none.};
+
+  % The bounding box IS the body block; nothing may stick out of it.
+  % PASS 11, Y13: the floor goes 1.72 -> 1.68 to keep the foot block's
+  % descenders inside. This \path is the one rounded literal left in the file
+  % and it carries no value: 13.9957 is a box corner, not a coordinate any
+  % mark is drawn at, and every data x is computed by \ga or \gb from the
+  % full-precision float (Y3).
+  \path (0.00,1.68) rectangle (13.9957,10.18);
+\end{tikzpicture}
+\end{adjustbox}
+%
+% ---------------------------------------------------------------------------
+% READY TO PASTE into Sections/04b-representation.tex, at sec:res-mechanism,
+% immediately after the verdict paragraph (04b:332-342) or, if the page breaks
+% badly, after the equivalence-criterion paragraph (04b:412-419). The same block
+% was staged, at pass 9, in a figs/_PENDING_FLOATS.tex that does not exist;
+% PASS 10 supersedes that: the float wrapper is HERE and the caption is in
+% figs/_PENDING_CAPTIONS.tex, which does exist as of this pass (X15).
+%
+% PASS 9 NOTE. The caption below is the PROPOSED replacement and it is not yet
+% in Sections/. No builder on this pass may edit Sections/04b-representation.tex,
+% so the same text is written into figs/_PENDING_CAPTIONS.tex keyed by
+% \label{fig:materiality} for a human to integrate. Until that happens the
+% caption printed in main.pdf is the pass-8 one, and three of its clauses are
+% false of the rebuilt drawing -- see CAPTION NOTE, PASS 9 at the foot.
+%
+% \begin{figure}[htbp]
+% \centering
+% \input{figs/materiality}
+% \caption[The effect and its gap]{\captiontitle{The model
+% does move its preference towards the other drug's own held-out sentence, but
+% by one fiftieth of the preference it already has and one fifth of the margin
+% set in advance.} Residual arm, layer $12$, $\alpha = 0.5$, from
+% \texttt{probe\_arm\_residual.json}; normalised, the same estimate is the
+% \ci{+0.0197}{+0.0063}{+0.0335} of \cref{tab:identity} and
+% \cref{fig:comparators} row (c). \emph{(a)} The model's clean preference gap
+% between the two sentences compared, measured with no intervention and drawn
+% end to end between two ink caps, so that the axis's full width is the
+% denominator every effect in this section is divided by; the effect is the
+% accent disc near the origin, named at itself and dotted down onto the rule,
+% and the bracket below the axis label marks the eighth of the gap that (b)
+% opens out. \emph{(b)} That first eighth at exactly $8\times$ --- exactly,
+% because the lower scale is the upper one divided by eight and not by a
+% rounded number --- in the same units, where the \texttt{permuted} control at
+% $0.00064$ nats, the \texttt{swap} arm at $0.00190$ and their difference,
+% $+0.0013$, separate; the difference is the only one of the three this thesis
+% quotes anywhere. The black rule in both panels is the $10\%$ materiality
+% margin pre-registered for calling an effect material, drawn in the same
+% weight and colour as in \cref{fig:family} and \cref{fig:comparators} row (c).
+% \textbf{Which bootstrap draw this is.} The bar is
+% \texttt{layers.12.swap.ci\_perm}, the top-level draw, $p = 0.001$ over a
+% $4000$-resample cluster bootstrap on $60$ rows in $58$ pair clusters over
+% $24$ anchor drugs. The arm's file stores a second draw of the same point
+% estimate inside the $\alpha = 0.5$ rung of the ladder, at $p = 0.004$, and
+% \cref{fig:family}'s lower strip draws that one; the two lie either side of
+% the $0.05/26$ admitted at rank one, so the choice decides whether anything in
+% the family survives multiplicity correction. This figure quotes the top-level
+% draw because \cref{tab:identity}, \cref{fig:comparators} row (c) and the
+% correction itself all rest on it. \textbf{What the interval shows, and what
+% it does not.} It excludes zero \emph{and} lies wholly inside the margin:
+% under textbook TOST that configuration is returned as equivalence and read as
+% a null, whereas this chapter's rule returns a directional effect smaller than
+% the margin --- one fiftieth of the gap, one fifth of the margin.
+% \textbf{No interval is drawn on the two arms or in (a).} None is stored for
+% \texttt{effect\_swap} or \texttt{effect\_perm} alone, so their marks are bare;
+% the one that is stored is on their difference, which is (a)'s single mark as
+% well as (b)'s third row, and it is drawn once, at the scale where it is
+% legible. What may not be read across: layer $12$ is one of seven
+% pre-registered depths and the only one whose interval excludes zero, the
+% other six being in \cref{fig:family}'s grid, and this is one arm at one depth
+% at one rung of the displacement ladder; because the five arms emit different
+% target formats their clean gaps run from this arm's $0.064$ nats to $0.314$
+% in the consensus arm, nearly fivefold, so a raw-nats axis is legitimate here
+% and nowhere across arms --- \cref{fig:family}'s lower strip is a single-arm
+% object for the same reason.}
+% \label{fig:materiality}
+% \end{figure}
+%
+% CAPTION NOTE, PASS 10. The pass-9 note below is kept; these are the further
+% changes this pass made, and the reason for each.
+%   * "the accent mark ... labelled there" became "named at itself", because at
+%     pass 9 the label was anchored on the PANEL origin and not on the mark, so
+%     the caption's claim was false of the drawing (X4). It is true now.
+%   * "drawn end to end" gained "between two ink caps", because the span now
+%     has two matching end caps and the caption should name the device that
+%     makes the axis read as a bounded span (X7).
+%   * THE TWO OPERANDS ARE PRINTED: the permuted control at 0.00064 nats and
+%     the swap arm at 0.00190, rounded from effect_perm 0.0006409306049362111
+%     and effect_swap 0.0019027651015006252. Band (b) draws them as positions
+%     and prints neither, and the subtraction they stand in is the reason both
+%     rows exist; a reader could previously check it only by measuring three
+%     rows with a ruler. Both are new readings quoted in no sentence of the
+%     thesis, which the ledger has always recorded, so the caption owns them --
+%     and it now says so by naming the difference as the only one of the three
+%     the thesis quotes.
+%   * LAYER 12 IS DISCLOSED AS THE FAVOURABLE DEPTH: "one of seven
+%     pre-registered depths and the only one whose interval excludes zero".
+%     Recomputed from probe_arm_residual.json layers.<L>.swap.diff_perm_norm
+%     and p_perm: +0.0022 p 0.583 (L2), -0.0050 p 0.139 (L4), -0.0025 p 0.4495
+%     (L6), +0.0041 p 0.3955 (L8), -0.0019 p 0.635 (L9), +0.0197 p 0.001 (L12),
+%     +0.0059 p 0.4885 (L16); six of seven ci_perm_norm straddle zero.
+%     fig:hook's caption discloses its layer 4 as the best of seven and this one
+%     did not, though "surviving" in this figure's own subject is doing exactly
+%     that selection work. The RUNG is not favourable and is not flagged: in raw
+%     nats alpha = 0.5 gives the smallest of the five ladder effects (0.0013
+%     against 0.0017 / 0.0044 / 0.0061 / 0.0046), so the drawn rung is the
+%     conservative one.
+%   * "separate into three rows" -- pass 9 cut "into three rows"; the phrase
+%     stays cut, since the rows still carry no dividers.
+%   * The pass-9 caption is otherwise unchanged, and it is now WRITTEN OUT, in
+%     full and uncommented, in figs/_PENDING_CAPTIONS.tex keyed by
+%     \label{fig:materiality}, together with the two sentences deleted from the
+%     drawing at W9 and a list of the clauses of the caption PRINTED today
+%     (Sections/04b-representation.tex:597-620) that the rebuild made false.
+%     At pass 9 that file was asserted to exist and did not (X15).
+%
+% CAPTION NOTE, PASS 9. What changed, and why each clause had to.
+%   * "the effect is the accent mark near its origin, stemmed to the axis and
+%     labelled there, and the brace under it marks the eighth ..." became
+%     "the accent disc ... dotted down onto the rule ... and the bracket beneath
+%     the axis marks the eighth ...". The mark is a disc and no longer a bar
+%     (W6), the stem is now a dotted projection and not an accent stem (W11),
+%     and the magnifier is a bracket and not a brace (W10).
+%   * "only their difference does, and it is the one bar on the figure" became a
+%     bolded sentence of its own, because at pass 8 the caption said one bar and
+%     the drawing showed two -- the same estimate at two magnifications -- and a
+%     naive reader counted them and had to work out which two quantities they
+%     were. There is now exactly one bar and the caption says where it is.
+%   * "separate into three rows" lost "into three rows": the rows no longer carry
+%     dividers, so there is nothing to count (W5).
+%   * WHICH BOOTSTRAP DRAW IS DRAWN is new, and it is the substantive addition.
+%     4.12 and 4.13's lower strip draw the identical point estimate
+%     0.0012618344965644142 in identical units and visibly identical bars, from
+%     two different bootstrap draws with p = 0.001 and p = 0.004, and neither
+%     drawing said so. Both ledgers knew (materiality.json's
+%     not_drawn_second_bootstrap_draw; family.json's ladder note), so this was a
+%     disclosure failure on the page and not a data error.
+%   * THE TOST ASYMMETRY moved here in full from the drawing (W9), where it was
+%     two ink lines at 8pt that a reader met before the real caption. It is the
+%     section's subtlest point and it is argument, so it belongs here.
+%   * "one fiftieth of the gap; one fifth of the margin" moved here from the
+%     drawing's accent italic (W9). It was already the caption's lede in
+%     substance; it now appears once.
+%   * THE $10\%$ MARGIN's rendering is named, because this is the first build in
+%     which 4.7 row (c), 4.12 and 4.13 draw one pre-registered threshold one way.
+% ---------------------------------------------------------------------------
+%
+% ---------------------------------------------------------------------------
+% CAPTION NOTE, PASS 11 -- 2026-08-19. THE COMMENTED \caption ABOVE IS THE
+% PASS-10 TEXT AND IS NO LONGER THE PROPOSAL. It is left in place because the
+% passes above are the audit trail and because the float wrapper round it is
+% still the one to paste; the AUTHORITATIVE caption is the one in
+% figs/_PENDING_CAPTIONS.tex under \label{fig:materiality}, revised in this
+% pass with the drawing. Four of its clauses moved, and one item in that file
+% is now marked BLOCKING.
+%   * (a)'s single mark now PRINTS ITS VALUE on the drawing (Y2), so the
+%     caption stops merely naming it and says that panel (a) alone answers the
+%     section's question: the disc is labelled with +0.0013, the threshold with
+%     0.00642 and the axis's own right end with 0.0642.
+%   * (b)'s row three no longer prints a value (Y8), so the caption's "their
+%     difference, $+0.0013$" is now the only statement of that numeral for
+%     panel (b).
+%   * (b)'s rule is capped in ink at its right end as (a)'s is (Y10), and (b)'s
+%     zero rule is labelled "zero" (Y6), so the caption's "It excludes zero"
+%     now points at a named object rather than at an unlabelled dotted rule.
+%   * The panel head reads "(a) the whole CLEAN preference gap" (Y1).
+%   * BLOCKING, and it is the one item in the file whose omission changes what
+%     the figure claims rather than how it is described: 04b:617-618 says only
+%     "this is one arm at one depth at one rung", which is scope. Layer 12 is
+%     the argmax of the anchor seed's seven-depth sweep and the only one of the
+%     seven whose interval excludes zero. The drawing now says "layer 12 of
+%     seven" (Y4) -- that the depth came from a set -- but a drawing cannot say
+%     WHICH of the set without becoming an argument. The proposed caption
+%     carries it as a bolded clause of its own, with the seven normalised
+%     effects and their bootstrap p, and with the countervailing fact that the
+%     RUNG is not favourable: at alpha = 0.5 the raw effect is the smallest of
+%     the five rungs, 0.0013 against 0.0017, 0.0044, 0.0061 and 0.0046
+%     (probe_arm_residual.json :: layers.12.swap.ladder[*].diff_perm).
+% ---------------------------------------------------------------------------

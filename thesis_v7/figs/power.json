@@ -1,0 +1,78 @@
+{
+  "figure": "power.tex",
+  "label": "fig:power",
+  "kind": "tikz",
+  "input_by": "Sections/05-Limitations.tex",
+  "title": "The unseen-drug gap includes zero under both clusterings",
+  "revision": "thesis_v7: one estimand, two confidence-interval rows",
+  "geometry": {
+    "nominal_width_mm": 123.4,
+    "row_label_width_mm": 34.0,
+    "gutter_mm": 3.0,
+    "axis_width_mm": 86.4,
+    "note": "Nominal geometry, not a claimed measurement of the rendered bounding box."
+  },
+  "estimand": {
+    "quantity": "mean paired model NIR minus neutral-scramble NIR",
+    "split": "unseen_drug",
+    "comparator": "scramble_orth",
+    "comparator_definition": "geometry-defined orthogonal neutral-scramble partner",
+    "estimate": -0.03148175705606285,
+    "printed_estimate": "-0.0315",
+    "n_conditions": 199,
+    "n_cell_lines": 40,
+    "n_drugs": 10,
+    "n_treated_wells": 28,
+    "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+    "source_key": "splits.unseen_drug.gap",
+    "source_crosscheck": "RESULTS_cluster/re_v3.json: means.generalization.unseen_drug.gap; .n; .comparator",
+    "thesis_crosscheck": "Sections/04c-reencoding.tex: tab:generalisation"
+  },
+  "axis": {
+    "quantity": "model NIR minus neutral-scramble NIR",
+    "reference": 0.0,
+    "reference_label": "0 = no difference",
+    "domain": [-0.12, 0.06],
+    "ticks": [-0.10, -0.05, 0.0, 0.05],
+    "mm_per_unit": 480.0
+  },
+  "rows": [
+    {
+      "id": "two_way_cellline_well",
+      "label": "cell line and well (two-way)",
+      "estimate": -0.03148175705606285,
+      "confidence_level": 0.95,
+      "interval": [-0.08358077892636565, 0.020617264814239943],
+      "printed_interval": "[-0.0836, +0.0206]",
+      "cluster_key": "cell line and treated well, two-way",
+      "df": 27,
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "splits.unseen_drug.gap_ci_line",
+      "df_source_key": "splits.unseen_drug.df_line"
+    },
+    {
+      "id": "drug",
+      "label": "drug",
+      "estimate": -0.03148175705606285,
+      "confidence_level": 0.95,
+      "interval": [-0.10487258422550776, 0.04190907011338206],
+      "printed_interval": "[-0.1049, +0.0419]",
+      "cluster_key": "drug",
+      "df": 9,
+      "source_file": "RESULTS_cluster/CANONICAL_NUMBERS.json",
+      "source_key": "splits.unseen_drug.gap_ci_drug",
+      "df_source_key": "splits.unseen_drug.df_drug"
+    }
+  ],
+  "interpretation": {
+    "both_intervals_include_zero": true,
+    "positive_gap_established": false,
+    "equivalence_to_zero_established": false,
+    "uncertainty_scope": "Reported cluster uncertainty conditional on one trained checkpoint and fixed sampled generations; training and generation variance are not included."
+  },
+  "removed_v6_claims": {
+    "pooled_lookup_as_upper_bound": "The pooled mechanism lookup NIR 0.552 is a baseline on different support, not a demonstrated maximum possible model effect.",
+    "lookup_effect_inside_gap_intervals": "The value +0.052 is outside both observed gap intervals, whose upper endpoints are +0.020617264814239943 and +0.04190907011338206.",
+    "mde_on_gap_axis": "The old approximately 0.079 MDE was derived from the model's absolute-NIR interval, a different estimand from the paired gap. It is not shown."
+  }
+}

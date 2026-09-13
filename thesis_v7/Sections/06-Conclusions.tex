@@ -1,0 +1,201 @@
+% ===========================================================================
+% 06-Conclusions.tex.
+% Terminology, load-bearing: held-out treated WELL, trained CONDITION.
+% "treated well" is the glossary's form (\glentry, 00-HowToRead:267) and wins
+% over "treatment well" everywhere. Never "pairing"; the thesis declines that
+% reading.
+% ===========================================================================
+
+\chapter{Conclusions}
+\label{sec:conclusions}
+\framedecl{ER}
+
+\begin{question}
+Does a cell-sentence language model fine-tuned on this atlas learn what a
+particular drug does to a particular cell? The instrument was a chain built in
+order: a metric calibrated before it was trusted, controls a drug-blind
+predictor cannot pass, and a bar that needs no model at all. The bar was not
+cleared.
+\end{question}
+
+\noindent
+Prompt sensitivity to trained drug names is established; biological transfer is
+\notestablished; and nothing built here beats a training-only per-drug lookup on
+common support. The win condition was fixed in advance
+(\cref{sec:introduction}): a conditional model must beat that lookup, because
+only then has its access to the untreated cell supplied something a dictionary
+of per-drug averages lacks. A split-half reference cannot stand in for it, since
+it cannot separate a drug's characteristic response, which transfers, from this
+context's departure from it. That verdict ends a chain, and no isolated point
+estimate may leapfrog it.
+
+% ---------------------------------------------------------------------------
+\section{Summary of the argument}
+
+\paragraph{The metric had to be settled first} Four of five candidate metrics failed the calibration audit, and the field's standard one is saturated outright by a predictor carrying no drug information: on $\DEdr$ such a predictor scores $0.9999$. Only $\NIR$ registered known differences in quality,
+at a dynamic range fraction of \ci{+0.635}{+0.604}{+0.663}, so it is the only
+metric this thesis grades anything on. That is a result before it is an
+apparatus choice, and it decides what every later number is allowed to mean.
+
+\paragraph{On that metric the expression-frame checkpoint is drug-blind} It
+scores $0.498$ against a within-well split-half reference of $0.576$. On the
+stratum where the ranking is provably winnable, a control copying the untreated
+cell matches it outright, $0.768$ against $0.766$, a paired contrast of
+\ci{+0.002}{-0.026}{+0.028}. Three instruments that fail in different ways agree:
+the scramble, the control copy, and a within-condition regression of score on how
+unlike the substituted drug is, which returns \ci{+0.0055}{-0.0472}{+0.0582} once
+each condition is compared only with itself. That last one matters because its
+pooled version returns $+0.0986$ and looks like an effect; the difference between
+the two is condition-level structure, not the drug.
+
+\paragraph{The drug is present, and barely consulted} The null is not a failure
+to measure. The drug label is decodable from the residual stream at $82\%$
+against an $8\%$ chance rate, so it survives into the computation. Ablating the
+purified drug subspace costs the output $3.6$ to $18.6$ times a matched-dimension random null, and $9$ to $37\%$ of what ablating cell line costs at six of seven depths ($98\%$ at layer $12$, where both costs collapse). The label is
+read, and read weakly, which is a different failure from absence and needs a
+different repair.
+
+% ---------------------------------------------------------------------------
+\section{Prompt sensitivity on trained drugs}
+
+If the drug is in the data and in the activations, the next suspect is the
+training target. Two drugs in one context share $83\%$ of their standard target's top-$200$ gene positions; the residual encoding drops that to $40\%$. Aggregating the
+target without re-referencing it does not work: of three constructions tried,
+none separates from a random-partner scramble, at $+0.014$, $-0.001$ and
+$-0.010$, and the optimal-transport arm's within-condition slope is
+\ci{-0.0008}{-0.0305}{+0.0290}. No positive slope is established at this
+precision; the interval does not establish equivalence to zero.
+
+Re-encoding does. On conditions the checkpoint trained on, the residual arm
+separates from its own scramble against the geometry-defined \texttt{orth}
+partner by $+0.0898$, excluding zero clustered on cell line and well,
+\ci{+0.0898}{+0.0382}{+0.1415}, and on drug and well,
+\ci{+0.0898}{+0.0291}{+0.1506}.
+
+\paragraph{The comparator is part of the measurement} A prompt replacement is
+not automatically a null. Pooled over all $\num{1394}$ scored conditions, the scrambled arm itself scores $0.550$, $0.501$ and $0.423$ as the substituted drug moves from aligned through orthogonal to
+anti-aligned, so a dissimilar lie inflates the apparent benefit of the correct
+name. \texttt{Orth} is the one comparator whose own score sits at chance, and it
+is the only one whose geometry holds still across the splits the next section
+compares.
+
+\paragraph{The gain identifies a package, not a mechanism} Residual encoding
+changes aggregation, control referencing, generic subtraction, sign coding and
+sequence length at once, and the factorial comparison that would separate them
+was not run. Nor is it uniquely responsible: at a matched $1400$-token budget the
+optimal-transport arm also clears zero against its orthogonal comparator,
+\ci{+0.0292}{+0.0144}{+0.0441}, where its $600$-token estimate spanned zero. A
+generation cap can manufacture a null, so any claim about the residual advantage
+carries its budget with it.
+
+% ---------------------------------------------------------------------------
+\section{Transfer}
+
+One question is whether the prediction moves when the drug named in the prompt
+changes. The other is whether it moves \emph{toward} that drug's response. The
+trained-condition effect settles the first for drugs represented in fine-tuning
+and leaves the second open.
+
+Conditions in held-out treated wells score $+0.0332$, excluding zero clustered on
+cell line and well, \ci{+0.0332}{+0.0069}{+0.0594}, but not when clustered on drug,
+\ci{+0.0332}{-0.0031}{+0.0695} --- and drug is the axis a transferred residual
+has to generalise over. That split is largely recombination in any case: $30$
+of its $34$ drugs and $39$ of its $42$ cell lines also appear in the sampled
+\texttt{train} evaluation, and $82\%$ of its conditions pair a drug and cell
+line present in that sample. Absence from the sample is not absence from
+fine-tuning: all four other drugs have training-only lookup support. The
+separate \texttt{unseen\_drug} split contains the $10$ drugs withheld from
+fine-tuning (\cref{sec:methods-holdout}). The model's own
+score covers chance on both held-out splits.
+
+\paragraph{What survives the holdout is sensitivity, not accuracy} The
+within-condition slope is positive on all three splits and under both
+clusterings, \ci{+0.361}{+0.249}{+0.472}, \ci{+0.321}{+0.207}{+0.434} and
+\ci{+0.324}{+0.146}{+0.502}, on an instrument that needs no comparator and whose
+null is fixed by construction. On the same instrument the single-cell and
+optimal-transport arms return nothing. But every point on that line is a
+\emph{wrong} prompt, so it shows the model tells wrong answers apart and never
+that it produces a right one; and on the unseen-drug split the drugs it names are
+overwhelmingly training drugs. The map is coarse and trained-drug-to-residual.
+
+\begin{scopelimit}[discharges the limit carried from \cref{sec:limitations}]
+The \texttt{unseen\_drug} arm is read here as an instrument control. Its
+estimated model-minus-neutral-scramble gap is compatible with zero and a range
+of small effects under both reported clusterings. This does not establish
+equivalence to zero or the absence of unseen-drug transfer, and the prompt's
+mechanism field limits the claim to held-out drug identities.
+\end{scopelimit}
+
+% ---------------------------------------------------------------------------
+\section{The lookup baseline}
+
+A per-drug lookup needs no checkpoint, no prompt and no cell
+sentence.\seealso{\cref{sec:res-lookup} scores the full ladder through one
+pipeline} It predicts a drug's residual as its mean residual in other cell
+lines, fitted from training conditions only. On the $\num{1192}$ conditions where
+both are defined it scores $0.913$ against the model's $0.549$, with the
+within-well reference at $0.857$. Restricted to a single other cell line it still
+scores $0.822$, so the win is not an artefact of averaging away noise.
+
+The reading was fixed before the comparison ran: above chance and below the
+lookup means the model recovers something of a drug's average residual and adds
+no tailoring to the cell line in front of it. That is where it landed. This is
+DrEval's finding with a transcriptional vector in place of a scalar potency, and
+it sets the bar a conditional architecture has to clear to earn its complexity.
+
+% ---------------------------------------------------------------------------
+\section{Unseen drugs}
+
+No lookup exists for a drug absent from training, so the last gate asks which
+shared property could stand in for one. Three channels were tested against a
+plate-matched random null, with partners restricted to training conditions.
+
+Protein target clears the pre-set relevance margin clustered on cell line and
+well, \ci{+0.1351}{+0.0745}{+0.1958}. Clustered on the drug --- the axis an
+unseen-drug claim rides on --- it clears the margin only against the weaker
+count-matched null and falls short against both estimand-correct ones. Mechanism
+excludes zero on the cell-line axis and misses the margin by $0.0021$; chemistry
+straddles it. All three exclude zero, so the two that fail are inconclusive
+rather than equivalent to their nulls, and none of the three may be written as
+closed.
+
+The lead rests on $18$ target-annotated drugs, two of them held out. Protein
+target carries transcriptional signal on that support, and a Leave-Drugs-Out
+result is \notestablished by it. Which span of the prompt the model actually
+reads is unresolved (\cref{sec:res-field}): the two spans were swapped separately, but the results cannot be told apart, because each was scored against a comparator on a different side of chance (partner $\NIR$ $0.434$ and $0.520$; \cref{tab:fieldattribution}, Panel B), so a channel-conditioned prompt would add a field
+to an instruction whose existing fields are of unmeasured value. The next
+experiment needs a target-annotated panel broad enough to cluster on, preferably
+with held-out mechanism families, and a prompt whose spans have been told
+apart.
+
+% ---------------------------------------------------------------------------
+\section{The role of the controls}
+
+In a literature where uninformative baselines score well, a negative result is
+worth what its controls are worth. Each surviving claim here rests on a control
+added after a specific failure: plate-matched comparison sets after a
+zero-information baseline improved when plate was free to vary; a swap-distance
+sweep after a similar-drug scramble proved weak; a removal gate before any
+ablation null; matched-norm injection before any swap was interpreted; condition
+intercepts after a pooled slope returned an effect that was not there. Intervals
+were clustered on the units that repeat --- cell line, drug and treated well ---
+and never on cells.
+
+Claims that failed those controls were withdrawn and the withdrawals recorded
+rather than quietly dropped. That record is why the remaining claims can be read
+at the strength stated here, and no stronger.
+
+\begin{claim}
+On the $\num{1192}$ conditions where both are defined, a training-only per-drug
+lookup scores $0.913$ against the model's $0.549$, with the within-well reference
+at $0.857$; from a single other cell line it still scores $0.822$. Residual
+re-encoding produces a real trained-condition effect against the \texttt{orth}
+partner, excluding zero on both clustering axes, and establishes no transfer:
+held-out treated wells give an interval that excludes zero on the cell-line axis
+and spans zero on the drug axis, and the model's own score covers chance on both
+held-out splits. What survives the holdout is the comparator-free slope, which is
+sensitivity to the drug named and not accuracy about the drug given. No drug
+effect is \shownzero by any instrument here. Of the three channels open to a drug
+with no lookup, protein target is live on the cell-line axis and inconclusive on
+the drug axis, mechanism and chemistry are inconclusive, and none is closed.
+\end{claim}
