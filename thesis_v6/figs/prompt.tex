@@ -1,0 +1,53 @@
+% figs/prompt.tex -- the prompt as the model receives it, and the two strings it
+% is trained to continue it with. In-column figure, caption in the margin
+% (\sidecap), same idiom as figs/two-questions.tex. The instruction line is the
+% literal template of shared/evaluate_c2s_tahoe.py and
+% endcell/preprocess/tahoe_c2s_preprocess_endcell_v2.py::format_prompt; cell
+% line, drug, dose and mechanism are real atlas values (CVCL_0480 = PANC-1,
+% Docetaxel, 0.05 uM, moa-fine "Microtubule inhibitor"). The gene lists are the
+% panel sentence quoted in sec:lit-c2s and the illustrative residual of
+% fig:frame, truncated; they carry no measurement.
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\small,
+  lbl/.style={font=\scriptsize\bfseries\sffamily, text=accent, anchor=south west},
+  note/.style={font=\scriptsize, text=quietink, anchor=north west},
+  box/.style={draw=rulegrey, rounded corners=2pt, inner sep=6pt,
+              fill=panelbg, align=left, anchor=north west},
+  ar/.style={-{Stealth[length=4.5pt]}, quietink, line width=0.6pt},
+]
+\newcommand{\mono}[1]{{\ttfamily\scriptsize #1}}
+\newcommand{\spanhl}[1]{\colorbox{rulegrey!45}{#1}}
+
+% --- the prompt ------------------------------------------------------------
+\node[lbl] at (0,0) {PROMPT};
+\node[box, text width=11.6cm] (prompt) at (0,-0.08) {%
+  \mono{Predict the response of \spanhl{PANC-1} to \spanhl{Docetaxel} at
+  \spanhl{0.05 uM}. Mechanism: \spanhl{Microtubule inhibitor}.}\\[2pt]
+  \mono{Control cell: GAPDH RPS6 KTN1 EXT1 PTK2 MACF1 HSPD1 ALDOA GNAS CD44
+  \ldots\ [END\_CELL]}\\[6pt]
+  \mono{Response cell:}};
+\node[note, text width=11.6cm] (note1) at ($(prompt.south west)+(0,-0.06)$)
+  {one instruction line in English, the untreated cell as a sentence, and an
+   open-ended cue the model completes};
+
+% --- the arrow -------------------------------------------------------------
+\coordinate (y0) at ($(note1.south west)+(0,-0.10)$);
+\draw[ar] ($(y0)+(5.95,0)$) -- ($(y0)+(5.95,-0.72)$);
+\node[font=\scriptsize\itshape, text=ink, anchor=west, text width=5.7cm]
+  at ($(y0)+(6.25,-0.36)$)
+  {the model continues the text; the target decides with what};
+
+% --- the two targets -------------------------------------------------------
+\node[lbl] at ($(y0)+(0,-1.30)$) {STANDARD TARGET \textcolor{quietink}{(\Eframe)}};
+\node[box, text width=5.4cm] (ta) at ($(y0)+(0,-1.38)$) {%
+  \mono{GAPDH RPS6 HSPD1 CDKN1A ALDOA GNAS \ldots\ [END\_CELL]}};
+\node[note, text width=5.5cm] at ($(ta.south west)+(0,-0.06)$)
+  {the treated cell's own sentence: ranked genes, most abundant first};
+
+\node[lbl] at ($(y0)+(6.2,-1.30)$) {RESIDUAL TARGET \textcolor{quietink}{(\Rframe)}};
+\node[box, text width=5.4cm] (tb) at ($(y0)+(6.2,-1.38)$) {%
+  \mono{CDKN1A DDB2 MDM2 \ldots\ [DOWN] HMOX1 TXNIP \ldots\ [END\_CELL]}};
+\node[note, text width=5.5cm] at ($(tb.south west)+(0,-0.06)$)
+  {the drug-specific residual of \cref{sec:apparatus-vocab}: up-regulated
+   genes, a separator, down-regulated genes};
+\end{tikzpicture}

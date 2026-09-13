@@ -1,0 +1,220 @@
+% ===========================================================================
+% power.tex -- the unseen-drug arm's detection floor against the largest
+% effect the mechanism channel could plausibly deliver.
+% \input by Sections/05-Limitations.tex, in "It is underpowered by
+% construction". Compiles against thesis_v2/preamble.tex and nothing else;
+% no \includegraphics, no external file read at build time.
+%
+% WHY THIS FIGURE EXISTS. The passage it sits in makes its argument out of
+% four numbers delivered in four separate sentences (0.052, 0.073, 0.079,
+% 0.052-as-largest-effect). The conclusion -- the arm cannot detect the
+% largest effect it could plausibly be measuring -- only follows once all
+% four are on one scale. On one scale it is a picture: the bar ends before
+% the threshold begins.
+%
+% ---------------------------------------------------------------------------
+% EVERY NUMBER DRAWN, ITS SOURCE, AND THE THESIS SENTENCE IT MUST MATCH.
+% Sibling power.json records the same list machine-readably.
+%
+%  threshold (dashed accent rule)      0.07897560995161473
+%      RESULTS_cluster/CANONICAL_NUMBERS.json
+%          .detection_limit.detectable_at_80pc_power
+%      (same object carries .split = "unseen_drug", .n = 199,
+%       .observed = 0.45889838436740604, .half_width = 0.05528292696613031;
+%       the observed NIR and that half_width are NOT drawn -- this is a
+%       difference axis and 0.4589 is an absolute NIR.)
+%      Sections/05-Limitations.tex:310-311 "the smallest effect detectable
+%      at $80\%$ power is $\approx 0.079$".                        MATCHES.
+%
+%  bar length                          0.05201514916327314
+%      = 0.5520151491632731 - 0.500
+%        RESULTS_cluster/CANONICAL_NUMBERS.json .means_all.moa_lookup
+%        = RESULTS_cluster/re_v3.json .means.moa_lookup   (identical to 16 sf)
+%        chance 0.500 is a definition: both frames are two-alternative
+%        retrievals (preamble/frames.tex, Sections/03-Apparatus.tex).
+%      Sections/05-Limitations.tex:311-314 "The largest effect the mechanism
+%      channel could deliver is the distance from chance to
+%      \texttt{moa\_lookup}, which scores $0.552$ pooled across splits
+%      against a chance value of $0.500$, so $\approx 0.052$."      MATCHES.
+%      0.552 and 0.500 are absolute NIR values and are therefore stated in
+%      the caption only; the drawing carries the difference and nothing else.
+%
+%  point estimate (filled marker)     -0.03148175705606285
+%      CANONICAL_NUMBERS.json .splits.unseen_drug.gap
+%      = re_v3.json .means.generalization.unseen_drug.gap
+%      Sections/05-Limitations.tex:322 \ci{-0.0315}{-0.1049}{+0.0419};
+%      Sections/04c-reencoding.tex:791 table row, same estimate twice. MATCHES.
+%
+%  inner span (thick)  -0.08358077892636565 .. +0.020617264814239943
+%      CANONICAL_NUMBERS.json .splits.unseen_drug.gap_ci_line
+%      half-width = (0.020617264814239943 + 0.08358077892636565)/2
+%                 = 0.052099021870302796  -> 0.052
+%      Sections/05-Limitations.tex:308-310 "$\pm 0.052$ clustered two-way on
+%      cell line and well". The key "gap_ci_line" is the JSON's own shorthand;
+%      tab:generalisation's note says the interval is two-way cluster-robust
+%      over cell lines and wells on min(G_line,G_well)-1 = 27 df, so the
+%      figure uses the prose's two-way wording.                     MATCHES.
+%
+%  outer span (thin)   -0.10487258422550776 .. +0.04190907011338206
+%      CANONICAL_NUMBERS.json .splits.unseen_drug.gap_ci_drug
+%      half-width = (0.04190907011338206 + 0.10487258422550776)/2
+%                 = 0.07339082716944491   -> 0.073
+%      Sections/05-Limitations.tex:309-310 "$\pm 0.073$ clustered on the
+%      drug"; the same interval is printed at 05:322 and at
+%      04c-reencoding.tex:791.                                      MATCHES.
+%
+%  n = 199
+%      CANONICAL_NUMBERS.json .splits.unseen_drug.n
+%      Sections/04c-reencoding.tex:726 "$\num{199}$ unseen-drug" and the
+%      tab:generalisation row "$199$ ($40$; $10$; $28$)".            MATCHES.
+%
+%  Both intervals are exactly symmetric about the point estimate: the
+%  midpoint of gap_ci_line and the midpoint of gap_ci_drug each equal
+%  -0.031481757056062853, i.e. .splits.unseen_drug.gap to 16 significant
+%  figures. So "point estimate +- half-width" is the intervals themselves and
+%  not a symmetrisation of them; nothing is being smoothed here.
+%
+% DELIBERATELY ABSENT, per the brief: any absolute NIR value inside the
+% drawing (0.4589, 0.552, 0.500, 0.8365); any other split; any p-value; any
+% legend (both spans are labelled where they end); any gridline.
+%
+% ---------------------------------------------------------------------------
+% GEOMETRY. x is in NIR-difference units at x=383mm, so every coordinate in
+% the source below is the datum itself and cannot drift from it by arithmetic
+% done here. y is in mm.
+%
+%   axis          -0.12 .. +0.12   ->  -45.96mm .. +45.96mm   (91.92mm)
+%   left column   44mm of flush-right label + 3mm gutter, east edge -48.96mm
+%   total width   44 + 3 + 45.96 + 45.96 = 138.92mm, inside the 142.0mm
+%                 measure (404.03pt, preamble.tex:793). Measured on the
+%                 harness build: see _harness_power.log "HARNESS tikz width".
+%   bar tip       0.05201515 * 383 = 19.92mm
+%   threshold     0.07897561 * 383 = 30.25mm
+%   -> the bar stops 10.33mm short of the rule. That clearance is the whole
+%      argument, so it is stated here as a measured length and not judged by
+%      eye; at 142mm it is about 7 per cent of the measure and reads at once.
+%
+%   rows, y in mm   bar      33.5 (rectangle 30.7..36.3)
+%                   estimate 13.5 (inner caps 11.1..15.9, outer 12.0..15.0)
+%                   axis      0.0, ticks to -1.4, axis title at -7.6
+%   detection rule  -1.4 .. 42.5, its label sitting on top of it at 42.6
+%   zero rule       -1.4 .. 16.4 -- see note at the draw itself
+%
+%   MEASURED on the harness build (_harness_power.log):
+%     HARNESS textwidth  = 404.02913pt = 142.00mm
+%     HARNESS tikz width = 395.70499pt = 139.07mm   <- 2.93mm inside the
+%     HARNESS tikz height= 173.09203pt =  60.83mm      measure, 0 overfull
+%   and in the whole-thesis build the only Overfull \hbox in main.log is the
+%   pre-existing 1.35pt one in figs/fig-frame.tex, not this file.
+%
+% COLOUR. accent (#0B5394) is spent on exactly two marks, the bar and the
+% detection floor, because those two are the comparison the passage makes.
+% The observed estimate is ink, the axis and the zero rule rulegrey, all
+% descriptive text quietink and every numeral ink. Nothing is told apart by
+% colour that is not also told apart by position, weight or shape: the two
+% nested spans differ in thickness and in length, not in hue, and the figure
+% survives greyscale printing.
+% ===========================================================================
+\begin{figure}[htbp]
+% MARGINALIA (06-figures.md): wider than the 124mm text column, so it
+% sits in fullwidth; the caption below spans the text column only.
+\begin{fullwidth}\raggedright
+\begin{tikzpicture}[
+    x=383mm, y=1mm, font=\footnotesize,
+    rowlbl/.style  ={text=quietink, align=flush right, text width=44mm,
+                     inner sep=0pt, anchor=east, xshift=-3mm},
+    ticklbl/.style ={font=\scriptsize, text=quietink, inner sep=0pt,
+                     anchor=north},
+    axtitle/.style ={font=\scriptsize, text=quietink, inner sep=0pt,
+                     anchor=north},
+    note/.style    ={text=quietink, inner sep=0pt}]
+
+  % ---- 1. the difference axis ---------------------------------------------
+  % Zero, not 0.50, is the reference: this axis carries differences, so the
+  % chance level lives inside each quantity's definition and not on the rule.
+  \draw[rulegrey, line width=0.5pt] (-0.12,0) -- (0.12,0);
+  \foreach \t/\lab in {%
+      -0.10/$-0.10$, -0.05/$-0.05$, 0/$0$, 0.05/$+0.05$, 0.10/$+0.10$}{%
+    \draw[rulegrey, line width=0.5pt] (\t,0) -- (\t,-1.4);
+    \node[ticklbl] at (\t,-2.1) {\lab};}
+  \node[axtitle] at (0,-7.6) {difference in $\NIR$\enspace($0$ = no difference)};
+
+  % ---- 2. zero -------------------------------------------------------------
+  % The rule stops at 16.4, just under the inner span's label. It does not
+  % need to reach the bar row: the bar's own left edge IS x=0 and carries the
+  % position up on its own. Running it higher would have to be struck through
+  % the "+-0.052" label, which is 46mm wide and must end flush with the inner
+  % span's right cap at +0.0206, so it cannot avoid crossing zero. A knocked-
+  % out rule reads as a broken line; a shorter one reads as a rule.
+  \draw[rulegrey, line width=0.4pt] (0,-1.4) -- (0,16.4);
+
+  % ---- 3. the detection floor ---------------------------------------------
+  \draw[accent, line width=0.9pt, dash pattern=on 2.2pt off 1.6pt]
+    (0.07897561,-1.4) -- (0.07897561,42.5);
+  \node[note, anchor=south east, align=flush right, xshift=-1.0mm]
+    at (0.07897561,42.6)
+    {smallest effect this arm can\\detect at $80\%$ power,
+     \textcolor{ink}{$0.079$}};
+
+  % ---- 4. the largest effect the mechanism channel could deliver ----------
+  % It starts at zero because it IS a distance from a null, and it ends
+  % where it ends. The dotted arrow is the shortfall: it is drawn without a
+  % number on it because the thesis states 0.052 and 0.079 and does not
+  % state their difference.
+  \fill[accent!20]                (0,30.7) rectangle (0.05201515,36.3);
+  \draw[accent, line width=0.7pt] (0,30.7) rectangle (0.05201515,36.3);
+  \draw[quietink, line width=0.6pt, dotted, line cap=round,
+        -{Latex[length=1.5mm,width=1.3mm]}]
+    ([xshift=1.4mm]0.05201515,33.5) -- ([xshift=-0.8mm]0.07897561,33.5);
+  \node[rowlbl] at (-0.12,33.5)
+    {largest effect the\\mechanism channel\\could deliver\\[0.35ex]
+     \textcolor{ink}{$0.052$}};
+
+  % ---- 5. the arm's own estimate, with both cluster keys ------------------
+  % Two nested spans, same point estimate, different unit of generalisation.
+  % Thin/long = clustered on drug; thick/short = clustered two-way on cell
+  % line and well. Told apart by weight and by extent, never by colour.
+  % Each label ends FLUSH with the span end it names -- the inner one at its
+  % right cap, above; the outer one at its left cap, below -- so the two are
+  % separated diagonally and neither needs a legend or a leader line.
+  \draw[ink, line width=0.5pt] (-0.10487258,13.5) -- (0.04190907,13.5);
+  \draw[ink, line width=0.5pt] (-0.10487258,12.0) -- (-0.10487258,15.0);
+  \draw[ink, line width=0.5pt] ( 0.04190907,12.0) -- ( 0.04190907,15.0);
+  \draw[ink, line width=1.3pt] (-0.08358078,13.5) -- (0.02061726,13.5);
+  \draw[ink, line width=1.0pt] (-0.08358078,11.1) -- (-0.08358078,15.9);
+  \draw[ink, line width=1.0pt] ( 0.02061726,11.1) -- ( 0.02061726,15.9);
+  \fill[white] (-0.03148176,13.5) circle (2.1pt);
+  \fill[ink]   (-0.03148176,13.5) circle (1.6pt);
+
+  \node[note, anchor=south east, align=flush right] at (0.02061726,16.6)
+    {$\pm 0.052$ clustered two-way\\on cell line and well};
+  % broken over two lines, not one, so that its right edge stops at -0.026
+  % and the label clears the zero rule instead of being knocked out of it.
+  \node[note, anchor=north west, align=flush left] at (-0.10487258,10.4)
+    {$\pm 0.073$ clustered\\on drug};
+
+  \node[rowlbl] at (-0.12,13.5)
+    {observed \texttt{unseen\_drug} gap\\($n = 199$)\\[0.35ex]
+     \textcolor{ink}{$-0.0315$}};
+\end{tikzpicture}
+\caption[The detection floor sits above the largest plausible
+effect]{\captiontitle{The bar ends before the threshold begins.} Every quantity
+here is a difference in $\NIR$ on one scale; no absolute $\NIR$ is plotted.
+The dashed rule is the smallest effect the \texttt{unseen\_drug} arm can
+detect at $80\%$ power, $0.079$, on the $n = \num{199}$ conditions that arm
+scores. The bar is the largest effect the mechanism channel could deliver ---
+the distance from chance to the mechanism-only lookup, which scores $0.552$
+pooled across splits against a chance value of $0.500$, so $\approx 0.052$ ---
+and it stops short of the rule. Beneath it is the arm's own estimate: model
+$\NIR$ minus the geometry-defined \texttt{orth} scramble comparator on the
+same conditions, $-0.0315$, drawn with the thick span the $\pm 0.052$
+half-width clustered two-way on cell line and well and the thin span the
+$\pm 0.073$ half-width clustered on the drug. Both cover zero, and the
+half-width on the tighter of the two is itself the size of the bar. The arm
+is licensed as an instrument control and is not evidence that unseen-drug
+transfer is zero: an effect of the largest size the mechanism channel could
+deliver would sit inside that same interval, so what it supplies is the
+absence of a contradiction rather than a confirmed null.}
+\label{fig:power}
+\end{fullwidth}
+\end{figure}

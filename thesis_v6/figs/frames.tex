@@ -1,0 +1,144 @@
+% ===========================================================================
+% frames.tex -- the two measurement frames, EXPR and RESID, as two cards.
+% \input by Sections/03-Apparatus.tex. Compiles against thesis_v2/preamble.tex
+% and nothing else; no external data, no \includegraphics.
+%
+% NO DATA SOURCE. This is a schematic. The only numeral on the cards is the
+% chance level 0.50, which is a definition and not a measurement: both frames
+% are two-alternative retrievals, so chance is 0.50 by construction. It agrees
+% with the prose immediately above this figure in Sections/03-Apparatus.tex
+% ("Both put chance at $0.50$"), with Sections/02-Background.tex:244 and with
+% Sections/04a-ruler.tex:530 ("Chance is $0.50$ by ..."). Nothing here is read
+% from RESULTS_cluster/ because nothing here is a result. The numeric version
+% of this argument -- the two frames on their own scales -- is fig:two-scales
+% in 04d; Chapter 3 is apparatus and comes before those results exist, so this
+% figure carries no scale, no axis and no measured quantity. Sibling
+% frames.json records the geometry and that single number.
+%
+% ---------------------------------------------------------------------------
+% THE BUG, AND WHY THE FIX IS NOT THE ONE-LINER IT LOOKS LIKE.
+%
+% Symptom, both cards: the two-line value on row 2 collided with its own key.
+% Measured in the built thesis, ink gap between the key and its value, in
+% PostScript points: r1 -0.02, r2 -3.02, r3 +2.12. Only r2 is visible as a
+% collision. (r1 is the descender of "predicted" level with the ascender of
+% "profile"; different x, they do not touch.)
+%
+% Diagnosis, as briefed and confirmed: val/.style used anchor=WEST, which
+% centres a node's box on its y, so a TWO-LINE value grew upward into the key
+% above it while one-line values did not.
+%
+% The briefed fix was anchor=north west with every value at its key's
+% y - 0.30cm. Built, that removes the collision and introduces a worse fault:
+% it lowers each value until it sits CLOSER TO THE NEXT KEY THAN TO ITS OWN,
+% so every value reads as the heading of the row beneath it. Sweeping the
+% offset, all measured inside one PDF by tools/_measure_frames.py and recorded
+% in frames.json, gave "within" = key to its own value, "between" = value to
+% the next key:
+%
+%   offset      within r1 / r2 / r3      between: after r1 / after r2
+%   0.15          2.21  2.24  3.14            9.60        7.43
+%   0.30          6.46  6.49  7.39            5.35        3.18   <- reversed
+%   0.40          9.29  9.33 10.23            2.51        0.35
+%
+% and then the same figure BUILT INSIDE THE THESIS at offset 0.15 measured
+% 5.95 / 5.98 / 5.29 within against 5.86 / 3.69 between -- 3.7pt away from the
+% harness, and ambiguous. The offset is not a constant of the figure.
+%
+% ROOT CAUSE, and why this file no longer uses align=left. TikZ's `align'
+% option typesets the node in a minipage, and a minipage's first-line height
+% follows the AMBIENT \baselineskip. So a value node's ink lands in a place
+% that depends on the prose that happens to precede the float: about 2.2pt
+% between a \normalsize paragraph and a \small line, and about 3.7pt between a
+% test harness and Chapter 3. No choice of offset survives an edit to the
+% surrounding text. Calibrating one would have hidden the fault, not fixed it.
+%
+% THE FIX ACTUALLY USED: every node is a single line anchored BASE WEST, so
+% each y coordinate below IS that line's baseline. Nothing is centred, nothing
+% is measured from a box edge, no minipage is created, and no ascender or
+% descender can move a line. The two-line value is two nodes rather than one
+% node with `\\'. Key-to-value leading is therefore identical on all three rows
+% and on both cards by construction -- which is what the brief asked for -- and
+% it is now also identical from build to build.
+%
+%   key baselines    3.70   2.72   1.52     (row pitch unchanged)
+%   value baselines  3.37   2.39   1.19     (key - 0.33cm)
+%   row-2 value, second line  2.06          (previous line - 0.33cm)
+%
+% ONE step governs everything inside a row: 0.33cm = 9.39pt, one \scriptsize
+% line of leading. A key and its value therefore set as two consecutive lines
+% of a single block, exactly as rows 1 and 3 of the published figure did, and a
+% wrapped value continues on the same rhythm. Row SEPARATION is carried
+% entirely by the key pitch, which is untouched (0.98cm, then 1.20cm), giving
+% 0.65cm and 0.53cm of clear space before the next key -- roughly twice the
+% within-row step, so a value binds to the key above it and not to the one
+% below.
+%
+% Verified by reading the baselines back out of the built PDFs. Chapter 3 in
+% main.pdf and all four contexts of figs/_frames_harness.tex report the same
+% seven baselines to 0.001cm:
+%   3.703  3.375 | 2.727  2.398  2.059 | 1.531  1.203   (tikz y, both cards)
+% Note the harness and the thesis are only comparable on BASELINES. Glyph
+% bounding boxes reported by a PDF text extractor differ by a constant ~2.1pt
+% between the two files because the font subsets differ, so ink-gap numbers
+% are only meaningful WITHIN one PDF.
+%
+% OTHER LAYOUT NOTES
+%   * cards are 5.9cm wide with a 0.5cm gutter, 12.3cm overall. NOT rescaled:
+%     12.3cm sits inside the 14.2cm body block and leaves the page free to
+%     carry a margin note.
+%   * the dotted rule and the sentence under it span BOTH cards on purpose.
+%     They are the only mark that crosses the gutter; everything else is
+%     card-local, because the point of the figure is that the columns do not
+%     exchange.
+%   * if a value ever needs a third line, add a node at (its predecessor
+%     - 0.34cm). Do not reintroduce align/`\\'.
+% ===========================================================================
+\begin{figure}[htbp]
+% MARGINALIA (06-figures.md): no borders on the two cards; the frame names are
+% sans tags in accent; the figure fits the text column, so its caption is in
+% the margin (\sidecap).
+\begin{lrbox}{\tvfb}%
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+  panel/.style={draw=none},
+  % base west on both: every y below is a BASELINE. See the header note --
+  % anchor=west centres the box (that was the collision) and align=left makes
+  % the node's height depend on the surrounding prose (that was worse).
+  key/.style={font=\scriptsize\bfseries, text=quietink, anchor=base west},
+  val/.style={font=\scriptsize, text=ink, anchor=base west}]
+
+\draw[panel] (0,0.55) rectangle (5.9,4.6);
+\draw[panel] (6.4,0.55) rectangle (12.3,4.6);
+
+\node[anchor=base west] at (0.25,4.18)
+  {{\sffamily\fontsize{7.5}{9}\selectfont\bfseries\color{accent}\textls[80]{\ding{110}\,EXPR}}};
+\node[anchor=base west] at (6.65,4.18)
+  {{\sffamily\fontsize{7.5}{9}\selectfont\bfseries\color{accent}\textls[80]{\ding{115}\,RESID}}};
+
+% key baseline 3.70 / 2.72 / 1.52 ; value baseline = key - 0.33 ; wrap - 0.34.
+\node[key] at (0.25,3.70) {what is predicted};
+\node[val] at (0.25,3.37) {a cell profile};
+\node[key] at (6.65,3.70) {what is predicted};
+\node[val] at (6.65,3.37) {the drug-specific residual};
+
+\node[key] at (0.25,2.72) {what it is ranked against};
+\node[val] at (0.25,2.39) {other drugs on the};
+\node[val] at (0.25,2.06) {same plate};
+\node[key] at (6.65,2.72) {what it is ranked against};
+\node[val] at (6.65,2.39) {other drugs in the};
+\node[val] at (6.65,2.06) {same cell line};
+
+\node[key] at (0.25,1.52) {where chance sits};
+\node[val] at (0.25,1.19) {$0.50$};
+\node[key] at (6.65,1.52) {where chance sits};
+\node[val] at (6.65,1.19) {$0.50$};
+
+\draw[ink, line width=0.4pt, densely dotted] (0,0.25) -- (12.3,0.25);
+\node[font=\scriptsize\itshape, text=ink, anchor=base] at (6.15,0.02)
+  {the same number in the two columns is not the same measurement};
+\end{tikzpicture}%
+\end{lrbox}
+\sidecap[The two measurement frames]{figure}{\captiontitle{Two frames, one chance level, and
+no exchange rate between them.} The prediction, the comparison set and the
+meaning of a score change between frames; the chance level does not.\label{fig:frames}}
+\end{figure}

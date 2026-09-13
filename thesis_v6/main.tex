@@ -1,0 +1,150 @@
+% ===========================================================================
+% main.tex -- thesis_v6. DRIVER.
+%
+% v6 is v5 carried forward (2026-09-13); thesis_v5/ is left exactly as it stands.
+% What v6 changes over the committed v5, all from a pre-submission review:
+%   * blockers: the [XX] placeholders, ten ?? cross-references, a duplicated
+%     paragraph, three wrong counts/intervals, the audit-flag prose, and the three
+%     Table A.4 withdrawals that had lost their arguments (restored from v3);
+%   * a rigour pass (pointers, scopes, wording) and an adversarial 16-agent
+%     review pass: 66 verified corrections, listed in the commit that added v6;
+%   * plain section titles throughout; fig:prompt (figs/prompt.tex) in sec 2.2;
+%   * ref.bib: mertkaan (companion OT/scVI thesis), cameron2011multiway,
+%     fafchamps2007dyadic; Tahoe-x1 authors completed; all entries verified.
+% Build as for v5:  latexmk -pdf -interaction=nonstopmode main.tex
+% ===========================================================================
+% ===========================================================================
+% main.tex -- thesis_v5, the didactic edition. DRIVER.
+%
+% LINEAGE. v3 is v2 carried forward, not a rewrite. thesis_v2/ is left exactly
+% as it stands in the repository and nothing here writes to it. What v3 adds
+% over the committed v2:
+%   * sec:res-used gains the direct-arm ridge result (activations vs the drug
+%     name string), reported inside its pre-registered licensing rule;
+%   * four new figures -- fig:licensing, fig:purify, fig:hook, fig:materiality;
+%   * fig:comparators rebuilt: every rule now names its measured quantity in
+%     axis-label position, the mis-placed removal-gate mark is gone, and the
+%     four rules share both endpoints;
+%   * six captions replaced, and one prose correction -- the probe floor is
+%     analytic (1/12) and workspace_probe.json stores no permutation null, so
+%     the text no longer calls it a floor measured on shuffled labels.
+% No number carried over from v2 changed value.
+%
+% v5 is v4 carried forward; thesis_v4/ is left exactly as it stands. v5 starts
+% from thesis_v4's working tree as of 2026-09-12, which includes edits never
+% committed to thesis_v4/ in the repository. What v5 adds on top:
+%   * sec:res-jspace (Sections/04e-jspace.tex), a coda to chapter 4 reporting
+%     the Jacobian-lens (J-space) analysis of the drug change, with tab:jspace;
+%     its exploratory numbers are recomputed by tools/jspace_numbers/ from the
+%     J-space outputs in RESULTS_cluster/jspace_frames_v1_analysis/, which are
+%     not in the repository (the scripts' printed outputs are committed);
+%   * the sec:lit-interp scope limit rewritten to point to it, one sentence in
+%     that section's "What this thesis takes", and one sentence in the chapter-4
+%     opener announcing the coda;
+%   * tools/audit.py treats 04e-jspace.tex as a post-v1 extension (see there).
+% No number carried over from v4 changed value.
+%
+% Build:  cd thesis_v5 && latexmk -pdf -interaction=nonstopmode main.tex
+% or, with the enforcement turned on (recommended, and required before any
+% commit):  bash tools/build.sh
+%
+% oneside, not twoside/openright. The margin column then sits on the right on
+% every page rather than alternating edges; blank versos disappear; and
+% \begin{fullwidth} needs no page-parity test. See preamble.tex section 2.
+%
+% NOTHING UNDER ../thesis/ IS WRITTEN. \graphicspath below READS five finished
+% PDF figures out of ../thesis/figs/ so they are not duplicated (calibration,
+% difficulty, mechanism, repair, training); the three TikZ figure sources there
+% (nir, scramble, frame) are \input by explicit path in the section that uses
+% them. thesis_v5/figs/ holds the v2 figure sources plus what v3 adds.
+% If ../thesis/figs/ ever needs to change, the change belongs in a NEW file in
+% thesis_v5/figs/, never in place.
+% ===========================================================================
+
+\documentclass[11pt,a4paper,oneside]{report}
+\input{preamble}
+
+\graphicspath{{figs/}{../thesis/figs/}}
+
+\begin{document}
+
+% --- reserved submission pages ---------------------------------------------
+% Bocconi supplies the official title, abstract and acknowledgements pages at
+% submission. Three physical pages are reserved here deliberately, exactly as
+% in v1's main_v4.tex.
+\pagenumbering{gobble}
+\myemptypage
+\myemptypage
+\myemptypage
+
+% --- front matter -----------------------------------------------------------
+\pagenumbering{roman}
+\setcounter{page}{1}
+\tableofcontents
+\clearpage
+% NO \listoftables. MEASURED, not estimated: the list ran to FOUR full pages of
+% front matter (PDF pages 7-10 of the 127-page build), against two for the whole
+% table of contents and one for the List of Figures. Four pages of "3.1 The
+% population ..." is more front matter than the document's actual contents, and
+% it is the first thing the reader meets.
+% A List of Tables earns its place when tables are looked up by name from
+% outside the argument. These are not: every table is read where the prose puts
+% it, and each is reachable by \cref from the sentence that needs it.
+% The .lot file is still written by \caption and is simply no longer read, so
+% nothing else has to change if a future draft wants it back.
+% The List of Figures IS kept: 19 figures, one page, and unlike the tables they
+% are consulted out of order.
+% COST: -4 pages, all of it front matter. The body is 117 pages either way.
+\listoffigures
+\clearpage
+
+% --- body -------------------------------------------------------------------
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{Sections/01-Introduction}
+\include{Sections/02-Background}
+\include{Sections/03-Apparatus}
+% Chapter 4 is ONE chapter in five physical files (four parts and, from
+% thesis_v5, a coda). It uses \include for the
+% chapter and \input for the five parts (inside 04-Investigation.tex), because
+% \include forces a \clearpage and five of those would fall at arbitrary points
+% inside a single continuous argument.
+\include{Sections/04-Investigation}
+\include{Sections/05-Limitations}
+\include{Sections/06-Conclusions}
+
+% v2's measure is narrower than v1's \newgeometry{margin=2.5cm}, and two
+% entries carry runs TeX cannot break: ref.bib gives PerturBench the
+% Scholar-style journal field {arXiv preprint arXiv:2408.10609}, so the
+% identifier is set as an italic journal title with no hyphenation point in it.
+% At v2's measure that overflowed by 54.8pt (a second entry overflowed by
+% 0.6pt). \emergencystretch buys a final line-breaking pass with extra stretch,
+% which is enough to move the identifier down a line. 1em is the smallest value
+% that clears both; it adds no underfull lines and costs no page. (The absolute
+% count this was first measured against, 166, is long stale -- do not re-derive
+% anything from it; check the current log.)
+%
+% Scoped to this call on purpose. ref.bib is a byte-identical copy of v1's and
+% stays that way, so the fix cannot live in the entry; and the shared preamble
+% keeps its tighter setting for the body text, where a looser last resort would
+% change line breaking in prose that is already settled.
+\begingroup
+\emergencystretch=1em
+\printbibliography[heading=bibintoc]
+\endgroup
+
+\appendix
+\include{Sections/07-Appendix}
+
+% The reference apparatus: symbol table, term glossary, the two measurement
+% frames, the three hedge registers, and the record of corrections. MOVED HERE
+% FROM THE FRONT. It opened the document until the first full draft, where it
+% put ~14 pages of lookup tables between the reader and the first sentence of
+% the argument -- the reader met the vocabulary before meeting anything that
+% needed it. It is reference, consulted on demand and not read through, so it
+% belongs at the back with the other reference matter. The Introduction carries
+% a forward pointer to it; nothing in the argument requires reading it first.
+\include{Sections/00-HowToRead}
+
+\end{document}

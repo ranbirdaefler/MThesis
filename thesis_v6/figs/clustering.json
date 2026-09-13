@@ -1,0 +1,125 @@
+{
+  "figure": "fig:clustering",
+  "file": "thesis_v2/figs/clustering.tex",
+  "input_by": "thesis_v2/Sections/03-Apparatus.tex (sec:apparatus-clusters)",
+  "kind": "tikz, schematic",
+  "width": "body (142mm), not fullwidth",
+  "data_values_drawn": [],
+  "data_source": null,
+  "note_on_data": "This figure plots NOTHING. It draws no measured quantity, no interval and no count, and no digit appears anywhere in the drawing or in its caption. The sibling-JSON discipline is kept anyway, so that the absence is on the record rather than merely unstated: if a future revision puts a number in this figure, this file has to gain a sourced entry for it.",
+  "claims_the_drawing_makes": [
+    {
+      "claim": "A condition belongs to one well and to one cell line at the same time, and the two groupings cross: neither is nested in the other.",
+      "source": "thesis_v2/Sections/03-Apparatus.tex, sec:apparatus-clusters, opening paragraph -- 'Conditions are not independent, and not independent in two crossed ways at once: two from one treated well share a physical assignment and a batch, two from one cell line share the biology.'",
+      "unchanged_from": "the caption this figure replaces"
+    },
+    {
+      "claim": "The intersection of the two groupings is the single condition, which is why V_intersection is the ordinary independent-sampling variance.",
+      "source": "thesis_v2/Sections/03-Apparatus.tex, the paragraph immediately after the float -- 'where the intersection of the two groupings is the single condition, so V_intersection is the ordinary independent-sampling variance.'",
+      "unchanged_from": "the caption this figure replaces"
+    },
+    {
+      "claim": "Wells nest inside drugs: a well carries one drug at one dose, so every well belongs to exactly one drug, while the cell-line grouping crosses all of them.",
+      "source": "thesis_v2/Sections/03-Apparatus.tex, sec 'Every treatment sits in one well' -- 'Tahoe applies one drug at one dose to one well holding roughly 49 cell lines', and fig:confound panel (a), 'one drug at one dose enters one well'. The crossing half follows from the same sentence: one well holds ~49 cell lines, so a cell line appears in the wells of many drugs.",
+      "new_in_this_revision": true
+    }
+  ],
+  "counts_deliberately_not_asserted": {
+    "lattice": "9 columns x 6 rows = 54 dots",
+    "envelopes": "3 envelopes x 3 columns",
+    "why": "Chosen for legibility at 142mm. They are NOT the cache's 289 treated wells, ~50 cell lines, 287 (drug, dose) treatments or 106 drugs (tab:scale, 03-Apparatus.tex). The caption states this in as many words -- 'The lattice is schematic -- nine columns of six, for legibility, and not a count of anything in the cache' -- so no reader can take a count off the picture."
+  },
+  "geometry_cm": {
+    "column_pitch_px": 1.25,
+    "row_pitch_py": 0.81,
+    "columns": 9,
+    "rows": 6,
+    "dot_radius_pt": 1.7,
+    "highlight_column_index": 4,
+    "highlight_row_index": 4,
+    "intersection_point": [
+      5.0,
+      3.24
+    ],
+    "cellline_band": {
+      "x": [
+        -0.625,
+        10.625
+      ],
+      "y": [
+        2.99,
+        3.49
+      ]
+    },
+    "well_band": {
+      "x": [
+        4.75,
+        5.25
+      ],
+      "y": [
+        -0.405,
+        4.455
+      ]
+    },
+    "band_padding_rule": "each band ends exactly half a lattice pitch past its first and last dot: px/2 = 0.625 horizontally, py/2 = 0.405 vertically",
+    "drug_envelopes_x": [
+      [
+        -0.46,
+        2.96
+      ],
+      [
+        3.29,
+        6.71
+      ],
+      [
+        7.04,
+        10.46
+      ]
+    ],
+    "drug_envelopes_y": [
+      -0.585,
+      4.635
+    ],
+    "envelope_gap": 0.33,
+    "envelope_margin_around_well_band": 0.18
+  },
+  "colours": {
+    "conditions": "quietink #6B6B6B",
+    "bands": "rulegrey!30 (#9A9A9A at 30% over white)",
+    "drug_envelope_outline": "quietink #6B6B6B, 0.5pt, rounded corners 4pt, no fill",
+    "intersection_dot": "accent #0B5394",
+    "all_from": "thesis_v2/preamble.tex section 3"
+  },
+  "measured": {
+    "tikzpicture_width_pt": 385.39848,
+    "tikzpicture_width_mm": 135.45,
+    "tikzpicture_height_pt": 187.43892,
+    "tikzpicture_height_mm": 65.87,
+    "textwidth_pt": 404.02913,
+    "textwidth_mm": 142.0,
+    "fill_fraction": 0.9539,
+    "slack_pt": 18.63,
+    "how": "figs/_harness_clustering.tex captures the float into a box with \\caption and \\label gobbled and \\typeout s \\wd; see figs/_harness_clustering.log",
+    "predecessor": "the version this replaces opened \\begin{fullwidth} (174mm allowance) and drew 148.6mm"
+  },
+  "build_check": {
+    "command": "latexmk -pdf -interaction=nonstopmode main.tex, from thesis_v2/",
+    "pages": 125,
+    "figure_lands_on_page": 30,
+    "figure_number": "3.3",
+    "gates_from_tools/build.sh": {
+      "LaTeX errors": 0,
+      "undefined control seq": 0,
+      "undefined references": 0,
+      "undefined citations": 0,
+      "Package thesisv2 Warning": 0,
+      "Marginpar on page": 0,
+      "Overfull hbox": 0,
+      "Underfull hbox": 0
+    },
+    "note": "Page count moves between builds because other sections of thesis_v2 are being revised in parallel; the figure has landed on page 30 (Figure 3.3) in every build since integration."
+  },
+  "banned_terms_check": {
+    "noise ceiling": "absent from the figure, its caption and this file"
+  }
+}
