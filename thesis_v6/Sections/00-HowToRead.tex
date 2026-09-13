@@ -1,0 +1,515 @@
+% ===========================================================================
+% 00-HowToRead.tex -- the reference apparatus. UNNUMBERED, sits after the
+% Appendix. MOVED FROM THE FRONT: it is looked up, not read through.
+% Contents: the two measurement frames, the three hedge registers, the page
+% furniture, the symbol table, the term glossary, the record of corrections.
+%
+% This is where the vocabulary is fixed, so it is the file that has to be
+% right: one referent, one word. drug (never compound, molecule or agent);
+% cell line; condition; treated well; shift / generic / residual; prediction;
+% prompt; cell sentence; squared norm (never "energy", a borrowing from signal
+% processing that this document never defined and that did not name one thing
+% everywhere it appeared). Words the drafts retired keep an entry of their own,
+% so a reader who meets one in an older file can find where it went.
+%
+% NO claim block and NO \claimlede: this chapter reaches no verdict, and it
+% introduces, strengthens and weakens nothing. It only fixes the vocabulary.
+% Box budget used here: one scopelimit. Cap is three.
+% ===========================================================================
+
+\chapter*{Reference apparatus}
+% \phantomsection must precede \addcontentsline so the hyperref anchor lands on
+% this page, and \label must follow it so nameref picks up "Reference
+% apparatus" from \@currentlabelname. 01-Introduction.tex refers here with
+% \nameref, not \cref: this is \chapter*, so it owns no counter and cleveref
+% would print whatever number was last stepped (a section of Appendix A).
+\phantomsection
+\addcontentsline{toc}{chapter}{Reference apparatus}
+\label{sec:howtoread}
+\markboth{REFERENCE APPARATUS}{}
+\framedecl{-}
+
+\begin{question}
+Every term, symbol and convention that carries weight across more than one
+chapter is fixed here, with the record of the six withdrawn claims.
+\end{question}
+
+\noindent
+Where an interval exists, a number is quoted as a value followed by its
+bracketed lower and upper bounds, a two-way cluster-robust $95\%$ interval
+unless stated otherwise.\seealso{\cref{fig:timeline} maps the nine beats in
+order}
+
+% ---------------------------------------------------------------------------
+\section*{Two measurement frames, one chance value}
+
+\noindent
+The two frames score different objects against different competitors, and they
+both put chance in the same place. Comparing a number from one with a number
+from the other is the most expensive misreading available in this
+thesis.\framecue{\Eframe\ \Rframe}{in every running head}
+
+In the \Eframe{} \emph{expression frame} the prediction is a cell profile,
+scored against other drugs on the same plate. In the \Rframe{} \emph{residual
+frame} it is the drug-specific residual, what survives once the generic
+programme has been subtracted, scored against other drugs in the same cell
+line. In both frames the \emph{comparison set} $J$, the conditions a prediction
+is ranked against, fixes chance at $0.50$, and $J$ is declared explicitly at
+every score.
+
+\paragraph{Where the trap is} Because chance is $0.50$ in both frames, two
+numbers that look alike invite subtraction. They may not be subtracted.
+The residual frame's within-well precision reference is $0.854$
+where the expression frame's is $0.576$, so the $0.537$ in one frame and the
+$0.498$ in the other are not two attempts at one task
+(\cref{tab:lookup} and \cref{sec:res-blind}).\seealso{\cref{fig:frames} draws the residual
+construction}
+
+\paragraph{How to tell which is in force} Three redundant cues say so. Every
+section declares its frame in its opener as a chip, \Eframe{} or
+\Rframe{}, shape and word before colour so that the cue survives greyscale; the
+running head repeats it on every page; and a margin cue marks any change of
+frame inside a section. A head naming no frame asserts nothing in either, as
+here and in the apparatus of \cref{sec:methods-data}.
+
+% PLACEMENT ONLY. Six lines and a framed header, splitting four and two across
+% the page turn, so the two-line remainder opened the next page with neither the
+% header nor a rule above it and read as loose prose. 9 lines is the box entire.
+\needspace{9\baselineskip}%
+\begin{scopelimit}[carried into every chapter]
+A distance to a reference is comparable within a frame and not between frames.
+The same restriction holds \emph{within} a frame across
+supports: populations selected by different rules are not one population. Where
+this thesis quotes two numbers side by side it names the population each was
+computed on; where no population is named, they are not being compared.
+\end{scopelimit}
+
+% ---------------------------------------------------------------------------
+\section*{Three registers of qualification}
+
+\noindent
+There are exactly three registers and no fourth.\gloss{register}{The three
+kinds: a limit carried forward, a correction on record, and ordinary inline
+care.}
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{A scope limit}{scopelimit} fences in what a number \emph{licenses}, and
+  the reader has to carry it forward. The test: would a later section be
+  entitled to say something different if this sentence did not exist? Its tag
+  names where the limit carries to.
+\glentry{A correction}{correction} marks a withdrawal this thesis makes against
+  itself. Six are withdrawn \emph{claims}, indexed in \cref{tab:corrections}, so
+  that set is bounded and countable; the rest retract a defective piece of
+  apparatus --- a voided control, a mis-resampled interval, a replaced
+  instrument, a leaking partner pool. Each mark of either kind stands where the
+  withdrawal is argued.
+\glentry{Routine qualification}{routine} stays inline and unmarked, in the
+  sentence it qualifies, and most of the qualification in this thesis is of this
+  kind. It is not a lesser statement for being unmarked, only one the reader
+  need not carry anywhere.
+\end{description}
+
+\paragraph{Two phrases that are not synonyms} \notestablished and \shownzero
+are different statements.
+A measurement that fails to separate two arms has established nothing about
+their difference. It has not shown the difference to be zero. Where an interval
+spans zero, this thesis says which of the two it means.
+
+\paragraph{And two more that are not} Excluding zero is not the same as clearing a
+pre-spec\-i\-fied relevance margin, and spanning zero is not evidence of
+equivalence. Two margins are pre-registered, on different quantities and
+different instruments.
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{relevance margin}{relmargin} The pre-set $0.03$, in $\NIR$ units, that
+  a channel's interval has to clear on the gate of \cref{sec:res-scope} before
+  the channel is called live.
+\glentry{materiality margin}{matmargin} The pre-registered $10\%$ of the model's
+  own clean preference gap, on the identity test of \cref{sec:res-mechanism}. An
+  effect inside it is too small to be called material.
+\end{description}
+
+Where a pre-registered margin exists the verdict vocabulary is fixed in advance,
+three states plus a fourth for a control that could not be built.
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{live}{live} The interval clears the pre-set $0.03$ relevance margin on
+  the clustering axis appropriate to the claim. The axis is written into the
+  verdict, because the word is not usable without it.
+\glentry{closed}{closed} The interval lies wholly below that margin.
+\glentry{inconclusive}{inconclusive} Neither. This includes an interval that
+  excludes zero but straddles the margin, and it is not equivalence with the
+  null.
+\glentry{untestable}{untestable} The plate-matched null spans too few cell lines
+  to be built here. ``We could not build the control'' must never be written as
+  ``closed''.
+\end{description}
+
+% ---------------------------------------------------------------------------
+\section*{Reading the page}
+
+\noindent
+A number a sentence \emph{asserts} goes in the body, always, with its interval,
+its comparison set and its reference beside it. A number it merely
+\emph{recalls} may go in the margin column, bare, with a pointer to where it was
+established.\gloss{margin column}{Definitions, landmark constants, frame cues
+and pointers; never an assertion.} Delete every margin note and the body must
+still be complete and correctly qualified.
+
+\paragraph{Five shapes} A section \emph{opener} states the question and the
+instrument built to answer it, in words, with no numbers; the beat strip that
+goes with it is the investigation's nine beats with the current one filled, and
+no cell filled means the section is not one of the nine, as here. A \emph{claim
+block}, hairlined above and below, carries the verdict in language that could be
+shown wrong. \Cref{sec:res-field} closes without one, deliberately: it asks which span
+of the prompt the model reads, cannot answer, and ends in the open question. A
+\emph{definition} sits in a tinted panel with no rules. A \emph{scope limit} and
+a \emph{correction} are the two marked hedge registers above.
+
+% ---------------------------------------------------------------------------
+\section*{Symbols}
+
+\noindent
+Fixed for the whole document, never redefined in a section.
+
+\begin{description}[labelwidth=5em, leftmargin=6em, labelsep=0.6em,
+                    style=multiline, font=\normalfont, itemsep=0.5ex]
+\glentry{$\NIR$}{nir} \emph{Normalised inverse rank.} The fraction of a declared
+  comparison set whose truth a prediction resembles less than it resembles its
+  own, with ties counted at one half. Chance is $0.50$ under the exchangeability
+  condition audited in \cref{sec:res-metrics}. Its meaning is not complete
+  without a frame: the similarity $\sigma$ and the comparison set $J$ are fixed
+  per frame in \cref{tab:sigma}. In the expression frame the vectors compared
+  are expression reconstructed from ranks through a fitted map, and not the
+  ranks the model emits.
+\glentry{$\DRF$}{drf} \emph{Dynamic range fraction.} Not a performance score but
+  a meta-metric. It fixes a scale with an uninformative predictor at zero and a
+  perfect predictor at one, then asks how far up that scale a candidate metric
+  places a positive control of known quality (the interpolated duplicate in the
+  expression frame, a raw split-half in the residual frame,
+  \cref{sec:methods-data}).
+\glentry{$\DEdr$}{dedr} The field's standard differential-expres\-sion
+  delta-cor\-re\-la\-tion, the correlation between predicted and true change
+  from control, restricted to the genes with the largest true change.
+\glentry{$\paneltau$}{paneltau} Kendall's $\tau$ between predicted and true rank
+  over the full $946$-gene panel. It selects no gene subset.
+\glentry{$\gap$}{gap} The scramble gap, $\NIR$ of the model minus $\NIR$ of the
+  scramble.
+\glentry{$\Tcoef$}{tcoef} The disattenuated transfer coefficient, measuring how
+  much of a drug's response is shared across cellular contexts. It is a
+  similarity coefficient, not a variance share.
+\glentry{$\resid$}{resid} The drug-specific residual, $\resid(d,c)$: what is
+  left of the shift once the generic programme has been subtracted from it. The
+  scored object in \Rframe.
+\glentry{$\shift$}{shift} The treated-minus-control shift, $\shift(d,c)$: the
+  treated pseudobulk minus its plate-matched control pseudobulk, and nothing
+  else. An arithmetic object, not a verdict about the drug.
+% Sits directly after $\resid$ and $\shift$ because it is stated in terms of
+% both. The decomposition is the one shared/inference.py computes: it divides
+% through by s.s, the squared L2 norm of the shift, with no mean subtracted
+% anywhere, so the shares are sums of squares about the origin. The function's
+% own docstring there calls it a variance decomposition; that is a misnomer,
+% and this entry is what the prose says instead. The cross term is printed
+% because without it "the three shares sum to one" reads as a coincidence
+% instead of as the expansion of a squared norm.
+\glentry{$\lVert\cdot\rVert$}{norm} \emph{Euclidean norm.} $\lVert x\rVert^{2}
+  = \sum_i x_i^{2}$, the $L^{2}$ norm, throughout; no other norm appears, and
+  nothing is centred first, so a squared norm is a sum of squares about the
+  origin and not a variance. A \emph{squared-norm share} is one term of
+  $\lVert\shift\rVert^{2} = \lVert\resid\rVert^{2} + \lVert g\rVert^{2}
+  + 2\langle\resid,g\rangle$, with $g = \shift - \resid$ the generic programme,
+  divided by $\lVert\shift\rVert^{2}$: the three shares sum to one by
+  construction, cross term included, and each is a mean over conditions.
+\glentry{\ENDCELL}{endcell} The registered atomic token that terminates a cell
+  sentence.
+\glentry{\DOWN}{down} The registered atomic token marking the up\slash down
+  boundary in a residual target. Left unregistered it splits into sub-words and
+  the boundary ceases to be a clean symbol.
+\glentry{\Eframe}{eframe} Page furniture, not a quantity. The expression frame
+  is in force here.
+\glentry{\Rframe}{rframe} Page furniture, not a quantity. The residual frame is
+  in force here.
+\end{description}
+
+% ---------------------------------------------------------------------------
+\section*{Terms}
+
+\noindent
+Defined once, used in that sense everywhere.\seealso{\cref{sec:methods-data}
+builds the apparatus these terms name}
+
+\paragraph{One referent, one word} A synonym reads as a second object. These
+are the words the drafts converged on, with the ones they gave up.
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{drug}{drug} The perturbagen, whatever its chemistry.
+  \emph{Compound}, \emph{molecule} and \emph{agent} are not used as synonyms for
+  it; \emph{small molecule} appears only where the class of thing the atlas
+  contains is what is meant.
+\glentry{cell line}{cellline} The biological context. Two words as a noun,
+  hyphenated only as a compound adjective, as in \emph{cell-line-specific}. The
+  bare \emph{line} stands in where the paragraph has already fixed the referent.
+\glentry{shift, generic, residual}{quantities} Three objects, never
+  interchangeable: the \emph{shift} is treated minus control, the
+  \emph{generic} is the drug-agnostic mean response subtracted from it, and the
+  \emph{residual} is what remains. \emph{Response} keeps its ordinary
+  biological sense and \emph{effect} its ordinary one; neither stands in for
+  the residual.
+\glentry{prediction}{prediction} What the model produces and what gets scored.
+  \emph{Generation} names the act of decoding and only that. \emph{Output} is
+  not used as a noun for it, and survives only inside the
+  fixed instrument name \emph{output invariance}, which names a test and not
+  the thing predicted.
+\glentry{readout}{readout} Two senses, and the surrounding sentence fixes which.
+  Biologically, what the sequencing reports. Of the model, the decoding stage
+  that turns the residual stream into a sentence, the second term of the
+  \emph{representation and readout} distinction \cref{sec:limitations} turns on,
+  for which \emph{decoder} is the alternative word. Neither sense names the
+  prediction, which is what that stage emits.
+\glentry{prompt}{prompt} What the model is given at inference: a cell sentence,
+  the drug name, the dose and the mechanism field.
+\glentry{profile}{profile} A ranked expression vector. Not a synonym for
+  \emph{sentence}, which is the encoding of one cell.
+\glentry{sample (retired)}{sample} Earlier drafts used the word for the scored
+  unit and for the physical one, which made two objects look like one. Neither
+  now: the scored unit is a \emph{condition}, the physical one a \emph{treated
+  well}. \emph{Observation} is not used for either.
+\glentry{signature (retired)}{signature} Bare \emph{signature} names nothing
+  here. \emph{Drug-specific signature} is allowed once, to gloss
+  \emph{residual} on first use; after that the word is \emph{residual}.
+% Last of the retired words, and the one that needs an entry most: unlike
+% "sample" and "signature", this one is still on disk. It survives in the four
+% stored key paths of figs/04c-residual-energy.json, in the function
+% shared/inference.py :: energy_shares those keys come from, in
+% \label{fig:residual-energy} and in the filename figs/04c-residual-energy.tex.
+% A reader tracing a printed number back to its source meets the word there and
+% needs a route from it into the vocabulary; the norm entry in the symbols list
+% never prints it, so this entry is that route. Identifiers are deliberately not
+% renamed: the keys are a data contract with the analysis code and the label is
+% a cross-reference target that prints as "Figure 4.12", so the word itself
+% never reaches the page through it.
+\glentry{energy (retired)}{energy} Borrowed from signal processing and never
+  defined here. It named a squared Euclidean norm in the decomposition of the
+  shift and a projection share elsewhere, so it is gone; see
+  $\lVert\cdot\rVert$. The stored key names, the analysis function
+  \texttt{energy\_shares} and the label of \cref{fig:residual-energy} keep the
+  older word because they are a data contract and a cross-reference target.
+\end{description}
+
+\paragraph{Units of analysis}
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{condition}{condition} A (drug, cell line, plate, dose) tuple. It is the
+  unit that gets scored.
+\glentry{treated well}{treatsample} The physical treatment assignment. Conditions
+  nest inside it, so a well is not itself a condition and the two are not
+  counted against each other.
+\glentry{batch unit}{batchunit} The pair (cell line, plate), never the plate
+  label alone, because plates are numbered within cell line and not globally.
+\glentry{pseudobulk}{pseudobulk} The mean expression profile of a group of
+  cells. A \emph{control pseudobulk} is the same object over plate-matched DMSO
+  cells.
+\glentry{dose}{dose} A molar concentration resolved from
+  \texttt{drugname\_drugconc}, carried as a concentration and never as a
+  unitless float.
+\glentry{cell sentence}{cellsentence} A cell written as its expressed panel
+  genes in descending order of expression, terminated by \ENDCELL. The encoding
+  discards expression magnitudes and retains ranks.
+\end{description}
+
+\paragraph{Frames and comparison sets}
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{expression frame}{exprframe} Scores a predicted cell profile against
+  other drugs on the same plate; conditions grouped by (cell line, plate).
+\glentry{residual frame}{residframe} Scores a predicted residual against other
+  drugs in the same cell line, after the generic programme is subtracted;
+  conditions grouped by cell line.
+\glentry{comparison set $J$}{compset} The conditions a prediction is ranked
+  against. It fixes chance at $0.50$ in both frames and is declared wherever a
+  score is quoted.
+\glentry{within-well split-half precision reference}{reference} The score
+  obtained when a disjoint cell subset of the same treated well is substituted
+  for the prediction, recomputed for every stratum scored. One estimator, not
+  several; what varies between settings is the frame, the comparison set and the
+  cell budget. It is a sampling-precision estimate, optimistic relative to true
+  biological reproducibility: not a biological replicate, and not the maximum
+  predictable fraction of biology.
+\glentry{ceiling}{ceiling} A shorthand for the reference above, used wherever a
+  result is stated as a distance from it. The one exception in this document is
+  the $\DRF$ positive control of \cref{sec:res-metrics}, which is not a row of
+  \cref{tab:ceilings}.
+\glentry{noise ceiling (retired)}{noiseceiling} Earlier drafts joined
+  \emph{ceiling} to a word for error, which invited reading the value as a
+  bound on achievable performance. It is a two-cell precision estimate. Where
+  \cref{sec:res-metrics} needs the quantity it names the construction, the
+  $\DRF$ positive control or a row of \cref{tab:ceilings}.
+\glentry{identifiability}{identifiability} A property of a single condition, not
+  of a drug, and distinct from the aggregate references above. The
+  condition's own within-plate split-half $\NIR$ against its plate-mates clears
+  $0.8$.
+\end{description}
+
+\paragraph{Target construction}
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{generic}{generic} The drug-agnostic mean response subtracted to form
+  the residual, operationally the mean shift over the other drugs at the stated
+  scope. It is conventionally read as the stress and cell-cycle programme common
+  to all drugs, a reading used for intuition and nowhere tested.
+\glentry{residual target}{residtarget} What remains once the generic is removed.
+  Built \emph{split-before-fit} and \emph{leave-one-drug-out}.
+\glentry{split-before-fit}{splitfirst} The holdout is fixed from metadata before
+  any statistic is estimated, so no held-out target is defined partly by other
+  held-out conditions.
+\glentry{leave-one-drug-out}{lodo} No condition's generic contains its own drug,
+  so the two sides of the split are scored against identically defined targets.
+\glentry{scope}{scope} The set of drugs the generic mean is taken over, either
+  \texttt{cell\_line} or \texttt{plate}. The choice is consequential.
+\glentry{quota}{quota} The explicit per-split sampling rule, used because a
+  uniform draw reproduces the pool's proportions and starves the held-out
+  splits.
+\glentry{training arm}{arm} A model variant differing from the others only in
+  its training target or objective; five are used, cold-started from the same
+  base checkpoint with identical hyperparameters, so that it is the only
+  variable. The bare word \emph{arm} also names any one
+  side of a paired comparison (a split, a run, a channel, a baseline), and is
+  qualified wherever the surrounding sentence does not fix the sense. An
+  unqualified \emph{arm} is not necessarily one of the five.
+\end{description}
+
+\paragraph{Baselines, splits and references}
+
+\begin{description}[leftmargin=1em, itemsep=0.5ex,
+                    font=\normalfont\bfseries]
+\glentry{\texttt{control\_copy}}{controlcopy} The baseline that predicts the
+  untreated cell unchanged. It carries zero drug information by construction,
+  and it is the actual zero-shift predictor.
+\glentry{\texttt{revert\_center}}{revertcenter} A predictor that places every
+  gene at the middle rank. It carries no information about drug, cell or
+  biology, and it is \emph{not} zero-shift.
+\glentry{drug lookup}{druglookup} This drug's mean residual, estimated from
+  training conditions in other cell lines. It needs no model, no prompt and no
+  checkpoint.
+\glentry{\texttt{moa\_lookup}}{moalookup} The same construction over drugs
+  sharing this drug's mechanism annotation, on its own narrower support.
+\glentry{channel}{channel} An annotated drug property --- protein target,
+  mechanism, chemistry --- an unseen drug might be reached through. For a
+  channel $X$, a drug's residual is predicted as the mean residual of the other
+  drugs in the same cell line sharing property $X$ with it: \texttt{moa\_lookup}
+  generalised from mechanism to any annotation. It is called live, closed,
+  inconclusive or untestable against a plate-matched null differing in the
+  channel alone (\cref{sec:res-scope}).
+\glentry{scramble}{scramble} The prompt left byte-identical except that the
+  drug name and mechanism are replaced by another drug's, while the control cell
+  and the scoring truth are unchanged. It is the only manipulation that isolates
+  drug use. Its \texttt{near}, \texttt{orth} and \texttt{opposite} strata are
+  fixed by the measured cosine between the partner's residual and the target's,
+  so a stratum's neutrality is an empirical property of these data and not a
+  consequence of its construction.
+\glentry{tiers}{tiers} The three evaluation tiers of the broad
+  characterisation, defined by what the training set contained. \emph{Tier 1}:
+  the (drug, cell line) pairing was seen, so it measures fit, not
+  generalisation. \emph{Tier 2}: the drug never appeared (Leave-Drugs-Out).
+  \emph{Tier 3}: drug and cell line were each seen but never together
+  (Leave-Pairs-Out).
+\glentry{\texttt{train} / \texttt{unseen\_combo} /
+  \texttt{unseen\_drug}}{residsplit} The residual arm's own three-part split.
+  \texttt{unseen\_}\allowbreak\texttt{combo} is an unseen \emph{well} of a seen
+  drug, so it tests
+  recombination and not full novelty.
+\glentry{held out}{heldout} Held out from Tahoe fine-tuning, with the mechanism
+  annotation still supplied in the prompt. Not absent from the model's prior
+  world knowledge. Every unseen-drug result must be read under that narrower
+  scope.
+\end{description}
+
+% ---------------------------------------------------------------------------
+\section*{The record of corrections}
+
+\noindent
+Six claims that this thesis printed are withdrawn by this thesis.
+\Cref{tab:corrections} indexes them, so the set is countable. Each is argued in
+full in the section the table names. Corrections to the apparatus rather than to
+a claim carry the same margin mark but are not tabulated here; each stands where
+the repair is argued.
+
+The same controls that produced these six shape the surviving design, among
+them a zero-information baseline that improved when plate was free to vary; a
+swap-distance sweep after a similar-drug scramble proved weak; a removal gate
+before any ablation null; matched-norm injection before interpreting a swap;
+intervals clustered on the units that repeat, cell line, drug and treated well,
+never on cells; and a pre-registered three-state
+interpretation whose inconclusive branch was allowed to fire. Each of those controls is argued where it was added, and \cref{sec:conclusions} reads the surviving claims against them.
+
+\begin{table}[htbp]
+% MARGINALIA: full width; a prose table whose paragraph column needs the
+% wider measure. Caption above at the text width, the note below in the sans.
+% Placed after the closing paragraph so the float cannot split it.
+\caption[The six corrections this thesis records against itself]{\captiontitle{The
+six corrections this thesis records against itself.} Each row points at the
+place the withdrawal is argued. Two of the six are argued in a marked box;
+the rest in the prose of the section named.}
+\label{tab:corrections}
+\begin{fullwidth}
+\begin{threeparttable}
+\begin{tabularx}{\linewidth}{@{}L{46mm} Y l@{}}
+\thead{The claim withdrawn} & \thead{What killed it} & \thead{Where} \\
+\midrule
+The stronger mechanistic story earlier drafts told about the activation swap
+  & Three substitution designs in turn: a control drawn in the full residual
+    stream put almost all its squared norm where the intervention never acts;
+    ablate-then-add turned the substitution arm into a restoration; and a
+    norm-matched random direction inflated the normaliser. The retracted result
+    was geometry, not biology.
+  & \cref{sec:app-identity} \\
+\addlinespace[10pt]
+The retention argument for a cell-line-scoped generic
+  & Both retention figures were computed with a shared control pseudobulk
+    subtracted from both halves, which correlates the halves through their
+    common control error and favours cell-line scope precisely because the
+    cell-line generic is itself less noisy.
+  & \cref{sec:methods-residual} \\
+\addlinespace[10pt]
+That the optimal-transport arm achieved nothing
+  & The generation budget. Scored at the shorter token cap the arm's gap spanned
+    zero and was printed as inert; re-run at the budget the residual arm had, it
+    does not. The token budget is part of the claim.
+  & \cref{sec:res-encoding} \\
+\addlinespace[10pt]
+A training-exposure or memorisation advantage on trained conditions
+  & Composition. Restricting the comparison to the drugs present in both arms
+    reverses the sign, and the two arms are scored on populations selected by
+    different rules.
+  & \cref{sec:res-generalisation} \\
+\addlinespace[10pt]
+That the model reads the drug name and not the mechanism field
+  & The comparator. Those arms were scored against an \texttt{opposite}-stratum
+    partner, which inflates every gap read against it, and because that is a
+    property of the swap partner and not of the target build, it survives the
+    re-run.
+  & \cref{sec:res-field} \\
+\addlinespace[10pt]
+That a swing in the held-out-drug control was evidence of seed instability
+  & The comparator, and the draw. Both superseded figures are gaps against the
+    \texttt{opposite} swap, which \cref{sec:res-generalisation} shows is not a
+    null; and unseeded \texttt{do\_sample} advanced from global torch state, so
+    the two arms of a contrast were drawn from different points of one stream.
+    The diagnosis named the trigger and missed the cause.
+  & \cref{sec:lim-intervals} \\
+\end{tabularx}
+\begin{tablenotes}[flushleft]
+\item Withdrawing a claim is not the same as establishing its negation. Each row
+records that the evidence offered will not carry the claim, and leaves the
+underlying question where the section arguing the withdrawal says it leaves it.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}

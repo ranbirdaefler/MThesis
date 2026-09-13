@@ -1,0 +1,156 @@
+{
+  "figure": "fig:splits",
+  "frame": "residual",
+  "comparison_set": "other drugs in the same cell line",
+  "comparator_arm": "scramble_orth (geometry-defined orth partner)",
+  "chance": 0.5,
+  "sources": {
+    "point_estimates_intervals_df_references_n": "RESULTS_cluster/CANONICAL_NUMBERS.json -> splits{}, ceilings{}",
+    "detection_limit": "RESULTS_cluster/CANONICAL_NUMBERS.json -> detection_limit{}",
+    "per_condition_nir_panel_b": "RESULTS_cluster/re_v3.json -> records[].model by split",
+    "cross_check": "RESULTS_cluster/re_v3.json -> means.generalization{}",
+    "canonical_provenance": "run C: re_v3.json + scramble_stratum_audit_v4.json + vardecomp_matched.json + calibration_v4{,_sameplate}.json + channel_gate_v4.json"
+  },
+  "not_drawn": {
+    "re_v3_means_generalization_ci": "re_v3.json stores a third interval per split (train [0.04712, 0.13243]) that disagrees with both CANONICAL_NUMBERS.json and tab:generalisation. Only gap_ci_line / gap_ci_drug are drawn."
+  },
+  "encoding": {
+    "model": "style_v2.ARM['model'] -- accent filled circle with a 95% clustered interval",
+    "reference": "style_v2.ARM['reference'] -- grey dash, the module's SERIES form of the within-well split-half reference. reference_band() is the scalar form and does not apply here: each row carries its own reference value, not one level shared by the axis. No interval is stored for it, so it is a bare marker.",
+    "annotation_type_size_pt": 9,
+    "axis_label_type_size_pt": "style_v2 axes.labelsize (10)"
+  },
+  "panel_a": {
+    "train": {
+      "n": 300,
+      "n_lines": 39,
+      "n_drugs": 76,
+      "n_wells": 136,
+      "model_nir": 0.5980697428946568,
+      "nir_ci": [
+        0.5493363811045251,
+        0.6468031046847883
+      ],
+      "gap": 0.08983412369478455,
+      "gap_ci_line": [
+        0.038157157528104835,
+        0.14151108986146427
+      ],
+      "gap_ci_drug": [
+        0.029063812082406416,
+        0.1506044353071627
+      ],
+      "df_line": 38,
+      "df_drug": 75,
+      "reference": 0.9555005636354709,
+      "reference_note": "raw within-well split-half precision reference for this split; train is filtered at a reliability line the held-out splits are not"
+    },
+    "unseen_combo": {
+      "n": 895,
+      "n_lines": 42,
+      "n_drugs": 34,
+      "n_wells": 36,
+      "model_nir": 0.5334299985455905,
+      "nir_ci": [
+        0.49153757314418595,
+        0.5753224239469951
+      ],
+      "gap": 0.0331637081678744,
+      "gap_ci_line": [
+        0.006894066630831683,
+        0.05943334970491712
+      ],
+      "gap_ci_drug": [
+        -0.0031443982284607014,
+        0.0694718145642095
+      ],
+      "df_line": 35,
+      "df_drug": 33,
+      "reference": 0.823719688195642,
+      "reference_note": "raw within-well split-half precision reference for this split; train is filtered at a reliability line the held-out splits are not"
+    },
+    "unseen_drug": {
+      "n": 199,
+      "n_lines": 40,
+      "n_drugs": 10,
+      "n_wells": 28,
+      "model_nir": 0.45889838436740604,
+      "nir_ci": [
+        0.4036154574012758,
+        0.5141813113335364
+      ],
+      "gap": -0.03148175705606285,
+      "gap_ci_line": [
+        -0.08358077892636565,
+        0.020617264814239943
+      ],
+      "gap_ci_drug": [
+        -0.10487258422550776,
+        0.04190907011338206
+      ],
+      "df_line": 27,
+      "df_drug": 9,
+      "reference": 0.8364771344172793,
+      "reference_note": "raw within-well split-half precision reference for this split; train is filtered at a reliability line the held-out splits are not"
+    }
+  },
+  "panel_b": {
+    "kernel": "gaussian, reflected at 0 and 1, Silverman bandwidth on the raw sample",
+    "density_scale_factor_to_axis_units": 0.2934947970778436,
+    "splits": {
+      "train": {
+        "n": 300,
+        "mean": 0.5980697428946568,
+        "median": 0.6223591549295775,
+        "sd": 0.30166850440399723,
+        "frac_at_or_below_chance": 0.38666666666666666,
+        "pct_at_or_below_chance": 38.7,
+        "bandwidth": 0.08676573072304235
+      },
+      "unseen_combo": {
+        "n": 895,
+        "mean": 0.5334299985455905,
+        "median": 0.5370370370370371,
+        "sd": 0.278900556387065,
+        "frac_at_or_below_chance": 0.44581005586592176,
+        "pct_at_or_below_chance": 44.6,
+        "bandwidth": 0.0644654892518672
+      },
+      "unseen_drug": {
+        "n": 199,
+        "mean": 0.45889838436740604,
+        "median": 0.44660194174757284,
+        "sd": 0.2708894691185423,
+        "frac_at_or_below_chance": 0.5577889447236181,
+        "pct_at_or_below_chance": 55.8,
+        "bandwidth": 0.08457928631719727
+      }
+    },
+    "pooled_mean_all_1394": 0.5367012554202398,
+    "pooled_n": 1394
+  },
+  "detection_limit_band": {
+    "split": "unseen_drug",
+    "n": 199,
+    "quantity": "smallest departure from chance detectable at 80% power",
+    "value": 0.07897560995161473,
+    "drawn_as": "grey band spanning 0.50 +/- 0.07898 on the absolute-NIR axis",
+    "is_not": "a confidence interval",
+    "nir_ci_half_width_same_arm": 0.05528292696613031
+  },
+  "verified_against_thesis_text": {
+    "Sections/04c-reencoding.tex tab:generalisation": "all three rows of model NIR, both gap intervals, n and (lines; drugs; wells) agree to the printed 3-4 decimals",
+    "Sections/04c-reencoding.tex sec:res-generalisation": "references 0.956 / 0.824 / 0.836 and the 0.079 80%-power detection limit agree",
+    "Sections/04d-baselines.tex, 05-Limitations.tex, 06-Conclusions.tex": "the same four intervals are quoted there and agree",
+    "pooled": "0.5367 = the document's 0.537, and 0.5367 - 0.5 = the document's +0.0367",
+    "disagreements_found": "none"
+  },
+  "caption_must_state": [
+    "residual frame",
+    "comparison set is other drugs in the same cell line",
+    "n per split",
+    "the reference is a within-well split-half precision figure, not a replicate",
+    "both clustering axes are shown because the verdict depends on which is chosen",
+    "the shaded band is the arm's 80%-power detection limit, not a confidence region"
+  ]
+}

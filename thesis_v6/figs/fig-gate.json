@@ -1,0 +1,446 @@
+{
+ "figure": "fig:gate",
+ "file": "thesis_v2/figs/gate.tex",
+ "kind": "tikz",
+ "what_is_plotted": "gap in NIR (normalised inverse rank) between a channel retrieval arm and its matched random null, arm minus null; NIR runs 0 to 1 with chance at 0.50, so a gap of 0.00 is no advantage from the channel",
+ "interval": "95% two-way cluster-robust (Cameron-Gelbach-Miller), Student t on min(G1,G2)-1",
+ "margin": {
+  "value": 0.03,
+  "meaning": "pre-set relevance margin the gate asks the LOWER bound to clear",
+  "source_file": "RESULTS_cluster/channel_gate_v4.json",
+  "source_path": "config.min_margin"
+ },
+ "axis_range_drawn": {
+  "alo": -0.115,
+  "ahi": 0.265,
+  "ticks": [
+   -0.1,
+   0.0,
+   0.1,
+   0.2
+  ]
+ },
+ "n_rows": 12,
+ "sources": [
+  "RESULTS_cluster/channel_gate_v4.json",
+  "RESULTS_cluster/channel_gate_v4_byaxis.json",
+  "RESULTS_cluster/channel_gate_heldout_targets.json"
+ ],
+ "cross_checked_against_thesis_text": {
+  "Sections/04d-baselines.tex:350-354": "margin 0.03; +0.0745 / +0.0279 / +0.0035 lower bounds",
+  "Sections/04d-baselines.tex:369-376": "tab:channels, all three plate-matched rows and n",
+  "Sections/04d-baselines.tex:470-479": "held-out-target block",
+  "Sections/04d-baselines.tex:521-526": "drug-axis block",
+  "Sections/04d-baselines.tex:684-691": "tab:fieldattribution panel A, plate-matched and different-plate rows"
+ },
+ "rows": [
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -1,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "protein target, plate-matched",
+   "n": 712,
+   "n_drugs": 18,
+   "n_cell_lines": 39,
+   "n_wells": 51,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 38,
+   "estimate": 0.13512036067987784,
+   "ci_lo": 0.07447927971257501,
+   "ci_hi": 0.19576144164718068,
+   "drawn": [
+    0.0745,
+    0.1351,
+    0.1958
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.target.plate_matched",
+   "drawn_in_tex": [
+    "+0.0745",
+    "+0.1351",
+    "+0.1958"
+   ]
+  },
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -2,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "different_plate",
+   "null_label": "different-plate",
+   "row_label": "protein target, different-plate",
+   "n": 599,
+   "n_drugs": 18,
+   "n_cell_lines": 39,
+   "n_wells": 50,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 38,
+   "estimate": 0.13221492434115228,
+   "ci_lo": 0.0648037504179931,
+   "ci_hi": 0.19962609826431146,
+   "drawn": [
+    0.0648,
+    0.1322,
+    0.1996
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.target.different_plate",
+   "drawn_in_tex": [
+    "+0.0648",
+    "+0.1322",
+    "+0.1996"
+   ]
+  },
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -3,
+   "channel": "moa",
+   "channel_label": "mechanism",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "mechanism, plate-matched",
+   "n": 921,
+   "n_drugs": 26,
+   "n_cell_lines": 41,
+   "n_wells": 68,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 40,
+   "estimate": 0.08054919893547109,
+   "ci_lo": 0.027874175686430525,
+   "ci_hi": 0.13322422218451166,
+   "drawn": [
+    0.0279,
+    0.0805,
+    0.1332
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.moa.plate_matched",
+   "drawn_in_tex": [
+    "+0.0279",
+    "+0.0805",
+    "+0.1332"
+   ]
+  },
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -4,
+   "channel": "moa",
+   "channel_label": "mechanism",
+   "null": "different_plate",
+   "null_label": "different-plate",
+   "row_label": "mechanism, different-plate",
+   "n": 781,
+   "n_drugs": 26,
+   "n_cell_lines": 40,
+   "n_wells": 66,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 39,
+   "estimate": 0.0746338228309035,
+   "ci_lo": 0.024319046612916534,
+   "ci_hi": 0.12494859904889047,
+   "drawn": [
+    0.0243,
+    0.0746,
+    0.1249
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.moa.different_plate",
+   "drawn_in_tex": [
+    "+0.0243",
+    "+0.0746",
+    "+0.1249"
+   ]
+  },
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -5,
+   "channel": "chem",
+   "channel_label": "chemical structure",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "chemical structure, plate-matched",
+   "n": 4131,
+   "n_drugs": 94,
+   "n_cell_lines": 42,
+   "n_wells": 256,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 41,
+   "estimate": 0.026095802440010047,
+   "ci_lo": 0.0035231888498251894,
+   "ci_hi": 0.04866841603019491,
+   "drawn": [
+    0.0035,
+    0.0261,
+    0.0487
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.chem.plate_matched",
+   "drawn_in_tex": [
+    "+0.0035",
+    "+0.0261",
+    "+0.0487"
+   ]
+  },
+  {
+   "block": 1,
+   "block_label": "clustered on cell line and well",
+   "row_y": -6,
+   "channel": "chem",
+   "channel_label": "chemical structure",
+   "null": "different_plate",
+   "null_label": "different-plate",
+   "row_label": "chemical structure, different-plate",
+   "n": 4090,
+   "n_drugs": 94,
+   "n_cell_lines": 42,
+   "n_wells": 256,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 41,
+   "estimate": 0.011785920163186497,
+   "ci_lo": -0.00974669354917999,
+   "ci_hi": 0.03331853387555299,
+   "drawn": [
+    -0.0097,
+    0.0118,
+    0.0333
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4.json",
+   "source_path": "channels.chem.different_plate",
+   "drawn_in_tex": [
+    "-0.0097",
+    "+0.0118",
+    "+0.0333"
+   ]
+  },
+  {
+   "block": 2,
+   "block_label": "the same arm, clustered on drug and well",
+   "row_y": -8.8,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "protein target, plate-matched",
+   "n": 712,
+   "n_drugs": 18,
+   "n_cell_lines": 39,
+   "n_wells": 51,
+   "cluster_keys": [
+    "drug",
+    "well"
+   ],
+   "df": 17,
+   "estimate": 0.13512036067987784,
+   "ci_lo": 0.028653378337527152,
+   "ci_hi": 0.24158734302222853,
+   "drawn": [
+    0.0287,
+    0.1351,
+    0.2416
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4_byaxis.json",
+   "source_path": "channels.target.plate_matched.ci_drug_well",
+   "drawn_in_tex": [
+    "+0.0287",
+    "+0.1351",
+    "+0.2416"
+   ]
+  },
+  {
+   "block": 2,
+   "block_label": "the same arm, clustered on drug and well",
+   "row_y": -9.8,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "different_plate",
+   "null_label": "different-plate",
+   "row_label": "protein target, different-plate",
+   "n": 599,
+   "n_drugs": 18,
+   "n_cell_lines": 39,
+   "n_wells": 50,
+   "cluster_keys": [
+    "drug",
+    "well"
+   ],
+   "df": 17,
+   "estimate": 0.13221492434115228,
+   "ci_lo": 0.01990743280502115,
+   "ci_hi": 0.2445224158772834,
+   "drawn": [
+    0.0199,
+    0.1322,
+    0.2445
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4_byaxis.json",
+   "source_path": "channels.target.different_plate.ci_drug_well",
+   "drawn_in_tex": [
+    "+0.0199",
+    "+0.1322",
+    "+0.2445"
+   ]
+  },
+  {
+   "block": 2,
+   "block_label": "the same arm, clustered on drug and well",
+   "row_y": -10.8,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "count_matched",
+   "null_label": "count-matched",
+   "row_label": "protein target, count-matched",
+   "n": 712,
+   "n_drugs": 18,
+   "n_cell_lines": 39,
+   "n_wells": 51,
+   "cluster_keys": [
+    "drug",
+    "well"
+   ],
+   "df": 17,
+   "estimate": 0.14979481106993586,
+   "ci_lo": 0.05361356800149772,
+   "ci_hi": 0.245976054138374,
+   "drawn": [
+    0.0536,
+    0.1498,
+    0.246
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_v4_byaxis.json",
+   "source_path": "channels.target.count_matched.ci_drug_well",
+   "drawn_in_tex": [
+    "+0.0536",
+    "+0.1498",
+    "+0.2460"
+   ]
+  },
+  {
+   "block": 3,
+   "block_label": "targets restricted to drugs held out of training",
+   "row_y": -13.6,
+   "channel": "target",
+   "channel_label": "protein target",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "protein target, on two drugs",
+   "n": 161,
+   "n_drugs": 2,
+   "n_cell_lines": null,
+   "n_wells": null,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 4,
+   "estimate": 0.11966602902106448,
+   "ci_lo": 0.04988802018070265,
+   "ci_hi": 0.1894440378614263,
+   "drawn": [
+    0.0499,
+    0.1197,
+    0.1894
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_heldout_targets.json",
+   "source_path": "channels.target.heldout_targets",
+   "drawn_in_tex": [
+    "+0.0499",
+    "+0.1197",
+    "+0.1894"
+   ]
+  },
+  {
+   "block": 3,
+   "block_label": "targets restricted to drugs held out of training",
+   "row_y": -14.6,
+   "channel": "moa",
+   "channel_label": "mechanism",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "mechanism, on four",
+   "n": 216,
+   "n_drugs": 4,
+   "n_cell_lines": null,
+   "n_wells": null,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 10,
+   "estimate": 0.04386392118985579,
+   "ci_lo": -0.08461115563528196,
+   "ci_hi": 0.17233899801499356,
+   "drawn": [
+    -0.0846,
+    0.0439,
+    0.1723
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_heldout_targets.json",
+   "source_path": "channels.moa.heldout_targets",
+   "drawn_in_tex": [
+    "-0.0846",
+    "+0.0439",
+    "+0.1723"
+   ]
+  },
+  {
+   "block": 3,
+   "block_label": "targets restricted to drugs held out of training",
+   "row_y": -15.6,
+   "channel": "chem",
+   "channel_label": "chemical structure",
+   "null": "plate_matched",
+   "null_label": "plate-matched",
+   "row_label": "chemical structure, on fourteen",
+   "n": 898,
+   "n_drugs": 14,
+   "n_cell_lines": null,
+   "n_wells": null,
+   "cluster_keys": [
+    "cell_line",
+    "well"
+   ],
+   "df": 39,
+   "estimate": 0.03779310575211302,
+   "ci_lo": -0.002901907478786908,
+   "ci_hi": 0.07848811898301294,
+   "drawn": [
+    -0.0029,
+    0.0378,
+    0.0785
+   ],
+   "source_file": "RESULTS_cluster/channel_gate_heldout_targets.json",
+   "source_path": "channels.chem.heldout_targets",
+   "drawn_in_tex": [
+    "-0.0029",
+    "+0.0378",
+    "+0.0785"
+   ]
+  }
+ ]
+}
