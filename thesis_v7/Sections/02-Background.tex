@@ -174,13 +174,10 @@ a context where the perturbation was never applied. CPA~\cite{cpa} makes that
 arithmetic learnable, composing a basal cell state with additive embeddings for
 drug, dose and covariates; chemCPA swaps its one-hot drug embedding for a
 molecular-structure encoder, letting an unseen drug be embedded at
-all.\footnote{Hetzel et al., \emph{Predicting Cellular Responses to Novel Drug
-Perturbations at a Single-Cell Resolution}, NeurIPS 2022.} GEARS~\cite{gears}
+all~\cite{chemcpa}. GEARS~\cite{gears}
 reaches unseen genes through a gene--gene knowledge graph. CellOT instead fits a
-neural optimal-transport map from control to treated per perturbation.\footnote{
-Bunne et al., \emph{Learning single-cell perturbation responses using neural
-optimal transport}, Nature Methods 2023; Bunne, Krause and Cuturi,
-\emph{Supervised Training of Conditional Monge Maps}, NeurIPS 2022.}
+neural optimal-transport map from control to treated per
+perturbation~\cite{cellot,conditionalmonge}.
 
 \paragraph{Two properties they share} The prediction is a vector in a continuous
 space, emitted in one pass by a decoder trained on a loss written directly on
@@ -287,8 +284,9 @@ architectures dissolve; DrEval~\cite{dreval} finds deep models barely beating a
 mean drug and cell-line predictor.
 
 \paragraph{The other side, the metrics were at fault} Miller et
-al.~\cite{miller} argue that these conclusions ``largely stem from limitations of
-benchmarking metrics, not from the models themselves''. They formalise positive
+al.~\cite{miller} attribute much of the apparent underperformance to weaknesses
+in the evaluation metrics rather than to the models' predictive capabilities.
+They formalise positive
 and negative controls in perturbation benchmarking and introduce the
 \emph{interpolated duplicate}, blending a technical duplicate with the mean
 baseline by per-gene differential-expression

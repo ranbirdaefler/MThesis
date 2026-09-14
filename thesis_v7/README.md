@@ -28,9 +28,21 @@ All figure inputs needed to compile the PDF are included in `figs/`.
   compact 10.5 pt text and their own leading; figure captions and margin
   notes retain separate readable sizes. Figure widths, long equations and
   selected heading/float transitions were adjusted to the new measure.
+- Completed the bibliography entries for chemCPA, CellOT and Conditional
+  Monge Maps, replaced their separate footnotes with the existing numeric
+  citation system, and paraphrased a direct quotation while retaining its
+  source citation. Added consulted source URLs and access dates to online
+  references, including an official Codex reference.
+- Added a final statement on AI assistance covering formatting, wording,
+  rephrasing, figures, HPC submission scripts, documentation, bibliographic
+  checks, and selected code/result consistency checks.
 
 The formatting targets follow Bocconi's official master's thesis instructions:
-[Thesis content and format, academic year 2025–2026](https://didattica.unibocconi.eu/tsg/testo.php?comando=Apri&edizione=2026&idAnt=26641&idr=26641&strperc=10.&volume=R2).
+[Thesis format, academic year 2026–2027](https://didattica.unibocconi.eu/tsg/testo.php?comando=Apri&edizione=2027&idAnt=28079&idr=28079&strperc=10.&volume=R2).
+
+The separate length guidance in the university's thesis-content rules remains
+an advisor/programme matter; formatting and build checks do not certify an
+exception to that guidance.
 
 Corrected unseen-drug channel summaries (estimate and 95% interval):
 
@@ -109,25 +121,37 @@ rendered-page review are required in addition to the automated checks.
 
 ## Final validation, 13 September 2026
 
-The full build and its scientific/source checks passed. The final
-`thesis_v7.pdf` has **255 pages** and **1,561,267 bytes**; its SHA-256 is
-`5d21a76210d2f8ecc46506b46b54a1d92994632d19b201d5b8f9bbd48578edeb`.
+The full build and its scientific/source checks passed after the citation and
+AI-assistance revisions. The final `thesis_v7.pdf` has **260 pages** and
+**1,568,797 bytes**; its SHA-256 is
+`092af317b378c0d1dca8fc2b0465df1e2ab824670926b32bd9006ead037f19e6`.
 
 - The original 132 files pass the preservation check. The corrected channel
   artifact and figure reproduce, and all 184 parsed numeric confidence
   intervals have ordered bounds.
-- The final compiler log has no errors, overfull boxes, oversized floats,
-  unusable table columns, undefined references/citations, missing glyphs,
-  duplicate reference labels or missing PDF destinations. Its 24 underfull
-  box advisories were covered by visual review.
-- Rendered-page review covered all pages, including detailed checks of small
-  labels, tables and captions. After the final local fixes, 26 changed pages
-  were inspected again; the other 229 body rasters matched the reviewed
-  candidate. No remaining clipping, overlaps or orphaned section headings
-  were identified.
-- A4 dimensions, four initial blank pages, 12 pt body text and ordinary prose
-  line counts were verified. Front-matter folios run i–iv and body folios
-  1–247. All 732 named PDF destinations and 711 internal links resolve.
+- The compiler log has no errors, overfull boxes, oversized floats, unusable
+  table columns, undefined references/citations, missing glyphs, duplicate
+  labels or missing PDF destinations. Its 24 underfull advisories were covered
+  by visual review.
+- The bibliography contains 40 numbered, cited entries, including the three
+  previously footnoted papers and Codex. The bibliography database has 41
+  entries, with 40 source URL/access-date pairs; the offline companion thesis
+  remains the exception. Consultation dates record retrieval of source pages
+  or cached primary bibliographic records on 13 September 2026. Existing
+  reviewed publication versions were preserved. The DrEval URL points to its
+  accessible official DOI-linked bibliographic record.
+- All 260 pages received rendered coverage: 212 body rasters matched the
+  earlier approved PDF and all 48 changed pages were visually checked. After
+  the final HPC/documentation addition, 259 body rasters matched this reviewed
+  candidate and the updated final page was inspected separately. No clipping,
+  overlaps or orphaned section headings were identified.
+- A4 dimensions, four opening blank pages, 12 pt body and ordinary prose
+  spacing were verified. Folios run i-iv and 1-252. All 740 named destinations
+  and 716 internal links resolve. The final AI statement is on printed page
+  252 (PDF page 260).
 
 The unconfirmed companion-thesis metadata noted above remains the known
-bibliographic limitation.
+bibliographic limitation. A likely author/title match was located in a public
+profile, but has not been substituted without confirmation that it identifies
+the consulted work. The thesis length remains subject to advisor/programme
+acceptance under the university's general guidance.
