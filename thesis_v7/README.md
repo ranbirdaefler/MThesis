@@ -32,10 +32,11 @@ All figure inputs needed to compile the PDF are included in `figs/`.
   Monge Maps, replaced their separate footnotes with the existing numeric
   citation system, and paraphrased a direct quotation while retaining its
   source citation. Added consulted source URLs and access dates to online
-  references, including an official Codex reference.
+  references, including official references for Codex and Claude.
 - Added a final statement on AI assistance covering formatting, wording,
   rephrasing, figures, HPC submission scripts, documentation, bibliographic
-  checks, and selected code/result consistency checks.
+  checks, and selected code/result consistency checks. The statement names
+  OpenAI Codex and Anthropic Claude.
 
 The formatting targets follow Bocconi's official master's thesis instructions:
 [Thesis format, academic year 2026–2027](https://didattica.unibocconi.eu/tsg/testo.php?comando=Apri&edizione=2027&idAnt=28079&idr=28079&strperc=10.&volume=R2).
@@ -122,9 +123,9 @@ rendered-page review are required in addition to the automated checks.
 ## Final validation, 13 September 2026
 
 The full build and its scientific/source checks passed after the citation and
-AI-assistance revisions. The final `thesis_v7.pdf` has **260 pages** and
-**1,568,797 bytes**; its SHA-256 is
-`092af317b378c0d1dca8fc2b0465df1e2ab824670926b32bd9006ead037f19e6`.
+AI-assistance revisions. The final `thesis_v7.pdf` has **261 pages** and
+**1,569,839 bytes**; its SHA-256 is
+`41cad16555b24665145110fee5d5ece217b9423f705a27d46a16a78aa5397352`.
 
 - The original 132 files pass the preservation check. The corrected channel
   artifact and figure reproduce, and all 184 parsed numeric confidence
@@ -133,22 +134,22 @@ AI-assistance revisions. The final `thesis_v7.pdf` has **260 pages** and
   table columns, undefined references/citations, missing glyphs, duplicate
   labels or missing PDF destinations. Its 24 underfull advisories were covered
   by visual review.
-- The bibliography contains 40 numbered, cited entries, including the three
-  previously footnoted papers and Codex. The bibliography database has 41
-  entries, with 40 source URL/access-date pairs; the offline companion thesis
+- The bibliography contains 41 numbered, cited entries, including the three
+  previously footnoted papers, Codex and Claude. The bibliography database has
+  42 entries, with 41 source URL/access-date pairs; the offline companion thesis
   remains the exception. Consultation dates record retrieval of source pages
   or cached primary bibliographic records on 13 September 2026. Existing
   reviewed publication versions were preserved. The DrEval URL points to its
   accessible official DOI-linked bibliographic record.
-- All 260 pages received rendered coverage: 212 body rasters matched the
-  earlier approved PDF and all 48 changed pages were visually checked. After
-  the final HPC/documentation addition, 259 body rasters matched this reviewed
-  candidate and the updated final page was inspected separately. No clipping,
+- All 261 pages received rendered coverage after adding Claude: 257 body
+  rasters matched the previously reviewed PDF, allowing for the additional
+  bibliography page. The four changed pages (contents, list of figures,
+  Claude reference and AI statement) were visually checked. No clipping,
   overlaps or orphaned section headings were identified.
 - A4 dimensions, four opening blank pages, 12 pt body and ordinary prose
-  spacing were verified. Folios run i-iv and 1-252. All 740 named destinations
-  and 716 internal links resolve. The final AI statement is on printed page
-  252 (PDF page 260).
+  spacing were verified. Folios run i-iv and 1-253. All 742 named destinations
+  and 717 internal links resolve. The final AI statement is on printed page
+  253 (PDF page 261).
 
 The unconfirmed companion-thesis metadata noted above remains the known
 bibliographic limitation. A likely author/title match was located in a public
