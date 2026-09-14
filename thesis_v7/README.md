@@ -37,6 +37,8 @@ All figure inputs needed to compile the PDF are included in `figs/`.
   rephrasing, figures, HPC submission scripts, documentation, bibliographic
   checks, and selected code/result consistency checks. The statement names
   OpenAI Codex and Anthropic Claude.
+- Reworded the model-size limitation, removed the standalone correction-record
+  section and its references, and removed four retired glossary entries.
 
 The formatting targets follow Bocconi's official master's thesis instructions:
 [Thesis format, academic year 2026–2027](https://didattica.unibocconi.eu/tsg/testo.php?comando=Apri&edizione=2027&idAnt=28079&idr=28079&strperc=10.&volume=R2).
@@ -123,9 +125,9 @@ rendered-page review are required in addition to the automated checks.
 ## Final validation, 13 September 2026
 
 The full build and its scientific/source checks passed after the citation and
-AI-assistance revisions. The final `thesis_v7.pdf` has **261 pages** and
-**1,569,839 bytes**; its SHA-256 is
-`41cad16555b24665145110fee5d5ece217b9423f705a27d46a16a78aa5397352`.
+AI-assistance and final editorial revisions. The final `thesis_v7.pdf` has
+**259 pages** and **1,563,382 bytes**; its SHA-256 is
+`0baba59d4c145d6a20f6d2875ad4b4db1e58629456805708d4441afdb83cf5c9`.
 
 - The original 132 files pass the preservation check. The corrected channel
   artifact and figure reproduce, and all 184 parsed numeric confidence
@@ -141,15 +143,15 @@ AI-assistance revisions. The final `thesis_v7.pdf` has **261 pages** and
   or cached primary bibliographic records on 13 September 2026. Existing
   reviewed publication versions were preserved. The DrEval URL points to its
   accessible official DOI-linked bibliographic record.
-- All 261 pages received rendered coverage after adding Claude: 257 body
-  rasters matched the previously reviewed PDF, allowing for the additional
-  bibliography page. The four changed pages (contents, list of figures,
-  Claude reference and AI statement) were visually checked. No clipping,
-  overlaps or orphaned section headings were identified.
+- All 259 pages received rendered coverage after the final editorial cleanup:
+  247 body rasters matched the previously reviewed PDF, allowing for
+  repagination. The 12 changed pages in the contents, limitations, conclusions
+  and reference apparatus were visually checked. No clipping, overlaps or
+  orphaned section headings were identified.
 - A4 dimensions, four opening blank pages, 12 pt body and ordinary prose
-  spacing were verified. Folios run i-iv and 1-253. All 742 named destinations
-  and 717 internal links resolve. The final AI statement is on printed page
-  253 (PDF page 261).
+  spacing were verified. Folios run i-iv and 1-251. All 734 named destinations
+  and 704 internal links resolve. The final AI statement is on printed page
+  251 (PDF page 259).
 
 The unconfirmed companion-thesis metadata noted above remains the known
 bibliographic limitation. A likely author/title match was located in a public

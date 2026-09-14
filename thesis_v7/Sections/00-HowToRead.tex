@@ -2,15 +2,12 @@
 % 00-HowToRead.tex -- the reference apparatus. UNNUMBERED, sits after the
 % Appendix. MOVED FROM THE FRONT: it is looked up, not read through.
 % Contents: the two measurement frames, the three hedge registers, the page
-% furniture, the symbol table, the term glossary, the record of corrections.
+% furniture, the symbol table and the term glossary.
 %
 % This is where the vocabulary is fixed, so it is the file that has to be
 % right: one referent, one word. drug (never compound, molecule or agent);
 % cell line; condition; treated well; shift / generic / residual; prediction;
-% prompt; cell sentence; squared norm (never "energy", a borrowing from signal
-% processing that this document never defined and that did not name one thing
-% everywhere it appeared). Words the drafts retired keep an entry of their own,
-% so a reader who meets one in an older file can find where it went.
+% prompt; cell sentence; squared norm.
 %
 % NO claim block and NO \claimlede: this chapter reaches no verdict, and it
 % introduces, strengthens and weakens nothing. It only fixes the vocabulary.
@@ -31,7 +28,7 @@
 
 \begin{question}
 Every term, symbol and convention that carries weight across more than one
-chapter is fixed here, with the record of the six withdrawn claims.
+chapter is fixed here.
 \end{question}
 
 \noindent
@@ -99,8 +96,7 @@ care.}
   entitled to say something different if this sentence did not exist? Its tag
   names where the limit carries to.
 \glentry{A correction}{correction} marks a withdrawal this thesis makes against
-  itself. Six are withdrawn \emph{claims}, indexed in \cref{tab:corrections}, so
-  that set is bounded and countable; the rest retract a defective piece of
+  itself. It may concern a claim or a defective piece of
   apparatus --- a voided control, a mis-resampled interval, a replaced
   instrument, a leaking partner pool. Each mark of either kind stands where the
   withdrawal is argued.
@@ -242,7 +238,7 @@ Defined once, used in that sense everywhere.\seealso{\cref{sec:methods-data}
 builds the apparatus these terms name}
 
 \paragraph{One referent, one word} A synonym reads as a second object. These
-are the words the drafts converged on, with the ones they gave up.
+are the terms used throughout the thesis.
 
 \begin{description}[leftmargin=1em, itemsep=0.5ex,
                     font=\normalfont\bfseries]
@@ -274,30 +270,6 @@ are the words the drafts converged on, with the ones they gave up.
   the drug name, the dose and the mechanism field.
 \glentry{profile}{profile} A ranked expression vector. Not a synonym for
   \emph{sentence}, which is the encoding of one cell.
-\glentry{sample (retired)}{sample} Earlier drafts used the word for the scored
-  unit and for the physical one, which made two objects look like one. Neither
-  now: the scored unit is a \emph{condition}, the physical one a \emph{treated
-  well}. \emph{Observation} is not used for either.
-\glentry{signature (retired)}{signature} Bare \emph{signature} names nothing
-  here. \emph{Drug-specific signature} is allowed once, to gloss
-  \emph{residual} on first use; after that the word is \emph{residual}.
-% Last of the retired words, and the one that needs an entry most: unlike
-% "sample" and "signature", this one is still on disk. It survives in the four
-% stored key paths of figs/04c-residual-energy.json, in the function
-% shared/inference.py :: energy_shares those keys come from, in
-% \label{fig:residual-energy} and in the filename figs/04c-residual-energy.tex.
-% A reader tracing a printed number back to its source meets the word there and
-% needs a route from it into the vocabulary; the norm entry in the symbols list
-% never prints it, so this entry is that route. Identifiers are deliberately not
-% renamed: the keys are a data contract with the analysis code and the label is
-% a cross-reference target that prints as "Figure 4.12", so the word itself
-% never reaches the page through it.
-\glentry{energy (retired)}{energy} Borrowed from signal processing and never
-  defined here. It named a squared Euclidean norm in the decomposition of the
-  shift and a projection share elsewhere, so it is gone; see
-  $\lVert\cdot\rVert$. The stored key names, the analysis function
-  \texttt{energy\_shares} and the label of \cref{fig:residual-energy} keep the
-  older word because they are a data contract and a cross-reference target.
 \end{description}
 
 \paragraph{Units of analysis}
@@ -345,11 +317,6 @@ are the words the drafts converged on, with the ones they gave up.
   result is stated as a distance from it. The one exception in this document is
   the $\DRF$ positive control of \cref{sec:res-metrics}, which is not a row of
   \cref{tab:ceilings}.
-\glentry{noise ceiling (retired)}{noiseceiling} Earlier drafts joined
-  \emph{ceiling} to a word for error, which invited reading the value as a
-  bound on achievable performance. It is a two-cell precision estimate. Where
-  \cref{sec:res-metrics} needs the quantity it names the construction, the
-  $\DRF$ positive control or a row of \cref{tab:ceilings}.
 \glentry{identifiability}{identifiability} A property of a single condition, not
   of a drug, and distinct from the aggregate references above. The
   condition's own within-plate split-half $\NIR$ against its plate-mates clears
@@ -430,86 +397,3 @@ are the words the drafts converged on, with the ones they gave up.
   world knowledge. Every unseen-drug result must be read under that narrower
   scope.
 \end{description}
-
-% ---------------------------------------------------------------------------
-\section*{The record of corrections}
-
-\noindent
-Six claims that this thesis printed are withdrawn by this thesis.
-\Cref{tab:corrections} indexes them, so the set is countable. Each is argued in
-full in the section the table names. Corrections to the apparatus rather than to
-a claim carry the same margin mark but are not tabulated here; each stands where
-the repair is argued.
-
-The same controls that produced these six shape the surviving design, among
-them a zero-information baseline that improved when plate was free to vary; a
-swap-distance sweep after a similar-drug scramble proved weak; a removal gate
-before any ablation null; matched-norm injection before interpreting a swap;
-intervals clustered on the units that repeat, cell line, drug and treated well,
-never on cells; and a pre-registered three-state
-interpretation whose inconclusive branch was allowed to fire. Each of those controls is argued where it was added, and \cref{sec:conclusions} reads the surviving claims against them.
-
-\begin{table}[htbp]
-% MARGINALIA: full width; a prose table whose paragraph column needs the
-% wider measure. Caption above at the text width, the note below in the sans.
-% Placed after the closing paragraph so the float cannot split it.
-\caption[The six corrections this thesis records against itself]{\captiontitle{The
-six corrections this thesis records against itself.} Each row points at the
-place the withdrawal is argued. Two of the six are argued in a marked box;
-the rest in the prose of the section named.}
-\label{tab:corrections}
-\begin{fullwidth}
-\begin{threeparttable}
-\begin{tabularx}{\linewidth}{@{}L{46mm} Y l@{}}
-\thead{The claim withdrawn} & \thead{What killed it} & \thead{Where} \\
-\midrule
-The stronger mechanistic story earlier drafts told about the activation swap
-  & Three substitution designs in turn: a control drawn in the full residual
-    stream put almost all its squared norm where the intervention never acts;
-    ablate-then-add turned the substitution arm into a restoration; and a
-    norm-matched random direction inflated the normaliser. The retracted result
-    was geometry, not biology.
-  & \cref{sec:app-identity} \\
-\addlinespace[10pt]
-The retention argument for a cell-line-scoped generic
-  & Both retention figures were computed with a shared control pseudobulk
-    subtracted from both halves, which correlates the halves through their
-    common control error and favours cell-line scope precisely because the
-    cell-line generic is itself less noisy.
-  & \cref{sec:methods-residual} \\
-\addlinespace[10pt]
-That the optimal-transport arm achieved nothing
-  & The generation budget. Scored at the shorter token cap the arm's gap spanned
-    zero and was printed as inert; re-run at the budget the residual arm had, it
-    does not. The token budget is part of the claim.
-  & \cref{sec:res-encoding} \\
-\addlinespace[10pt]
-A training-exposure or memorisation advantage on trained conditions
-  & Composition. Restricting the comparison to the drugs present in both arms
-    reverses the sign, and the two arms are scored on populations selected by
-    different rules.
-  & \cref{sec:res-generalisation} \\
-\addlinespace[10pt]
-That the model reads the drug name and not the mechanism field
-  & The comparator. Those arms were scored against an \texttt{opposite}-stratum
-    partner, which inflates every gap read against it, and because that is a
-    property of the swap partner and not of the target build, it survives the
-    re-run.
-  & \cref{sec:res-field} \\
-\addlinespace[10pt]
-That a swing in the held-out-drug control was evidence of seed instability
-  & The comparator, and the draw. Both superseded figures are gaps against the
-    \texttt{opposite} swap, which \cref{sec:res-generalisation} shows is not a
-    null; and unseeded \texttt{do\_sample} advanced from global torch state, so
-    the two arms of a contrast were drawn from different points of one stream.
-    The diagnosis named the trigger and missed the cause.
-  & \cref{sec:lim-intervals} \\
-\end{tabularx}
-\begin{tablenotes}[flushleft]
-\item Withdrawing a claim is not the same as establishing its negation. Each row
-records that the evidence offered will not carry the claim, and leaves the
-underlying question where the section arguing the withdrawal says it leaves it.
-\end{tablenotes}
-\end{threeparttable}
-\end{fullwidth}
-\end{table}
