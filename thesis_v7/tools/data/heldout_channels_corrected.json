@@ -1,0 +1,218 @@
+{
+  "description": "V7 held-out channel subgroups selected by explicit unseen_drug assignment",
+  "source_repository": "https://github.com/ranbirdaefler/MThesis",
+  "source_commit": "4696986b283dbbb74e4efaf126357981a3e9efb2",
+  "sources": [
+    {
+      "path": "RESULTS_cluster/re_v3.json",
+      "git_blob_sha1": "29f701af70103796058ee8b2339ee802e96df48b",
+      "sha256_lf": "ccea66ab24bd138aaf55defa33d9aec40c297c9f225135280f38ec3849620abd"
+    },
+    {
+      "path": "RESULTS_cluster/channel_gate_v4.json",
+      "git_blob_sha1": "cc1c4bb0c9244a45b871ddeb65c1147b60f710c4",
+      "sha256_lf": "31b920f4c7b3d2b62b86811edab959976c02b241d30ef3033f805488e810dfcc"
+    },
+    {
+      "path": "RESULTS_cluster/channel_gate_heldout_targets.json",
+      "git_blob_sha1": "0835fe0538bdb896a019413aea52e824beb75f6f",
+      "sha256_lf": "40e267914cd2e96d500ea118960991cd6a51992b14de13efcd29acebfdbf7add"
+    },
+    {
+      "path": "shared/inference.py",
+      "git_blob_sha1": "538df1035ff21d5ae80c510f3f8128af7b2e1252",
+      "sha256_lf": "c0f5c44934256f7419cc0a00f8eb87291ee71d10e103f16dd68c0710cdbceee3"
+    }
+  ],
+  "selection_rule": "drug has explicit unseen_drug label; reject any other split label for that drug",
+  "training_file_recorded_in_evaluation": "/data/BuffaF-Projetcs/florian_c2s/residual_targets_v3/residual.jsonl",
+  "n_scored_train_conditions": 300,
+  "n_heldout_drugs": 10,
+  "heldout_drugs": [
+    "(R)-Verapamil (hydrochloride)",
+    "Amsacrine",
+    "Fluvoxamine (maleate)",
+    "Homoharringtonine",
+    "Relugolix",
+    "Rimonabant",
+    "Salicylic acid",
+    "Selinexor",
+    "Sinomenine",
+    "Vilanterol"
+  ],
+  "excluded_sample_absence_drugs": [
+    {
+      "drug": "Artesunate",
+      "n_scored": 37,
+      "n_training_lookup_available": 37,
+      "split_labels": [
+        "unseen_combo"
+      ]
+    },
+    {
+      "drug": "Demeclocycline",
+      "n_scored": 69,
+      "n_training_lookup_available": 69,
+      "split_labels": [
+        "unseen_combo"
+      ]
+    },
+    {
+      "drug": "L-Thyroxine (sodium salt pentahydrate)",
+      "n_scored": 23,
+      "n_training_lookup_available": 23,
+      "split_labels": [
+        "unseen_combo"
+      ]
+    },
+    {
+      "drug": "Palmatine (chloride)",
+      "n_scored": 16,
+      "n_training_lookup_available": 15,
+      "split_labels": [
+        "unseen_combo"
+      ]
+    }
+  ],
+  "margin": 0.03,
+  "published_subgroup_reproduced_before_correction": true,
+  "channels": {
+    "target": {
+      "published_subgroup_reproduced": {
+        "n": 161,
+        "n_drugs": 2,
+        "drugs": [
+          "Amsacrine",
+          "Relugolix"
+        ],
+        "n_cell_lines": 39,
+        "n_wells": 5,
+        "gap": 0.11966602902106448,
+        "ci": [
+          0.04988802018070265,
+          0.1894440378614263
+        ],
+        "df": 4,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": false
+      },
+      "heldout_targets": {
+        "n": 161,
+        "n_drugs": 2,
+        "drugs": [
+          "Amsacrine",
+          "Relugolix"
+        ],
+        "n_cell_lines": 39,
+        "n_wells": 5,
+        "gap": 0.11966602902106448,
+        "ci": [
+          0.04988802018070265,
+          0.1894440378614263
+        ],
+        "df": 4,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": false
+      }
+    },
+    "moa": {
+      "published_subgroup_reproduced": {
+        "n": 216,
+        "n_drugs": 4,
+        "drugs": [
+          "Amsacrine",
+          "Artesunate",
+          "Salicylic acid",
+          "Vilanterol"
+        ],
+        "n_cell_lines": 40,
+        "n_wells": 11,
+        "gap": 0.04386392118985579,
+        "ci": [
+          -0.08461115563528196,
+          0.17233899801499356
+        ],
+        "df": 10,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": true
+      },
+      "heldout_targets": {
+        "n": 163,
+        "n_drugs": 3,
+        "drugs": [
+          "Amsacrine",
+          "Salicylic acid",
+          "Vilanterol"
+        ],
+        "n_cell_lines": 39,
+        "n_wells": 8,
+        "gap": 0.0065189298323590035,
+        "ci": [
+          -0.16216449047053672,
+          0.1752023501352547
+        ],
+        "df": 7,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": true
+      }
+    },
+    "chem": {
+      "published_subgroup_reproduced": {
+        "n": 898,
+        "n_drugs": 14,
+        "drugs": [
+          "(R)-Verapamil (hydrochloride)",
+          "Amsacrine",
+          "Artesunate",
+          "Demeclocycline",
+          "Fluvoxamine (maleate)",
+          "Homoharringtonine",
+          "L-Thyroxine (sodium salt pentahydrate)",
+          "Palmatine (chloride)",
+          "Relugolix",
+          "Rimonabant",
+          "Salicylic acid",
+          "Selinexor",
+          "Sinomenine",
+          "Vilanterol"
+        ],
+        "n_cell_lines": 42,
+        "n_wells": 40,
+        "gap": 0.03779310575211302,
+        "ci": [
+          -0.002901907478786908,
+          0.07848811898301294
+        ],
+        "df": 39,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": true
+      },
+      "heldout_targets": {
+        "n": 711,
+        "n_drugs": 10,
+        "drugs": [
+          "(R)-Verapamil (hydrochloride)",
+          "Amsacrine",
+          "Fluvoxamine (maleate)",
+          "Homoharringtonine",
+          "Relugolix",
+          "Rimonabant",
+          "Salicylic acid",
+          "Selinexor",
+          "Sinomenine",
+          "Vilanterol"
+        ],
+        "n_cell_lines": 41,
+        "n_wells": 29,
+        "gap": 0.04273881832912324,
+        "ci": [
+          -0.002990703159406867,
+          0.08846833981765334
+        ],
+        "df": 28,
+        "unit": "two-way (Cameron-Gelbach-Miller)",
+        "spans_zero": true
+      }
+    }
+  }
+}

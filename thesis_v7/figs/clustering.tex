@@ -1,0 +1,173 @@
+% ===========================================================================
+% clustering.tex -- the two crossed groupings, plus the drug the wells nest in.
+% \input by Sections/03-Apparatus.tex. Compiles against thesis_v2/preamble.tex
+% and nothing else; SCHEMATIC -- no external data, no \includegraphics, and
+% deliberately NO number anywhere in the drawing. The lattice is 9 columns of
+% 6 dots because that is what reads at this measure, not because the cache
+% holds 9 wells or 6 lines; the caption says so in as many words.
+%
+% WHY IT WAS REDRAWN. The version it replaces sat inline in 03-Apparatus.tex
+% at lines 477-510 (v1's is under ../thesis/ and is not touched).
+%
+%   1. THE DOT WAS NOT ON THE LATTICE. The old bands were centred at y=2.6 and
+%      x=5.0, while the lattice rows sat at 0.5+0.6r (2.3, 2.9) and the columns
+%      at 0.7+1.1c (4.0, 5.1). Both centre lines fell BETWEEN dots, so the
+%      accent "one condition" dot was drawn in the gap. The caption said "the
+%      dot where they meet is one condition" and the drawing did not show one.
+%      Here every coordinate is derived from the two constants the lattice is
+%      generated from (\px, \py) and the highlight is addressed by INDEX
+%      (\hc, \hr), so band centres and accent dot cannot drift off a lattice
+%      point again.
+%
+%   2. THE BANDS WERE PADDED BY EYE. Old horizontal band 0.35..8.45 against
+%      dots at 0.7..7.3 -- 0.35 short at the left, 1.15 long at the right. Old
+%      vertical band 0.12..4.08 against dots at 0.5..4.1 -- 0.38 short at the
+%      bottom, 0.02 over at the top. Here each band ends exactly half a lattice
+%      pitch past its first and last dot (\BL,\BR,\BB,\BT below), computed, so
+%      both are symmetric by construction.
+%
+%   3. THE DOTS WERE TEXTURE, NOT CONDITIONS. They were rulegrey!70, i.e.
+%      #9A9A9A at 70% over white ~= #C0C0C0 -- lighter than the document's
+%      quiet ink and far too light for a mark the caption asks the reader to
+%      count. They are quietink (#6B6B6B) here, and 1.7pt rather than 1.5pt.
+%
+%   4. IT PAID FOR FULLWIDTH AND DID NOT USE IT. The old float opened
+%      \begin{fullwidth} -- 174mm, and by the preamble's own rule a page
+%      carrying one may then carry no margin note -- and drew 148.6mm. This
+%      draws inside the 142mm measure (see MEASURED below), so it is an
+%      ordinary body-width float and its page keeps the margin column.
+%
+%   5. THE DRUG WAS IN NO FIGURE AT ALL, and it is the axis that flips three
+%      verdicts later. It is drawn in a deliberately different register from
+%      the two bands: outline only, no fill, rounded corners, against two solid
+%      tint rectangles. A well carries one drug at one dose (sec. "Every
+%      treatment sits in one well"), so wells NEST inside drugs -- three whole
+%      well-columns per envelope -- while the cell-line band CROSSES all three
+%      envelopes and runs past the outer edge of both end ones. Nesting and
+%      crossing are then the same picture, told apart by shape, not by colour.
+%
+% GEOMETRY, in cm, all of it derived from \px and \py. Every clearance here is
+% computed from those two constants, not judged by eye:
+%   lattice     9 cols x 6 rows, pitch 1.25 x 0.81, dots (0,0)..(10.00,4.05)
+%   highlight   col 4 -> x = 5.00, row 4 -> y = 3.24     <- both ON the lattice
+%   bands       half-thickness 0.25, so 0.155 of ground to the next dot row
+%               (0.405 half-pitch - 0.25) and 0.095 clear of that dot's edge;
+%               ends at -0.625/10.625 and -0.405/4.455, i.e. exactly half a
+%               pitch past the first and last dot of the row and the column
+%   envelopes   3 x 3 columns, pad 0.46 -> -0.46..2.96, 3.29..6.71, 7.04..10.46,
+%               so 0.33 between neighbours; vertically -0.585..4.635, giving
+%               0.18 of margin above and below the well band each one contains
+%   callout     the leader leaves the accent dot at 46.3 deg, clears the
+%               nearest lattice dot (6.25,4.05) by 0.354, and crosses the
+%               middle envelope's TOP edge at x = 6.32, inside that envelope's
+%               span 3.29..6.71 -- so it pierces one boundary and not two
+%
+% MEASURED, not estimated. figs/_harness_clustering.tex \input s this file
+% against the real preamble, captures the float into a box with \caption and
+% \label gobbled, and \typeout s \wd. Reading:
+%   tikzpicture  385.40pt = 135.45mm wide, 187.44pt = 65.87mm tall
+%   \textwidth   404.03pt = 142.00mm
+%   fills 95.4% of the measure, 18.63pt = 6.55mm of slack.
+% The build's overfull-hbox gate is 0; this figure contributes none. The
+% fullwidth version it replaces drew 148.6mm against a 174mm allowance -- it
+% overran the body measure, which is why it was in a fullwidth in the first
+% place, and cost that page its margin column to do it.
+%
+% TYPE. \scriptsize on every label, matching fig:confound three pages earlier
+% and fig:residual-energy in chapter 4. Deliberately not raised: this figure is
+% read alongside fig:confound, and a lone larger label set would read as a
+% different apparatus rather than as a corrected one.
+% ===========================================================================
+\begin{figure}[htbp]
+% MARGINALIA (06-figures.md): fits the text column; caption in the margin.
+\begin{lrbox}{\tvfb}%
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small]
+  % --- the constants everything else is derived from -----------------------
+  \def\px{1.25}   % column pitch  (one well per column)
+  \def\py{0.81}   % row pitch     (one cell line per row)
+  \def\hc{4}      % highlighted column index, 0..8
+  \def\hr{4}      % highlighted row index,    0..5
+  \def\bt{0.25}   % half band thickness
+  \def\ep{0.46}   % envelope padding around its three columns
+  \def\vm{0.18}   % envelope margin above and below the well band
+
+  \tikzset{
+    cond/.style={fill=quietink},
+    band/.style={fill=rulegrey!30},
+    drugenv/.style={draw=quietink, line width=0.5pt, rounded corners=4pt},
+    lead/.style={draw=quietink, line width=0.4pt},
+    lbl/.style={font=\scriptsize, text=quietink},
+    strong/.style={font=\scriptsize\bfseries, text=accent}}
+
+  % centre lines of the two bands: ON the lattice, by construction
+  \pgfmathsetmacro{\HX}{\hc*\px}            %  5.000
+  \pgfmathsetmacro{\HY}{\hr*\py}            %  3.240
+  % band ends: half a pitch past the first and last dot, both sides, both bands
+  \pgfmathsetmacro{\BL}{-\px/2}             % -0.625
+  \pgfmathsetmacro{\BR}{8*\px+\px/2}        % 10.625
+  \pgfmathsetmacro{\BB}{-\py/2}             % -0.405
+  \pgfmathsetmacro{\BT}{5*\py+\py/2}        %  4.455
+  \pgfmathsetmacro{\EB}{\BB-\vm}            % -0.585
+  \pgfmathsetmacro{\ET}{\BT+\vm}            %  4.635
+
+  % ---- 1. the two crossed groupings, as solid tint bands ------------------
+  \fill[band] (\BL,\HY-\bt) rectangle (\BR,\HY+\bt);      % one cell line
+  \fill[band] (\HX-\bt,\BB) rectangle (\HX+\bt,\BT);      % one well
+
+  % ---- 2. the drug, as an outline envelope over three whole well-columns --
+  % It encloses the well band top and bottom as well as left and right, so the
+  % well reads as INSIDE the drug and not merely beside it.
+  \foreach \g in {0,1,2}{
+    \pgfmathsetmacro{\GL}{3*\g*\px-\ep}
+    \pgfmathsetmacro{\GR}{(3*\g+2)*\px+\ep}
+    \draw[drugenv] (\GL,\EB) rectangle (\GR,\ET);}
+
+  % ---- 3. the conditions --------------------------------------------------
+  \foreach \c in {0,...,8}{
+    \foreach \r in {0,...,5}{
+      \fill[cond] (\c*\px,\r*\py) circle (1.7pt);}}
+
+  % ---- 4. the intersection ------------------------------------------------
+  \fill[accent] (\HX,\HY) circle (2.4pt);
+  \draw[accent, line width=0.4pt]
+    (\HX+0.11,\HY+0.13) -- (\HX+1.66,\HY+1.75);
+  \node[strong, anchor=west] at (\HX+1.78,\HY+1.81)
+    {one condition: the intersection};
+
+  % ---- 5. direct labels, one per grouping. No legend, no key. -------------
+  % cell line: to the left of its own band.
+  \node[lbl, anchor=east] at (\BL-0.15,\HY) {one cell line};
+
+  % well: below its own band, on a lead that PIERCES the envelope's lower
+  % edge -- the crossing of that boundary is the nesting, drawn.
+  \draw[lead] (\HX,\BB) -- (\HX,\BB-0.34);
+  \node[lbl, anchor=north] at (\HX,\BB-0.40) {one well};
+
+  % drug: above the leftmost envelope, centred on it. Placed there and not on
+  % the middle envelope because the middle one is where the well band and the
+  % callout leader already are, and "one drug" centred over the highlighted
+  % column would compete with "one well" for the same column.
+  \node[lbl, anchor=south] at (\px,\ET+0.06) {one drug};
+
+  % NO free-floating note line. The version this replaces carried "neither
+  % grouping is nested in the other" as a caption-width sentence under the
+  % lattice. Two reasons it is gone: the caption now states it in the same
+  % words, and at page scale a \scriptsize sentence sitting 4mm above
+  % "Figure 3.3." reads as the caption's first line rather than as part of the
+  % drawing. The claim is not dropped -- it moved into the caption, where the
+  % new drug clause needs it anyway.
+\end{tikzpicture}%
+\end{adjustbox}
+\end{lrbox}
+\sidecap[The two crossed groupings, and the drug the wells nest in]{figure}{\captiontitle{A
+condition belongs to a well and to a cell line at once, and the two groupings
+cross.} Each dot is a condition; the horizontal band is one cell line, the
+vertical band one well. The dot where they meet is one condition, which is why
+the intersection term is the ordinary independent-sampling variance. The
+rounded envelopes are drugs: a well carries one drug at one dose, so wells nest
+inside drugs, while the cell-line band crosses every drug and neither of the
+two bands is nested in the other. The lattice is schematic --- nine columns of
+six, for legibility, and not a count of anything in the cache.\label{fig:clustering}}
+
+\end{figure}

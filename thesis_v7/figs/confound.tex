@@ -1,0 +1,84 @@
+% ===========================================================================
+% figs/confound.tex -- fig:confound, "One assignment, many conditions".
+% Figure BODY ONLY. \input this inside a figure environment; the caption and
+% \label stay in Sections/03-Apparatus.tex.
+%
+% SCHEMATIC. Nothing here is plotted from data. The three quantities it names
+% are the ones the surrounding text states: roughly 49 cell lines per treated
+% well, the other roughly 48 that stay in training when one pair is held out,
+% and plate4/plate5/plate6. The squares are twelve per well for legibility,
+% which the caption says out loud so the count is not read as a datum.
+%
+% ---- METRIC REWORK, and why the numbers below are what they are ------------
+% The v1 drawing measured 354.51pt (124.6mm) inside a 404.03pt (142mm) block:
+% it under-filled the measure by 12%. Fixing that is NOT a uniform \scale of
+% the picture, and it is not the 1.44 a naive width ratio suggests, because
+% the picture is half drawing and half fixed-size type. Only the drawing
+% scales; the three right-hand glosses and the (a)/(b)/(c) labels are set in
+% \scriptsize and must stay at that size, since they already print at the
+% document's apparatus size.
+%
+% Measured with pdflatex over this preamble (\the\wd of a savebox):
+%   widest gloss node  "a cross-plate drug ... plate contrast" = 181.46pt
+%   "held out" node half-width                                 =  18.75pt
+% With k the scale on the drawn geometry, the bounding box spans
+%   minx = 0.42k*28.4527 - 18.75      (the "held out" label overhangs left)
+%   maxx = (5.65k + 0.4)*28.4527 + 181.46
+%   width = 148.807k + 211.596 pt
+% so k = 1.286 lands the picture at 402.9pt. VERIFIED at 402.96pt; the block
+% is 404.03pt. A pure similarity transform of the drawing: x and y take the
+% same unit so the lanes keep their aspect, and the squares' minimum size is
+% scaled with them (3.0mm * 1.286 = 3.86mm) so a widened lane does not end up
+% holding a sparse row of undersized marks. Coordinate VALUES are untouched --
+% every number below is v1's -- which is what keeps this a metric change and
+% not a redraw.
+%
+% Gloss alignment: all three glosses sit at one x, the rightmost lane's right
+% edge (5.65 units) plus a physical 4mm. 4mm is 0.4cm/1.286 = 0.311 units, so
+% x = 5.961. Strip (b)'s own right edge is 5.50, short of (a) and (c) at 5.65;
+% hanging its gloss off its own edge would step the left margin of the three
+% glosses in and out for no reason.
+%
+% NEVER \resizebox this picture. Changing its printed size means changing k
+% here and re-measuring, because the type must not move.
+% ===========================================================================
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1.286cm, y=1.286cm, font=\small,
+  lane/.style={draw=rulegrey, line width=0.4pt, rounded corners=1pt},
+  cellb/.style={draw=rulegrey, line width=0.3pt, fill=panelbg,
+                minimum size=3.86mm, inner sep=0pt},
+  outb/.style={draw=accent, line width=0.7pt, fill=white,
+               minimum size=3.86mm, inner sep=0pt},
+  lbl/.style={font=\scriptsize, text=quietink},
+  strong/.style={font=\scriptsize\bfseries, text=ink}]
+
+% (a)
+\node[strong, anchor=west] at (0,3.95)
+  {(a)\quad one drug at one dose enters one well};
+\draw[lane] (0.15,3.10) rectangle (5.65,3.60);
+\foreach \i in {0,...,11}{\node[cellb] at (0.42+\i*0.44,3.35) {};}
+\node[lbl, anchor=west] at (5.961,3.35)
+  {$\approx 49$ conditions, one assignment};
+
+% (b)
+\node[strong, anchor=west] at (0,2.55)
+  {(b)\quad each drug is assayed on its own plate};
+\foreach \p/\x in {4/0.15, 5/2.00, 6/3.85}{
+  \draw[lane] (\x,1.60) rectangle (\x+1.65,2.10);
+  \node[lbl] at (\x+0.825,1.85) {\texttt{plate\p}};}
+\node[lbl, anchor=west] at (5.961,1.85)
+  {a cross-plate drug contrast is also a plate contrast};
+
+% (c)
+\node[strong, anchor=west] at (0,1.05)
+  {(c)\quad a held-out pair leaves its well in training};
+\draw[lane] (0.15,0.35) rectangle (5.65,0.85);
+\node[outb] at (0.42,0.60) {};
+\foreach \i in {1,...,11}{\node[cellb] at (0.42+\i*0.44,0.60) {};}
+\draw[accent, line width=0.4pt] (0.42,0.32) -- (0.42,0.10);
+\node[lbl, anchor=north, text=accent] at (0.42,0.08) {held out};
+\node[lbl, anchor=west] at (5.961,0.60)
+  {its other $\approx 48$ conditions stay in};
+
+\end{tikzpicture}%
+\end{adjustbox}

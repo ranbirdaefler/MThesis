@@ -1,0 +1,223 @@
+% ===========================================================================
+% figs/licensing.tex -- fig:licensing, sec:methods-probe.
+% Two stages: (a) the sample and the tap, (b) fitting one layer's probe (the
+% 5-fold split, the logistic fit itself, the readout). The outcome-asymmetry
+% argument and the cell-line control are made in text, not drawn here.
+% ===========================================================================
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small, inner sep=0pt]
+  \tikzset{
+    ttl/.style ={font=\footnotesize\bfseries, text=ink, anchor=base west},
+    sub/.style ={font=\scriptsize\itshape, text=quietink, anchor=base west},
+    lab/.style ={font=\scriptsize, text=ink, anchor=base west},
+    qlab/.style={font=\scriptsize, text=quietink, anchor=base west},
+    qlabe/.style={font=\scriptsize, text=quietink, anchor=base east},
+    arw/.style ={-{Latex[length=3.2pt,width=2.6pt,line width=0pt]}},
+  }
+
+  % --- reused token-cell primitives (figs/hook.tex idiom) -------------------
+  \newcommand{\tokbox}[4]{%
+    \draw[rulegrey, line width=0.30pt, fill=panelbg, rounded corners=1pt]
+      (#1,#3) rectangle (#2,{#3+0.42});
+    \node[font=\scriptsize, text=ink] at ({(#1+#2)/2},{#3+0.20}) {#4};}
+  \newcommand{\tokdrug}[3]{%
+    \draw[accent, line width=0.40pt, fill=accent!12, rounded corners=1pt]
+      (#1,#3) rectangle (#2,{#3+0.42});
+    \node[font=\scriptsize, text=accent] at ({(#1+#2)/2},{#3+0.20}) {drug};}
+
+% ###########################################################################
+% # (a) the sample and the tap
+% ###########################################################################
+  \node[ttl] at (0.00,7.15) {(a) the sample and the tap};
+  \node[sub] at (0.00,6.75)
+    {$12$ drugs $\times$ $40$ cells, pooled without regard to well, $480$ prompts};
+
+  % --- the stack: seven residual-stream taps, one per probed depth ---------
+  \def\lx{0.55} \def\lw{1.90} \def\ly{1.35} \def\lh{0.52} \def\gap{0.14}
+  \foreach \i/\name/\hi in {0/2/0,1/4/0,2/6/0,3/8/0,4/9/1,5/12/0,6/16/0}{
+    \pgfmathsetmacro{\yb}{\ly + \i*(\lh+\gap)}
+    \ifnum\hi=1
+      \draw[accent, line width=0.55pt, fill=accent!18, rounded corners=1pt]
+        (\lx,\yb) rectangle ({\lx+\lw},{\yb+\lh});
+      \node[font=\scriptsize, text=accent] at ({\lx+\lw/2},{\yb+\lh/2-0.05})
+        {layer \name};
+    \else
+      \draw[rulegrey, line width=0.30pt, fill=panelbg, rounded corners=1pt]
+        (\lx,\yb) rectangle ({\lx+\lw},{\yb+\lh});
+      \node[font=\scriptsize, text=quietink] at ({\lx+\lw/2},{\yb+\lh/2-0.05})
+        {layer \name};
+    \fi
+  }
+  \node[qlabe, rotate=90, anchor=south]
+    at ({\lx-0.18},{\ly+3.5*(\lh+\gap)}) {depth (index, not to scale)};
+
+  % --- the prompt strip, five fields, drug tinted (figs/hook.tex order) ----
+  \def\py{-1.00}
+  \tokbox{0.00}{1.55}{\py}{cell line}
+  \tokdrug{1.55}{2.75}{\py}
+  \tokbox{2.75}{3.75}{\py}{dose}
+  \tokbox{3.75}{5.35}{\py}{mechanism}
+  \tokbox{5.35}{7.85}{\py}{control cell sentence}
+  \node[qlab] at (0.00,{\py-0.42}) {the prompt, five fields (\cref{sec:methods-data})};
+  \draw[rulegrey, line width=0.35pt, arw] ({\lx+\lw/2},{\py+0.44}) -- ({\lx+\lw/2},{\ly-0.02});
+
+  % --- the tap: layer 9's residual stream, pulled out ------------------------
+  \pgfmathsetmacro{\taprow}{\ly + 4*(\lh+\gap) + \lh/2}
+  \draw[accent, line width=0.7pt, arw] ({\lx+\lw},\taprow) -- (10.30,\taprow);
+  \node[lab, text=accent, anchor=south west]
+    at ({\lx+\lw+0.10},{\taprow+0.10}) {activation vector};
+  \node[qlab, anchor=north west]
+    at ({\lx+\lw+0.10},{\taprow-0.10}) {2048-wide, one position, one of seven independent reads};
+  \node[qlab, anchor=west] at (10.45,\taprow) {carried down to (b) $\downarrow$};
+  \draw[accent, line width=0.5pt, arw] (10.30,{\taprow-0.20}) -- (10.30,-1.05);
+
+% ###########################################################################
+% # (b) fitting one layer's probe
+% ###########################################################################
+  \def\by{-2.55}
+  \draw[rulegrey, line width=0.30pt] (0.00,{\by+0.75}) -- (17.00,{\by+0.75});
+  \node[ttl] at (0.00,{\by+0.30}) {(b) fitting one layer's probe};
+  \node[sub] at (0.00,{\by-0.10})
+    {a separate logistic regression at each depth, none sharing weights with another};
+
+  % --- the split: 480 prompts, five folds, one held out ---------------------
+  \def\sx{0.00} \def\sy{\by-0.85} \def\sw{5.60} \def\sh{0.48}
+  \node[lab] at (\sx,{\sy+0.28}) {$480$ prompts, $5$ folds};
+  \foreach \k/\hi in {0/0,1/0,2/0,3/0,4/1}{
+    \pgfmathsetmacro{\xa}{\sx + \k*\sw/5}
+    \pgfmathsetmacro{\xb}{\sx + (\k+1)*\sw/5}
+    \ifnum\hi=1
+      \draw[accent, line width=0.55pt, fill=accent!15, rounded corners=1pt]
+        (\xa,\sy) rectangle (\xb,{\sy+\sh});
+    \else
+      \draw[rulegrey, line width=0.30pt, fill=panelbg, rounded corners=1pt]
+        (\xa,\sy) rectangle (\xb,{\sy+\sh});
+    \fi
+  }
+  \node[qlab, anchor=north west] at (\sx,{\sy-0.14})
+    {stratified on the drug label};
+  \node[qlab, text=accent, anchor=north west] at (\sx,{\sy-0.50})
+    {\parbox{5.7cm}{fit on the four grey folds, scored on
+     the held-out accent fold --- shown once; repeated per
+     fold, the five scores averaged}};
+
+  % --- the fit: standardise, then a 12-way logistic layer --------------------
+  \def\mx{6.55} \def\mh{0.62}
+  \pgfmathsetmacro{\my}{\sy + \sh/2 - \mh/2}
+  \draw[ink, line width=0.5pt, arw] (\sx+\sw+0.10,{\sy+\sh/2}) -- (\mx,{\my+\mh/2});
+  \draw[ink, line width=0.45pt, fill=panelbg, rounded corners=1pt]
+    (\mx,\my) rectangle ({\mx+1.75},{\my+\mh});
+  \node[font=\scriptsize, text=ink] at ({\mx+0.875},{\my+\mh/2})
+    {\parbox{1.55cm}{\centering standardise}};
+  \draw[ink, line width=0.5pt, arw] ({\mx+1.75},{\my+\mh/2}) -- ({\mx+2.15},{\my+\mh/2});
+  \draw[ink, line width=0.55pt, fill=accent!10, rounded corners=1pt]
+    ({\mx+2.15},\my) rectangle ({\mx+4.55},{\my+\mh});
+  \node[font=\scriptsize, text=ink]
+    at ({\mx+3.35},{\my+\mh/2})
+    {\parbox{2.15cm}{\centering logistic\\(12-way)}};
+  \node[qlab, anchor=north west] at (\mx,{\my-0.20})
+    {\parbox{4.4cm}{one weight vector per drug; the class with
+     the largest score wins ($C=1.0$, untuned)}};
+
+  % --- the readout: twelve candidate drugs, chance line, printed accuracy --
+  \def\ox{11.60} \def\ow{5.30} \def\oy{\my+\mh/2}
+  \draw[ink, line width=0.5pt, arw] ({\mx+4.55},{\my+\mh/2}) -- (\ox,\oy);
+  \foreach \k in {0,...,11}{
+    \pgfmathsetmacro{\xx}{\ox + \k*\ow/11}
+    \ifnum\k=3
+      \fill[accent] (\xx,\oy) circle (2.0pt);
+    \else
+      \fill[rulegrey] (\xx,\oy) circle (1.1pt);
+    \fi
+  }
+  \draw[ink, line width=0.35pt, densely dotted]
+    (\ox,{\oy-0.32}) -- ({\ox+\ow},{\oy-0.32});
+  \node[qlabe] at ({\ox+\ow},{\oy-0.32-0.24}) {chance $=1/12\approx 0.083$};
+  \pgfmathsetmacro{\accx}{\ox + 3*\ow/11}
+  \node[font=\scriptsize, text=accent] at (\accx,{\oy+0.30}) {$0.821$};
+  \node[qlab, anchor=south west] at (\ox,{\oy+0.55})
+    {\parbox{5.3cm}{twelve candidates, five folds averaged; accent
+     is the true drug}};
+
+% ###########################################################################
+% # (c) accuracy holds up; the geometry does not
+% ###########################################################################
+% Source: docs/endcell/dimensionality_probe_analysis.md, the retrained
+% [END_CELL] model's table -- every layer 0-16, not only the seven tapped in
+% (a)/(b). Two quantities, two scales, one shared x (layer index), following
+% the same convention as fig:sweepbins: the divider states it rather than a
+% dual axis implying a false common scale. Accent marks the seven layers (a)
+% and (b) already tap; quietink marks the other ten, present here because this
+% instrument reads every layer and (a)/(b)'s does not.
+  \def\cy{\by-3.85}
+  \draw[rulegrey, line width=0.30pt] (0.00,{\cy+0.75}) -- (17.00,{\cy+0.75});
+  \node[ttl] at (0.00,{\cy+0.30}) {(c) accuracy holds up; the geometry does not};
+  \node[sub] at (0.00,{\cy-0.10})
+    {every layer, $0$ to $16$ --- a denser sweep than the seven tapped above};
+
+  \def\cx{0.90} \def\cstep{0.90}
+  \newcommand{\clx}[1]{\pgfmathresult}
+
+  % --- upper strip: probe accuracy, one dot per layer -----------------------
+  \def\ay{\cy-3.50}
+  \node[lab] at (0.00,{\ay+2.85}) {probe accuracy};
+  \draw[ink, line width=0.35pt, densely dotted]
+    ({\cx},{\ay+0.234}) -- ({\cx+16*\cstep},{\ay+0.234});
+  \node[qlabe] at ({\cx+16*\cstep},{\ay+0.234-0.24}) {chance $\approx 0.08$};
+  \draw[quietink, line width=0.35pt]
+    plot coordinates {
+     (0.90,{\ay+0.234}) (1.80,{\ay+0.912}) (2.70,{\ay+1.152}) (3.60,{\ay+1.499})
+     (4.50,{\ay+1.652}) (5.40,{\ay+1.841}) (6.30,{\ay+1.954}) (7.20,{\ay+2.053})
+     (8.10,{\ay+2.200}) (9.00,{\ay+2.318}) (9.90,{\ay+2.211}) (10.80,{\ay+2.112})
+     (11.70,{\ay+2.129}) (12.60,{\ay+2.106}) (13.50,{\ay+2.171}) (14.40,{\ay+2.160})
+     (15.30,{\ay+2.140})};
+  \foreach \L/\x/\v/\tap in {0/0.90/0.234/0,1/1.80/0.912/0,2/2.70/1.152/1,
+     3/3.60/1.499/0,4/4.50/1.652/1,5/5.40/1.841/0,6/6.30/1.954/1,7/7.20/2.053/0,
+     8/8.10/2.200/1,9/9.00/2.318/1,10/9.90/2.211/0,11/10.80/2.112/0,
+     12/11.70/2.129/1,13/12.60/2.106/0,14/13.50/2.171/0,15/14.40/2.160/0,
+     16/15.30/2.140/1}{
+    \ifnum\tap=1
+      \fill[accent] (\x,{\ay+\v}) circle (1.6pt);
+    \else
+      \fill[quietink] (\x,{\ay+\v}) circle (0.9pt);
+    \fi
+  }
+  \node[font=\scriptsize, text=accent] at (9.00,{\ay+2.318+0.30}) {$0.821$};
+  \node[font=\scriptsize, text=accent] at (15.30,{\ay+2.140+0.30}) {$0.758$};
+
+  % --- divider: two quantities, two scales, one x ---------------------------
+  \draw[rulegrey, line width=0.30pt] (0.00,{\ay-0.55}) -- (17.00,{\ay-0.55});
+
+  % --- lower strip: between/within variance ratio, one dot per layer --------
+  \def\ry{\cy-6.85}
+  \node[lab] at (0.00,{\ry+2.40})
+    {between/within variance ratio, same activations};
+  \draw[ink, line width=0.35pt] ({\cx},{\ry+0.00}) -- ({\cx+16*\cstep},{\ry+0.00});
+  \node[qlabe] at ({\cx+16*\cstep},{\ry-0.24}) {$0$: no separation};
+  \draw[quietink, line width=0.35pt]
+    plot coordinates {
+     (1.80,{\ry+1.067}) (2.70,{\ry+1.117}) (3.60,{\ry+1.433}) (4.50,{\ry+1.717})
+     (5.40,{\ry+1.717}) (6.30,{\ry+1.800}) (7.20,{\ry+1.783}) (8.10,{\ry+1.817})
+     (9.00,{\ry+1.867}) (9.90,{\ry+1.400}) (10.80,{\ry+1.367}) (11.70,{\ry+0.700})
+     (12.60,{\ry+0.583}) (13.50,{\ry+0.583}) (14.40,{\ry+0.567}) (15.30,{\ry+0.567})};
+  \foreach \L/\x/\v/\tap in {1/1.80/1.067/0,2/2.70/1.117/1,3/3.60/1.433/0,
+     4/4.50/1.717/1,5/5.40/1.717/0,6/6.30/1.800/1,7/7.20/1.783/0,8/8.10/1.817/1,
+     9/9.00/1.867/1,10/9.90/1.400/0,11/10.80/1.367/0,12/11.70/0.700/1,
+     13/12.60/0.583/0,14/13.50/0.583/0,15/14.40/0.567/0,16/15.30/0.567/1}{
+    \ifnum\tap=1
+      \fill[accent] (\x,{\ry+\v}) circle (1.6pt);
+    \else
+      \fill[quietink] (\x,{\ry+\v}) circle (0.9pt);
+    \fi
+  }
+  \node[font=\scriptsize, text=accent] at (9.00,{\ry+1.867+0.30}) {$0.112$};
+  \node[font=\scriptsize, text=accent] at (15.30,{\ry+0.567-0.30}) {$0.034$};
+
+  % --- shared x-axis: layer index --------------------------------------------
+  \foreach \L/\x in {0/0.90,4/4.50,8/8.10,9/9.00,12/11.70,16/15.30}{
+    \node[font=\scriptsize, text=quietink, anchor=north]
+      at (\x,{\ry-0.55}) {\L};}
+  \node[qlab] at (7.20,{\ry-0.95}) {layer};
+
+\end{tikzpicture}
+\end{adjustbox}

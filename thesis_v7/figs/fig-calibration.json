@@ -1,0 +1,134 @@
+{
+  "figure": "fig-calibration",
+  "tier": "tier2_unseen_drugs",
+  "convention": "worst",
+  "panel_a": {
+    "_source_file": "RESULTS_cluster/eval_endcell_linear.json, RESULTS_cluster/eval_endcell_model.json, RESULTS_cluster/eval_endcell_cpu.json",
+    "_metric": "DE-Delta r, K = 50, Pearson",
+    "_n_conditions": 400,
+    "_intervals_drawn": false,
+    "_why_no_intervals": "the stored DE-dr intervals are normal-approximation over 400 conditions (19249 pairs for the reference), not the 95% bootstrap clustered over cell lines this thesis draws",
+    "arms": [
+      {
+        "arm": "mid-rank constant baseline (no drug, cell or biology)",
+        "value": 0.9999134349203441,
+        "source_file": "eval_endcell_linear.json",
+        "key_path": "linear.worst.tier2_unseen_drugs.revert_center.de_pearson_k50.mean"
+      },
+      {
+        "arm": "mean-control baseline (no drug information, no fit)",
+        "value": 0.9606336481700066,
+        "source_file": "eval_endcell_linear.json",
+        "key_path": "linear.worst.tier2_unseen_drugs.revert_mean.de_pearson_k50.mean"
+      },
+      {
+        "arm": "ridge linear (control only)",
+        "value": 0.9456693725987632,
+        "source_file": "eval_endcell_linear.json",
+        "key_path": "linear.worst.tier2_unseen_drugs.ridge.de_pearson_k50.mean"
+      },
+      {
+        "arm": "model (control + drug)",
+        "value": 0.73277157548975,
+        "source_file": "eval_endcell_model.json",
+        "key_path": "model.tier2_unseen_drugs.conventions.worst.de_pearson_k50.mean"
+      },
+      {
+        "arm": "scramble ablation (control + wrong drug)",
+        "value": 0.7291356111963492,
+        "source_file": "eval_endcell_model.json",
+        "key_path": "scramble.tier2_unseen_drugs.conventions.worst.de_pearson_k50.mean"
+      }
+    ],
+    "within_well_split_half_reference": {
+      "value": 0.7576869197136747,
+      "n_pairs": 19249,
+      "source_file": "eval_endcell_cpu.json",
+      "key_path": "ceiling.tier2_unseen_drugs.worst.cell_vs_cell_de50.mean",
+      "drawn_as": "vertical band",
+      "band_halfwidth_drawn": 0.006,
+      "band_halfwidth_is_a_visual_device_not_an_interval": true
+    }
+  },
+  "panel_b": {
+    "_source_file": "RESULTS_cluster/calibration_v5_sameplate_wide.json",
+    "_arm": "same plate",
+    "_n_drugs": 586,
+    "_n_groups": 44,
+    "_n_celllines": 27,
+    "_intervals_drawn": true,
+    "_interval": "95% percentile bootstrap clustered on cell line",
+    "metrics": [
+      {
+        "metric": "nir",
+        "label": "NIR",
+        "drf": 0.5445614678231298,
+        "printed": "+0.545",
+        "ci_low": 0.5157400841488878,
+        "ci_high": 0.5691365314884349,
+        "n_clusters": 27,
+        "cluster_unit": "cell line",
+        "source_file": "calibration_v5_sameplate_wide.json",
+        "key_path": "drf.neg_mean.nir.drf",
+        "ci_key_path": "drf.neg_mean.nir.ci"
+      },
+      {
+        "metric": "weighted_r2",
+        "label": "weighted R^2",
+        "drf": -0.10368551967507333,
+        "printed": "-0.104",
+        "ci_low": -0.12813447316032292,
+        "ci_high": -0.07325111977866545,
+        "n_clusters": 27,
+        "cluster_unit": "cell line",
+        "source_file": "calibration_v5_sameplate_wide.json",
+        "key_path": "drf.neg_mean.weighted_r2.drf",
+        "ci_key_path": "drf.neg_mean.weighted_r2.ci"
+      },
+      {
+        "metric": "panel_tau",
+        "label": "panel-\\tau",
+        "drf": -0.2504545628681181,
+        "printed": "-0.250",
+        "ci_low": -0.2635993890226975,
+        "ci_high": -0.2316719247887532,
+        "n_clusters": 27,
+        "cluster_unit": "cell line",
+        "source_file": "calibration_v5_sameplate_wide.json",
+        "key_path": "drf.neg_mean.panel_tau.drf",
+        "ci_key_path": "drf.neg_mean.panel_tau.ci"
+      },
+      {
+        "metric": "spearman_expr",
+        "label": "Spearman",
+        "drf": -0.49980528261592316,
+        "printed": "-0.500",
+        "ci_low": -0.5262690615117764,
+        "ci_high": -0.4606251757542229,
+        "n_clusters": 27,
+        "cluster_unit": "cell line",
+        "source_file": "calibration_v5_sameplate_wide.json",
+        "key_path": "drf.neg_mean.spearman_expr.drf",
+        "ci_key_path": "drf.neg_mean.spearman_expr.ci"
+      },
+      {
+        "metric": "de_delta",
+        "label": "DE-\\Delta r",
+        "drf": -0.5149630424987773,
+        "printed": "-0.515",
+        "ci_low": -0.5682792223279913,
+        "ci_high": -0.45191723283560015,
+        "n_clusters": 27,
+        "cluster_unit": "cell line",
+        "source_file": "calibration_v5_sameplate_wide.json",
+        "key_path": "drf.neg_mean.de_delta.drf",
+        "ci_key_path": "drf.neg_mean.de_delta.ci"
+      }
+    ]
+  },
+  "_notes": {
+    "panel_tau_vs_table": "figure prints -0.250 from drf.neg_mean.panel_tau.drf = -0.2504545628681181; Table 4.2 prints -0.251. Flagged, not resolved here.",
+    "panel_a_x_axis": "starts at 0; no truncation",
+    "font_resolved": "EB Garamond"
+  }
+}

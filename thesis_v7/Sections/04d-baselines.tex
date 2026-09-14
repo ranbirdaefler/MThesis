@@ -1,0 +1,637 @@
+% 04d-baselines.tex -- beats 7-9 and the ledger. sec:res-field has NO claim
+% block, deliberately. Source: Investigation-v4.tex 2392-2938. Numbers verbatim
+% from v1; two pending-audit flags. "the bar" = training-only drug_lookup;
+% "the reference" = within-well split-half; "the threshold" = 0.80.
+
+\beatsection{R}{7}{The baseline ladder and the per-drug lookup}{sec:res-lookup}
+\label{sec:methods-baselines}
+
+\begin{question}[7]
+What does a drug-response prediction have to beat before it is worth having? The
+instrument is a ladder of predictors scored through one pipeline, the lowest rung
+of which needs no model at all, only a table of what each drug did elsewhere.
+That table wins.
+\end{question}
+
+\noindent
+Every section so far has asked whether the model uses the drug at all --- whether
+the token is read, whether the prediction moves when it moves, whether any of that
+survives a holdout. Those are questions about mechanism, and they set the lowest
+bar that a model that claims to make predictions based on context must clear. This section changes the question to what the prediction is worth,
+which is not a question about the model alone but a comparison against what can be
+had without one. A model can respond to the drug in its prompt and still predict
+badly, so the pre-registered bar was never ``beats chance''. Residual targets are
+plausibly memorisable, and a predictor that looks up what this drug did elsewhere
+needs no checkpoint at all.\gloss{lookup}{Predicts this drug's residual as its mean
+residual in the \emph{other} cell lines.} 
+% --------------------------------------------------------------------------
+
+% ---------------------------------------------------------------------------
+\paragraph{What the ladder is, and what keeps it fair} Every arm in
+\cref{tab:lookup} predicts the same object --- a condition's drug-specific
+residual --- and is scored through one pipeline, on the same truths, the same
+encoding and the same comparison set, so that the only thing separating the rungs
+is what each is allowed to know. Scores are $\NIR$ in the \Rframe{} frame, where
+chance is $0.50$; \cref{fig:ladder} draws the same numbers against chance
+and the reference.
+
+The rungs run from most informed to least. At the top sits the within-well
+split-half reference, which is not a predictor at all but a precision ceiling: a
+disjoint half of the same well's cells substituted for the prediction, scoring
+$0.854$. Below it come two lookups that use no model, no prompt and no checkpoint.
+\texttt{drug\_lookup} predicts a condition's residual as that drug's mean residual
+across \emph{all} the other cell lines it was run in. \texttt{drug\_lookup\_1}
+narrows that to one other cell line, chosen at random: it still averages the
+drug's conditions \emph{within} that line, which are usually several doses, but it
+never averages across lines. The pair exists to separate memorising a drug from
+being denoised by repetition, since \texttt{drug\_lookup} is an average over many
+lines while the reference it is read against is one noisy half of a well against
+another. \texttt{moa\_lookup} drops
+from the drug to its class, predicting from other drugs that share this drug's
+mechanism annotation. The model sits below these, given a control cell and the
+drug. Beneath it are three arms that know nothing about the drug at all and fix
+the floor: \texttt{control\_copy} returns the untreated cell unchanged,
+\texttt{generic} predicts the average response, which in this frame is the zero
+vector, and \texttt{random} is what its name says.
+
+Three supports are in play, and rows may not be read across them. The reference,
+the model and the drug-agnostic arms are scored on all $\num{1394}$ conditions.
+A drug lookup is undefined wherever a drug has no
+\emph{training} condition in a cell line other than the one being scored, which
+drops the $\num{199}$ unseen-drug conditions, whose drug was withheld from
+fine-tuning altogether, together with three whose only training conditions sit in
+the cell line under test. That leaves the lookups a common support of
+$\num{1192}$, on which the model and the reference score $0.549$ and $0.857$
+rather than the $0.537$ and $0.854$ they score on the full set.
+\texttt{moa\_lookup} is narrower again at $\num{218}$. Even
+the reference moves between the first two, which is why a mark in one column of
+\cref{fig:ladder} may not be set beside a mark in another.
+
+Two disciplines keep the lookups from becoming oracles. They are fitted from
+training conditions only: fitted from the full cache, a lookup scoring a held-out
+condition would read residuals the model was never shown, an oracle and not a
+baseline, so that construction is excluded. And \texttt{drug\_lookup\_1}, having
+picked its one cell line, averages that line's conditions rather than drawing a
+single condition from it, because $62\%$ of drugs in the streamed characterisation sample carry a real dose series (\cref{tab:scale}, block A) and the cache behaves the same way, so one condition would confound ``different cell line'' with ``different dose''. \texttt{moa\_lookup} is not an oracle in any split either: its
+partner pool is restricted to \emph{training} conditions in the same cell line, so
+a held-out condition never enters the prediction made for it.
+
+\begin{defn}{Coverage of the reference}
+A predictor's \emph{coverage} is the fraction of the distance from chance to the
+within-well split-half precision reference that it closes,
+\[
+  (\NIR_{\text{arm}} - 0.50)\,/\,(\NIR_{\text{ref}} - 0.50).
+\]
+Coverage above $100\%$ therefore means the arm scores above the reference, a
+statement about the reference and not a headroom estimate. Reference and coverage
+are computed on the same support as the arm they describe.
+\end{defn}
+
+% ---------------------------------------------------------------------------
+\begin{figure}[htbp]
+% The three-column diagram retains its original label size across the live area.
+\begin{fullwidth}
+\centering
+\input{figs/ladder}
+\caption[The baseline ladder]{\captiontitle{A predictor that needs no model, no prompt
+and no checkpoint scores above the reference the model is measured against, and
+the three columns may not be read across.} Marks are $\NIR$ in the \Rframe{}
+frame, where chance is $0.50$. Each column is scored on its own support
+($n = \num{1394}$, $\num{1192}$ and $\num{218}$), so a mark in one may not be set
+beside a mark in another; even the reference differs between the first two. On
+the common support the model covers $13.9\%$ of the distance from chance to the
+within-well split-half precision reference, and a training-only per-drug lookup
+covers $115.7\%$ of it, which is a property of the reference and not headroom
+(\cref{tab:lookup}). On the MoA support the model scores $0.596$ against
+\texttt{moa\_lookup}'s $0.552$, a $+0.0436$ the interval does not separate from
+zero. No interval is drawn: the source gives them on differences between arms,
+not on the level of one arm, and those are in \cref{tab:lookup}. \emph{Reading
+the labels}: monospace names an arm exactly as \cref{tab:lookup} names it, roman
+names the reference in prose, the accent marks the model, and there is no fourth
+style. A label a rule would strike or a neighbour would crowd is lifted clear on
+a hairline; the dot carries the value. Horizontal position inside a column means
+nothing, and arms whose scores nearly coincide are dodged sideways so each keeps
+its own dot.}
+\label{fig:ladder}
+\end{fullwidth}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\begin{table}[htbp]
+% MARGINALIA: in-column ladder. The full caption stays ABOVE at text width:
+% the spec's trim would have dropped the moa_lookup interval and the
+% "must not be compared" clause, which the body does not repeat. The Note
+% column and the general note go to the margin beside the table.
+\caption{\captiontitle{A training-only per-drug lookup is the bar to beat.} Reference,
+model and drug-agnostic arms use all $\num{1394}$ conditions; the drug lookups
+exist on a common support of $\num{1192}$, where model and reference score
+$0.549$ and $0.857$. There, model minus \texttt{drug\_lookup} is
+\ci{-0.3631}{-0.3982}{-0.3280}; the lookup scores $0.913$ pooled, $0.980$ on
+trained conditions and $0.890$ on held-out wells, where its same-well advantage
+is absent. \texttt{moa\_lookup} has narrower support ($n = \num{218}$) and is not
+separated from the model (\ci{+0.0436}{-0.0480}{+0.1352}); its pooled row must
+not be compared with rows on other supports. The bar is each arm's distance above
+chance ($0.50$) on a common axis to $1.0$.}
+\label{tab:lookup}
+\begin{lrbox}{\tvfb}
+\begin{tabularx}{\textwidth}{@{}L{36mm} Y r l@{}}
+\thead{Arm} & \thead{What it knows} & \multicolumn{1}{r}{\thead{$\NIR$}} & \thead{Above chance}\\
+\midrule
+\quiet{within-well split-half reference} & \quiet{disjoint cell halves, one well} & 0.854 & \nirbar[quietink]{0.854}\\
+\addlinespace[10pt]
+\arm{drug_lookup} (training-only) & drug's mean residual, other lines & \key{0.913} & \nirbar{0.913}\\
+\arm{drug_lookup_1} & the same, from one other cell line & 0.822 & \nirbar{0.822}\\
+\arm{moa_lookup} ($n = \num{218}$) & drugs sharing this drug's MoA & 0.552 & \nirbar{0.552}\\
+\addlinespace[10pt]
+\textbf{model} & control cell $+$ drug & 0.537 & \nirbar{0.537}\\
+\addlinespace[10pt]
+\arm{control_copy} & nothing (copies the control) & 0.506 & \nirbar{0.506}\\
+\arm{generic} & nothing (predicts the average) & 0.500 & \nirbar{0.500}\\
+\arm{random} & nothing & 0.501 & \nirbar{0.501}\\
+\end{tabularx}
+\end{lrbox}
+\tablemarginnotes{%
+  \rownote{reference}{precision, not a replicate; $0.857$ on the lookups' support}
+  \rownote{drug_lookup}{the bar to beat; $n = \num{1192}$}
+  \rownote{drug_lookup_1}{still beats the model; same support}
+  \rownote{moa_lookup}{narrower support; not separated}
+  \rownote{model}{$0.549$ on the lookups' $n = \num{1192}$}
+  \rownote{control_copy}{drug-agnostic}
+  \rownote{generic}{the zero vector}
+  \rownote{random}{floor}
+  \par\addvspace{6pt}Rows on different supports are not comparable. Chance is $0.50$ in the
+  \Rframe{} frame under the exchangeability condition audited in \cref{sec:res-metrics}.}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\paragraph{Above chance, and below the table} The outcome predicted before the
+comparison was run was that the model would land above chance and below the
+lookup, and that is where it lands. On the $\num{1192}$ conditions where both are
+defined it scores $0.549$, above the $0.50$ chance line and well below
+\texttt{drug\_lookup}'s $0.913$; the difference is
+\ci{-0.3631}{-0.3982}{-0.3280}. What that licenses was fixed in advance and is
+narrow: the model recovers something of a drug's average residual and adds no
+tailoring to the cell line in front of it, since a table holding that average
+already beats it. Transfer to held-out combinations is \notestablished
+(\cref{sec:res-generalisation}). 
+
+\paragraph{This is DrEval's finding, in transcriptomic space} The finding travels
+furthest of anything here, needing no checkpoint, no prompt and no cell-sentence
+encoding. DrEval reports that deep learning models barely outperform a naive
+predictor of mean drug and cell-line effects~\cite{dreval}, and our
+\texttt{drug\_lookup} is
+the $\beta(d)$ term of that additive model, measured where the
+$\textrm{generic}(c)$ term has already been
+subtracted.\seealso{\cref{sec:res-transfer} measures what that constant leaves
+out} On a $946$-gene transcriptomic response, not a scalar potency, that drug
+main effect reaches $0.913$, above the $0.857$ reference itself. DrEval's
+inherited warning~\cite{partin}, that good pair-holdout performance is reachable
+by predicting each drug's training average, is here the hypothesis. It holds.
+
+\paragraph{The missing head-to-head, and why the bar survives it} A third
+objection is that this chapter's model is the wrong one. A conditional model
+built for perturbation response~\cite{cpa,scgen,gears} was never run on this
+split, so the head-to-head a reader wants is missing, and that is a real gap. But
+the ladder is architecture-free, so a competitor can be dropped in and scored,
+and what it has to clear for a seen drug in a new context is
+\texttt{drug\_lookup}, $0.913$ pooled, or $0.890$ on the held-out split. Not
+$0.500$. For an unseen drug no lookup exists, so that regime needs a different
+bar and gets one in \cref{sec:res-scope}.
+
+\begin{scopelimit}[carried into \cref{sec:res-scope} and \cref{sec:limitations}]
+The two regimes must not share a number. \texttt{drug\_lookup} is the bar for a
+\emph{seen} drug in a new context. No lookup exists for a drug that never
+appeared in training, so nothing here sets a bar for that regime. Neither may
+rows on different supports be combined: $\num{1394}$, $\num{1192}$ and
+$\num{218}$ select conditions by different rules, and a distance to the reference
+is comparable within a support and not between supports.
+\end{scopelimit}
+
+\paragraph{Why the lookup beating the reference is not headroom} On the common
+support the lookup scores \emph{above} the reference,
+$\texttt{drug\_lookup} - \textrm{reference} = +0.056$, tempting to read as ``the
+modelling target has vanished''. Three reasons, all favouring the lookup, block
+that inference. The reference is scored against a half-sample truth and every
+baseline against the full-sample truth; \texttt{drug\_lookup} averages
+$\approx 38$ conditions against that single noisy half; and $\NIR$ near $0.91$
+compresses most of the cosine range into a few thousandths. The coverage figures
+are themselves distances to a split-half reference \cref{sec:methods-data} calls
+optimistic; that optimism sits in the denominator and if anything makes both
+coverage figures too small, while the half-sample truth of the first reason
+pushes the other way. The net magnitude is unknown and the ordering carries the
+claim.
+
+\paragraph{Averaging is not why the lookup beats the model} Of those three
+reasons only the averaging could also deflate the comparison with the model, and
+\texttt{drug\_lookup\_1} tests it by drawing on one other cell line. It scores
+$0.822$, and paired on the same support the model trails it by
+\ci{-0.2723}{-0.3074}{-0.2372}, clustered two-way on cell line and well. This
+drug's mean residual in one other cell line beats a $1$B-parameter model handed
+this condition's own control cells. Neither gap is an average over a mixed
+population (\cref{fig:paired-lookup}): condition by condition, the model scores
+above \texttt{drug\_lookup} on $85$ of the $\num{1192}$ and above
+\texttt{drug\_lookup\_1} on $214$, $7.1\%$ and $18.0\%$, counts over conditions
+carrying no interval.
+
+\paragraph{The bar is not equally clean on both sides of the split} The pooled
+$0.913$ covers two populations. On trained conditions the lookup scores $0.980$.
+On held-out wells, where it cannot borrow the target's own well, it scores
+$0.890$ against the model's $0.533$ on the $893$ of its $895$ held-out-well
+conditions on which a training-only lookup is defined; the paired gap there is \ci{-0.357}{-0.403}{-0.311}. Nothing in the
+argument turns on the exact size of that population. The ordering holds on both
+sides, and the held-out side, where the well advantage is absent, is the side a
+claim about transfer has to survive.
+
+% ---------------------------------------------------------------------------
+% \begin{fullwidth}: two square scatters side by side, each with its own
+% difference histogram beneath, is a 174mm object -- squeezed to the 142mm body
+% block the two panels lose the aspect that makes the identity line readable as
+% a diagonal. Drawn at 174mm by thesis_v2/figs/paired-lookup.py, so NO width=
+% key: it is placed at scale 1.0 and its type prints at the size it was set in.
+% Every number it draws is listed with its source pointer in
+% figs/fig-paired-lookup.json.
+\begin{figure}[htbp]
+\begin{fullwidth}
+\raggedright
+\includegraphics[width=\linewidth]{fig-paired-lookup}
+\caption[The model beats the lookup on 7.1\% of conditions]{\captiontitle{The headline
+gap is a tilt of nearly the whole population and not a mean over a mixed one:
+the model scores above \texttt{drug\_lookup} on $7.1\%$ of conditions, and above
+the single-cell-line lookup on $18.0\%$.} Every mark is one of the $\num{1192}$
+conditions of the common support --- those on which a training-only lookup
+exists --- and both axes are $\NIR$ in the \Rframe{} frame, comparison set other
+drugs in the same cell line. On this support the model scores $0.549$ and the
+within-well split-half precision reference $0.857$; the $\num{1394}$-condition
+figures quoted elsewhere ($0.537$ and $0.854$) are a different population and
+are not combined with these. \textbf{(a)}~Against \texttt{drug\_lookup}, the
+drug's mean residual in all other cell lines, $0.913$ pooled: the model is above
+the identity line on $85$ of $\num{1192}$ conditions, $7.1\%$.
+\textbf{(b)}~Against \texttt{drug\_lookup\_1}, the same quantity from a single
+other cell line, $0.822$ pooled: $214$ of $\num{1192}$, $18.0\%$. Marker shape
+gives the split, $\num{299}$ \texttt{train} and 893
+\texttt{unseen\_combo}; no \texttt{unseen\_drug} condition appears, because no
+training lookup exists for a drug held out of training, and that regime is
+therefore not addressed by this figure at all. The lower panels are the
+per-condition paired difference on a shared count axis, with the paired mean
+drawn below the counts as a point and bar, the bar a $95\%$ bootstrap interval
+clustered two-way on cell line and well: \ci{-0.3631}{-0.3982}{-0.3280} in (a)
+and \ci{-0.2723}{-0.3074}{-0.2372} in (b). The win counts are counts over
+conditions and carry no interval; ties ($23$ and $28$ conditions) count as not a
+win. The $0.50$ rules are chance on both axes, labelled once in (a).}
+\label{fig:paired-lookup}
+\end{fullwidth}
+\end{figure}
+
+\clearpage
+% ===========================================================================
+\beatsection{R}{8}{Channels for unseen drugs}{sec:res-scope}
+
+\begin{question}[8]
+The bar just set exists only for a drug that appeared in training. A drug that
+never did can be reached at all only through some property it shares with drugs
+that were seen, a protein target, a mechanism, a chemical shape. The instrument
+predicts each drug from its annotated neighbours in the same cell line, against a
+null matched on everything but the channel itself. One channel carries a lead, on
+a very short roster of drugs.
+\end{question}
+
+\noindent
+\texttt{drug\_lookup} predicts a condition from that same drug's residual
+measured in other cell lines, so it is undefined the moment the drug is new ---
+which is the case a model would be worth having for in the first place. This
+section asks what can replace it there: with a drug's own history unavailable, can
+the drug be reached through the drugs it resembles?
+
+Resemblance has to be defined along something, and that something is called a
+\emph{channel} here. Tahoe's metadata annotates each drug several ways --- the
+protein it targets, its mechanism class, its chemical structure --- and each
+annotation induces a different set of neighbours. For a channel $X$, a drug's
+residual is predicted as the mean residual of the other drugs in the same cell
+line that share property $X$ with it, the construction of \texttt{moa\_lookup}
+(\cref{sec:res-lookup}) generalised from mechanism to any annotated property. A
+channel along which the response really varies should predict better than one
+built from arbitrary neighbours; a channel carrying nothing should not.
+
+\paragraph{The null, and what it has to hold fixed} That comparison is the entire
+measurement, so the control decides what it is worth. Each channel arm is paired
+with a \emph{plate-matched random null}: partners drawn from the same cell line,
+in the same number, with the same split between the target's own plate and other
+plates, but chosen at random instead of by the annotation. The matching is not
+decoration. Drugs sharing a mechanism or a protein target are co-plated more often
+than chance, so a null matched on partner count alone would differ from its arm in
+plate membership as well as in the annotation --- two differences where the
+estimand allows one, and the gap would then be reporting batch structure as
+channel information. A second, count-matched null is reported alongside it as a
+sensitivity check, and it is the weaker control precisely because it leaves that
+second difference standing. Where a plate-matched null cannot be built across
+enough cell lines the channel is reported \textsc{untestable} rather than closed,
+because not being able to construct a control is not a negative result. Coverage
+is read before any gap for the same reason: a channel annotated on a handful of
+drugs was never really tested, and a null on it closes nothing.
+
+% ---------------------------------------------------------------------------
+\begin{table}[htbp]
+% MARGINALIA: full width (six columns on one line need ~176mm). Caption above at
+% the text width, notes below in the sans. One highlight: the one channel whose
+% plate-matched lower bound clears the gate -- the same cell is keyed in the
+% repeated Panel A of \cref{tab:fieldattribution}.
+\caption{\captiontitle{Coverage first, then the gap.} The drugs behind each channel are
+stated before any verdict, because a null result on a channel never really tested
+is not a closure. The plate-matched null is the estimand-correct control; the
+count-matched column shows sensitivity to plate membership, not a causal share.
+The gate asks the plate-matched lower bound to clear a pre-set margin of $0.03$
+clustered on cell line and well. On that axis, and only there, protein target
+clears it ($+0.0745$) while mechanism ($+0.0279$) and chemistry ($+0.0035$) do
+not. All three exclude zero, so the two that fail are inconclusive rather than
+equivalent to their nulls, and neither may be written as closed.}
+\label{tab:channels}
+\begin{fullwidth}
+\begin{threeparttable}
+\begin{tabularx}{\linewidth}{@{}L{24mm} L{24mm} r L{39mm} L{20mm} Y@{}}
+\thead{Channel} & \thead{Drugs (annot./scored)} & \thead{$n$}
+  & \thead{vs plate-matched null} & \thead{(vs count-matched)}
+  & \thead{Verdict} \\
+\midrule
+\key{protein target} & 264 / 18 & 712 & \ci{+0.1351}{+0.0745}{+0.1958}
+  & $+0.1498$ & live, cell-line axis\tnote{$\dagger$} \\
+mechanism (MoA) & 180 / 26 & 921 & \ci{+0.0805}{+0.0279}{+0.1332}
+  & $+0.0623$ & inconclusive \\
+chemical structure & 377 / 94 & \num{4131}
+  & \ci{+0.0261}{+0.0035}{+0.0487} & $+0.0122$ & inconclusive \\
+\end{tabularx}
+\begin{tablenotes}
+\item[$\dagger$] The axis is written into the target verdict because ``live'' is
+not usable without it. Clustered on the drug, the target interval falls short of
+this margin against both estimand-correct nulls and clears it only against the
+weaker count-matched one.
+\item The counts are annotations in Tahoe's drug metadata and not testable
+coverage here; within this cache only $18$, $26$ and $94$ of the $94$ scored
+drugs received a channel arm at all.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% \input, not \includegraphics: figs/gate.tex is TikZ and carries its own float,
+% fullwidth block, caption and \label{fig:gate}. Its twelve intervals are
+% literals transcribed from RESULTS_cluster/ and listed again, to machine
+% precision and with their n, cluster keys, df and source paths, in the sibling
+% figs/fig-gate.json.
+\input{figs/gate}
+
+% ---------------------------------------------------------------------------
+\paragraph{What the three channels return} All three arms exclude zero against
+their plate-matched nulls on the cell-line axis, so each carries something; what
+separates them is whether the effect clears the relevance margin of $0.03$ set
+before the gate was run. Clustered on cell line and well, protein target does, at
+\ci{+0.1351}{+0.0745}{+0.1958} over $712$ predictions. Mechanism reaches
+\ci{+0.0805}{+0.0279}{+0.1332} and falls $0.0021$ short of the margin; chemical
+structure reaches \ci{+0.0261}{+0.0035}{+0.0487} and straddles it. Neither of the
+two is equivalent to its null, and neither is closed --- inconclusive is a
+different verdict from negative, and the distinction is the reason coverage was
+printed first.
+
+\paragraph{Which units the interval is clustered on decides the verdict} The
+intervals above are two-way cluster-robust on the cell line and the treated well,
+as elsewhere in this chapter, which is right for a statement about this
+experiment. But the claim a channel is asked to support --- that an \emph{unseen
+drug} is reachable through its annotation --- generalises over drugs, and only
+$18$ annotated drugs carry the target arm. Wells nest inside drugs rather than
+crossing them, so on the drug axis the estimator clusters one-way on the drug and
+takes its reference from the drug count (\cref{sec:apparatus-clusters}). Read that
+way the target gap is \ci{+0.1351}{+0.0287}{+0.2416}, on $18$ drugs and so
+$\mathrm{df} = 17$,
+whose lower bound falls $0.0013$ short of the margin; against a null drawing every
+partner from other plates it is \ci{+0.1322}{+0.0199}{+0.2445}. Both exclude zero
+and neither clears $0.03$. Only the count-matched null clears it on that axis,
+\ci{+0.1498}{+0.0536}{+0.2460}, and that is the control already set aside as the
+weaker one. Mechanism, which excludes zero on the cell-line axis, spans it on the drug axis under all three constructions (plate-matched \ci{+0.0805}{-0.0038}{+0.1649}, count-matched \ci{+0.0623}{-0.0152}{+0.1398}, different-plate \ci{+0.0746}{-0.0036}{+0.1528}; $26$ drugs, $\mathrm{df} = 25$). The axis is chosen by the claim and not
+by which interval comes out narrower, so the honest summary is narrower than
+\emph{live}.
+
+\paragraph{The population the question is actually about} The channels are scored
+on all retained conditions, spanning $94$ drugs. The held-out target subset is
+defined by the $10$ drugs assigned to \texttt{unseen\_drug}, whose conditions
+never enter training. Absence from the sampled \texttt{train} evaluation tier
+does not define this subset: four additional drugs absent from that sample have
+retained training conditions (\cref{sec:res-generalisation}). Restricting the
+targets to the $10$ assigned held-out drugs
+puts the question where it belongs, and only one channel survives it. Clustered
+on cell line and well, the target gap is
+\ci{+0.1197}{+0.0499}{+0.1894}; mechanism falls to
+\ci{+0.0065}{-0.1622}{+0.1752} on $163$ conditions from three drugs, and
+chemistry reaches \ci{+0.0427}{-0.0030}{+0.0885} on $711$ conditions from all
+$10$ drugs. Both intervals span zero (\cref{fig:gate}, third block). The target
+arm survives on $161$ conditions from two drugs.
+
+\paragraph{What those eighteen drugs are made of} The target arm's $18$ annotated
+drugs are almonertinib, amsacrine, cepharanthine, clonidine, elagolix,
+gemfibrozil, goserelin, idarubicin, lumateperone, mitoxantrone, neratinib,
+norepinephrine, olanzapine, rapamycin, relugolix, temsirolimus, tofacitinib and
+tofacitinib citrate. Their mean partner count is $1.19$: of the arm's $712$
+predictions, $579$ come from a \emph{single} partner drug and $133$ from two,
+against $2.46$ partners for mechanism and $5.00$ for chemical similarity. And
+sometimes that partner is an unusually close relative. \texttt{Tofacitinib} and
+\texttt{Tofacitinib (citrate)}, the free base and the citrate salt of one drug,
+are scored in the same $20$ cell lines and have one partner each; so are rapamycin
+and its ester prodrug temsirolimus, in $22$ lines. Neratinib and almonertinib pair
+the same way in $20$ lines and are chemically distinct, so the pattern is not only
+duplicate chemistry. What the channel establishes is that a same-target neighbour
+predicts the drug. That a target \emph{annotation} generalises across a class is
+the stronger statement, and testing it would mean dropping the nearest analogue
+from each pool.
+
+\paragraph{The two drugs the held-out verdict rests on} They are
+\textbf{amsacrine} and \textbf{relugolix}, and since the duplicate-chemistry
+pattern above is the obvious objection to them, their pools are worth naming.
+Amsacrine is annotated to \texttt{TOP2A} and its partners, across its $39$ cell lines, are drawn from doxorubicin, epirubicin, idarubicin and mitoxantrone, never more than two in any one line, because only training conditions retained in that cell line qualify; relugolix is annotated to \texttt{GNRHR}
+and its partners are elagolix and goserelin. Neither pool contains a salt,
+prodrug or stereoisomer of the drug it predicts, so this is not the tofacitinib
+case in another guise --- though amsacrine's pool is three anthracyclines and a
+close structural analogue of them, which is a drug class and not a duplicate. The
+support is $\num{161}$ conditions over $39$ cell lines and $5$ treated wells, $70$
+of them amsacrine in two wells and $91$ relugolix in three; the five wells are the
+smaller cluster count and are where this interval's $t_4$ reference comes
+from.\seealso{\cref{sec:methods-data}: why the smaller cluster count sets the
+reference distribution}
+
+\paragraph{Sensitivity to plate matching, measured rather than argued away}
+Mechanism partners are co-plated with the target $0.404$ of the time against
+$0.362$ for a random draw; elsewhere the diagnostic is negligible, protein target
+$0.368$ against $0.366$ and chemical similarity $0.370$ against $0.367$. Under a
+third construction drawing every partner from other plates, target and mechanism
+keep intervals clear of zero and chemistry's spans it
+(\cref{tab:fieldattribution}). Absolute $\NIR$ there is $0.638$, $0.575$ and
+$0.499$ against nulls of $0.505$, $0.500$ and $0.487$, so target and mechanism
+stay well clear of the $0.50$ chance line while chemistry sits just below it,
+where its plate-matched arm already sat. Removing the shared plate moves target
+and mechanism by two and seven per cent of their plate-matched gaps, and
+attenuates chemistry again. That
+construction also changes support and available partners, so the attenuation does
+not identify co-plating as its cause.
+
+\paragraph{The ordering is descriptive, and one of its terms is a floor} Target,
+then mechanism, then chemistry, under every construction on the full channel
+supports. On the held-out targets, the point estimates instead order target,
+chemistry, then mechanism. On the full supports the target and chemistry
+intervals do not overlap under any of the three nulls; each adjacent pair's do,
+and on the drug axis even the two ends overlap.
+The arms differ in support, drug set, partner count and annotation coverage, so
+the order does not identify a biological ranking. One correction runs in a known
+direction: the residual frame subtracts a plate-local generic, and
+\cref{sec:methods-residual} shows that for a co-plated mechanism class part of
+that class's own shared programme goes with it, so mechanism's middle position is
+a floor rather than an estimate. Below target the two failures differ in kind.
+Mechanism's lower bound falls $0.0021$ short, a knife-edge that is not a negative
+result in either direction; chemistry's interval is the \emph{narrowest} of the
+three, $0.045$ wide against $0.121$ for target, but straddles the margin.
+
+\paragraph{What the lead is, and what bounds it} Two design documents concluded
+that unseen-drug generalisation was out of reach, and both inferred it from the
+chemical-structure channel alone. The same-target result shows that the inference
+from chemistry to every channel was not licensed: the protein a drug hits is what
+transcriptional response follows, and structure encodes it only indirectly. Three
+things bound the lead. Coverage first --- the arm reaches $18$ of the $94$ scored
+drugs. Then scale: a shared property buys a fraction of what the drug itself buys,
+the target arm sitting $+0.14$ above chance where a same-drug lookup for a seen
+drug sits $+0.41$ (\cref{sec:res-lookup}, on a different condition set, so a
+comparison of scale and not a paired one). Then overlap: whether target adds
+anything over mechanism is unsettled here, and settling it would need a
+leave-one-mechanism-out split, since a held-out drug's mechanism class is
+generally still represented in training. What this section measures throughout is
+whether the information a channel carries is present in the atlas at all, not
+unseen-drug predictive performance, which two drugs cannot establish.
+
+
+% ===========================================================================
+\beatsection{ER}{9}{Drug name versus mechanism field}{sec:res-field}
+
+\begin{question}[9]
+The previous section asked whether the information an unseen drug would need is
+present in the atlas at all. The complementary question is whether the model
+reads what it is already handed, and which part of it, the name or the mechanism
+line beside it. The instrument swaps one span of the prompt at a time and leaves
+every other byte identical. It does not settle the question, and what follows is
+why, and what would settle it.
+\end{question}
+
+\noindent
+The chapter has established that the prediction responds to that information as a
+block; it has not established \emph{which} part of it is read. Saying so
+precisely matters, because the next step writes itself. Append the protein
+targets to the prompt, retrain, and see whether unseen-drug performance rises.
+That arm assumes the bottleneck is information availability. Everything in this
+chapter points the other way, but the direct evidence is weaker than earlier
+drafts claimed.
+
+\paragraph{The instrument, and the one guard it needs} The scramble has until now
+replaced the drug name and the mechanism together, so a non-null gap establishes
+sensitivity to the combined prompt without attributing it to either span. A field
+decomposition swaps exactly one span to the \texttt{opposite} partner, the name
+with the mechanism kept, the mechanism with the name kept, and both together. One
+guard is essential. If the swap partner happens to share the original's
+mechanism, swapping only the mechanism produces a prompt identical to the model's
+own and the arm scores exactly zero by construction, which read naively is
+indistinguishable from ``the model ignores the mechanism'', the very claim under
+test. Such conditions are dropped, which is why the mechanism arm carries fewer
+conditions.
+
+\paragraph{What the arms said, and why it does not stand} On the earlier target
+build the decomposed arms suggested the prompt sensitivity is carried almost
+entirely by the name span. Swapping only the drug name gave $\gap$ of
+\ci{+0.0809}{+0.0592}{+0.1010} ($n = 570$); swapping only the mechanism gave
+$+0.0091$ [$-0.0174$, $+0.0383$] ($n = 325$); both together gave $+0.1024$
+[$+0.0827$, $+0.1236$]. All were scored against the \texttt{opposite}
+comparator that \cref{sec:res-generalisation} shows inflates every gap read
+against it. They \emph{were} re-run under the corrected evaluation
+(\cref{tab:fieldattribution}, Panel B), but the defect survives it, being a
+property of the swap partner and not of the target build. The claim that the
+model ``reads the name and not the mechanism'' is therefore withdrawn pending
+comparators whose own scores are empirically near chance. What the current run
+establishes is sensitivity to the combined prompt, with the mechanism field's
+contribution unresolved.\corrmark{the name-over-mechanism reading, withdrawn
+pending neutral comparators}
+
+% ---------------------------------------------------------------------------
+\begin{table}[htbp]
+% MARGINALIA: full width, ONE tabular for both panels so the n and interval
+% columns align across them. Panel B's rows use the same n and interval columns
+% as Panel A (n before the interval, as in Panel A); its span labels run across
+% the label and drugs columns. One rule, under Panel A's head; Panel B's head
+% row is set off by space. The keyed cell is the one keyed in \cref{tab:channels}.
+\caption{\captiontitle{Availability does not establish use.} Panel A shows target and
+mechanism retrieval surviving the different-plate null while chemistry does not;
+only target clears the relevance margin, and only on the cell-line axis, on an
+arm covering $18$ drugs (\cref{sec:res-scope}). Panel A intervals are two-way cluster-robust over cell line and treated well; Panel B intervals are clustered on drug and well (one-way on the drug, since wells nest in drugs, \cref{sec:apparatus-clusters}). Panel B cannot attribute the combined-prompt effect between name and mechanism, because the two single-span arms' partners lie on opposite sides of chance ($0.434$ and $0.520$), inflating one gap and
+suppressing the other. Read without a comparator, as each arm's own $\NIR$ minus chance on its own rows, the ordering reverses ($+0.0367$ for name, $+0.0506$ for mechanism), so the split is unresolved pending
+comparators whose own scores are empirically near chance. Identical mechanism
+swaps are omitted, which is why that row has fewer conditions.}
+\label{tab:fieldattribution}
+\begin{fullwidth}
+\begin{threeparttable}
+\begin{tabularx}{\linewidth}{@{}l r r l Y@{}}
+\multicolumn{5}{@{}l}{\thead{Panel A: channel availability --- metadata-neighbour
+retrieval}} \\
+\addlinespace[4pt]
+\thead{Channel} & \thead{Drugs (annot./scored)} & \thead{$n$}
+  & \multicolumn{2}{l@{}}{\thead{Gap vs plate-matched random null}} \\
+\midrule
+\key{protein target} & $264$ / $18$ & $712$ & \ci{+0.1351}{+0.0745}{+0.1958} & \\
+mechanism (MoA) & $180$ / $26$ & $921$ & \ci{+0.0805}{+0.0279}{+0.1332} & \\
+chemical structure & $377$ / $94$ & 4131 & \ci{+0.0261}{+0.0035}{+0.0487} & \\
+\addlinespace[10pt]
+\multicolumn{5}{@{}l}{\quiet{the same three, against the stricter
+\textsc{different-plate} null}} \\
+protein target & & $599$ & \ci{+0.1322}{+0.0648}{+0.1996} & \\
+mechanism (MoA) & & $781$ & \ci{+0.0746}{+0.0243}{+0.1249} & \\
+chemical structure & & $4090$ & \ci{+0.0118}{-0.0097}{+0.0333} & \\
+\addlinespace[10pt]
+\multicolumn{5}{@{}l}{\thead{Panel B: field use --- one span swapped, every other
+byte identical}} \\
+\addlinespace[4pt]
+\multicolumn{2}{@{}l}{\thead{Span swapped}} & \thead{$n$} & \thead{$\gap$}
+  & \thead{Comparator direction (partner $\NIR$)} \\
+\addlinespace[6pt]
+\multicolumn{2}{@{}l}{drug name, mechanism kept} & $1394$ & \ci{+0.1026}{+0.0625}{+0.1427}
+  & inflated ($0.434$) \\
+\multicolumn{2}{@{}l}{mechanism, drug name kept} & $738$ & \ci{+0.0303}{-0.0078}{+0.0685}
+  & suppressed ($0.520$) \\
+\multicolumn{2}{@{}l}{both spans (the standard arm)} & $1394$ & \ci{+0.1139}{+0.0781}{+0.1496}
+  & inflated ($0.423$) \\
+\end{tabularx}
+\begin{tablenotes}
+\item The plate-matched rows of Panel A are repeated from \cref{tab:channels} and the different-plate rows from \cref{fig:gate}, so the two panels can be read against each other; both are the same measurement, not a second one.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\paragraph{Why the two panels cannot be added together} Panel A says a channel
+carries information in the atlas; Panel B asks whether the model uses what it is
+handed. Neither answers the other's question, and an ordering that reverses when
+the comparator is removed is not an attribution.
+
+\paragraph{The practical consequence, narrower than earlier drafts drew} The
+target-prompt arm is not retired by measurement. It is untested. What argues for
+building it carefully is the shape of the failure above. The model's deficit is
+not confined to missing information about unseen drugs, because on seen drugs it
+covers $13.9\%$ of the distance from chance to the within-well reference, against
+a training-only lookup that covers all of it and more (\cref{sec:res-lookup}).
+What argues for building it at all is the one thing a lookup cannot do, handle a
+drug it has never seen, the regime where \cref{sec:res-scope} finds same-target information present in the atlas on the cell-line axis, on $18$ annotated drugs of which only two are held out of training; a Leave-Drugs-Out result is not established by it.
+
+\paragraph{The opportunity is not the part that fails to transfer}
+\cref{sec:res-transfer} puts $1 - \Tcoef$ at \ci{44.7\%}{40.7\%}{48.6\%}, and it
+is tempting to call that the model's headroom. It is not. That figure is a
+shortfall in cross-context similarity, mixing cell line, dose, well and
+estimator; it is neither a variance share nor an interaction. With $286$ of $287$
+treatments in exactly one well there is no replicate from which to separate a
+context-specific remainder from measurement noise, which is why the coefficient
+is a disattenuated cross-line cosine and not a fitted variance
+decomposition.\seealso{\cref{sec:res-transfer} for the estimator and its five
+checks} Whether any of that shortfall is learnable structure and not noise is
+separated nowhere here. The opportunity is the unseen drug, and whether the model
+can be made to take it is not answered in this chapter.
+

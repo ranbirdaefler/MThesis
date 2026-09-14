@@ -1,0 +1,451 @@
+% 04e-jspace.tex -- the coda of chapter 4, added in thesis_v5. \input at the end
+% of 04-Investigation.tex, after 04d-baselines.tex (sec:res-field).
+%
+% Not a tenth beat, and marked as a coda in words: its own opener says so, the
+% chapter opener carries one sentence announcing it, and fig:timeline, the nine
+% beats and the six-finding skeleton are unchanged. \beatsection{ER}{0} passes
+% beat 0, the value 00-HowToRead gives a section that is not one of the nine.
+%
+% It takes up the limit that 02-Background.tex (sec:lit-interp) carries forward;
+% that scope limit was rewritten in the same version to point here.
+%
+% THE LEDE IS CLEARED AT THE END. \claimlede stores its text globally and only
+% the next \beatsection clears it. This is the last \beatsection in the
+% document, so without the \claimlede{} after the claim block its verdict would
+% print in every later chapter opener and open chapter 6's claim box.
+%
+% LAYER NUMBERING. The J-space code indexes transformer blocks from 0; this
+% chapter numbers layers as residual-stream depths 1..16 (layer 16 = the last,
+% as in tab:workspace). Code blocks 3, 7, 11 are layers 4, 8, 12 here, and the
+% lens target, code block 15, is layer 16.
+%
+% SOURCES. Every number is read from
+%   RESULTS_cluster/jspace_frames_v1_analysis/analysis/report.md  (sections 4,5,8,9,10,11)
+%   .../analysis/contrasts.csv                                    (full precision)
+% except the exploratory ones, computed from phi_pairs.csv and
+% secondary_reconstruction.csv by the scripts in tools/jspace_numbers/:
+%   ledger.py        relative change, |U| medians, within-checkpoint Spearman
+%                    correlations, size-overlap counts, pair-mean phi, readout
+%                    and output-change pair means, reconstruction ranges
+%   ledger_exact.py  the contrasts.csv rows quoted, at full precision
+%   band.py          the shared-size-range comparison at layer 12: drug-minus-
+%                    control phi_adj within base drug, averaged over drugs with
+%                    both kinds, 95% bootstrap over those drugs (2000, seed
+%                    20260912)
+%   sizematch.py     per-layer size overlap of drug and control pairs (used for
+%                    the no-overlap statements at layers 4 and 8)
+% The analysis outputs they read are NOT in the repository (RESULTS_cluster/
+% jspace_frames_v1_analysis/ is untracked; phi_pairs.csv alone is 85 MB). The
+% scripts find them relative to their own location, and each script's printed
+% output is committed beside it as *_out.txt.
+% None of the exploratory numbers is in jspace/DESIGN.md, and the prose says so
+% each time. Wording follows DESIGN.md section 11: "associated with the residual
+% training recipe", phi is "geometric co-location with the lens's token
+% directions", a squared norm is a squared norm, the pretrained arm is a
+% reference. Checked against the sources by independent read-only reviews in
+% three rounds, and the assembled thesis_v5 by a four-reviewer pass; every
+% confirmed finding is folded in.
+%
+% AUDIT. tools/audit.py lists this file in EXTENSION_FILES: it has no v1
+% counterpart, so the v1-parity checks A1-A4 do not apply; it is still held to
+% margin, opener and strip purity (A5-A7).
+% ===========================================================================
+
+\beatsection{ER}{0}{Coda: a Jacobian-lens view of the drug swap}{sec:res-jspace}
+% \claimlede must follow \beatsection: \beatsection clears the stored lede.
+\claimlede{In the expression frame, at the deepest layer read, the change a drug
+swap makes where the answer begins is small and lies along the lens's token
+directions barely more than along random ones, and less than a larger control
+edit does; the residual recipe is associated with a drug change that reaches the
+output, and with more co-location only in the ten-epoch run, where it cannot be
+separated from the change's size.}
+
+\begin{question}
+A coda to the nine beats, not a tenth. The background chapter took the swap from
+the workspace account and left its central claim alone: that a model reads from
+a small privileged set of directions, and that content outside it can be richly
+represented and still inert. The expression-frame results of this chapter have
+that shape, identity written into the activations and barely consulted. The
+account's other instrument, the lens that finds such directions, was held back
+for here. Point it at the drug. Swap the drug in an otherwise
+identical prompt, take the change the swap makes where the answer begins, and
+ask how much of that change lies along the directions the lens says the model's
+last layer reads.
+\end{question}
+
+\noindent
+The verdict first. In the expression frame the lens does not single the drug
+out. Where the answer begins, swapping the drug moves the layer-$12$ activation
+by a median $1.7\%$ of its norm, against $5.4\%$ for swapping the control cell's
+sentence, and the directions that code the two prompts capture that small change
+barely better than random directions of the same number: $\varphi_{\textrm{adj}}$
+is \ci{+0.0013}{+0.0004}{+0.0023}, a $95\%$ drug-node bootstrap interval, as
+every interval in this section is unless noted. The drug change lies along the lens's token
+directions less than the control change does, though it is also a third of its
+size, and in this frame the two share too narrow a range of size to say whether
+the ordering would survive at matched size. It moves the model's own first-token
+logits about half as far, $39.5$ against $73.4$. Nothing in this geometry singles
+the drug out, which fits what \cref{sec:res-mechanism} found by intervention on
+the single-cell arm, where the substitution instrument finds nothing.
+
+The residual checkpoints respond to the drug at the output, and the ten-epoch
+run's excess of drug over control response is by far the largest. The geometry
+separates them from the expression frame in one cell of six, the ten-epoch run
+at layer $12$, and there the difference cannot be told apart from the size of
+the change it measures. The residual recipe is associated with a larger drug
+change that reaches the output. That it moves the drug into the directions the
+lens names is \notestablished.
+
+\paragraph{The lens, and the directions it names} Write $h_\ell \in
+\mathbb{R}^{d}$ for the residual-stream activation at layer $\ell$ and one
+position, with $d = \num{2048}$. The Jacobian lens of Gurnee et
+al.~\cite{workspace} summarises how the last layer responds to an earlier one.
+Writing $\mathrm{d}h_{16,t}/\mathrm{d}h_{\ell,s}$ for the Jacobian of layer
+$16$'s activation at position $t$ with respect to layer $\ell$'s at position $s$,
+every other position held fixed, the lens sums it over the positions a source
+position can reach and averages over source positions,\gloss{Jacobian
+lens}{The average derivative of the last layer's activations with respect to an
+earlier layer's.}
+\begin{equation}
+  J_\ell \;=\; \mathbb{E}_{s}\Big[\, \sum_{t \,\ge\, s}
+    \frac{\mathrm{d}h_{16,t}}{\mathrm{d}h_{\ell,s}} \,\Big]
+  \;\in\; \mathbb{R}^{d \times d},
+\end{equation}
+estimated for each checkpoint on $64$ windows of $128$ tokens cut from $32$
+calibration prompts on $16$ drugs, none of them an evaluation drug, the first
+$16$ positions of each window excluded as sources. Carried back through
+$J_\ell$, the output head's row $w_v$ for token $v$, scaled by the final
+LayerNorm gain and centred, becomes a direction at layer $\ell$,
+\begin{equation}
+  d_v \;=\; \frac{J_\ell^{\top} w_v}{\lVert J_\ell^{\top} w_v \rVert},
+\end{equation}
+along which a change raises token $v$'s logit at the output, to first order.
+Over the $\num{50252}$ token ids all four checkpoints share, these are the
+lens's token directions: $\num{50252}$ of them in a space of $\num{2048}$
+dimensions, of which centring removes exactly one. The same construction with
+$J_\ell$ replaced by the identity is the logit lens, kept as a baseline
+dictionary $D_0$ with no Jacobian in it. The source layers are $4$, $8$ and $12$.
+The lens $J_\ell$ is unrelated to the comparison set $J$ of the reference
+apparatus.
+
+\paragraph{The code holds little of any activation} Each activation $h$ is read
+at the last prompt token, the colon of \texttt{Response cell:}, where the answer
+begins, and coded by non-negative orthogonal matching pursuit: at most $k = 16$
+directions chosen greedily, their coefficients refitted jointly under a
+non-negativity constraint after each choice, with $k = 8$ and $32$ as
+sensitivity. These codes stand in for the workspace account's handful of
+concepts active in the J-space at a position. Sixteen directions reconstruct on average between $2.9\%$ and
+$5.8\%$ of the activation's squared norm at this position, depending on
+checkpoint and layer, and sixteen from the logit lens between $1.9\%$ and
+$3.3\%$. That is a sparse reconstruction score,
+$1 - \lVert h - \hat{h} \rVert^{2} / \lVert h \rVert^{2}$, not variance
+explained, and it fixes how everything below must be read. Most of every
+activation lies outside its code, so the numbers are comparisons, a drug edit
+against a control edit and one checkpoint against another, never a measure of
+how much of the drug is in the workspace.
+
+\paragraph{The pairs} Twenty-four evaluation drugs, four base prompts each, and
+every base prompt paired four times: twice with a different drug, once with a different control sentence, and once with itself. In a \emph{drug pair} the drug's name and
+mechanism line are replaced by another evaluation drug's and nothing else
+changes; $84$ of the $192$ drug pairs keep the mechanism text, because the
+partner shares it. In a \emph{control pair} the control cell's sentence is
+replaced by another real control sentence from the same cell line, the drug
+untouched. And each base prompt is paired with itself, run twice. The repeats
+return identical activations, so their floor is exactly zero, and no drug or
+control pair falls below the exclusion threshold set from the numerical noise of
+control pairs. That gives $192$ drug pairs and $96$ control pairs per checkpoint
+and layer.
+
+\begin{defn}{Co-location score $\varphi$}
+For two prompts $a$ and $b$ that differ in one span, let
+$\delta = h_b - h_a$ at one layer, and let $U$ be the union of the directions
+chosen to code $h_a$ and $h_b$. Then
+\[
+  \varphi \;=\; \frac{\lVert P_U\, \delta \rVert^{2}}{\lVert \delta \rVert^{2}},
+\]
+the share of the change's squared norm that lies in the span of $U$, and
+$\varphi_{\textrm{adj}}$ is $\varphi$ minus its mean over $200$ random spans of
+$|U|$ directions from the same dictionary. $\varphi_{\textrm{adj}} = 0$ means
+the change lies along the directions that code the two prompts no more than
+along random ones. It measures geometric co-location with the lens's token
+directions, not use and not causal involvement.
+\end{defn}
+
+\paragraph{Four checkpoints, and what they license} The
+expression-frame checkpoint is the one-epoch single-cell arm of
+\cref{tab:trainconfig} ($\num{42198}$ updates). Two residual checkpoints bracket
+it in training amount on one training file: the canonical \arm{residual,
+repaired} checkpoint of \cref{tab:budget-arms}, after its one epoch
+($\num{9231}$ updates), and the ten-epoch run of \cref{sec:app-training}
+($\num{92310}$ updates), whose held-out loss is best after its first epoch and
+worse at every later one.\seealso{\cref{sec:app-training} for the ten-epoch
+run's losses} The pretrained base is a reference only. It has no atomic
+\ENDCELL{}, so it reads the same texts under its own token ids, and no claim
+rests on it. The checkpoints differ in data, filtering and target format as well
+as in updates, so a difference between them is associated with the residual
+training recipe and never attributed to the target encoding. The co-location
+score is computed the same way in every checkpoint, against no comparison set
+and no reference, so unlike the two frames' scores it may be compared across
+them; only the first-token logit change inherits the frames' different targets
+(\cref{tab:jspace}, note f).
+
+\paragraph{The statistics were fixed before the activations were coded} Pair
+scores are averaged within each base drug, then with equal weight over the $24$
+drugs. Every drug is both a base and other bases' partner, so intervals come
+from a drug-node bootstrap that reweights drugs and weights each drug pair by
+both of its members, over $\num{2000}$ resamples. The analysis plan names one
+primary family, the six contrasts of each residual checkpoint against the
+expression-frame checkpoint on drug pairs at each depth, Holm-adjusted at a
+familywise $0.05$. Each is refitted with two half-lenses estimated on disjoint
+calibration drugs and called inconclusive if the halves disagree in sign or
+differ by more than the contrast itself. A difference may be called
+drug-specific only if, once the same contrast on control pairs is subtracted,
+the difference-in-differences excludes zero and passes the same gate. The plan
+also fixes its sensitivity analyses in advance: other values of $k$, the
+logit-lens dictionary, a support capped at $k$ directions, a second read
+position at the end of the drug name, and restrictions to pairs whose mechanism
+text changes and to drugs absent from residual training.
+
+% ---------------------------------------------------------------------------
+\begin{table}[htbp]
+% MARGINALIA: full width; caption above at the text width, notes below. Two
+% tabulars because Panel C has a different shape from A and B. Every interval
+% sits in an l column so it never breaks mid-cell. \key: the one member of the
+% primary family that survives Holm.
+\caption{\captiontitle{The drug edit lies along the lens's token directions
+less than a control edit, except in the ten-epoch run at layer~12, whose drug
+change is seventeen times the expression frame's in relative size.} Panel A is
+$W$, the drug pairs' $\varphi_{\textrm{adj}}$ minus the control pairs', per
+checkpoint and depth: negative means the drug edit is the less co-located.
+Panel B is the pre-registered family, each residual checkpoint minus the
+expression-frame checkpoint on drug pairs, Holm-adjusted over its six members.
+Panel C gives the size of the two edits at layer $12$ and at the output, and the
+drug-minus-control difference within the range of size the two kinds share.
+$\varphi$ values are $\times 10^{-3}$; unless noted, intervals are $95\%$
+drug-node bootstrap intervals over $24$ drugs. The pretrained base is a
+reference arm, outside the family.}
+\label{tab:jspace}
+\begin{fullwidth}
+\begin{threeparttable}
+\begin{tabular}{@{}l l l l@{}}
+\multicolumn{4}{@{}l}{\thead{Panel A: drug edit minus control edit,
+  $W$ ($\times 10^{-3}$)}} \\
+\addlinespace[4pt]
+\thead{Checkpoint} & \thead{Layer 4} & \thead{Layer 8} & \thead{Layer 12} \\
+\midrule
+expression frame & \ci{-2.3}{-3.4}{-1.3} & \ci{-4.2}{-5.7}{-2.5}
+  & \ci{-4.3}{-6.1}{-2.6} \\
+residual, one epoch & \ci{-2.9}{-3.8}{-2.0} & \ci{-2.8}{-4.1}{-1.4}
+  & \ci{-1.1}{-2.9}{+0.7}\tnote{a} \\
+residual, ten epochs & \ci{-2.1}{-3.3}{-0.9} & \ci{-3.6}{-4.6}{-2.6}
+  & \ci{+6.3}{+3.9}{+8.7} \\
+\quiet{pretrained (reference)} & \quiet{\ci{-3.0}{-3.8}{-2.1}}
+  & \quiet{\ci{-0.5}{-1.5}{+0.5}}\tnote{a} & \quiet{\ci{-3.6}{-6.2}{-1.0}} \\
+\addlinespace[10pt]
+\multicolumn{4}{@{}l}{\thead{Panel B: residual checkpoint minus expression
+  frame, drug pairs ($\times 10^{-3}$)}} \\
+\addlinespace[4pt]
+residual, one epoch & \ci{-0.1}{-1.4}{+1.2}\tnote{a}
+  & \ci{-0.5}{-1.9}{+0.9}\tnote{b} & \ci{+1.1}{-0.8}{+3.3}\tnote{b} \\
+residual, ten epochs & \ci{-0.4}{-1.9}{+1.1}\tnote{a}
+  & \ci{-0.1}{-1.4}{+1.2}\tnote{a} & \key{\ci{+7.0}{+4.4}{+9.5}}\tnote{c} \\
+\end{tabular}
+
+\vspace{10pt}
+\begin{tabular}{@{}l r r l r r@{}}
+\multicolumn{6}{@{}l}{\thead{Panel C: size of the edit, and the difference in
+  the shared size range}} \\
+\addlinespace[4pt]
+& \multicolumn{2}{l}{\thead{Relative change}\tnote{d}}
+  & \thead{Drug $-$ control}\tnote{e}
+  & \multicolumn{2}{l@{}}{\thead{First-token logit change}\tnote{f}} \\
+\thead{Checkpoint} & \thead{drug} & \thead{control}
+  & \thead{shared range ($\times 10^{-3}$)} & \thead{drug} & \thead{control} \\
+\midrule
+expression frame & $1.7\%$ & $5.4\%$ & \ci{-2.5}{-8.0}{+2.4} & $39.5$ & $73.4$ \\
+residual, one epoch & $8.7\%$ & $6.9\%$ & \ci{-1.8}{-2.8}{-0.6} & $105.4$ & $81.4$ \\
+residual, ten epochs & $30.1\%$ & $6.3\%$ & no shared range & $501.5$ & $118.6$ \\
+\quiet{pretrained (reference)} & \quiet{$5.4\%$} & \quiet{$7.9\%$}
+  & \quiet{\ci{-2.7}{-4.8}{-0.6}} & \quiet{$98.8$} & \quiet{$129.6$} \\
+\end{tabular}
+\begin{tablenotes}
+\item[a] Inconclusive: the half-lens gate fails, the two half-lenses disagreeing
+in sign or differing by more than the estimate itself.
+\item[b] Holm-adjusted $p = 1$: no difference from the expression frame is
+established.
+\item[c] Raw $p = 0.001$, Holm-adjusted $p = 0.006$. Drug-specific under the
+plan's rule: the control-pair contrast is \ci{-3.6}{-5.2}{-2.1}, the
+difference-in-differences \ci{+10.6}{+7.6}{+13.6}, and both pass the gate. Not
+established once the support is capped at eight or sixteen directions, a
+sensitivity analysis the plan fixes in advance (see text).
+\item[d] Median over pairs of $\lVert \delta \rVert / \lVert h_a \rVert$ at
+layer $12$. Descriptive, outside the analysis plan.
+\item[e] Layer $12$. Within each base drug, the mean $\varphi_{\textrm{adj}}$ of
+its drug pairs minus that of its control pairs, among pairs in the range of
+relative size both kinds occupy (bounds fixed from the full sample), averaged
+with equal weight over the drugs that have both kinds there: $7$ drugs in the
+expression frame, whose shared range, $3.4\%$ to $4.7\%$, holds $15$ of its
+$192$ drug pairs; all $24$ in the one-epoch checkpoint and the pretrained
+reference. The ten-epoch run's drug and control changes share no range of
+size. The interval resamples those drugs, $2{,}000$ times, and ignores the
+dependence through partners. Exploratory, outside the analysis plan.
+\item[f] Mean L2 norm of the change in the model's own first-token logits over
+the shared vocabulary, no lens involved. The first response token means
+different things under the two targets, so read drug against control within a
+row, not rows against each other across frames.
+\end{tablenotes}
+\end{threeparttable}
+\end{fullwidth}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\paragraph{Where the expression frame puts the drug} At layers $4$ and $8$ the
+drug edit lies along the lens's directions less than the control edit in all
+three trained checkpoints (\cref{tab:jspace}, Panel A); the pretrained reference
+agrees at layer $4$ and is inconclusive at layer $8$. Those depths decide
+nothing, for two reasons. There the expression frame's drug edit is an eighth
+and a sixth of its control edit in relative size, and the two share no range of
+size at all, so the ordering cannot be separated from size. And the lens says
+little there: its linear prediction of how a change reaches the output agrees
+with the true change at a Spearman correlation of at most $0.073$ at those
+depths, against $0.30$ to $0.63$ at layer $12$.
+
+Layer $12$ carries the argument. There the expression-frame checkpoint's drug
+edit sits below its control edit by \ci{-0.0043}{-0.0061}{-0.0026}, as the
+pretrained reference's does, by \ci{-0.0036}{-0.0062}{-0.0010}. In pair means
+the scale is plain: $1.16\%$ of the drug change's squared norm lies in the span
+of its directions against $1.03\%$ for random spans of the same size, where the
+control change reaches $1.78\%$ against $1.21\%$. The lens's own prediction points the same way. It predicts how a drug swap moves the output less well than how a
+control edit does, by \ci{-0.118}{-0.154}{-0.086} in Spearman correlation.
+
+Whether that ordering is more than size cannot be settled in this frame. The
+control edit is three times the drug edit, and the two kinds share only a narrow
+range of relative size, $3.4\%$ to $4.7\%$ of the norm, which holds $15$ of the
+$192$ drug pairs, from $10$ drugs. Averaged within drug first, as the plan
+aggregates, over the $7$ drugs with both kinds in that range, the drug edit sits
+lower by \ci{-0.0025}{-0.0080}{+0.0024}, a difference that is \notestablished.
+Where the shared range covers every drug, in the one-epoch checkpoint and the
+pretrained reference, the drug edit sits lower within it, by
+\ci{-0.0018}{-0.0028}{-0.0006} and \ci{-0.0027}{-0.0048}{-0.0006}
+(\cref{tab:jspace}, Panel C). In the one-epoch checkpoint the drug changes in that
+range are slightly the larger, so the size mechanism below would push the other
+way; in the pretrained reference the control changes are still the larger, so
+part of its gap could be size. None of these comparisons is in the analysis
+plan.
+
+\paragraph{The residual checkpoints respond, and one is placed differently} Both
+residual checkpoints move their first-token logits more for a drug swap than for
+a control edit, the reverse of the expression frame's
+\ci{-33.9}{-43.1}{-20.0}: by \ci{+23.9}{+8.9}{+39.9} after one epoch and by
+\ci{+382.9}{+363.5}{+403.6} after ten. That is a drug sensitivity at the first
+response token, on a panel of which $17$ of the $24$ drugs are recorded absent
+from residual training, and it is larger in the ten-epoch run. Whether it is the
+prompt sensitivity \cref{sec:res-encoding} scores, with a different metric and on
+trained conditions, is not tested here. At layer $12$ the lens also predicts the
+drug swap's effect on the output better than the control edit's in both, by
+\ci{+0.094}{+0.066}{+0.120} and \ci{+0.100}{+0.074}{+0.124}.
+
+Where the change lies is another matter. For the canonical one-epoch checkpoint a
+difference from the expression frame is \notestablished at any depth: at layer
+$12$ it is \ci{+0.0011}{-0.0008}{+0.0033} and at layer $8$
+\ci{-0.0005}{-0.0019}{+0.0009}, both with Holm-adjusted $p = 1$, and at layer $4$
+the half-lens gate fails. Its own drug-minus-control $W$ at layer $12$ fails the
+gate too, so for it the comparison in the shared size range, outside the plan
+and without a stability gate, carries no weight on its own. For the ten-epoch run the gate fails at layers $4$ and $8$,
+and at layer $12$ the contrast is \ci{+0.0070}{+0.0044}{+0.0095}, raw
+$p = 0.001$ and Holm-adjusted $p = 0.006$, the only member of the family to
+survive. Its control-pair companion runs the other way,
+\ci{-0.0036}{-0.0052}{-0.0021}, so the difference-in-differences is
+\ci{+0.0106}{+0.0076}{+0.0136}; it passes its gate, and by the plan's rule the
+difference may be called drug-specific. It holds under most of the variations
+the plan made. It is \ci{+0.0034}{+0.0016}{+0.0049} with $k = 8$ and
+\ci{+0.0146}{+0.0107}{+0.0181} with $k = 32$; the logit-lens dictionary gives
+\ci{+0.0102}{+0.0074}{+0.0135}; pairs whose mechanism text changes give
+\ci{+0.0078}{+0.0043}{+0.0108}, and the $17$ evaluation drugs recorded absent
+from residual training give \ci{+0.0076}{+0.0040}{+0.0113}; read at the end of
+the drug name, a position the lens was mostly not fitted at, it is
+\ci{+0.0167}{+0.0133}{+0.0197}. Leaving out any one drug keeps it between
+$0.0064$ and $0.0073$, and the two half-lenses give $0.0077$ and $0.0070$. The
+exception is the plan's own capped support at eight and sixteen directions,
+taken up next.
+
+\paragraph{Why that difference cannot be read as the drug moving into the lens's
+directions} Three observations are consistent with a size effect rather than
+with the drug being placed differently.
+
+Capping the support shrinks it. Keeping only the sixteen directions of $U$ with
+the largest summed coefficients, and drawing the null at that size, gives
+\ci{+0.0003}{-0.0012}{+0.0018}; coding with $k = 8$ and capping at eight gives
+\ci{+0.0001}{-0.0012}{+0.0012}; with $k = 32$ and a cap at thirty-two a smaller
+difference survives, \ci{+0.0025}{+0.0003}{+0.0046}, though not with the
+logit-lens dictionary, \ci{+0.0016}{-0.0009}{+0.0040}. At the primary $k$ a
+difference on the drug pairs is then \notestablished, though the interval still
+admits a quarter of the primary estimate. The difference-in-differences stays
+positive under the cap, \ci{+0.0046}{+0.0024}{+0.0068}, but through the control
+pairs, which sit lower in the ten-epoch run, \ci{-0.0043}{-0.0058}{-0.0028}. The
+excess lies in the directions beyond the leading few, which enter $U$ because the
+two prompts' codes part company: the ten-epoch run's drug pairs have a median
+$|U|$ of $25$ at layer $12$, against $18$ in the expression frame.
+
+It does not need the Jacobian. The logit-lens dictionary, which never applies
+$J_\ell$, shows it as strongly, so it is not something the lens's transport
+finds.
+
+It tracks size, and size cannot be matched. The ten-epoch run's drug change is a
+median $30.1\%$ of the activation's norm, seventeen times the expression frame's
+$1.7\%$ and more than three times the canonical checkpoint's $8.7\%$
+(\cref{tab:jspace}, Panel C). Within its own drug pairs $\varphi_{\textrm{adj}}$
+rises with that relative size at a Spearman correlation of $+0.66$, and with
+$|U|$ at $+0.64$; in the expression frame the same two correlations are $-0.006$
+and $+0.010$. No range of size is shared. Every one of the ten-epoch run's $192$
+drug pairs exceeds a tenth of the activation's norm and $182$ exceed a fifth,
+while no expression-frame drug pair reaches a twentieth. Apart from the capped
+support, none of these comparisons is in the analysis plan.
+
+One mechanism would produce all three. When a change is a large part of the
+activation, the directions chosen to code $h_b$ are partly chosen to code the
+change itself, which random directions are not, so $\varphi_{\textrm{adj}}$
+rises with the change's relative size whatever the model then does with it. Run
+the other way, the same mechanism means that the expression frame's $W$, where
+the control edit is the larger, cannot separate placement from size either,
+which is why the comparisons in the shared size range are reported, and why they
+speak only where that range covers every drug. The plan's rule licenses calling
+the ten-epoch difference drug-specific in the narrow sense it defines, that a
+control edit does not show it. It does not license reading it as the drug moved
+into the set of directions the model reads from.
+
+\begin{scopelimit}[takes up the limit carried from \cref{sec:lit-interp}]
+Three limits bound every number above. The lens is applied where it was not
+fitted: the last prompt token closes every tail calibration window and is never
+used as a source, so its directions there are applied outside the positions they
+were estimated at, though at layer $12$ they still predict the true output change
+at a Spearman correlation between $0.30$ and $0.63$. The directions are token
+directions, not genes: only $8$ of the $946$ panel genes are single whole tokens,
+so no reading here is about a gene, and a positive coefficient is not
+up-regulation. And co-location is geometry, not use. No workspace vector is
+swapped, so the causal claim of the workspace account remains untested, as
+\cref{sec:lit-interp} records.
+\end{scopelimit}
+
+\begin{claim}
+The expression-frame result is negative, and it rests on the pre-registered
+measurements at layer $12$. Where the answer begins, the drug swap's change there
+is a third of a control edit's in relative size, lies along the lens's token
+directions barely more than along random ones and less than that control edit
+does, and moves the output about half as far. That fits the single-cell null of
+\cref{sec:res-mechanism}; it measures co-location, not use. Whether the drug edit
+would sit below a control edit of its own size is not settled in this frame,
+where the two kinds share only a narrow range of size. Layers $4$ and $8$ decide
+nothing.
+
+The residual result is a statement about the output and a caution about the
+geometry. The residual training recipe is associated with a drug change that
+reaches the first response token, larger in the ten-epoch run than after one
+epoch. Whether the drug is thereby placed in the directions the model reads from
+is \notestablished for the canonical checkpoint; for the ten-epoch run the one
+difference the family finds is confounded with a change seventeen times the
+expression frame's in relative size.
+\end{claim}
+% Clear the stored verdict: this is the last \beatsection in the document, and
+% nothing after it would clear it (see the header).
+\claimlede{}

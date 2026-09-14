@@ -1,0 +1,49 @@
+% thesis_v7 -- submission revision of thesis_v6.
+% Original folders are preserved. All rendered figure dependencies live in figs/.
+% See README.md for the build and validation workflow.
+% Build: bash tools/build.sh (requires TeX Live, latexmk, biber and Python 3).
+\documentclass[12pt,a4paper,oneside]{report}
+\input{preamble}
+
+\graphicspath{{figs/}}
+
+\begin{document}
+
+% Four opening pages are reserved for the university submission system.
+\pagenumbering{gobble}
+\myemptypage
+\myemptypage
+\myemptypage
+\myemptypage
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{Sections/01-Introduction}
+\include{Sections/02-Background}
+\include{Sections/03-Apparatus}
+\include{Sections/04-Investigation}
+\include{Sections/05-Limitations}
+\include{Sections/06-Conclusions}
+
+\begingroup
+\RaggedRight
+\emergencystretch=3em
+\printbibliography[heading=bibintoc]
+\endgroup
+
+\appendix
+\include{Sections/07-Appendix}
+
+\include{Sections/00-HowToRead}
+
+\include{Sections/08-AI-Assistance}
+
+\end{document}

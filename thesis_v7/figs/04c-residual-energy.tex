@@ -1,0 +1,167 @@
+% ===========================================================================
+% 04c-residual-energy.tex -- the encoding problem in one picture.
+% \input by Sections/04c-reencoding.tex. Compiles against thesis_v2/preamble.tex
+% and nothing else; no external data, no \includegraphics.
+%
+% EVERY NUMBER IS SOURCED. Sibling 04c-residual-energy.json carries the key
+% paths; the short form:
+%   sq.norm  RESULTS_cluster/vardecomp_matched.json -> main.scope
+%            residual_energy_share 0.6211205563374411 -> 62.1%
+%            generic_energy_share  0.38993489697995193 -> 39.0%
+%            cross_energy_share   -0.011055451267510967 -> -0.011
+%            energy_shares_sum     1.000000002049882   -> 1.000
+%            (the key names say "energy"; the quantity is the squared L2 norm)
+%            (text, all three agreeing; line numbers drift, so each carries the
+%             phrase to search for:
+%             04c-reencoding.tex:301-303  "decomposes exactly into residual"
+%             01-Introduction.tex:313-315 "Decomposing the treated-minus-control"
+%             05-Limitations.tex:240-242  \paragraph{Frame coverage}
+%             -- verify by the phrase, not the number, before quoting a line)
+%   tokens   RESULTS_cluster/target_divergence.json, K=200
+%            scopes.cellline.full.divergence_mean     34.594876910336524 -> 34.6 (17%)
+%            scopes.cellline.shift.divergence_mean   111.4231960024091   -> 111.4 (56%)
+%            scopes.cellline.residual.divergence_mean 118.24622167432057 -> 118.2 (59%)
+%            (text: tab:divergence, 04c-reencoding.tex:42-44, the three body
+%             rows of that table -- agrees)
+%   the caption's 120.3 is scopes.plate.residual.divergence_mean 120.29533990815328
+%   and is quoted in prose only; it is NOT drawn, because a plate-scope bar in a
+%   cell-line-scope block is exactly the cross-block subtraction this layout is
+%   built to prevent.
+%
+% LAYOUT NOTES, all forced by a build:
+%   * two SUB-BLOCKS, one axis, one divider. The blocks are DIFFERENT QUANTITIES
+%     (a squared-norm share and a count of token positions); the divider, the
+%     1.68cm gap, the 2:1 bar heights (4.8mm vs 2.4mm) and the unit sentence
+%     are what stop a reader subtracting across them. Nothing spans the divider.
+%   * TOTAL WIDTH 14.191cm = 403.775pt against \textwidth = 404.02913pt (142.0mm,
+%     measured in _v.log; preamble.tex:59 records the 132->142mm revision). The
+%     figure fills 99.94% of the measure and needs no fullwidth, so the page it
+%     lands on may still carry a margin note. It was previously laid out for the
+%     132mm block, drew 348.3pt = 122.4mm and under-filled by 19.6mm.
+%     Geometry: \X 4.900cm label gutter + \L 9.190cm per unit share; the right
+%     end of the overhang is \X+1.011*\L = 14.19109cm. Picture box measured by
+%     _scratch/figs/_harness_resenergy_w.tex, which reports
+%     PICW = 403.77531pt PICH = 124.33833pt in _scratch/_harness_resenergy_w.log.
+%   * ROW LABELS ARE ONE LINE EACH. Measured at \scriptsize in Pagella:
+%     "residual --- the drug-specific target" 122.69pt = 4.312cm is now the
+%     widest ("the perturbation response" measures 91.40pt), so the label column
+%     stays at 4.65cm. Two-line labels at 0.62cm row pitch collide, which is why
+%     the width is measured and not guessed.
+%   * \bx must expand WITHOUT braces: it is used bare, as (\bx{0.5},y), and
+%     inside an expression, as ({\bx{0.621}+0.14},y). A braced body makes the
+%     second form "{{...}+0.14}" and pgfmath aborts with "Missing number".
+%   * the 62.1% and 39.0% labels sit INSIDE/AFTER their segments; the token-block
+%     labels sit AFTER the accent segment, because the 17% segment is 1.56cm
+%     wide and will not hold its own label.
+%   * THE HALF-WAY RULE IS DRAWN ONLY WITHIN THE TWO BAR BANDS. The previous
+%     version ran it floor-to-ceiling and struck through both grey annotations
+%     ("shift's" in the cross-term line, "positions" in the unit line); the old
+%     header's guarantee that the rule "passes through none of them" guarded the
+%     bold in-bar labels only and never covered the prose. Measured clearances
+%     at bx{0.5} = 9.495cm, all in the bar bands: "62.1% drug-specific" ends at
+%     7.50cm (1.99cm clear), "34.6 (17%)" ends at 8.04cm (1.46cm clear), and
+%     "111.4 (56%)", "118.2 (59%)" and "generic 39.0%" all begin right of the
+%     rule at 10.19, 10.46 and 10.75cm. The rule is drawn last, over the bars.
+%     The two segments are given the same vertical extent as the upright ink
+%     rule at 1.000, so the figure's two verticals rhyme instead of competing.
+%   * THE "half" LABEL SITS UNDER THE TOKEN BLOCK, not at the top of the figure.
+%     The half-way mark does its work below the divider, where 17% / 56% / 59%
+%     are read against it; at the top it was as far from that reading as the
+%     picture allowed.
+%   * the generic segment runs on from where the residual segment ends, out to
+%     1.011, with the ink rule at the shift's own squared norm: the
+%     decomposition is exact, and drawing the -0.011 overhang rather than
+%     describing it keeps the two shares from being silently renormalised to
+%     sum to one.
+%   * the cross-term annotation is anchored EAST and grows leftwards. Anchored
+%     WEST at the right end of the bar it walked 51.1pt off the page.
+% ===========================================================================
+\begin{figure}[htbp]
+% MARGINALIA (06-figures.md): wider than the 124mm text column, so it
+% sits in fullwidth; the caption below spans the text column only.
+\begin{fullwidth}\raggedright
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small]
+  \def\X{4.900}                  % left edge of every bar
+  \def\L{9.190}                  % bar length for 100%
+  \newcommand{\bx}[1]{\X+#1*\L}  % value -> x   (no braces: see header)
+  % PIN THE BOUNDING BOX. Left free, the picture measures 409.59pt and runs
+  % 5.56pt over the block: the rowname nodes are anchor=east at 4.75 with a
+  % 4.65cm text width, so their inner sep hangs ~0.09cm left of x=0, and the
+  % "half" descender hangs below. Neither carries ink -- the row labels are
+  % flush right and set single-line, so their ink starts at x=0.07cm. Pinning
+  % to [0, \bx{1.011}] therefore clips nothing and makes the drawn width equal
+  % the stated 14.191cm = 403.775pt exactly.
+  \useasboundingbox (0,-0.25) rectangle ({\bx{1.011}},4.12);
+  \tikzset{
+    rowname/.style={anchor=east, text width=4.65cm, align=flush right,
+                    font=\scriptsize, text=quietink},
+    inlab/.style={anchor=west, font=\scriptsize\bfseries, text=white},
+    outlab/.style={anchor=west, font=\scriptsize\bfseries, text=accent},
+    greylab/.style={anchor=west, font=\scriptsize, text=ink}}
+
+  % ========== SUB-BLOCK 1: the response, by squared norm. Bars 4.8mm. ======residuak
+  \node[rowname] at (4.75,3.70) {the perturbation response};
+  \fill[accent]      (\X,3.46)          rectangle (\bx{0.621},3.94);
+  \fill[rulegrey!45] (\bx{0.621},3.46)  rectangle (\bx{1.011},3.94);
+  \node[inlab]   at ({\X+0.14},3.70)          {$62.1\%$ residual};
+  \node[greylab] at ({\bx{0.621}+0.14},3.70)  {generic $39.0\%$};
+
+  % the shift's own squared norm, and the cross term as the overhang past it
+  \draw[ink, line width=0.7pt] (\bx{1.0},3.32) -- (\bx{1.0},4.08);
+  \node[anchor=north east, text width=7.6cm, align=flush right,
+        font=\scriptsize, text=quietink] at ({\bx{1.011}},3.28)
+    {the upright rule marks the shift's own squared norm; the overhang past it
+     is the cross term $-0.011$};
+
+  % --- the divider: the two sub-blocks are different quantities ------------
+  \draw[rulegrey, line width=0.4pt] (0,2.44) -- ({\bx{1.011}},2.44);
+  \node[anchor=north west, font=\scriptsize\itshape, text=quietink] at (0,2.38)
+    {above: shares of the shift's squared norm \quad below: shares of $200$
+     token positions};
+
+  % ========== SUB-BLOCK 2: the target, by token position. Bars 2.4mm. ======
+  % r1 -- the standard target
+  \fill[rulegrey!25] (\X,1.54) rectangle (\bx{1.0},1.78);
+  \fill[accent]      (\X,1.54) rectangle (\bx{0.17},1.78);
+  \node[rowname] at (4.75,1.66) {full profile --- the standard target};
+  \node[outlab]  at ({\bx{0.17}+0.14},1.66) {$34.6$ \;($17\%$)};
+
+  % r2 -- the shift
+  \fill[rulegrey!25] (\X,0.92) rectangle (\bx{1.0},1.16);
+  \fill[accent]      (\X,0.92) rectangle (\bx{0.56},1.16);
+  \node[rowname] at (4.75,1.04) {shift (treated $-$ control)};
+  \node[outlab]  at ({\bx{0.56}+0.14},1.04) {$111.4$ \;($56\%$)};
+
+  % r3 -- the residual
+  \fill[rulegrey!25] (\X,0.30) rectangle (\bx{1.0},0.54);
+  \fill[accent]      (\X,0.30) rectangle (\bx{0.59},0.54);
+  \node[rowname] at (4.75,0.42) {residual - (shift $-$ generic)};
+  \node[outlab]  at ({\bx{0.59}+0.14},0.42) {$118.2$ \;($59\%$)};
+
+  % --- the half-way rule, drawn LAST so the bars do not bury it, and drawn
+  % ONLY within the two bar bands so it crosses no prose. See header.
+  \draw[ink, line width=0.5pt, densely dotted] (\bx{0.5},3.32) -- (\bx{0.5},4.08);
+  \draw[ink, line width=0.5pt, densely dotted] (\bx{0.5},0.18) -- (\bx{0.5},1.90);
+  \node[anchor=north, font=\scriptsize\itshape, text=ink] at (\bx{0.5},0.14) {half};
+\end{tikzpicture}
+\end{adjustbox}
+\caption[Observed residual magnitude and target divergence]{\captiontitle{The
+observed residual is most of the shift's squared norm, while standard targets
+share most of their genes across drugs.} Above the rule: the shift's squared
+norm decomposes exactly into an observed residual, an estimated generic and
+a cross term. The residual share is $62.1\%$; it includes measurement noise and
+unremoved context effects, so this is not a fraction identified as drug-specific
+biology. Below it: of the $200$ positions a cell sentence spends on the
+standard target, only $34.6$ carry a different gene for two drugs in the same
+context --- the other $83\%$ are the same string. Ranking the same measurement
+by signed residual raises that to $118.2$, and at the plate scope this build
+trains in the residual row reads $120.3$ ($60\%$). The two halves of the figure
+are different quantities, a squared-norm share and a count of token positions;
+they share the axis and the half-way rule and nothing else, and no difference
+between them is a number. The residual carries a majority of the observed
+shift's squared norm; separately, residual targets differ across drugs at more
+positions than standard targets do (\cref{tab:divergence}).}
+\label{fig:residual-energy}
+\end{fullwidth}
+\end{figure}

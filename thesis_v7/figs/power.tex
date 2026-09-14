@@ -1,0 +1,72 @@
+% ===========================================================================
+% Unseen-drug gap: one estimand, two reported 95% confidence intervals.
+% Exact values and provenance are recorded in the sibling power.json.
+% Geometry: 34mm row labels + 3mm gutter + 86.4mm axis = 123.4mm nominal.
+% The pooled lookup and an MDE derived from absolute NIR are not this gap.
+% ===========================================================================
+\begin{figure}[htbp]
+\begin{fullwidth}\raggedright
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[
+    x=480mm, y=1mm, font=\footnotesize,
+    rowlbl/.style={text=quietink, align=flush right, text width=34mm,
+                   inner sep=0pt, anchor=east, xshift=-3mm},
+    ticklbl/.style={font=\scriptsize, text=quietink, inner sep=0pt,
+                    anchor=north},
+    note/.style={text=quietink, inner sep=0pt}]
+
+  \draw[rulegrey, line width=0.5pt] (-0.12,0) -- (0.06,0);
+  \foreach \t/\lab in {%
+      -0.10/$-0.10$, -0.05/$-0.05$, 0/$0$, 0.05/$+0.05$}{%
+    \draw[rulegrey, line width=0.5pt] (\t,0) -- (\t,-1.4);
+    \node[ticklbl] at (\t,-2.1) {\lab};}
+  \node[note, font=\scriptsize, anchor=north, align=center]
+    at (-0.03,-7.5)
+    {model $\NIR$ minus neutral-scramble $\NIR$\\
+     ($0$ = no difference)};
+
+  % Each zero segment crosses its own interval, clear of the numeric label.
+  \draw[rulegrey, dashed, line width=0.5pt] (0,28.5) -- (0,37);
+  \draw[rulegrey, dashed, line width=0.5pt] (0,10.5) -- (0,19);
+  \node[note, anchor=south, text=ink] at (-0.03,42)
+    {estimate $-0.0315$\enspace;\enspace$n = 199$};
+
+  % Two-way clustering on cell line and treated well.
+  \node[rowlbl] at (-0.12,32) {cell line and well\\(two-way)};
+  \draw[ink, line width=0.9pt]
+    (-0.08358077892636565,32) -- (0.020617264814239943,32);
+  \draw[ink, line width=0.8pt]
+    (-0.08358077892636565,30) -- (-0.08358077892636565,34);
+  \draw[ink, line width=0.8pt]
+    (0.020617264814239943,30) -- (0.020617264814239943,34);
+  \fill[accent] (-0.03148175705606285,32) circle (1.7pt);
+  \node[note, anchor=north west] at (-0.12,26.5)
+    {95\% CI $[-0.0836,\,+0.0206]$};
+
+  % Clustering on drug; the point estimate and scored conditions are unchanged.
+  \node[rowlbl] at (-0.12,14) {drug};
+  \draw[ink, line width=0.9pt]
+    (-0.10487258422550776,14) -- (0.04190907011338206,14);
+  \draw[ink, line width=0.8pt]
+    (-0.10487258422550776,12) -- (-0.10487258422550776,16);
+  \draw[ink, line width=0.8pt]
+    (0.04190907011338206,12) -- (0.04190907011338206,16);
+  \fill[accent] (-0.03148175705606285,14) circle (1.7pt);
+  \node[note, anchor=north west] at (-0.12,8.5)
+    {95\% CI $[-0.1049,\,+0.0419]$};
+\end{tikzpicture}
+\end{adjustbox}
+\caption[The unseen-drug gap under two clusterings]{\captiontitle{The
+unseen-drug gap includes zero under both clusterings.} The points show the same
+model-minus-neutral-scramble estimate on $n = 199$ conditions in the
+\texttt{unseen\_drug} split, $-0.0315$. The comparator is the
+geometry-defined \texttt{orth} scramble on those conditions. The upper row
+shows the 95\% interval clustered two-way on cell line and treated well,
+$[-0.0836,\,+0.0206]$; the lower row clusters on drug,
+$[-0.1049,\,+0.0419]$. Both intervals include zero and a range of small
+effects. Neither establishes a positive gap or equivalence to zero. They
+quantify the reported cluster uncertainty, conditional on the trained
+checkpoint and sampled generations (\cref{sec:lim-intervals}).}
+\label{fig:power}
+\end{fullwidth}
+\end{figure}
